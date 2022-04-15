@@ -1,0 +1,84 @@
+{
+  "name": "ucanto",
+  "description": "UCAN RPC",
+  "version": "1.0.0-dev",
+  "keywords": [
+    "UCAN",
+    "RPC",
+    "IPLD",
+    "JWT",
+    "multicodec",
+    "codec",
+    "invocation"
+  ],
+  "files": [
+    "src",
+    "dist/src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/web3-storage/ucanto.git"
+  },
+  "homepage": "https://github.com/web3-storage/ucanto",
+  "scripts": {
+    "prepare": "tsc --build",
+    "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
+    "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
+    "test": "mocha test/**/*.spec.js",
+    "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080",
+    "typecheck": "tsc --build"
+  },
+  "dependencies": {
+    "@ipld/car": "^4.1.0",
+    "@ipld/dag-cbor": "^7.0.1",
+    "multiformats": "^9.6.4",
+    "@ipld/dag-ucan": "^1.1.0-beta"
+  },
+  "devDependencies": {
+    "subprogram": "^1.2.0",
+    "@types/mocha": "^9.1.0",
+    "@types/chai": "^4.3.0",
+    "dotenv": "^16.0.0",
+    "mocha": "^9.2.2",
+    "chai": "^4.3.6",
+    "playwright-test": "^7.3.0",
+    "conf": "^10.1.1",
+    "ora": "^6.1.0",
+    "@web-std/fetch": "^4.0.0",
+    "@web-std/file": "^3.0.2",
+    "c8": "^7.11.0",
+    "nyc": "^15.1.0",
+    "typescript": "^4.6.3",
+    "ucan-storage": "^1.1.3"
+  },
+  "type": "module",
+  "main": "src/lib.js",
+  "types": "./dist/src/lib.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/*"
+      ],
+      "dist/src/lib.d.ts": [
+        "dist/src/lib.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/lib.d.ts",
+      "import": "./src/lib.js"
+    },
+    "./src/lib.js": {
+      "types": "./dist/src/lib.d.ts",
+      "import": "./src/lib.js"
+    }
+  },
+  "c8": {
+    "exclude": [
+      "test/**",
+      "dist/**"
+    ]
+  },
+  "license": "(Apache-2.0 AND MIT)"
+}
