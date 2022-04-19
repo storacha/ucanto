@@ -32,7 +32,7 @@
     "@ipld/car": "^4.1.0",
     "@ipld/dag-cbor": "^7.0.1",
     "multiformats": "^9.6.4",
-    "@ipld/dag-ucan": "^1.1.0-beta"
+    "@ipld/dag-ucan": "^1.1.1-beta"
   },
   "devDependencies": {
     "subprogram": "^1.2.0",

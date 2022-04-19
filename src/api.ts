@@ -1,51 +1,35 @@
-import type * as UCAN from '@ipld/dag-ucan'
-import type * as Transport from './client/transport/api.js'
-export type { Phantom, Block, Encoded } from '@ipld/dag-ucan'
-export type { UCAN, Transport }
+import * as UCAN from "@ipld/dag-ucan"
+import type * as Transport from "./transport/api.js"
+import type {
+  Phantom,
+  Block,
+  Encoded,
+  Link,
+  Issuer,
+  Capability,
+  Agent,
+  MultihashHasher,
+} from "@ipld/dag-ucan"
 
-// import type { Link, ByteView, DID } from '@ipld/dag-ucan'
-// import type { sha256 } from 'multiformats/hashes/sha2'
-// import { Capability } from 'ucan-storage/types'
-
-// export type Query<Service> = Partial<{
-//   [Key in keyof Service]: Service[Key] extends Method<infer In, infer Out>
-//     ? Handler<In, Out>
-//     : Query<Service[Key]>
-// }>
-
-// export interface Method<In extends UCAN.Capability, Out> {
-//   (invocation: Instruction<In>): Result<Out>
-// }
-
-// export type Input<Service> = Service[keyof Service] extends Method<
-//   infer In,
-//   infer Out
-// >
-//   ? Instruction<In>
-//   : never
-
-// export type Return<
-//   Service,
-//   In extends UCAN.Capability
-// > = Service[keyof Service] extends Method<In, infer Out> ? Out : { In: In }
-
-// export type Handler<In extends UCAN.Capability, Out> = [
-//   Instruction<In>,
-//   Selector<Out>
-// ]
-
-// export type Selector<Out> = Partial<{
-//   [Key in keyof Out]: unknown | Selector<Out[Key]>
-// }>
-
-export interface Route {
-  readonly issuer: UCAN.Issuer
-  readonly audience: UCAN.Audience
+export type {
+  UCAN,
+  Transport,
+  Phantom,
+  Block,
+  Encoded,
+  Link,
+  Issuer,
+  Capability,
+  Agent,
 }
 
+/**
+ * Proof can either be a link to a delegated UCAN or a materialized `Delegation`
+ * view.
+ */
 export type Proof<C extends UCAN.Capability = UCAN.Capability> =
   | UCAN.Proof<C>
-  | UCAN.View<C>
+  | Delegation<C>
 
 export interface Instruction<T extends UCAN.Capability = UCAN.Capability> {
   issuer: UCAN.DID
@@ -58,11 +42,49 @@ export interface Instruction<T extends UCAN.Capability = UCAN.Capability> {
 export interface Invocation<
   Capability extends UCAN.Capability = UCAN.Capability
 > {
+  readonly issuer: Agent
+  readonly audience: Agent
   readonly capability: Capability
-  readonly issuer: UCAN.Audience
-  readonly audience: UCAN.Audience
 
   proofs?: Proof[]
+}
+
+export interface DelegationOptions<C extends Capability, A extends number> {
+  issuer: Issuer<A>
+  audience: Agent
+  capabilities: C[]
+  lifetimeInSeconds?: number
+  expiration?: number
+  notBefore?: number
+
+  nonce?: string
+
+  facts?: UCAN.Fact[]
+  proofs?: Proof[]
+}
+
+export interface Delegation<
+  Capability extends UCAN.Capability = UCAN.Capability
+> extends UCAN.Data<Capability> {
+  readonly code: UCAN.UCAN["code"]
+  readonly data: UCAN.View<Capability>
+  readonly cid: UCAN.Proof<Capability>
+  readonly bytes: UCAN.ByteView<UCAN.UCAN<Capability>>
+
+  export(): IterableIterator<Transport.Block<Capability>>
+
+  issuer: Agent
+  audience: Agent
+  capabilities: Capability[]
+
+  lifetimeInSeconds?: number
+  expiration?: number
+  notBefore?: number
+
+  nonce?: string
+
+  facts?: UCAN.Fact[]
+  proofs?: Proof<Capability>[]
 }
 
 export interface IssuedInvocation<
@@ -81,7 +103,6 @@ export interface IssuedInvocationView<
 
 export interface Batch<In extends unknown[]> {
   invocations: In
-  delegations: Map<string, UCAN.View>
 }
 
 export interface IssuedBatchInvocationView<In extends IssuedInvocation[]> {
@@ -117,7 +138,7 @@ export interface InvocationView<
 
 export type InvocationService<
   Capability extends UCAN.Capability,
-  Ability extends string = Capability['can']
+  Ability extends string = Capability["can"]
 > = Ability extends `${infer Base}/${infer Path}`
   ? { [Key in Base]: InvocationService<Capability, Path> }
   : {
@@ -129,7 +150,7 @@ export type InvocationService<
 export type ExecuteInvocation<
   Capability extends UCAN.Capability,
   T extends Record<string, any>,
-  Ability extends string = Capability['can']
+  Ability extends string = Capability["can"]
 > = Ability extends `${infer Base}/${infer Path}`
   ? ExecuteInvocation<Capability, T[Base], Path>
   : T[Ability] extends (input: Instruction<Capability>) => infer Out
@@ -141,14 +162,14 @@ export type Result<T, X = Error> =
   | { ok: false; error: X }
 
 type StoreAdd = (
-  input: Instruction<{ can: 'store/add'; with: UCAN.DID; link: UCAN.Link }>
+  input: Instruction<{ can: "store/add"; with: UCAN.DID; link: UCAN.Link }>
 ) => Result<
-  | { status: 'done'; with: UCAN.DID; link: UCAN.Link }
-  | { status: 'pending'; with: UCAN.DID; link: UCAN.Link; url: string }
+  | { status: "done"; with: UCAN.DID; link: UCAN.Link }
+  | { status: "pending"; with: UCAN.DID; link: UCAN.Link; url: string }
 >
 
 type StoreRemove = (
-  input: Instruction<{ can: 'store/remove'; with: UCAN.DID; link: UCAN.Link }>
+  input: Instruction<{ can: "store/remove"; with: UCAN.DID; link: UCAN.Link }>
 ) => Result<boolean>
 
 type Store = {
@@ -164,12 +185,13 @@ export type API<T> = T[keyof T]
 // }[keyof T]
 
 export interface ConnectionOptions {
-  readonly codec: Transport.Encoder
+  readonly codec: Transport.Codec
+  readonly hasher?: MultihashHasher
 }
 
-export interface Connection<T> extends UCAN.Phantom<T> {
-  codec: Transport.Codec
-}
+export interface Connection<T> extends UCAN.Phantom<T> {}
+
+export interface ConnectionView<T> extends Connection<T>, Transport.Codec {}
 
 export declare function connection<T>(): Connection<T>
 
@@ -297,16 +319,16 @@ type Match<In extends Instruction, T extends Service> = {
 declare var store: Store
 declare var channel: Connection<{ store: Store }>
 declare const alice: UCAN.Issuer
-declare const bob: UCAN.Audience
+declare const bob: Agent
 declare const car: UCAN.Link
 
 type ToPath<T extends string> = T extends `${infer Base}/${infer Path}`
   ? [Base, ...ToPath<Path>]
   : [T]
 
-type A = ToPath<''>
-type B = ToPath<'foo'>
-type C = ToPath<'foo/bar'>
+type A = ToPath<"">
+type B = ToPath<"foo">
+type C = ToPath<"foo/bar">
 
 type Unpack<T> = T extends infer A & infer B ? [A, B] : []
 
@@ -328,7 +350,7 @@ const add = invoke({
   issuer: alice,
   audience: bob,
   capability: {
-    can: 'store/add',
+    can: "store/add",
     with: alice.did(),
     link: car,
   },
@@ -338,7 +360,7 @@ const remove = invoke({
   issuer: alice,
   audience: bob,
   capability: {
-    can: 'store/remove',
+    can: "store/remove",
     with: alice.did(),
     link: car,
   },
@@ -379,7 +401,7 @@ const r2 = q.queryService().store.remove({
   audience: bob.did(),
   capabilities: [
     {
-      can: 'store/remove',
+      can: "store/remove",
       with: alice.did(),
       link: car,
     },

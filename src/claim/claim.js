@@ -1,4 +1,4 @@
-import * as API from './api.js'
+import * as API from "./api.js"
 
 /**
  * @template {API.Capability} C
@@ -45,12 +45,12 @@ export const access = (capability, ucan) => {
         ok: false,
         error: {
           _: {
-            name: 'InvalidClaim',
+            name: "InvalidClaim",
             claim: capability,
             by: ucan.ucan.audience,
             to: ucan.ucan.issuer,
             reason: {
-              name: 'ViolatingClaim',
+              name: "ViolatingClaim",
               from: ucan.ucan.audience,
               to: ucan.ucan.issuer,
               claim: capability,
@@ -72,7 +72,6 @@ export const access = (capability, ucan) => {
           granted: [capability],
         },
       }
-      claim.value
     }
   }
 }

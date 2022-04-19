@@ -220,10 +220,10 @@
     cborg "^1.5.4"
     multiformats "^9.5.4"
 
-"@ipld/dag-ucan@^1.1.0-beta":
-  version "1.1.0-beta"
-  resolved "https://registry.yarnpkg.com/@ipld/dag-ucan/-/dag-ucan-1.1.0-beta.tgz#9869a3cab0935adceb80b9413841bb4ac289786d"
-  integrity sha512-uAznogcf87I7WQ1jA7hNtMw52QFNEujZJPi3lwYfvQY/K120e2kXPDanyVMxX/dQJFOL/BKyopDvqcNEemvZgQ==
+"@ipld/dag-ucan@^1.1.1-beta":
+  version "1.1.1-beta"
+  resolved "https://registry.yarnpkg.com/@ipld/dag-ucan/-/dag-ucan-1.1.1-beta.tgz#abcf7cb0e889f99f0b0360d1aa75c262003ad090"
+  integrity sha512-sAPjO0JJXzyUrm+h1fYPNL4s7lgxIHTCLO1gvkRASX4aNc/NSQYVMY6rEvzLp2OkYS42BXzMMHNrCFridLmt5g==
   dependencies:
     "@ipld/dag-cbor" "^7.0.1"
     "@ipld/dag-json" "^8.0.9"

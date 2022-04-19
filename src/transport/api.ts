@@ -1,7 +1,7 @@
-import type { Phantom, Await } from '../../api.js'
-import * as API from '../../api.js'
-import * as UCAN from '@ipld/dag-ucan'
-import type { sha256 } from 'multiformats/hashes/sha2'
+import type { Phantom, Await } from "../api.js"
+import * as API from "../api.js"
+import * as UCAN from "@ipld/dag-ucan"
+import type { sha256 } from "multiformats/hashes/sha2"
 
 export interface Encoder {
   encode<I extends API.IssuedInvocation[]>(
@@ -29,9 +29,9 @@ export interface Packet<I extends API.Invocation[]> extends Phantom<I> {
 
 export interface Block<
   C extends UCAN.Capability = UCAN.Capability,
-  A extends number = typeof sha256.code
+  A extends number = number
 > {
   readonly cid: UCAN.Proof<C, A>
-  bytes: UCAN.ByteView<UCAN.UCAN<C>>
+  readonly bytes: UCAN.ByteView<UCAN.UCAN<C>>
   readonly data: UCAN.View<C>
 }
