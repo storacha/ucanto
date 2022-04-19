@@ -53,6 +53,7 @@ export const decode = async ({ headers, body }) => {
     invocations.push({
       cid: /** @type {UCAN.Proof<any, any>} */ (cid),
       bytes,
+      data: UCAN.decode(bytes),
     })
   }
 
