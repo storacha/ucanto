@@ -38,7 +38,7 @@ export const delegate = async (
 
   const data = await UCAN.issue({
     ...input,
-    audience: audience.did(),
+    audience,
     proofs: links,
   })
   const { cid, bytes } = await UCAN.write(data, options)

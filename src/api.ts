@@ -65,8 +65,7 @@ export interface DelegationOptions<C extends Capability, A extends number> {
 
 export interface Delegation<
   Capability extends UCAN.Capability = UCAN.Capability
-> extends UCAN.Data<Capability> {
-  readonly code: UCAN.UCAN["code"]
+> {
   readonly data: UCAN.View<Capability>
   readonly cid: UCAN.Proof<Capability>
   readonly bytes: UCAN.ByteView<UCAN.UCAN<Capability>>
@@ -76,15 +75,13 @@ export interface Delegation<
   issuer: Agent
   audience: Agent
   capabilities: Capability[]
-
-  lifetimeInSeconds?: number
   expiration?: number
   notBefore?: number
 
   nonce?: string
 
-  facts?: UCAN.Fact[]
-  proofs?: Proof<Capability>[]
+  facts: UCAN.Fact[]
+  proofs: Proof<Capability>[]
 }
 
 export interface IssuedInvocation<

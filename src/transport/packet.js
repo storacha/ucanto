@@ -12,6 +12,7 @@ import { Invocation, Batch, Delegation } from "../view.js"
  * @returns {Promise<API.Transport.Packet<Invocations>>}
  */
 export const pack = async batch => {
+  /** @type {API.Transport.Block[]} */
   const invocations = []
   const delegations = new Map()
   for (const invocation of batch.invocations) {
@@ -24,7 +25,7 @@ export const pack = async batch => {
 
     const ucan = await UCAN.issue({
       issuer,
-      audience: audience.did(),
+      audience,
       capabilities: [invocation.capability],
       proofs: links,
     })

@@ -83,7 +83,7 @@ describe("delegation", () => {
         with: alice.did(),
       },
     ])
-    assert.ok(isLink(u2.body.proofs[0]))
+    assert.ok(isLink(u2.data.proofs[0]))
     const [proof] = u2.proofs || []
 
     if (isLink(proof)) {
@@ -108,7 +108,6 @@ describe("delegation", () => {
         { cid: u2.cid, bytes: u2.bytes, data: u2.data },
       ]
     )
-    assert.deepEqual(u2.code, UCAN.code)
 
     assert.deepEqual(Packet.importDelegation(u2.export()), u2)
   })
@@ -224,7 +223,10 @@ describe("invoke", () => {
   it("encode inovocation", async () => {
     const { alice, web3Storage } = await importActors()
     /** @type {Client.ConnectionView<typeof service>} */
-    const connection = Client.connect({ encoder: Transport.CAR })
+    const connection = Client.connect({
+      encoder: Transport.CAR,
+      decoder: Transport.CBOR,
+    })
 
     const car = await writeCAR([await writeCBOR({ hello: "world " })])
     const add = Client.invoke({
@@ -266,7 +268,10 @@ describe("invoke", () => {
     const car = await writeCAR([await writeCBOR({ hello: "world " })])
 
     /** @type {Client.ConnectionView<typeof service>} */
-    const connection = Client.connect({ encoder: Transport.CAR })
+    const connection = Client.connect({
+      encoder: Transport.CAR,
+      decoder: Transport.CBOR,
+    })
 
     const proof = await Client.delegate({
       issuer: alice,

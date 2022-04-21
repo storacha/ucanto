@@ -1,5 +1,6 @@
 import * as API from "./api.js"
 import * as UCAN from "@ipld/dag-ucan"
+import * as DID from "@ipld/dag-ucan/src/did.js"
 import { exportDelegation } from "./transport/packet.js"
 
 /**
@@ -60,18 +61,12 @@ export class Delegation {
       },
     })
   }
-  get header() {
-    return this.root.data.header
-  }
-  get body() {
-    return this.root.data.body
+
+  get version() {
+    return this.root.data.version
   }
   get signature() {
     return this.root.data.signature
-  }
-
-  get code() {
-    return this.cid.code
   }
   get cid() {
     return this.root.cid
@@ -92,8 +87,8 @@ export class Delegation {
   get proofs() {
     /** @type {API.Proof<Capability>[]} */
     const proofs = []
-    const { blocks, body } = this
-    for (const proof of body.proofs) {
+    const { blocks, data } = this
+    for (const proof of data.proofs) {
       const block = blocks.get(proof.toString())
       if (block) {
         proofs.push(new Delegation(block, this.blocks))
@@ -106,35 +101,31 @@ export class Delegation {
     return proofs
   }
   get issuer() {
-    const issuer = new Agent(this.body.issuer)
-    Object.defineProperty(this, "issuer", { value: issuer })
-    return issuer
+    return this.data.issuer
   }
   get audience() {
-    const audience = new Agent(this.body.audience)
-    Object.defineProperty(this, "audience", { value: audience })
-    return audience
+    return this.data.audience
   }
 
   /**
    * @returns {Capability[]}
    */
   get capabilities() {
-    return this.body.capabilities
+    return this.data.capabilities
   }
 
   /**
    * @returns {number}
    */
   get expiration() {
-    return this.body.expiration
+    return this.data.expiration
   }
 
   /**
    * @returns {undefined|number}
    */
   get notBefore() {
-    return this.body.notBefore
+    return this.data.notBefore
   }
 
   /**
@@ -142,14 +133,14 @@ export class Delegation {
    */
 
   get nonce() {
-    return this.body.nonce
+    return this.data.nonce
   }
 
   /**
    * @returns {UCAN.Fact[]}
    */
   get facts() {
-    return this.body.facts
+    return this.data.facts
   }
 }
 
