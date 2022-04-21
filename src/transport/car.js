@@ -13,7 +13,7 @@ const HEADERS = Object.freeze({
  *
  * @template {API.IssuedInvocation[]} I
  * @param {API.Batch<I>} bundle
- * @returns {Promise<Transport.HTTPRequest<I>>}
+ * @returns {Promise<Transport.HTTPRequest<API.Batch<I>>>}
  */
 export const encode = async bundle => {
   const { invocations, delegations } = await pack(bundle)
@@ -29,7 +29,7 @@ export const encode = async bundle => {
  * Decodes HTTPRequest to an invocation batch.
  *
  * @template {API.Invocation[]} Invocations
- * @param {Transport.HTTPRequest<Invocations>} request
+ * @param {Transport.HTTPRequest<API.Batch<Invocations>>} request
  * @returns {Promise<API.Batch<Invocations>>}
  */
 export const decode = async ({ headers, body }) => {

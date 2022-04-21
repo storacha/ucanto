@@ -3,21 +3,32 @@ import * as API from "../api.js"
 import * as UCAN from "@ipld/dag-ucan"
 import type { sha256 } from "multiformats/hashes/sha2"
 
-export interface Encoder {
+export interface RequestEncoder {
   encode<I extends API.IssuedInvocation[]>(
-    batch: API.Batch<I>
-  ): Await<HTTPRequest<I>>
+    input: API.Batch<I>
+  ): Await<HTTPRequest<API.Batch<I>>>
 }
 
-export interface Decoder {
+export interface RequestDecoder {
   decode<I extends API.Invocation[]>(
-    request: HTTPRequest<I>
+    request: HTTPRequest<API.Batch<I>>
   ): Await<API.Batch<I>>
 }
 
-export interface Codec extends Encoder, Decoder {}
+export interface ResponseEncoder {
+  encode<I>(result: I): Await<HTTPResponse<I>>
+}
 
-export interface HTTPRequest<I> extends Phantom<I> {
+export interface ResponseDecoder {
+  decode<I>(response: HTTPResponse<I>): Await<I>
+}
+
+export interface HTTPRequest<T> extends Phantom<T> {
+  headers: Readonly<Record<string, string>>
+  body: Uint8Array
+}
+
+export interface HTTPResponse<T> extends Phantom<T> {
   headers: Readonly<Record<string, string>>
   body: Uint8Array
 }

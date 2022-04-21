@@ -103,6 +103,10 @@ export interface IssuedInvocationView<
 
 export interface Batch<In extends unknown[]> {
   invocations: In
+
+  // execute<T extends BatchInvocationService<In>>(
+  //   service: T
+  // ): ExecuteBatchInvocation<In, T>
 }
 
 export interface IssuedBatchInvocationView<In extends IssuedInvocation[]> {
@@ -117,16 +121,29 @@ export type BatchInvocationService<In> = In extends [Invocation<infer C>, ...[]]
   ? InvocationService<C>
   : In extends [Invocation<infer C>, ...infer Rest]
   ? InvocationService<C> & BatchInvocationService<Rest>
-  : In
+  : {}
 
 export type ExecuteBatchInvocation<In, T> = In extends [
   Invocation<infer C>,
   ...[]
 ]
-  ? [ExecuteInvocation<C, T>]
+  ? [Awaited<ExecuteInvocation<C, T>>]
   : In extends [Invocation<infer C>, ...infer Rest]
-  ? [ExecuteInvocation<C, T>, ...ExecuteBatchInvocation<Rest, T>]
+  ? [Awaited<ExecuteInvocation<C, T>>, ...ExecuteBatchInvocation<Rest, T>]
   : never
+
+export type ServiceInvocations<T> = Invocation &
+  {
+    [Key in keyof T]: SubServiceInvocations<T[Key], Key & string>
+  }[keyof T]
+
+type SubServiceInvocations<T, Path extends string> = {
+  [Key in keyof T]: T[Key] extends (
+    input: Instruction<infer Capability>
+  ) => Await<Result<any, any>>
+    ? Invocation<Capability>
+    : SubServiceInvocations<Path, Key & string>
+}[keyof T]
 
 export interface InvocationView<
   Capability extends UCAN.Capability = UCAN.Capability
@@ -185,14 +202,32 @@ export type API<T> = T[keyof T]
 // }[keyof T]
 
 export interface ConnectionOptions {
-  readonly codec: Transport.Codec
+  readonly encoder: Transport.RequestEncoder
+  readonly decoder: Transport.ResponseDecoder
   readonly hasher?: MultihashHasher
 }
 
-export interface Connection<T> extends UCAN.Phantom<T> {}
+export interface Connection<T> extends UCAN.Phantom<T> {
+  readonly encoder: Transport.RequestEncoder
+  readonly decoder: Transport.ResponseDecoder
+}
 
-export interface ConnectionView<T> extends Connection<T>, Transport.Codec {}
+export interface ConnectionView<T> extends Connection<T> {}
 
+export interface Handler<T> extends UCAN.Phantom<T> {
+  readonly decoder: Transport.RequestDecoder
+  readonly encoder: Transport.ResponseEncoder
+  readonly service: T
+}
+export interface HandlerView<T> extends Handler<T> {
+  execute<I extends ServiceInvocations<T>[]>(
+    batch: Batch<I>
+  ): Await<ExecuteBatchInvocation<I, T>>
+
+  handle<I extends ServiceInvocations<T>[]>(
+    request: Transport.HTTPRequest<Batch<I>>
+  ): Await<Transport.HTTPResponse<ExecuteBatchInvocation<I, T>>>
+}
 export declare function connection<T>(): Connection<T>
 
 export declare function query<Service, Input extends QueryInput>(
@@ -262,7 +297,12 @@ type ExecuteSubQuery<Path extends string, In, Service> = {
     infer Input,
     infer Selector
   >
-    ? Service[Key] extends Handler<`${Path}/${Key}`, Input, infer T, infer X>
+    ? Service[Key] extends InstructionHandler<
+        `${Path}/${Key}`,
+        Input,
+        infer T,
+        infer X
+      >
       ? ExecuteSelect<Selector, T, X>
       : never
     : ExecuteSubQuery<`${Path}/${Key}`, In[Key], Service[Key]>
@@ -282,7 +322,7 @@ type QueryService<In extends QueryInput> = {
 
 type SubService<Path extends string, In> = {
   [Key in keyof In & string]: In[Key] extends Select<infer In, infer Selector>
-    ? Handler<`${Path}/${Key}`, In, Matches<Selector>>
+    ? InstructionHandler<`${Path}/${Key}`, In, Matches<Selector>>
     : SubService<`${Path}/${Key}`, In[Key]>
 }
 
@@ -292,7 +332,7 @@ export type Matches<S extends Selector> = S extends true
       [Key in keyof S]: S[Key] extends Selector ? Matches<S[Key]> : unknown
     }
 
-export type Handler<
+export type InstructionHandler<
   Ability extends UCAN.Ability = UCAN.Ability,
   In extends Input = Input,
   T = unknown,

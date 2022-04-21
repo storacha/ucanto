@@ -19,11 +19,8 @@ class Connection {
    */
   constructor(options) {
     this.options = options
-    this.encode = options.codec.encode
-    this.decode = options.codec.decode
+    this.encoder = options.encoder
+    this.decoder = options.decoder
     this.hasher = options.hasher
-  }
-  get codec() {
-    return this.options.codec
   }
 }

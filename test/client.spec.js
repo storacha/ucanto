@@ -224,7 +224,7 @@ describe("invoke", () => {
   it("encode inovocation", async () => {
     const { alice, web3Storage } = await importActors()
     /** @type {Client.ConnectionView<typeof service>} */
-    const connection = Client.connect({ codec: Transport.CAR })
+    const connection = Client.connect({ encoder: Transport.CAR })
 
     const car = await writeCAR([await writeCBOR({ hello: "world " })])
     const add = Client.invoke({
@@ -239,14 +239,14 @@ describe("invoke", () => {
     })
 
     const batch = Client.batch(add)
-    const payload = await connection.encode(batch)
+    const payload = await connection.encoder.encode(batch)
 
     assert.deepEqual(payload.headers, {
       "content-type": "application/car",
     })
     assert.ok(payload.body instanceof Uint8Array)
 
-    const request = await connection.decode(payload)
+    const request = await Transport.CAR.decode(payload)
 
     const [invocation] = request.invocations
     assert.equal(request.invocations.length, 1)
@@ -266,7 +266,7 @@ describe("invoke", () => {
     const car = await writeCAR([await writeCBOR({ hello: "world " })])
 
     /** @type {Client.ConnectionView<typeof service>} */
-    const connection = Client.connect({ codec: Transport.CAR })
+    const connection = Client.connect({ encoder: Transport.CAR })
 
     const proof = await Client.delegate({
       issuer: alice,
@@ -300,8 +300,8 @@ describe("invoke", () => {
       },
     })
 
-    const payload = await connection.encode(Client.batch(add, remove))
-    const request = await connection.decode(payload)
+    const payload = await connection.encoder.encode(Client.batch(add, remove))
+    const request = await Transport.CAR.decode(payload)
     {
       const [add, remove] = request.invocations
       assert.equal(request.invocations.length, 2)
