@@ -78,6 +78,7 @@ describe("server", () => {
     const connection = Client.connect({
       encoder: Transport.CAR,
       decoder: Transport.CBOR,
+      channel: Transport.HTTP.open(new URL("about:blank")),
     })
 
     const handler = Handler.handler({

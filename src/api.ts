@@ -198,15 +198,18 @@ export type API<T> = T[keyof T]
 //     : never
 // }[keyof T]
 
-export interface ConnectionOptions {
+export interface ConnectionOptions extends Transport.EncodeOptions {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
-  readonly hasher?: MultihashHasher
+  readonly channel: Transport.Channel
 }
 
 export interface Connection<T> extends UCAN.Phantom<T> {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
+  readonly channel: Transport.Channel
+
+  readonly hasher: MultihashHasher
 }
 
 export interface ConnectionView<T> extends Connection<T> {}

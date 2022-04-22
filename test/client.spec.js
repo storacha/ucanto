@@ -224,6 +224,7 @@ describe("invoke", () => {
     const { alice, web3Storage } = await importActors()
     /** @type {Client.ConnectionView<typeof service>} */
     const connection = Client.connect({
+      channel: Transport.HTTP.open(new URL("about:blank")),
       encoder: Transport.CAR,
       decoder: Transport.CBOR,
     })
@@ -269,6 +270,7 @@ describe("invoke", () => {
 
     /** @type {Client.ConnectionView<typeof service>} */
     const connection = Client.connect({
+      channel: Transport.HTTP.open(new URL("about:blank")),
       encoder: Transport.CAR,
       decoder: Transport.CBOR,
     })

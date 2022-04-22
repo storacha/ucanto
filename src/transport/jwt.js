@@ -1,14 +1,13 @@
 import * as API from "../api.js"
-import { isLink, pack, unpack } from "./packet.js"
+import { pack, unpack } from "./packet.js"
 import * as Transport from "./api.js"
 import * as UCAN from "@ipld/dag-ucan"
 import * as UTF8 from "../utf8.js"
-import { Invocation } from "../view.js"
 
 const HEADER_PREFIX = "x-auth-"
 
 const HEADERS = Object.freeze({
-  "content-type": "application/car",
+  "content-type": "application/json",
 })
 
 /**
@@ -47,9 +46,9 @@ export const encode = async batch => {
  */
 export const decode = async ({ headers, body }) => {
   const contentType = headers["content-type"] || headers["Content-Type"]
-  if (contentType !== "application/car") {
+  if (contentType !== "application/json") {
     throw TypeError(
-      `Only 'content-type: application/car' is supported, intsead got '${contentType}'`
+      `Only 'content-type: application/json' is supported, intsead got '${contentType}'`
     )
   }
   /** @type {Transport.Block[]} */

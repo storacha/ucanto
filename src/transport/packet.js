@@ -9,9 +9,10 @@ import { Invocation, Batch, Delegation } from "../view.js"
  *
  * @template {API.IssuedInvocation[]} Invocations
  * @param {API.Batch<Invocations>} batch
+ * @param {API.EncodingOptions} [options]
  * @returns {Promise<API.Transport.Packet<Invocations>>}
  */
-export const pack = async batch => {
+export const pack = async (batch, options) => {
   /** @type {API.Transport.Block[]} */
   const invocations = []
   const delegations = new Map()
@@ -30,7 +31,7 @@ export const pack = async batch => {
       proofs: links,
     })
 
-    const { cid, bytes } = await UCAN.write(ucan)
+    const { cid, bytes } = await UCAN.write(ucan, options)
     invocations.push({ cid, bytes, data: ucan })
   }
 

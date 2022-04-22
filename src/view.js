@@ -202,6 +202,7 @@ export class Batch {
    * @returns {API.ExecuteBatchInvocation<Invocations, Service>}
    */
   execute(connection) {
+    connection.encoder.encode
     throw new Error("Not implemented")
   }
 }

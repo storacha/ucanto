@@ -1,2 +1,3 @@
 export * as CAR from "./transport/car.js"
 export * as CBOR from "./transport/cbor.js"
+export * as HTTP from "./transport/channel.js"

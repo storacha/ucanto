@@ -1,4 +1,5 @@
 import * as API from "../api.js"
+import { sha256 } from "multiformats/hashes/sha2"
 
 /**
  * Creates a connection to a service.
@@ -21,6 +22,7 @@ class Connection {
     this.options = options
     this.encoder = options.encoder
     this.decoder = options.decoder
-    this.hasher = options.hasher
+    this.channel = options.channel
+    this.hasher = options.hasher || sha256
   }
 }

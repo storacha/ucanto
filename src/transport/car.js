@@ -13,10 +13,11 @@ const HEADERS = Object.freeze({
  *
  * @template {API.IssuedInvocation[]} I
  * @param {API.Batch<I>} bundle
+ * @param {Transport.EncodeOptions} options
  * @returns {Promise<Transport.HTTPRequest<API.Batch<I>>>}
  */
-export const encode = async bundle => {
-  const { invocations, delegations } = await pack(bundle)
+export const encode = async (bundle, options) => {
+  const { invocations, delegations } = await pack(bundle, options)
   const body = CAR.encode({ roots: invocations, blocks: delegations.values() })
 
   return {

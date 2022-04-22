@@ -1,11 +1,19 @@
 import type { Phantom, Await } from "../api.js"
 import * as API from "../api.js"
 import * as UCAN from "@ipld/dag-ucan"
-import type { sha256 } from "multiformats/hashes/sha2"
+
+export interface EncodeOptions {
+  readonly hasher?: UCAN.MultihashHasher
+}
+
+export interface Channel {
+  request<I, O>(request: HTTPRequest<I>): Promise<HTTPResponse<O>>
+}
 
 export interface RequestEncoder {
   encode<I extends API.IssuedInvocation[]>(
-    input: API.Batch<I>
+    input: API.Batch<I>,
+    options?: EncodeOptions
   ): Await<HTTPRequest<API.Batch<I>>>
 }
 
@@ -16,7 +24,7 @@ export interface RequestDecoder {
 }
 
 export interface ResponseEncoder {
-  encode<I>(result: I): Await<HTTPResponse<I>>
+  encode<I>(result: I, options?: EncodeOptions): Await<HTTPResponse<I>>
 }
 
 export interface ResponseDecoder {
