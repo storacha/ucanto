@@ -41,7 +41,7 @@ class TokenService {
           return unreachable`Record has unexpected state ${record}`
       }
     }
-    return ok(undefined)
+    return ok()
   }
   /**
    * @template {Record<string, API.Link>} Query
@@ -80,7 +80,7 @@ class TokenService {
         return unreachable`record has unknown state ${record}`
     }
 
-    return ok(undefined)
+    return ok()
   }
 
   async gc() {

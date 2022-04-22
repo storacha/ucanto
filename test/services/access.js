@@ -1,5 +1,5 @@
 import * as API from "../api.js"
-import { ok, error, the, unreachable } from "./util.js"
+import { ok, the } from "./util.js"
 
 /**
  * @returns {API.AccessProvider}
@@ -47,7 +47,14 @@ class AccessProvider {
    * @param {API.Link} proof
    */
   async unlink(member, group, proof) {
-    return unlink(this.model, member, group, proo)
+    return unlink(this.model, member, group, proof)
+  }
+
+  /**
+   * @param {API.DID} member
+   */
+  async resolve(member) {
+    return resolve(this.model, member)
   }
 }
 
@@ -59,15 +66,15 @@ class AccessProvider {
  */
 const unlink = (model, member, group, proof) => {
   if (model.has(group)) {
-    const account = findRoot(model, group)
+    const account = resolve(model, group)
     // if member belongs to the same account as a group we can remove
-    if (account === findRoot(model, member)) {
+    if (account === resolve(model, member)) {
       model.delete(member)
     }
+    return ok()
   } else {
-    error(new UnknownDIDError())
+    return new UnknownDIDError()
   }
-  return ok(undefined)
 }
 
 /**
@@ -78,55 +85,58 @@ const unlink = (model, member, group, proof) => {
  * @param {boolean} create
  */
 const associate = (accounts, from, to, proof, create) => {
-  const newFrom = !accounts.has(from)
-  const newTo = !accounts.has(to)
+  const fromAccount = resolve(accounts, from)
+  const toAccount = resolve(accounts, to)
   // So it could be that no did is linked with an account, one of the dids is
   // linked with an account or both dids are linked with accounts. If no did
   // is linked we just create a new account and link both did's with it. If
   // one of the dids is linked with the account we link other with the same
   // account if both are linked to a differnt accounts we create new joint
   // account and link all them together.
-  if (newFrom && newTo) {
+  if (!fromAccount && !toAccount) {
     if (create) {
-      const account = the(`did:ipld:${proof}`)
+      const account = the(`did:cid:${proof}`)
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
-      return error(new UnknownDIDError())
+      return new UnknownDIDError()
     }
-  } else if (newFrom) {
-    accounts.set(from, { account: findRoot(accounts, to), proof })
-  } else if (newTo) {
-    accounts.set(to, { account: findRoot(accounts, from), proof })
-  } else {
-    const fromAccount = findRoot(accounts, from)
-    const toAccount = findRoot(accounts, to)
-    if (fromAccount !== toAccount) {
-      const account = the(`did:ipld:${proof}`)
-      accounts.set(toAccount, { account, proof })
-      accounts.set(fromAccount, { account, proof })
-    }
+  } else if (toAccount) {
+    accounts.set(from, { account: toAccount, proof })
+  } else if (fromAccount) {
+    accounts.set(to, { account: fromAccount, proof })
+  } else if (fromAccount !== toAccount) {
+    const account = the(`did:cid:${proof}`)
+    accounts.set(toAccount, { account, proof })
+    accounts.set(fromAccount, { account, proof })
   }
 
-  return ok(undefined)
+  return ok()
 }
 
 /**
+ * Resolves memeber account. If member is not linked with any account returns
+ * `null` otherwise returns DID of the account which will have a
+ * `did:ipld:bafy...hash` form.
+ *
  * @param {Model} accounts
- * @param {API.DID} subject
+ * @param {API.DID} member
+ * @returns {API.DID|null}
  */
-const findRoot = (accounts, subject) => {
-  while (true) {
-    const account = accounts.get(subject)
-    if (account) {
-      subject = account.account
+const resolve = (accounts, member) => {
+  let group = accounts.get(member)
+  while (group) {
+    const parent = accounts.get(group.account)
+    if (parent) {
+      group = parent
     } else {
-      return subject
+      return group.account
     }
   }
+  return null
 }
 
-class UnknownDIDError extends Error {
+export class UnknownDIDError extends Error {
   get name() {
     return the("UnknownDIDError")
   }

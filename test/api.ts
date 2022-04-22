@@ -2,27 +2,40 @@ export * from "../src/api.js"
 import * as API from "../src/api.js"
 import type { DID, Link, Await } from "@ipld/dag-ucan"
 
-export type { DID, Link }
-export type Result<T extends unknown = unknown, X = Error> = Await<
-  API.Result<T, X>
->
+import type { Result as SyncResult } from "../src/api.js"
+export type { DID, Link, SyncResult }
+export type Result<
+  T extends unknown = unknown,
+  X extends Error = Error
+> = Await<API.Result<T, X>>
 
 export interface StorageProvider {
   /**
    * Service will call this once it verified the UCAN to associate link with a
    * given DID. Service is unaware if given `DID` is associated with some account
-   * or not, if it is not `StoreProvider` MUST return `UnauthorizedDIDError`.
+   * or not, if it is not `StoreProvider` MUST return `UnknownDIDError`.
+   *
+   * @param group - DID of the group to which car will be added, should be
+   * linked with some account.
+   * @param link - CID of the CAR that user wants to add.
+   * @param proof - CID of the invocation UCAN.
    */
   add(
     group: DID,
     link: Link,
     proof: Link
-  ): Result<AddStatus, UnauthorizedDIDError | QuotaViolationError>
+  ): Result<AddStatus, UnknownDIDError | QuotaViolationError>
+  /**
+   *
+   * @param group - DID we received an invocation request from.
+   * @param link - CID of the CAR that user wants to remove.
+   * @param proof - CID of the invocation UCAN.
+   */
   remove(
     group: DID,
     link: Link,
     proof: Link
-  ): Result<undefined, UnauthorizedDIDError | DoesNotHasError>
+  ): Result<undefined, UnknownDIDError | DoesNotHasError>
 }
 
 export interface TokenStore {
@@ -122,6 +135,14 @@ export interface AccessProvider {
    * and then associates child DID with it.
    */
   register(member: DID, group: DID, proof: Link): Result<undefined, never>
+
+  /**
+   * Resolves account DID associated with a given DID. Returns either account
+   * did (which will have form of `did:cid:bafy...hash`) or null if no account
+   * is associated.
+   * @param member
+   */
+  resolve(member: DID): Await<DID | null>
 }
 
 export interface AddStatus {
@@ -133,16 +154,20 @@ export interface AddStatus {
 }
 
 export interface ProofNotFoundError extends Error {
+  name: "ProofNotFoundError"
   cid: Link
 }
 
 export interface QuotaViolationError extends Error {
+  name: "QuotaViolationError"
   group: DID
   link: Link
 }
 
-export interface UnauthorizedDIDError extends Error {}
+export interface DoesNotHasError extends RangeError {
+  name: "DoesNotHasError"
+}
 
-export interface DoesNotHasError extends RangeError {}
-
-export interface UnknownDIDError extends RangeError {}
+export interface UnknownDIDError extends RangeError {
+  name: "UnknownDIDError"
+}

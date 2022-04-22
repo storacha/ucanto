@@ -171,9 +171,9 @@ export type ExecuteInvocation<
   ? Out
   : never
 
-export type Result<T, X = Error> =
+export type Result<T, E extends Error = Error> =
   | { ok: true; value: T }
-  | { ok: false; error: X }
+  | (E & { ok?: false })
 
 type StoreAdd = (
   input: Instruction<{ can: "store/add"; with: UCAN.DID; link: UCAN.Link }>
@@ -229,11 +229,6 @@ export interface HandlerView<T> extends Handler<T> {
   ): Await<Transport.HTTPResponse<ExecuteBatchInvocation<I, T>>>
 }
 export declare function connection<T>(): Connection<T>
-
-export declare function query<Service, Input extends QueryInput>(
-  config: Connection<Service>,
-  query: Input //: QueryResult<Service, Input>
-): Promise<Result<Input, Service>>
 
 export type Service = Record<
   string,
@@ -308,7 +303,7 @@ type ExecuteSubQuery<Path extends string, In, Service> = {
     : ExecuteSubQuery<`${Path}/${Key}`, In[Key], Service[Key]>
 }
 
-type ExecuteSelect<S extends Selector, T, X> = S extends true
+type ExecuteSelect<S extends Selector, T, X extends Error> = S extends true
   ? Result<T, X>
   : Result<ExecuteSubSelect<S, T>, X>
 
@@ -336,7 +331,7 @@ export type InstructionHandler<
   Ability extends UCAN.Ability = UCAN.Ability,
   In extends Input = Input,
   T = unknown,
-  X = unknown
+  X extends Error = Error
 > = (instruction: Instruction<In & { can: Ability }>) => Result<T, X>
 
 export declare function query<In extends QueryInput>(query: In): Query<In>

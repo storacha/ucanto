@@ -1,14 +1,11 @@
 /**
- * @template T
+ * @template [T=undefined]
  * @param {T} value
  */
-export const ok = value => ({ ok: the(true), value })
-
-/**
- * @template X
- * @param {X} error
- */
-export const error = error => ({ ok: the(false), error })
+export const ok = (value = /** @type {any} */ (undefined)) => ({
+  ok: the(true),
+  value,
+})
 
 /**
  * @template {string|boolean|number} T
