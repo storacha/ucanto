@@ -1,5 +1,5 @@
 import * as Transport from "./api.js"
-import { fetch } from "@web-std/fetch"
+import fetch from "@web-std/fetch"
 
 /**
  * @param {URL} url

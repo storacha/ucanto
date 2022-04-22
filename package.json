@@ -44,7 +44,7 @@
     "playwright-test": "^7.3.0",
     "conf": "^10.1.1",
     "ora": "^6.1.0",
-    "@web-std/fetch": "^4.0.0",
+    "@web-std/fetch": "^4.1.0",
     "@web-std/file": "^3.0.2",
     "c8": "^7.11.0",
     "nyc": "^15.1.0",
