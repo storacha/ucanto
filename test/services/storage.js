@@ -3,7 +3,7 @@ import { UnknownDIDError, create as Accounts } from "./access.js"
 import { the, ok, unreachable } from "./util.js"
 
 /**
- * @param {Model & { accounts: API.AccessProvider }} config
+ * @param {Partial<Model> & { accounts: API.AccessProvider }} config
  * @returns {API.StorageProvider}
  */
 export const create = config => new StoreProvider(config)
@@ -37,13 +37,16 @@ class StoreProvider {
  * @param {API.Link} link
  * @param {API.Link} proof
  */
-export const add = async ({ accounts, cars }, group, link, proof) => {
+export const add = async ({ accounts, groups, cars }, group, link, proof) => {
   const account = await accounts.resolve(group)
-  const result = account
-    ? ok({ status: cars.get(`${link}`) ? the("in-s3") : the("not-in-s3") })
-    : new UnknownDIDError(`DID ${group} has no account`)
-
-  return result
+  if (account) {
+    const links = groups.get(group) || new Map()
+    links.set(`${link}`, link)
+    groups.set(group, links)
+    return ok({ status: cars.get(`${link}`) ? the("in-s3") : the("not-in-s3") })
+  } else {
+    return new UnknownDIDError(`DID ${group} has no account`, group)
+  }
 }
 
 /**
@@ -52,12 +55,15 @@ export const add = async ({ accounts, cars }, group, link, proof) => {
  * @param {API.Link} link
  * @param {API.Link} proof
  */
-export const remove = async ({ accounts, cars }, group, link, proof) => {
+export const remove = async ({ accounts, groups }, group, link, proof) => {
   const account = await accounts.resolve(group)
   if (account) {
-    return cars.get(`${link}`) ? ok() : new DoesNotHasError(group, link)
+    const links = groups.get(group)
+    return links && links.get(`${link}`)
+      ? ok()
+      : new DoesNotHasError(group, link)
   } else {
-    return new UnknownDIDError(`DID ${group} has no account`)
+    return new UnknownDIDError(`DID ${group} has no account`, group)
   }
 }
 

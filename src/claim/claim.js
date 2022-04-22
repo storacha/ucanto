@@ -15,7 +15,7 @@ export const parse = (ucan, parser) => {
     if (result.ok) {
       capabilities.push(result.value)
     } else {
-      unkownCapabilities.push(result.error)
+      unkownCapabilities.push(result.capability)
     }
   }
 
@@ -54,7 +54,7 @@ export const access = (capability, ucan) => {
               from: ucan.ucan.audience,
               to: ucan.ucan.issuer,
               claim: capability,
-              escalates: claim.error,
+              escalates: claim,
             },
           },
         },

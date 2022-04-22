@@ -82,20 +82,32 @@ export const invoke = async (service, invocation) => {
   const method = /** @type {string} */ (path.pop())
   const handler = resolve(service, path)
   if (handler == null || typeof handler[method] !== "function") {
-    return {
-      ok: false,
-      error: new RangeError(
-        `service does not have a handler for ${capability.can}`
-      ),
-    }
+    return inlineError(
+      new RangeError(`service does not have a handler for ${capability.can}`)
+    )
   } else {
     try {
-      return await handler[method](invocation)
+      const result = await handler[method](invocation)
+      if (result.ok) {
+        return result
+      } else {
+        return inlineError(result)
+      }
     } catch (error) {
-      return { ok: false, error: error }
+      return inlineError(/** @type {Error} */ (error))
     }
   }
 }
+
+/**
+ * @param {Error} error
+ */
+const inlineError = ({ name, message, ...rest }) => ({
+  ...rest,
+  ok: false,
+  name,
+  message,
+})
 
 /**
  * @param {Record<string, any>} service

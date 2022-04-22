@@ -73,7 +73,7 @@ const unlink = (model, member, group, proof) => {
     }
     return ok()
   } else {
-    return new UnknownDIDError()
+    return new UnknownDIDError("Unknown DID", group)
   }
 }
 
@@ -99,7 +99,7 @@ const associate = (accounts, from, to, proof, create) => {
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
-      return new UnknownDIDError()
+      return new UnknownDIDError("Unkown did", to)
     }
   } else if (toAccount) {
     accounts.set(from, { account: toAccount, proof })
@@ -137,6 +137,14 @@ const resolve = (accounts, member) => {
 }
 
 export class UnknownDIDError extends Error {
+  /**
+   * @param {string} message
+   * @param {API.DID|null} [did]
+   */
+  constructor(message, did = null) {
+    super(message)
+    this.did = did
+  }
   get name() {
     return the("UnknownDIDError")
   }

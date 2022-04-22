@@ -1,6 +1,8 @@
 import * as UCAN from "@ipld/dag-ucan"
 import * as API from "./api.js"
 import * as Auth from "../src/claim/access.js"
+import * as Storage from "./services/storage.js"
+import * as Accounts from "./services/access.js"
 
 import { ok, the } from "./services/util.js"
 
@@ -39,14 +41,16 @@ import { ok, the } from "./services/util.js"
 
 class StorageService {
   /**
-   * @param {Model} config
+   * @param {Partial<Model>} [config]
    */
-  constructor(config) {
-    this.store = config.store
+  constructor({
+    store = Storage.create({ accounts: Accounts.create() }),
+  } = {}) {
+    this.store = store
   }
   /**
    * @param {API.Invocation<Add>} ucan
-   * @returns {Promise<API.Result<Added|Upload, API.UnknownDIDError|API.QuotaViolationError>|Auth.InvalidClaim>}
+   * @returns {Promise<API.Result<Added|Upload, API.UnknownDIDError|API.QuotaViolationError|Auth.InvalidClaim>>}
    */
   async add(ucan) {
     const { capability } = ucan
@@ -55,17 +59,19 @@ class StorageService {
       const result = await this.store.add(
         capability.with,
         capability.link,
-        /** @type {any} */ (ucan)
+        /** @type {any} */ (ucan).cid
       )
       if (result.ok) {
         if (result.value.status === "in-s3") {
           return ok({
-            ...capability,
+            with: capability.with,
+            link: capability.link,
             status: the("done"),
           })
         } else {
           return ok({
-            ...capability,
+            with: capability.with,
+            link: capability.link,
             status: the("upload"),
             url: "http://localhost:9090/",
           })
@@ -103,16 +109,18 @@ class StorageService {
 
 class Main {
   /**
-   * @param {Model} config
+   * @param {Partial<Model>} [config]
    */
   constructor(config) {
-    this.storage = new StorageService(config)
+    this.store = new StorageService(config)
   }
 }
 
 /**
  * @typedef {Main} Service
- * @param {Model} config
+ * @param {Partial<Model>} [config]
  * @returns {Service}
  */
 export const create = config => new Main(config)
+
+export { Storage, Accounts }

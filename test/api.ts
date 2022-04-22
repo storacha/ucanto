@@ -154,25 +154,26 @@ export interface AddStatus {
 }
 
 export interface ProofNotFoundError extends Error {
-  name: "ProofNotFoundError"
+  readonly name: "ProofNotFoundError"
   cid: Link
 }
 
 export interface QuotaViolationError extends Error {
-  name: "QuotaViolationError"
+  readonly name: "QuotaViolationError"
   group: DID
   link: Link
 }
 
 export interface DoesNotHasError extends RangeError {
-  name: "DoesNotHasError"
+  readonly name: "DoesNotHasError"
 }
 
 export interface UnknownDIDError extends RangeError {
-  name: "UnknownDIDError"
+  readonly name: "UnknownDIDError"
+  did: DID | null
 }
 
 export interface InvalidInvocation extends Error {
-  name: "InvalidInvocation"
+  readonly name: "InvalidInvocation"
   link: Link
 }

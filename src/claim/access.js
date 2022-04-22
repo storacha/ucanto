@@ -12,9 +12,9 @@ export const access = (capability, ucan) => {
   return ok({
     ok: the(true),
     capability: ucan.capabilities[0],
-    to: ucan.ucan.audience,
+    to: Object(ucan).audience,
     proof: {
-      by: ucan.ucan.issuer,
+      by: Object(ucan).issuer,
       granted: [],
       proof: null,
     },
