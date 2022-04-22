@@ -9,7 +9,7 @@ import { Invocation, Batch, Delegation } from "../view.js"
  *
  * @template {API.IssuedInvocation[]} Invocations
  * @param {API.Batch<Invocations>} batch
- * @param {API.EncodingOptions} [options]
+ * @param {API.Transport.EncodeOptions} [options]
  * @returns {Promise<API.Transport.Packet<Invocations>>}
  */
 export const pack = async (batch, options) => {
