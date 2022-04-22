@@ -5,7 +5,7 @@ import { sha256 } from "multiformats/hashes/sha2"
  * Creates a connection to a service.
  *
  * @template T
- * @param {API.ConnectionOptions} options
+ * @param {API.ConnectionOptions<T>} options
  * @returns {API.ConnectionView<T>}
  */
 export const connect = options => new Connection(options)
@@ -16,7 +16,7 @@ export const connect = options => new Connection(options)
  */
 class Connection {
   /**
-   * @param {API.ConnectionOptions} options
+   * @param {API.ConnectionOptions<T>} options
    */
   constructor(options) {
     this.options = options

@@ -6,8 +6,10 @@ export interface EncodeOptions {
   readonly hasher?: UCAN.MultihashHasher
 }
 
-export interface Channel {
-  request<I, O>(request: HTTPRequest<I>): Promise<HTTPResponse<O>>
+export interface Channel<T> extends Phantom<T> {
+  request<I extends API.ServiceInvocations<T>[]>(
+    request: HTTPRequest<API.Batch<I>>
+  ): Await<HTTPResponse<API.ExecuteBatchInvocation<I, T>>>
 }
 
 export interface RequestEncoder {
@@ -31,12 +33,12 @@ export interface ResponseDecoder {
   decode<I>(response: HTTPResponse<I>): Await<I>
 }
 
-export interface HTTPRequest<T> extends Phantom<T> {
+export interface HTTPRequest<T = unknown> extends Phantom<T> {
   headers: Readonly<Record<string, string>>
   body: Uint8Array
 }
 
-export interface HTTPResponse<T> extends Phantom<T> {
+export interface HTTPResponse<T = unknown> extends Phantom<T> {
   headers: Readonly<Record<string, string>>
   body: Uint8Array
 }

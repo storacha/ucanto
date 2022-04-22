@@ -3,7 +3,7 @@ import fetch from "@web-std/fetch"
 
 /**
  * @param {URL} url
- * @returns
+ * @returns {Transport.Channel}
  */
 export const open = url => new Channel({ url })
 class Channel {
@@ -15,9 +15,8 @@ class Channel {
     this.url = url
   }
   /**
-   * @template I, O>
-   * @param {Transport.HTTPRequest<I>} request
-   * @returns {Promise<Transport.HTTPResponse<O>>}
+   * @param {Transport.HTTPRequest} request
+   * @returns {Promise<Transport.HTTPResponse>}
    */
   async request({ headers, body }) {
     const response = await fetch(this.url.href, {

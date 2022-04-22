@@ -4,18 +4,18 @@ import * as API from "./api.js"
  * Creates a connection to a service.
  *
  * @template Service
- * @param {API.Handler<Service>} options
- * @returns {API.HandlerView<Service>}
+ * @param {API.Server<Service>} options
+ * @returns {API.ServerView<Service>}
  */
-export const handler = options => new Handler(options)
+export const create = options => new Server(options)
 
 /**
  * @template Service
- * @implements {API.HandlerView<Service>}
+ * @implements {API.ServerView<Service>}
  */
-class Handler {
+class Server {
   /**
-   * @param {API.Handler<Service>} options
+   * @param {API.Server<Service>} options
    */
   constructor(options) {
     this.options = options
@@ -37,7 +37,7 @@ class Handler {
    * @param {API.Transport.HTTPRequest<API.Batch<I>>} request
    * @returns {API.Await<API.Transport.HTTPResponse<API.ExecuteBatchInvocation<I, Service>>>}
    */
-  handle(request) {
+  request(request) {
     return handle(this, request)
   }
 }
@@ -45,7 +45,7 @@ class Handler {
 /**
  * @template Service
  * @template {API.ServiceInvocations<Service>[]} I
- * @param {API.HandlerView<Service>} handler
+ * @param {API.ServerView<Service>} handler
  * @param {API.Transport.HTTPRequest<API.Batch<I>>} request
  * @returns {Promise<API.Transport.HTTPResponse<API.ExecuteBatchInvocation<I, Service>>>}
  */
@@ -58,7 +58,7 @@ export const handle = async (handler, request) => {
 /**
  * @template Service
  * @template {API.ServiceInvocations<Service>[]} I
- * @param {API.HandlerView<Service>} handler
+ * @param {API.ServerView<Service>} handler
  * @param {API.Batch<I>} request
  * @returns {Promise<API.ExecuteBatchInvocation<I, Service>>}
  */

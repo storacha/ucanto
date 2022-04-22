@@ -1,7 +1,6 @@
 import { assert } from "chai"
 import * as Client from "../src/client.js"
-import * as Handler from "../src/listener.js"
-import * as Listener from "../src/listener.js"
+import * as Server from "../src/server.js"
 import * as Transport from "../src/transport.js"
 import * as CBOR from "@ipld/dag-cbor"
 import * as Packet from "../src/transport/packet.js"
@@ -14,19 +13,18 @@ describe("server", () => {
     const { alice, bob, web3Storage } = await importActors()
     const car = await writeCAR([await writeCBOR({ hello: "world " })])
 
-    /** @type {Client.ConnectionView<Service.Service>} */
-    const connection = Client.connect({
-      encoder: Transport.CAR,
-      decoder: Transport.CBOR,
-      channel: Transport.HTTP.open(new URL("about:blank")),
-    })
-
     const accounts = Service.Accounts.create()
 
-    const handler = Handler.handler({
+    const server = Server.create({
       service: Service.create({ store: Service.Storage.create({ accounts }) }),
       decoder: Transport.CAR,
       encoder: Transport.CBOR,
+    })
+
+    const connection = Client.connect({
+      encoder: Transport.CAR,
+      decoder: Transport.CBOR,
+      channel: server,
     })
 
     const proof = await Client.delegate({
@@ -61,9 +59,7 @@ describe("server", () => {
       },
     })
 
-    const payload = await connection.encoder.encode(Client.batch(add, remove))
-    const response = await handler.handle(payload)
-    const result = await connection.decoder.decode(response)
+    const result = await Client.batch(add, remove).execute(connection)
 
     assert.deepEqual(result, [
       {
@@ -83,9 +79,7 @@ describe("server", () => {
     await accounts.register(alice.did(), "did:email:alice@mail.com", car.cid)
     assert.notEqual(await accounts.resolve(alice.did()), null)
 
-    const result2 = await connection.decoder.decode(
-      await handler.handle(payload)
-    )
+    const result2 = await Client.batch(add, remove).execute(connection)
 
     assert.deepEqual(result2, [
       {

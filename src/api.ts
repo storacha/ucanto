@@ -87,15 +87,15 @@ export interface IssuedInvocationView<
 > extends IssuedInvocation<Capability> {
   execute<T extends InvocationService<Capability>>(
     service: Connection<T>
-  ): ExecuteInvocation<Capability, T>
+  ): Await<ExecuteInvocation<Capability, T>>
 }
 
 export interface Batch<In extends unknown[]> {
   invocations: In
+}
 
-  // execute<T extends BatchInvocationService<In>>(
-  //   service: T
-  // ): ExecuteBatchInvocation<In, T>
+export interface BatchView<In extends unknown[]> extends Batch<In> {
+  execute<T>(connection: Connection<T>): Await<ExecuteBatchInvocation<In, T>>
 }
 
 export interface IssuedBatchInvocationView<In extends IssuedInvocation[]> {
@@ -190,35 +190,31 @@ export type API<T> = T[keyof T]
 //     : never
 // }[keyof T]
 
-export interface ConnectionOptions extends Transport.EncodeOptions {
+export interface ConnectionOptions<T> extends Transport.EncodeOptions {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
-  readonly channel: Transport.Channel
+  readonly channel: Transport.Channel<T>
 }
 
 export interface Connection<T> extends UCAN.Phantom<T> {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
-  readonly channel: Transport.Channel
+  readonly channel: Transport.Channel<T>
 
   readonly hasher: MultihashHasher
 }
 
 export interface ConnectionView<T> extends Connection<T> {}
 
-export interface Handler<T> extends UCAN.Phantom<T> {
+export interface Server<T> extends UCAN.Phantom<T> {
   readonly decoder: Transport.RequestDecoder
   readonly encoder: Transport.ResponseEncoder
   readonly service: T
 }
-export interface HandlerView<T> extends Handler<T> {
+export interface ServerView<T> extends Server<T>, Transport.Channel<T> {
   execute<I extends ServiceInvocations<T>[]>(
     batch: Batch<I>
   ): Await<ExecuteBatchInvocation<I, T>>
-
-  handle<I extends ServiceInvocations<T>[]>(
-    request: Transport.HTTPRequest<Batch<I>>
-  ): Await<Transport.HTTPResponse<ExecuteBatchInvocation<I, T>>>
 }
 export declare function connection<T>(): Connection<T>
 
@@ -364,68 +360,70 @@ type U = Unpack<StoreAdd & StoreRemove>
 //   ],
 // })
 
-const add = invoke({
-  issuer: alice,
-  audience: bob,
-  capability: {
-    can: "store/add",
-    with: alice.did(),
-    link: car,
-  },
-})
-
-const remove = invoke({
-  issuer: alice,
-  audience: bob,
-  capability: {
-    can: "store/remove",
-    with: alice.did(),
-    link: car,
-  },
-})
-
-{
-  const [a, b] = batch(add, remove).execute(channel)
-}
-
-const result = add.execute(channel)
-if (result.ok) {
-  result.value
-}
-
 declare var host: Connection<{ store: Store }>
 
-const q = query({
-  store: {
-    add: select(
-      {
-        with: alice.did(),
-        link: car,
-        proofs: [],
-      },
-      {
-        link: true,
-      }
-    ),
-    remove: select({
+const demo = async () => {
+  const add = invoke({
+    issuer: alice,
+    audience: bob,
+    capability: {
+      can: "store/add",
       with: alice.did(),
       link: car,
-    }),
-  },
-})
+    },
+  })
 
-const r2 = q.queryService().store.remove({
-  issuer: alice,
-  audience: bob,
-  capability: {
-    can: "store/remove",
-    with: alice.did(),
-    link: car,
-  },
-})
+  const remove = invoke({
+    issuer: alice,
+    audience: bob,
+    capability: {
+      can: "store/remove",
+      with: alice.did(),
+      link: car,
+    },
+  })
 
-const r3 = q.execute(host)
-if (r3.store.add.ok) {
-  if (r3.store.add.value) {
+  {
+    const [a, b] = batch(add, remove).execute(channel)
+  }
+
+  const result = await add.execute(channel)
+  if (result.ok) {
+    result.value
+  }
+
+  const q = query({
+    store: {
+      add: select(
+        {
+          with: alice.did(),
+          link: car,
+          proofs: [],
+        },
+        {
+          link: true,
+        }
+      ),
+      remove: select({
+        with: alice.did(),
+        link: car,
+      }),
+    },
+  })
+
+  const r2 = q.queryService().store.remove({
+    issuer: alice,
+    audience: bob,
+    capability: {
+      can: "store/remove",
+      with: alice.did(),
+      link: car,
+    },
+  })
+
+  const r3 = q.execute(host)
+  if (r3.store.add.ok) {
+    if (r3.store.add.value) {
+    }
   }
 }

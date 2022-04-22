@@ -24,7 +24,7 @@
     "prepare": "tsc --build",
     "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 85 --functions 70 --lines 80 mocha test/**/*.spec.js",
-    "test": "mocha test/**/*.spec.js",
+    "test": "npm run test:node",
     "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080",
     "typecheck": "tsc --build"
   },

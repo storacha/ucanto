@@ -4,40 +4,6 @@ import * as DID from "@ipld/dag-ucan/src/did.js"
 import { exportDelegation } from "./transport/packet.js"
 
 /**
- * @template {API.Capability} Capability
- * @implements {API.IssuedInvocationView<Capability>}
- */
-export class IssuedInvocation {
-  /**
-   * @param {object} data
-   * @param {API.Issuer} data.issuer
-   * @param {API.Agent} data.audience
-   * @param {Capability} data.capability
-   * @param {API.Proof[]} [data.proofs]
-   */
-  constructor({ issuer, audience, capability, proofs = [] }) {
-    /** @readonly */
-    this.issuer = issuer
-    /** @readonly */
-    this.audience = audience
-    /** @readonly */
-    this.proofs = proofs
-
-    /** @readonly */
-    this.capability = capability
-  }
-
-  /**
-   * @template {API.InvocationService<Capability>} Service
-   * @param {API.Connection<Service>} connection
-   * @returns {API.ExecuteInvocation<Capability, Service>}
-   */
-  execute(connection) {
-    throw new Error("Not implemented")
-  }
-}
-
-/**
  * Represents view over the UCAN DAG. Can be instantiated with a `root` block
  * and a map of optional proof blocks.
  *
@@ -194,15 +160,5 @@ export class Batch {
   constructor(invocations, delegations = new Map()) {
     this.invocations = invocations
     this.delegations = delegations
-  }
-
-  /**
-   * @template {API.BatchInvocationService<Invocations>} Service
-   * @param {API.Connection<Service>} connection
-   * @returns {API.ExecuteBatchInvocation<Invocations, Service>}
-   */
-  execute(connection) {
-    connection.encoder.encode
-    throw new Error("Not implemented")
   }
 }
