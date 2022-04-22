@@ -1,12 +1,9 @@
-/**
- * @template [T=undefined]
- * @param {T} value
- */
-export const ok = (value = /** @type {any} */ (undefined)) => ({
-  ok: the(true),
-  value,
-})
+export const ok =
+  /** @type {<T, Args extends []|[T]>(...args:Args) => Args extends [T] ? {ok:true, value:T} : {ok:true, value:undefined}}} */ (
+    value => (value === undefined ? Ok : { ok: true, value })
+  )
 
+const Ok = { ok: true, value: undefined }
 /**
  * @template {string|boolean|number} T
  * @param {T} value

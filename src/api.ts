@@ -31,14 +31,6 @@ export type Proof<C extends UCAN.Capability = UCAN.Capability> =
   | UCAN.Proof<C>
   | Delegation<C>
 
-export interface Instruction<T extends UCAN.Capability = UCAN.Capability> {
-  issuer: UCAN.DID
-  audience: UCAN.DID
-  capabilities: [T]
-
-  proofs?: Proof[]
-}
-
 export interface Invocation<
   Capability extends UCAN.Capability = UCAN.Capability
 > {
@@ -136,7 +128,7 @@ export type ServiceInvocations<T> = Invocation &
 
 type SubServiceInvocations<T, Path extends string> = {
   [Key in keyof T]: T[Key] extends (
-    input: Instruction<infer Capability>
+    input: Invocation<infer Capability>
   ) => Await<Result<any, any>>
     ? Invocation<Capability>
     : SubServiceInvocations<Path, Key & string>
@@ -157,7 +149,7 @@ export type InvocationService<
   ? { [Key in Base]: InvocationService<Capability, Path> }
   : {
       [Key in Ability]: (
-        input: Instruction<Capability>
+        input: Invocation<Capability>
       ) => Await<Result<any, any>>
     }
 
@@ -167,7 +159,7 @@ export type ExecuteInvocation<
   Ability extends string = Capability["can"]
 > = Ability extends `${infer Base}/${infer Path}`
   ? ExecuteInvocation<Capability, T[Base], Path>
-  : T[Ability] extends (input: Instruction<Capability>) => infer Out
+  : T[Ability] extends (input: Invocation<Capability>) => infer Out
   ? Out
   : never
 
@@ -176,14 +168,14 @@ export type Result<T, E extends Error = Error> =
   | (E & { ok?: false })
 
 type StoreAdd = (
-  input: Instruction<{ can: "store/add"; with: UCAN.DID; link: UCAN.Link }>
+  input: Invocation<{ can: "store/add"; with: UCAN.DID; link: UCAN.Link }>
 ) => Result<
   | { status: "done"; with: UCAN.DID; link: UCAN.Link }
   | { status: "pending"; with: UCAN.DID; link: UCAN.Link; url: string }
 >
 
 type StoreRemove = (
-  input: Instruction<{ can: "store/remove"; with: UCAN.DID; link: UCAN.Link }>
+  input: Invocation<{ can: "store/remove"; with: UCAN.DID; link: UCAN.Link }>
 ) => Result<boolean>
 
 type Store = {
@@ -232,19 +224,10 @@ export declare function connection<T>(): Connection<T>
 
 export type Service = Record<
   string,
-  (input: Instruction<any>) => Promise<Result<any, any>>
+  (input: Invocation<any>) => Promise<Result<any, any>>
 >
 
 export type Await<T> = T | PromiseLike<T> | Promise<T>
-
-// export declare function invoke<In extends Invoke, T extends Service>(
-//   connection: Connection<T>,
-//   input: In
-// ): {
-//   [Key in keyof T]: T[Key] extends (input: ToInstruction<In>) => infer Out
-//     ? Out
-//     : never
-// }[keyof T]
 
 export declare function invoke<Capability extends UCAN.Capability>(
   input: IssuedInvocation<Capability>
@@ -332,7 +315,7 @@ export type InstructionHandler<
   In extends Input = Input,
   T = unknown,
   X extends Error = Error
-> = (instruction: Instruction<In & { can: Ability }>) => Result<T, X>
+> = (instruction: Invocation<In & { can: Ability }>) => Result<T, X>
 
 export declare function query<In extends QueryInput>(query: In): Query<In>
 
@@ -347,7 +330,7 @@ export declare function select<In extends Input, S extends Selector = true>(
   selector?: S
 ): S extends true ? Select<In, true> : Select<In, S>
 
-type Match<In extends Instruction, T extends Service> = {
+type Match<In extends Invocation, T extends Service> = {
   [Key in keyof T]: T[Key] extends (input: In) => infer Out ? Out : never
 }[keyof T]
 
@@ -432,15 +415,13 @@ const q = query({
 })
 
 const r2 = q.queryService().store.remove({
-  issuer: alice.did(),
-  audience: bob.did(),
-  capabilities: [
-    {
-      can: "store/remove",
-      with: alice.did(),
-      link: car,
-    },
-  ],
+  issuer: alice,
+  audience: bob,
+  capability: {
+    can: "store/remove",
+    with: alice.did(),
+    link: car,
+  },
 })
 
 const r3 = q.execute(host)

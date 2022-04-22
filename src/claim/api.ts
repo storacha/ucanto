@@ -1,8 +1,8 @@
-import * as UCAN from '@ipld/dag-ucan'
-import type { Result } from '../api.js'
+import * as UCAN from "@ipld/dag-ucan"
+import type { Result } from "../api.js"
 
 export type { Result }
-export * from '@ipld/dag-ucan'
+export * from "@ipld/dag-ucan"
 
 /**
  * Function checks if the claimed capability is met by given set of capaibilites. Note that function takes capability
@@ -24,7 +24,7 @@ export * from '@ipld/dag-ucan'
 export declare function claim<C extends CapabilityView>(
   capability: C,
   given: C[]
-): Result<IterableIterator<Evidence<C>>, EscalationError<C>[]>
+): Result<IterableIterator<Evidence<C>>, ClaimError<C>>
 
 /**
  * Represents succesfully parsed capability. Idea is that user could provide capability parser that UCAN
@@ -44,13 +44,17 @@ interface Evidence<C> {
   capaibilites: C[]
 }
 
+export interface ClaimError<C> extends Error {
+  esclacations: EscalationError<C>[]
+}
+
 /**
  * Represents capability escalation and contains non empty set of
  * contstraint violations.
  */
 
 export interface EscalationError<C> extends RangeError {
-  readonly name: 'EscalationError'
+  readonly name: "EscalationError"
 
   /**
    * claimed capability
@@ -72,7 +76,7 @@ export interface EscalationError<C> extends RangeError {
  * Represents specific constraint violation by the claimed capability.
  */
 export interface ConstraintViolationError<C> extends RangeError {
-  readonly name: 'ConstraintViolationError'
+  readonly name: "ConstraintViolationError"
   /**
    * Constraint that was violated.
    */
@@ -101,13 +105,14 @@ export interface Constraint<C> {
  * Access internally utilized `claim` function and walks up the proof chain until it is able to proove that claim is unfounded.
  */
 
-declare function access<C extends CapabilityView>(
+export declare function access<C extends CapabilityView>(
   capability: UCAN.Capability,
   ucan: UCANView<C>
 ): Result<Access<C>, InvalidClaim<C>>
 
-interface InvalidClaim<C> {
-  readonly name: 'InvalidClaim'
+export interface InvalidClaim<C extends CapabilityView = CapabilityView>
+  extends Error {
+  readonly name: "InvalidClaim"
   readonly claim: C
   readonly by: UCAN.DID
   // I know to is broken english but "from" is too ambigius as it can be "claim from gozala" or  "gozala claimed car from robox"
@@ -122,7 +127,7 @@ interface InvalidClaim<C> {
 }
 
 interface ExpriedClaim<C> {
-  readonly name: 'ExpriedClaim'
+  readonly name: "ExpriedClaim"
   readonly by: UCAN.DID
   readonly to: UCAN.DID
 
@@ -132,7 +137,7 @@ interface ExpriedClaim<C> {
 }
 
 interface InactiveClaim<C> {
-  readonly name: 'InactiveClaim'
+  readonly name: "InactiveClaim"
   readonly from: UCAN.DID
   readonly to: UCAN.DID
 
@@ -142,7 +147,7 @@ interface InactiveClaim<C> {
 }
 
 interface UnfundedClaim<C> {
-  readonly name: 'UnfundedClaim'
+  readonly name: "UnfundedClaim"
   readonly claim: C
 
   readonly by: UCAN.DID
@@ -150,7 +155,7 @@ interface UnfundedClaim<C> {
 }
 
 interface ViolatingClaim<C> {
-  readonly name: 'ViolatingClaim'
+  readonly name: "ViolatingClaim"
   readonly from: UCAN.DID
   readonly to: UCAN.DID
 
@@ -158,15 +163,15 @@ interface ViolatingClaim<C> {
   readonly escalates: EscalationError<C>[]
 }
 
-interface Access<C> {
+export interface Access<C> {
   ok: true
   capability: C
-  to: UCAN.DID
+  to: UCAN.DIDView
   proof: Authorization<C>
 }
 
-interface Authorization<C> {
-  by: UCAN.DID
+export interface Authorization<C> {
+  by: UCAN.DIDView
   granted: C[]
 
   proof: Authorization<C> | null
@@ -185,7 +190,11 @@ export interface CapabilityParser<C> {
   /**
    * Returns either succesfully parsed capability or unknown capability back
    */
-  parse(capability: UCAN.Capability): Result<C, UCAN.Capability>
+  parse(capability: UCAN.Capability): Result<C, UnknownCapability>
+}
+
+interface UnknownCapability extends Error {
+  capability: UCAN.Capability
 }
 
 type Time = number

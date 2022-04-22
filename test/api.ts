@@ -171,3 +171,8 @@ export interface DoesNotHasError extends RangeError {
 export interface UnknownDIDError extends RangeError {
   name: "UnknownDIDError"
 }
+
+export interface InvalidInvocation extends Error {
+  name: "InvalidInvocation"
+  link: Link
+}

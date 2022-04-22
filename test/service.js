@@ -1,5 +1,8 @@
 import * as UCAN from "@ipld/dag-ucan"
-import * as API from "../src/api.js"
+import * as API from "./api.js"
+import * as Auth from "../src/claim/access.js"
+
+import { ok, the } from "./services/util.js"
 
 /**
  * @typedef {{
@@ -27,57 +30,89 @@ import * as API from "../src/api.js"
  * link: UCAN.Link
  * }} Remove
  */
-const service = {
-  store: {
-    /**
-     * @param {API.Instruction<Add>} ucan
-     * @returns {Promise<API.Result<Added|Upload, string>>}
-     */
-    async add(ucan) {
-      const [action] = ucan.capabilities
-      if (action.with === ucan.issuer) {
-        // can do it
-      } else {
-      }
-      return {
-        ok: true,
-        value: {
-          with: action.with,
-          link: action.link,
-          status: "upload",
-          url: "http://localhost:9090/",
-        },
-      }
-    },
-    /**
-     * @param {API.Instruction<Remove>} ucan
-     * @returns {Promise<API.Result<Remove, string>>}
-     */
-    async remove(ucan) {
-      const [action] = ucan.capabilities
-      return {
-        ok: true,
-        value: action,
-      }
-    },
-  },
-}
 
+/**
+ * @typedef {{
+ * store: API.StorageProvider
+ * }} Model
+ */
 
-class CarSetProvider {
+class StorageService {
   /**
-   * Service will call this once it verified the UCAN to associate link with a
-   * given DID. Service is unaware if given `DID` is associated with some account
-   * or not, if it is not `StoreProvider` MUST return `UnauthorizedDIDError`.
+   * @param {Model} config
    */
-  add(
-    group: DID,
-    link: Link,
-    proof: Proof
-  ): Result<AddStatus, UnauthorizedDIDError | QuotaViolationError>
-  remove(
-    group: DID,
-    link: Link,
-    ucan: Proof
-  ): Result<undefined, UnauthorizedDIDError | DoesNotHasError>
+  constructor(config) {
+    this.store = config.store
+  }
+  /**
+   * @param {API.Invocation<Add>} ucan
+   * @returns {Promise<API.Result<Added|Upload, API.UnknownDIDError|API.QuotaViolationError>|Auth.InvalidClaim>}
+   */
+  async add(ucan) {
+    const { capability } = ucan
+    const auth = await Auth.access(capability, /** @type {any} */ (ucan))
+    if (auth.ok) {
+      const result = await this.store.add(
+        capability.with,
+        capability.link,
+        /** @type {any} */ (ucan)
+      )
+      if (result.ok) {
+        if (result.value.status === "in-s3") {
+          return ok({
+            ...capability,
+            status: the("done"),
+          })
+        } else {
+          return ok({
+            ...capability,
+            status: the("upload"),
+            url: "http://localhost:9090/",
+          })
+        }
+      } else {
+        return result
+      }
+    } else {
+      return auth
+    }
+  }
+  /**
+   * @param {API.Invocation<Remove>} ucan
+   * @returns {Promise<API.Result<Remove, API.UnknownDIDError|API.DoesNotHasError|Auth.InvalidClaim>>}
+   */
+  async remove(ucan) {
+    const { capability } = ucan
+    const access = await Auth.access(capability, /** @type {any} */ (ucan))
+    if (access.ok) {
+      const remove = await this.store.remove(
+        capability.with,
+        capability.link,
+        /** @type {any} */ (capability)
+      )
+      if (remove.ok) {
+        return ok(capability)
+      } else {
+        return remove
+      }
+    } else {
+      return access
+    }
+  }
 }
+
+class Main {
+  /**
+   * @param {Model} config
+   */
+  constructor(config) {
+    this.storage = new StorageService(config)
+  }
+}
+
+/**
+ * @typedef {Main} Service
+ * @param {Model} config
+ * @returns {Service}
+ */
+export const create = config => new Main(config)

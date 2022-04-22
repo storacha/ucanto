@@ -38,34 +38,34 @@ describe("server", () => {
   const service = {
     store: {
       /**
-       * @param {Client.Instruction<Add>} ucan
+       * @param {Client.Invocation<Add>} ucan
        * @returns {Promise<Client.Result<Added|Upload, string>>}
        */
       async add(ucan) {
-        const [action] = ucan.capabilities
-        if (action.with === ucan.issuer) {
+        const { capability } = ucan
+        if (capability.with === ucan.issuer.did()) {
           // can do it
         } else {
         }
         return {
           ok: true,
           value: {
-            with: action.with,
-            link: action.link,
+            with: capability.with,
+            link: capability.link,
             status: "upload",
             url: "http://localhost:9090/",
           },
         }
       },
       /**
-       * @param {Client.Instruction<Remove>} ucan
+       * @param {Client.Invocation<Remove>} ucan
        * @returns {Promise<Client.Result<Remove, string>>}
        */
       async remove(ucan) {
-        const [action] = ucan.capabilities
+        const { capability } = ucan
         return {
           ok: true,
-          value: action,
+          value: capability,
         }
       },
     },
