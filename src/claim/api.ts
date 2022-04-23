@@ -4,6 +4,21 @@ import type { Result } from "../api.js"
 export type { Result }
 export * from "@ipld/dag-ucan"
 
+export interface Capability extends UCAN.Capability, Record<string, unknown> {}
+
+/**
+ * Function attempt to access capability from given UCAN view (which in nutshell is UCAN with attached capability parser
+ * so it can map known capabilites to richer views and surface unknown capabilities). It returns is either successful result
+ * with capability view and authorization proof chain or an error describing reason why requested capability is invaid.
+ *
+ * Access internally utilized `claim` function and walks up the proof chain until it is able to proove that claim is unfounded.
+ */
+
+export declare function access<C extends CapabilityView>(
+  capability: UCAN.Capability,
+  ucan: UCANView<C>
+): Result<Access<C>, InvalidClaim<C>>
+
 /**
  * Function checks if the claimed capability is met by given set of capaibilites. Note that function takes capability
  * views as opposed to raw capaibilites (This implies that raw JSON capabilites were succesfully parsed into known
@@ -32,19 +47,37 @@ export declare function claim<C extends CapabilityView>(
  * recognize.
  */
 export interface CapabilityView<C extends UCAN.Capability = UCAN.Capability> {
+  ok: true
   capability: C
+}
+
+export interface UCANView<C extends CapabilityView> {
+  ucan: UCAN.View
+  capabilityParser: CapabilityParser<C>
+  capabilities: C[]
+
+  // capabilities that parser was unable to parse
+  unkownCapabilities: IterableIterator<UCAN.Capability>
+}
+
+export interface CapabilityParser<C extends CapabilityView> {
+  /**
+   * Returns either succesfully parsed capability or null for unknown capability
+   */
+  parse(capability: UCAN.Capability): C | null | undefined
 }
 
 /**
  * Proof of a claimed capability, contains claimed capability (view) and subset of available
  * capaibilites that satisfy it.
  */
-interface Evidence<C> {
+export interface Evidence<C> {
   claimed: C
-  capaibilites: C[]
+  capabilities: C[]
 }
 
 export interface ClaimError<C> extends Error {
+  name: "ClaimError"
   esclacations: EscalationError<C>[]
 }
 
@@ -53,7 +86,7 @@ export interface ClaimError<C> extends Error {
  * contstraint violations.
  */
 
-export interface EscalationError<C> extends RangeError {
+export interface EscalationError<C> extends Error {
   readonly name: "EscalationError"
 
   /**
@@ -69,13 +102,13 @@ export interface EscalationError<C> extends RangeError {
   /**
    * non empty set of constraint violations
    */
-  readonly violations: ConstraintViolationError<C>[]
+  readonly violations: IterableIterator<ConstraintViolationError<C>>
 }
 
 /**
  * Represents specific constraint violation by the claimed capability.
  */
-export interface ConstraintViolationError<C> extends RangeError {
+export interface ConstraintViolationError<C> {
   readonly name: "ConstraintViolationError"
   /**
    * Constraint that was violated.
@@ -96,19 +129,6 @@ export interface Constraint<C> {
   readonly name: string
   readonly value: unknown
 }
-
-/**
- * Function attempt to access capability from given UCAN view (which in nutshell is UCAN with attached capability parser
- * so it can map known capabilites to richer views and surface unknown capabilities). It returns is either successful result
- * with capability view and authorization proof chain or an error describing reason why requested capability is invaid.
- *
- * Access internally utilized `claim` function and walks up the proof chain until it is able to proove that claim is unfounded.
- */
-
-export declare function access<C extends CapabilityView>(
-  capability: UCAN.Capability,
-  ucan: UCANView<C>
-): Result<Access<C>, InvalidClaim<C>>
 
 export interface InvalidClaim<C extends CapabilityView = CapabilityView>
   extends Error {
@@ -177,23 +197,8 @@ export interface Authorization<C> {
   proof: Authorization<C> | null
 }
 
-export interface UCANView<C extends CapabilityView> {
-  ucan: UCAN.View
-  capabilityParser: CapabilityParser<C>
-  capabilities: C[]
-
-  // capabilities that parser was unable to parse
-  unkownCapabilities: IterableIterator<UCAN.Capability>
-}
-
-export interface CapabilityParser<C> {
-  /**
-   * Returns either succesfully parsed capability or unknown capability back
-   */
-  parse(capability: UCAN.Capability): Result<C, UnknownCapability>
-}
-
-interface UnknownCapability extends Error {
+export interface UnknownCapability {
+  ok: false
   capability: UCAN.Capability
 }
 

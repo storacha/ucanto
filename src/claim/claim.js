@@ -11,11 +11,11 @@ export const parse = (ucan, parser) => {
   const unkownCapabilities = []
   const capabilities = []
   for (const capability of ucan.capabilities) {
-    const result = parser.parse(capability)
-    if (result.ok) {
-      capabilities.push(result.value)
+    const known = parser.parse(capability)
+    if (known) {
+      capabilities.push(known)
     } else {
-      unkownCapabilities.push(result.capability)
+      unkownCapabilities.push(capability)
     }
   }
 

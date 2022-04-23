@@ -1,5 +1,5 @@
 import * as API from "../api.js"
-import { ok, the, unreachable } from "./util.js"
+import { ok, the, unreachable } from "../../src/util.js"
 
 /**
  * @param {Map<string, API.Found|API.RevokedError|API.ExpiredError>} store

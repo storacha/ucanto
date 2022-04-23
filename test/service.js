@@ -4,7 +4,7 @@ import * as Auth from "../src/claim/access.js"
 import * as Storage from "./services/storage.js"
 import * as Accounts from "./services/account.js"
 
-import { ok, the } from "./services/util.js"
+import { ok, the } from "../src/util.js"
 
 /**
  * @typedef {{

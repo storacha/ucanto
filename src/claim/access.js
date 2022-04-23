@@ -1,5 +1,5 @@
 import * as API from "./api.js"
-import { ok, the } from "../../test/services/util.js"
+import { ok, the } from "../util.js"
 export * from "./api.js"
 
 /**
