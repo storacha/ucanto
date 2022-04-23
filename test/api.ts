@@ -35,7 +35,7 @@ export interface StorageProvider {
     group: DID,
     link: Link,
     proof: Link
-  ): Result<undefined, UnknownDIDError | DoesNotHasError>
+  ): Result<null, UnknownDIDError | DoesNotHasError>
 }
 
 export interface TokenStore {
@@ -43,12 +43,12 @@ export interface TokenStore {
    * Revokes set of UCANS. CID corresponds to the link been revoked and
    * proof is the CID of the revocation.
    */
-  revoke(token: Link, revocation: TokenEntry): Result<void, Error>
+  revoke(token: Link, revocation: TokenEntry): Result<null, Error>
 
   /**
    * Adds bunch of proofs for later queries.
    */
-  insert(tokens: IterableIterator<TokenEntry>): Result<undefined, Error>
+  insert(tokens: IterableIterator<TokenEntry>): Result<null, Error>
 
   /**
    * You give it named set of CIDs and it gives you back named set of
@@ -121,20 +121,16 @@ export interface AccessProvider {
    * Associates a DID with another DID in the system. If there is no account
    * associated with a `to` DID will produce an error.
    */
-  link(member: DID, group: DID, proof: Link): Result<undefined, UnknownDIDError>
+  link(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
 
-  unlink(
-    member: DID,
-    group: DID,
-    proof: Link
-  ): Result<undefined, UnknownDIDError>
+  unlink(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
 
   /**
    * Associates new child DID with an accound of the parent DID. If there is no
    * account associated with a parent it creates account with `parent` did first
    * and then associates child DID with it.
    */
-  register(member: DID, group: DID, proof: Link): Result<undefined, never>
+  register(member: DID, group: DID, proof: Link): Result<null, never>
 
   /**
    * Resolves account DID associated with a given DID. Returns either account

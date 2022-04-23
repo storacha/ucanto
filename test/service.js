@@ -2,7 +2,7 @@ import * as UCAN from "@ipld/dag-ucan"
 import * as API from "./api.js"
 import * as Auth from "../src/claim/access.js"
 import * as Storage from "./services/storage.js"
-import * as Accounts from "./services/access.js"
+import * as Accounts from "./services/account.js"
 
 import { ok, the } from "./services/util.js"
 
@@ -35,7 +35,8 @@ import { ok, the } from "./services/util.js"
 
 /**
  * @typedef {{
- * store: API.StorageProvider
+ * accounts: API.AccessProvider
+ * storage: API.StorageProvider
  * }} Model
  */
 
@@ -44,9 +45,11 @@ class StorageService {
    * @param {Partial<Model>} [config]
    */
   constructor({
-    store = Storage.create({ accounts: Accounts.create() }),
+    accounts = Accounts.create(),
+    storage = Storage.create({ accounts }),
   } = {}) {
-    this.store = store
+    /** @private */
+    this.storage = storage
   }
   /**
    * @param {API.Invocation<Add>} ucan
@@ -56,7 +59,7 @@ class StorageService {
     const { capability } = ucan
     const auth = await Auth.access(capability, /** @type {any} */ (ucan))
     if (auth.ok) {
-      const result = await this.store.add(
+      const result = await this.storage.add(
         capability.with,
         capability.link,
         /** @type {any} */ (ucan).cid
@@ -91,10 +94,10 @@ class StorageService {
     const { capability } = ucan
     const access = await Auth.access(capability, /** @type {any} */ (ucan))
     if (access.ok) {
-      const remove = await this.store.remove(
+      const remove = await this.storage.remove(
         capability.with,
         capability.link,
-        /** @type {any} */ (capability)
+        /** @type {any} */ (ucan).link
       )
       if (remove.ok) {
         return ok(capability)
@@ -107,12 +110,51 @@ class StorageService {
   }
 }
 
+class AccessService {
+  /**
+   * @param {Partial<Model>} [config]
+   */
+  constructor({ accounts = Accounts.create() } = {}) {
+    this.accounts = accounts
+  }
+  /**
+   * @typedef {{
+   * can: "access/identify"
+   * with: UCAN.DID
+   * }} Identify
+   * @param {API.Invocation<Identify>} ucan
+   * @returns {Promise<API.Result<null, API.UnknownDIDError|Auth.InvalidClaim>>}
+   */
+  async identify(ucan) {
+    const { capability } = ucan
+    const access = await Auth.access(capability, /** @type {any} */ (ucan))
+    if (access.ok) {
+      if (capability.with.startsWith("did:email:")) {
+        return this.accounts.register(
+          ucan.issuer.did(),
+          capability.with,
+          /** @type {any} */ (ucan).link
+        )
+      } else {
+        return this.accounts.link(
+          ucan.issuer.did(),
+          capability.with,
+          /** @type {any} */ (ucan).link
+        )
+      }
+    } else {
+      return access
+    }
+  }
+}
+
 class Main {
   /**
    * @param {Partial<Model>} [config]
    */
-  constructor(config) {
-    this.store = new StorageService(config)
+  constructor({ accounts = Accounts.create(), ...config } = {}) {
+    this.access = new AccessService({ accounts })
+    this.store = new StorageService({ ...config, accounts })
   }
 }
 

@@ -2,10 +2,7 @@ import { assert } from "chai"
 import * as Client from "../src/client.js"
 import * as Server from "../src/server.js"
 import * as Transport from "../src/transport.js"
-import * as CBOR from "@ipld/dag-cbor"
-import * as Packet from "../src/transport/packet.js"
 import { writeCAR, writeCBOR, importActors } from "./util.js"
-import * as UCAN from "@ipld/dag-ucan"
 import * as Service from "./service.js"
 
 describe("server", () => {
@@ -13,10 +10,8 @@ describe("server", () => {
     const { alice, bob, web3Storage } = await importActors()
     const car = await writeCAR([await writeCBOR({ hello: "world " })])
 
-    const accounts = Service.Accounts.create()
-
     const server = Server.create({
-      service: Service.create({ store: Service.Storage.create({ accounts }) }),
+      service: Service.create(),
       decoder: Transport.CAR,
       encoder: Transport.CBOR,
     })
@@ -76,8 +71,21 @@ describe("server", () => {
       },
     ])
 
-    await accounts.register(alice.did(), "did:email:alice@mail.com", car.cid)
-    assert.notEqual(await accounts.resolve(alice.did()), null)
+    const identify = await Client.invoke({
+      issuer: alice,
+      audience: web3Storage,
+      capability: {
+        can: "access/identify",
+        with: "did:email:alice@mail.com",
+      },
+    })
+
+    const register = await identify.execute(connection)
+
+    assert.deepEqual(register, {
+      ok: true,
+      value: null,
+    })
 
     const result2 = await Client.batch(add, remove).execute(connection)
 

@@ -1,5 +1,5 @@
 import * as API from "../api.js"
-import { UnknownDIDError, create as Accounts } from "./access.js"
+import { UnknownDIDError, create as Accounts } from "./account.js"
 import { the, ok, unreachable } from "./util.js"
 
 /**

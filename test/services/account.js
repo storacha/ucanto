@@ -28,9 +28,12 @@ class AccessProvider {
    * @param {API.Link} proof
    */
   async register(from, to, proof) {
-    return /** @type {{ok:true, value:undefined}} */ (
-      associate(this.model, from, to, proof, true)
-    )
+    const result = associate(this.model, from, to, proof, true)
+    if (result.ok) {
+      return result
+    } else {
+      throw result
+    }
   }
   /**
    * @param {API.DID} from
@@ -83,6 +86,7 @@ const unlink = (model, member, group, proof) => {
  * @param {API.DID} to
  * @param {API.Link} proof
  * @param {boolean} create
+ * @returns {API.SyncResult<null, API.UnknownDIDError>}
  */
 const associate = (accounts, from, to, proof, create) => {
   const fromAccount = resolve(accounts, from)
