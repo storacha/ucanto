@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.0.3-beta](https://github.com/web3-storage/ucanto/compare/v0.0.2-beta...v0.0.3-beta) (2022-05-02)
+
+
+### Bug Fixes
+
+* exports ([#8](https://github.com/web3-storage/ucanto/issues/8)) ([d135627](https://github.com/web3-storage/ucanto/commit/d1356274225c9dfe38c305c12f4a80a822619430))
+
 ### [0.0.2-beta](https://github.com/web3-storage/ucanto/compare/v0.0.1-beta...v0.0.2-beta) (2022-04-24)
 
 
