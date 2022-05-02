@@ -84,6 +84,10 @@
     "./src/transport.js": {
       "types": "./dist/src/transport.d.ts",
       "import": "./src/transport.js"
+    },
+    "./src/transport/http.js": {
+      "types": "./dist/src/transport/http.d.ts",
+      "import": "./src/transport/http.js"
     }
   },
   "c8": {
