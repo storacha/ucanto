@@ -1,6 +1,7 @@
 import { assert } from "chai"
 import * as Client from "../src/client.js"
 import * as Transport from "../src/transport.js"
+import * as HTTP from "../src/transport/http.js"
 import * as Packet from "../src/transport/packet.js"
 import { writeCAR, writeCBOR, importActors } from "./util.js"
 import { isLink } from "../src/transport/packet.js"
@@ -167,7 +168,7 @@ describe("invoke", () => {
     const { alice, web3Storage } = await importActors()
     /** @type {Client.ConnectionView<Service.Service>} */
     const connection = Client.connect({
-      channel: Transport.HTTP.open(new URL("about:blank")),
+      channel: HTTP.open(new URL("about:blank")),
       encoder: Transport.CAR,
       decoder: Transport.CBOR,
     })
@@ -213,7 +214,7 @@ describe("invoke", () => {
 
     /** @type {Client.ConnectionView<Service.Service>} */
     const connection = Client.connect({
-      channel: Transport.HTTP.open(new URL("about:blank")),
+      channel: HTTP.open(new URL("about:blank")),
       encoder: Transport.CAR,
       decoder: Transport.CBOR,
     })
