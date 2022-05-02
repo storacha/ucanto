@@ -19,42 +19,60 @@
 Library defines service as a hierarchical mapping of (cap)[ability][] _(The `can` field of the capability)_ to a handler. To make it more clear lets define a simple service that provides `{ can: "intro/echo", with: "data:*" }` capability which echos back the message, and `{ can: "math/sqrt", with: "*", n: number }` capability which returns square root of a given number.
 
 ```ts
-import type {Invocation, Result} from "ucanto"
+import type { Invocation, Result } from "ucanto/src/client";
 
 type Echo = {
-  can: "intro/echo"
-  with: string
-}
+  can: "intro/echo";
+  with: `${string}:${string}`;
+};
 
-export const echo = async({ capability }: Invocation<Echo>):Promise<Result<string, InvalidInputError>> => {
-  const result = !capability.with.startsWith('data:')
-    ? new InvalidInputError(`Capability "intro/echo" expects with to be a data URL, instead got ${capability.with}`)
-    : !capability.with.startsWith('data:text/plain,')
-    ? new InvalidInputError(`Capability "intro/echo" currently only support data URLs in text/plain encoding`)
-    : { ok: true, value: capability.with.slice('data:text/plain,'.length) }
-      
-  return result
-}
+type Sqrt = {
+  can: "intro/echo";
+  with: `${string}:${string}`;
+  n: number;
+};
 
-export const sqrt = async({ capabality }:Invocation<Sqrt>):Promise<Result<number, InvalidInputError>> => {
-  const result = capability.n < 0
-    ? new InvalidInputError(`Capability "math/sqrt" only operates on positive numbers, instead got ${capability.can}`)
-    : { ok: true, Math.sqrt(capability.n) }
-}
+export const echo = async ({
+  capability,
+}: Invocation<Echo>): Promise<Result<string, InvalidInputError>> => {
+  const result = !capability.with.startsWith("data:")
+    ? new InvalidInputError(
+        `Capability "intro/echo" expects with to be a data URL, instead got ${capability.with}`
+      )
+    : !capability.with.startsWith("data:text/plain,")
+    ? new InvalidInputError(
+        `Capability "intro/echo" currently only support data URLs in text/plain encoding`
+      )
+    : {
+        ok: true as const,
+        value: capability.with.slice("data:text/plain,".length),
+      };
+  return result;
+};
 
+export const sqrt = async ({
+  capability,
+}: Invocation<Sqrt>): Promise<Result<number, InvalidInputError>> => {
+  const result =
+    capability.n < 0
+      ? new InvalidInputError(
+          `Capability "math/sqrt" only operates on positive numbers, instead got ${capability.can}`
+        )
+      : { ok: true as const, value: Math.sqrt(capability.n) };
+  return result;
+};
 
 // heirarchical mapping of (cap)abilities with corresponding handlers
 // 'intro/echo' -> .intro.echo
 // 'math/sqrt' -> .math.sqrt
 export const service = {
   intro: { echo },
-  math: { sqrt }
-}
-
+  math: { sqrt },
+};
 
 class InvalidInputError extends Error {
-  constructor(input) {
-     super(`"intro/echo" capability expects `with`  )
+  constructor(public input: string) {
+    super(`"intro/echo" capability expects \`with\``);
   }
 }
 ```
