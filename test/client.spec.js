@@ -6,6 +6,12 @@ import * as Packet from "../src/transport/packet.js"
 import { writeCAR, writeCBOR, importActors } from "./util.js"
 import { isLink } from "../src/transport/packet.js"
 import * as Service from "./service.js"
+import polyfillFetch from "@web-std/fetch";
+
+// in node <17.5.0, globalThis.fetch is not defined, so use polyfill
+// https://nodejs.org/api/globals.html#fetch
+const fetch =
+  typeof globalThis.fetch !== "undefined" ? globalThis.fetch : polyfillFetch;
 
 describe("delegation", () => {
   it("delegation can be transpcoded as ucan", async () => {
@@ -168,10 +174,10 @@ describe("invoke", () => {
     const { alice, web3Storage } = await importActors()
     /** @type {Client.ConnectionView<Service.Service>} */
     const connection = Client.connect({
-      channel: HTTP.open(new URL("about:blank")),
+      channel: HTTP.open({ url: new URL("about:blank"), fetch }),
       encoder: Transport.CAR,
       decoder: Transport.CBOR,
-    })
+    });
 
     const car = await writeCAR([await writeCBOR({ hello: "world " })])
     const add = Client.invoke({
@@ -214,10 +220,10 @@ describe("invoke", () => {
 
     /** @type {Client.ConnectionView<Service.Service>} */
     const connection = Client.connect({
-      channel: HTTP.open(new URL("about:blank")),
+      channel: HTTP.open({ url: new URL("about:blank"), fetch }),
       encoder: Transport.CAR,
       decoder: Transport.CBOR,
-    })
+    });
 
     const proof = await Client.delegate({
       issuer: alice,
