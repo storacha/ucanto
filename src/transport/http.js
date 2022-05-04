@@ -2,8 +2,9 @@ import * as Transport from "./api.js"
 import fetch from "@web-std/fetch"
 
 /**
+ * @template T
  * @param {URL} url
- * @returns {Transport.Channel}
+ * @returns {Transport.Channel<T>}
  */
 export const open = url => new Channel({ url })
 class Channel {
