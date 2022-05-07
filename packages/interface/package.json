@@ -1,0 +1,46 @@
+{
+  "name": "@ucanto/interface",
+  "description": "interface definitions for ucanto",
+  "version": "0.0.1-dev",
+  "types": "./src/api.ts",
+  "keywords": [
+    "UCAN",
+    "RPC",
+    "types"
+  ],
+  "files": [
+    "src",
+    "dist/src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/web3-storage/ucanto.git"
+  },
+  "homepage": "https://github.com/web3-storage/ucanto",
+  "scripts": {
+    "prepare": "tsc --build",
+    "typecheck": "tsc --build"
+  },
+  "dependencies": {
+    "@ipld/dag-ucan": "^1.2.4-beta"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/lib.d.ts",
+      "import": "./src/lib.js"
+    },
+    "./src/authority.js": {
+      "types": "./dist/src/authority.d.ts",
+      "import": "./src/authority.js"
+    },
+    "./src/client.js": {
+      "types": "./dist/src/transport.d.ts",
+      "import": "./src/transport.js"
+    }
+  },
+  "type": "module",
+  "license": "(Apache-2.0 AND MIT)"
+}
