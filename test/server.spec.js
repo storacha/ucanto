@@ -1,7 +1,7 @@
 import { assert } from "chai"
-import * as Client from "../src/client.js"
-import * as Server from "../src/server.js"
-import * as Transport from "../src/transport.js"
+import * as Client from "../packages/client/src/lib.js/index.js.js"
+import * as Server from "../packages/server/src/server.js/index.js"
+import * as Transport from "../packages/transport/transport.js/index.js"
 import { writeCAR, writeCBOR, importActors } from "./util.js"
 import * as Service from "./service.js"
 

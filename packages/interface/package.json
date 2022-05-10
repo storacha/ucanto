@@ -2,7 +2,8 @@
   "name": "@ucanto/interface",
   "description": "interface definitions for ucanto",
   "version": "0.0.1-dev",
-  "types": "./src/api.ts",
+  "types": "./dist/src/lib.d.ts",
+  "main": "./src/lib.js",
   "keywords": [
     "UCAN",
     "RPC",
@@ -22,7 +23,7 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^1.2.4-beta"
+    "@ipld/dag-ucan": "^1.4.1-beta"
   },
   "devDependencies": {
     "typescript": "^4.6.3"
@@ -32,13 +33,17 @@
       "types": "./dist/src/lib.d.ts",
       "import": "./src/lib.js"
     },
-    "./src/authority.js": {
+    "./authority": {
       "types": "./dist/src/authority.d.ts",
       "import": "./src/authority.js"
     },
-    "./src/client.js": {
+    "./client": {
       "types": "./dist/src/transport.d.ts",
       "import": "./src/transport.js"
+    },
+    "./server": {
+      "types": "./dist/src/server.d.ts",
+      "import": "./src/server.js"
     }
   },
   "type": "module",

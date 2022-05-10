@@ -101,5 +101,9 @@
   "include": [
     "src",
     "test"
+, "../core/src/view.js"  ],
+  "references": [
+    { "path": "../interface" },
+    { "path": "../core" }
   ]
 }

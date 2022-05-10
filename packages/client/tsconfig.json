@@ -101,5 +101,9 @@
   "include": [
     "src",
     "test"
+  ],
+  "references": [
+    { "path": "../interface"},
+    { "path": "../core"}
   ]
 }

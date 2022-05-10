@@ -1,5 +1,5 @@
 import { assert } from "chai"
-import * as Client from "../packages/client/src/lib.js/index.js.js"
+import * as Client from "../packages/client/src/client.js/index.js"
 import * as Transport from "../packages/transport/transport.js/index.js"
 import * as Packet from "../src/transport/packet.js"
 import { writeCAR, writeCBOR, importActors } from "./util.js"

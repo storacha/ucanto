@@ -1,4 +1,4 @@
-import * as CAR from "../src/car.js"
+import * as CAR from "../packages/transport/car/codec.js/index.js.js"
 import { sha256 } from "multiformats/hashes/sha2"
 import * as CBOR from "@ipld/dag-cbor"
 import * as UCAN from "@ipld/dag-ucan"

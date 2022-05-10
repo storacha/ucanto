@@ -1,27 +1,42 @@
 import * as UCAN from "@ipld/dag-ucan"
 import type * as Transport from "./transport.js"
 import type {
+  Authority,
+  SigningAuthority,
+  AuthorityParser,
+} from "./authority.js"
+import type {
   Phantom,
-  Block,
   Encoded,
   Link,
   Issuer,
   Capability,
-  Agent,
+  Identity,
+  Audience,
   MultihashHasher,
+  ByteView,
 } from "@ipld/dag-ucan"
+
+export type {
+  MultibaseEncoder,
+  MultibaseDecoder,
+} from "multiformats/bases/interface"
 
 export type {
   UCAN,
   Transport,
-  Phantom,
-  Block,
   Encoded,
   Link,
   Issuer,
+  Audience,
   Capability,
-  Agent,
+  Identity,
+  ByteView,
+  Phantom,
 }
+
+export * from "./transport.js"
+export * from "./authority.js"
 
 /**
  * Proof can either be a link to a delegated UCAN or a materialized `Delegation`
@@ -31,29 +46,9 @@ export type Proof<C extends UCAN.Capability = UCAN.Capability> =
   | UCAN.Proof<C>
   | Delegation<C>
 
-export interface InvocationOptions<
-  Capability extends UCAN.Capability = UCAN.Capability
-> {
-  issuer: Issuer
-  audience: UCAN.Agent
-  capability: Capability
-  proofs?: Proof[]
-}
-
-export interface Invocation<
-  Capability extends UCAN.Capability = UCAN.Capability
-> {
-  readonly issuer: UCAN.Agent
-  readonly audience: UCAN.Agent
-  readonly capability: Capability
-  readonly data: UCAN.View
-
-  proofs: Proof[]
-}
-
 export interface DelegationOptions<C extends Capability, A extends number> {
-  issuer: Issuer<A>
-  audience: Agent
+  issuer: SigningAuthority<A>
+  audience: Authority
   capabilities: C[]
   lifetimeInSeconds?: number
   expiration?: number
@@ -72,10 +67,10 @@ export interface Delegation<
   readonly cid: UCAN.Proof<Capability>
   readonly bytes: UCAN.ByteView<UCAN.UCAN<Capability>>
 
-  export(): IterableIterator<Transport.Block<Capability>>
+  export(): IterableIterator<Transport.Block>
 
-  issuer: Agent
-  audience: Agent
+  issuer: Authority
+  audience: Authority
   capabilities: Capability[]
   expiration?: number
   notBefore?: number
@@ -83,13 +78,32 @@ export interface Delegation<
   nonce?: string
 
   facts: UCAN.Fact[]
-  proofs: Proof<Capability>[]
+  proofs: Proof[]
+}
+
+export interface Invocation<
+  Capability extends UCAN.Capability = UCAN.Capability
+> extends Delegation {
+  readonly capability: Capability
+}
+
+export interface InvocationOptions<
+  Capability extends UCAN.Capability = UCAN.Capability
+> {
+  issuer: SigningAuthority
+  audience: Audience
+  capability: Capability
+  proofs?: Proof[]
 }
 
 export interface IssuedInvocation<
   Capability extends UCAN.Capability = UCAN.Capability
-> extends Invocation<Capability> {
-  issuer: UCAN.Issuer
+> {
+  readonly issuer: SigningAuthority
+  readonly audience: Audience
+  readonly capability: Capability
+
+  readonly proofs: Proof[]
 }
 
 export interface IssuedInvocationView<
@@ -196,10 +210,30 @@ export interface Connection<T> extends UCAN.Phantom<T> {
 export interface ConnectionView<T> extends Connection<T> {}
 
 export interface Server<T> extends UCAN.Phantom<T> {
+  /**
+   * Request decoder which is will be used by a server to decode HTTP Request
+   * into an invocation `Batch` that will be executed using a `service`.
+   */
   readonly decoder: Transport.RequestDecoder
+  /**
+   * Response encoder which will be used to encode batch of invocation results
+   * into an HTTP response that will be send back to the client that initiated
+   * request.
+   */
   readonly encoder: Transport.ResponseEncoder
+
+  /**
+   * Takes authority parser that can be used to turn an `UCAN.Identity`
+   * into `Ucanto.Authority`.
+   */
+  readonly authorizer: AuthorityParser
+
+  /**
+   * Actual service providing capability handlers.
+   */
   readonly service: T
 }
+
 export interface ServerView<T> extends Server<T>, Transport.Channel<T> {
   execute<I extends ServiceInvocations<T>[]>(
     batch: Batch<I>

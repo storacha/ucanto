@@ -1,6 +1,6 @@
 import * as UCAN from "@ipld/dag-ucan"
 import * as API from "./api.js"
-import * as Auth from "../src/claim/access.js"
+import * as Auth from "../packages/validator/src/access.js.js.js"
 import * as Storage from "./services/storage.js"
 import * as Accounts from "./services/account.js"
 
