@@ -5,6 +5,7 @@ import * as API from "@ucanto/interface"
 import * as StoreAdd from "./capability/store/add.js"
 import { alice, bob, mallory, service } from "./fixtures.js"
 import * as UCAN from "@ipld/dag-ucan"
+import { UnavailableProof } from "../src/error.js"
 
 test("self-issued invocation", async assert => {
   const invocation = await Client.delegate({
@@ -615,6 +616,81 @@ test("as:*", async assert => {
             delegation: my,
             issuer: alice.authority,
             audience: bob.authority,
+            capabilities: [
+              {
+                can: "store/add",
+                with: alice.did(),
+                link: null,
+              },
+            ],
+          },
+        ],
+      },
+    },
+  })
+})
+
+test("resolve proof", async assert => {
+  const delegation = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: bob,
+    audience: service.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+    proofs: [delegation.cid],
+  })
+
+  const result = await access(invocation, {
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    resolve: async link => {
+      if (link.toString() === delegation.cid.toString()) {
+        return delegation
+      } else {
+        return new UnavailableProof(link)
+      }
+    },
+    ...StoreAdd,
+  })
+
+  assert.like(result, {
+    capability: {
+      can: "store/add",
+      with: alice.did(),
+      link: null,
+    },
+    proof: {
+      delegation,
+      issuer: alice.authority,
+      audience: bob.authority,
+      capabilities: [
+        {
+          can: "store/add",
+          with: alice.did(),
+          link: null,
+        },
+      ],
+      proofs: {
+        ...[
+          {
+            delegation,
+            issuer: alice.authority,
+            audience: alice.authority,
             capabilities: [
               {
                 can: "store/add",
