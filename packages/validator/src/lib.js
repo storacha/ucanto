@@ -1,14 +1,16 @@
 import * as API from "./api.js"
 import * as UCAN from "@ipld/dag-ucan"
 import { isLink, Delegation } from "@ucanto/core"
+import { the } from "./util.js"
 import {
   UnavailableProof,
   InvalidClaim,
   InvalidAudience,
   InvalidEvidence,
   Expired,
-  NotYetValid,
+  NotValidBefore,
   InvalidSignature,
+  NoEvidence,
 } from "./error.js"
 
 const empty = () => []
@@ -155,7 +157,7 @@ const prove = async (issuer, capability, proof, config) => {
   } else {
     const parsed = parseCapabilities(delegation, config)
     if (parsed.capabilities.length === 0) {
-      return new InvalidClaim(capability, delegation, [])
+      return new NoEvidence(capability, delegation, parsed.errors)
     }
 
     const check = config.check(capability, parsed.capabilities)
@@ -229,6 +231,9 @@ class Authorization {
       delegation: { enumerable: false },
     })
   }
+  get name() {
+    return the("Authorization")
+  }
   get issuer() {
     return this.delegation.issuer
   }
@@ -246,45 +251,48 @@ class Authorization {
  *
  * @template {{}} C
  * @param {API.Delegation} delegation
- * @param {Required<API.ValidationOptions<C>>} parse
+ * @param {Required<API.ValidationOptions<C>>} config
  * @returns {{capabilities:C[], errors:API.InvalidCapability[]}}
  */
-const parseCapabilities = (delegation, { parse, my }) => {
+const parseCapabilities = (delegation, config) => {
   const capabilities = []
   const errors = []
-  const issuer = delegation.issuer.did()
-  for (const capability of delegation.capabilities) {
-    const result = parse(capability)
+  for (const capability of iterateCapabilities(delegation, config)) {
+    const result = config.parse(capability)
     if (result.error) {
-      const can = capability.can
-      const resource =
-        parseMyURI(capability.with, issuer) || parseAsURI(capability.with)
-
-      const delegatedCapabilities = resource ? my(resource.did) : []
-      const protocol = resource ? resource.protocol : ""
-
-      for (const capability of delegatedCapabilities) {
-        const matches =
-          capability.with.startsWith(protocol) ||
-          capability.can === can ||
-          can === ALL
-
-        if (matches) {
-          const result = parse(capability)
-          if (result.error) {
-            errors.push(result.error)
-          } else {
-            capabilities.push(result)
-          }
-        }
-      }
+      errors.push(result.error)
     } else {
-      result
       capabilities.push(result)
     }
   }
 
   return { capabilities, errors }
+}
+
+/**
+ * @template {{}} C
+ * @param {API.Delegation} delegation
+ * @param {Required<API.ValidationOptions<C>>} options
+ */
+function* iterateCapabilities({ issuer, capabilities }, { my }) {
+  const did = issuer.did()
+  for (const capability of capabilities) {
+    const uri = parseMyURI(capability.with, did) || parseAsURI(capability.with)
+    const { can } = capability
+
+    if (uri) {
+      for (const capability of my(uri.did)) {
+        if (
+          capability.with.startsWith(uri.protocol) &&
+          (can === ALL || capability.can === can)
+        ) {
+          yield capability
+        }
+      }
+    } else {
+      yield capability
+    }
+  }
 }
 
 const AS_PATTERN = /as:(.*):(.*)/
@@ -324,7 +332,7 @@ const validate = async delegation => {
       /** @type {API.Delegation & {expiration: number}} */ (delegation)
     )
   } else if (UCAN.isTooEarly(delegation.data)) {
-    return new NotYetValid(
+    return new NotValidBefore(
       /** @type {API.Delegation & {notBefore: number}} */ (delegation)
     )
   } else {
@@ -363,5 +371,8 @@ class Access {
     Object.defineProperties(this, {
       delegation: { enumerable: false },
     })
+  }
+  get name() {
+    return the("Access")
   }
 }

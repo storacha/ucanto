@@ -129,6 +129,35 @@ export class InvalidClaim extends Failure {
 
 /**
  * @template C
+ * @implements {API.InvalidClaim<C>}
+ */
+export class NoEvidence extends Failure {
+  /**
+   * @param {C} capability
+   * @param {API.Delegation} delegation
+   * @param {API.InvalidCapability[]} errors
+   * @param {API.ProofError<C>[]} proofs
+   */
+  constructor(capability, delegation, errors, proofs = []) {
+    super()
+    this.name = the("InvalidClaim")
+    this.capability = capability
+    this.delegation = delegation
+    this.errors = errors
+    this.proofs = proofs
+  }
+  describe() {
+    const capability = format(this.capability)
+
+    return [
+      `Does not delegate matching capability ${capability}`,
+      ...this.errors.map(error => li(`${error.message}`)),
+    ].join("\n")
+  }
+}
+
+/**
+ * @template C
  * @implements {API.InvalidEvidence<C>}
  */
 export class InvalidEvidence extends Failure {
@@ -163,12 +192,16 @@ export class InvalidSignature extends Failure {
   constructor(delegation) {
     super()
     this.name = the("InvalidSignature")
-    this.issuer = delegation.issuer
-    this.audience = delegation.audience
-    this.delegation = delegation.data
+    this.delegation = delegation
+  }
+  get issuer() {
+    return this.delegation.issuer
+  }
+  get audience() {
+    return this.delegation.audience
   }
   describe() {
-    return [`Proof has an invalid signature`].join("\n")
+    return [`Signature is invalid`].join("\n")
   }
 }
 
@@ -254,24 +287,24 @@ export class Expired extends Failure {
     this.delegation = delegation
   }
   describe() {
-    return `Token has expired ${this.delegation.expiration}`
+    return `Expired on ${new Date(this.delegation.expiration * 1000)}`
   }
   get expiredAt() {
     return this.delegation.expiration
   }
 }
 
-export class NotYetValid extends Failure {
+export class NotValidBefore extends Failure {
   /**
    * @param {API.Delegation & { notBefore: number }} delegation
    */
   constructor(delegation) {
     super()
-    this.name = the("NotYetValid")
+    this.name = the("NotValidBefore")
     this.delegation = delegation
   }
   describe() {
-    return `Token is not valid untill ${this.delegation.notBefore}`
+    return `Not valid before ${new Date(this.delegation.notBefore * 1000)}`
   }
   get validAt() {
     return this.delegation.notBefore
@@ -325,9 +358,9 @@ const format = (capability, space) =>
  * @param {string} message
  */
 const indent = (message, indent = "  ") =>
-  message.split("\n").join(`\n${indent}`)
+  `${indent}${message.split("\n").join(`\n${indent}`)}`
 
 /**
  * @param {string} message
  */
-const li = message => `  - ${message}`
+const li = message => indent(`- ${message}`)

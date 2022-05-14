@@ -18,7 +18,7 @@ export type DenyAccess<C> = InvalidProof | InvalidCapability | InvalidClaim<C>
 /**
  * Error produces by invalid proof
  */
-export type InvalidProof = Expired | NotYetValid | InvalidSignature
+export type InvalidProof = Expired | NotValidBefore | InvalidSignature
 
 /**
  * Error produced when parsing capabilities
@@ -41,12 +41,14 @@ export interface InvalidAudience extends Error {
 }
 
 export interface Expired extends Error {
+  readonly name: "Expired"
   readonly error: this
   readonly delegation: Delegation
   readonly expiredAt: number
 }
 
-export interface NotYetValid extends Error {
+export interface NotValidBefore extends Error {
+  readonly name: "NotValidBefore"
   readonly delegation: Delegation
   readonly validAt: number
 
@@ -233,7 +235,7 @@ export interface InvalidSignature extends Error {
   readonly name: "InvalidSignature"
   readonly issuer: Identity
   readonly audience: Identity
-  readonly delegation: UCAN.View
+  readonly delegation: Delegation
 }
 
 export interface UnavailableProof extends Error {
