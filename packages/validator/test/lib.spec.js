@@ -303,13 +303,13 @@ test("invalid claim / invalid signature", async assert => {
   })
 })
 
-test("invalid claim / invalid capability", async assert => {
+test("invalid claim / unknown capability", async assert => {
   const delegation = await Client.delegate({
     issuer: alice,
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add~typo",
+        can: "store/pin",
         with: alice.did(),
       },
     ],
@@ -339,7 +339,129 @@ test("invalid claim / invalid capability", async assert => {
     message: `Claimed capability {"can":"store/add","with":"${alice.did()}","link":null} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - prf:0 Does not delegate matching capability {"can":"store/add","with":"${alice.did()}","link":null}
-    - Encountered unkown capability: {"with":"${alice.did()}","can":"store/add~typo"}`,
+    - Encountered unkown capability: {"can":"store/pin","with":"${alice.did()}"}`,
+  })
+})
+
+test("invalid claim / malformed capability", async assert => {
+  const badDID = `bib:${alice.did().slice(4)}`
+  const delegation = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: /** @type {UCAN.Resource}*/ (badDID),
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: bob,
+    audience: service.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+    proofs: [delegation],
+  })
+
+  const result = await access(invocation, {
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    ...StoreAdd,
+  })
+
+  assert.like(result, {
+    name: "InvalidClaim",
+    message: `Claimed capability {"can":"store/add","with":"${alice.did()}","link":null} is invalid
+  - Capability can not be (self) issued by '${bob.did()}'
+  - prf:0 Does not delegate matching capability {"can":"store/add","with":"${alice.did()}","link":null}
+    - Encountered malformed capability: {"can":"store/add","with":"${badDID}"}
+      - Expected 'with' to be 'did:' URI instead got, '${badDID}'`,
+  })
+})
+
+test("invalid claim / unavailable proof", async assert => {
+  const delegation = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: bob,
+    audience: service.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+    proofs: [delegation.cid],
+  })
+
+  const result = await access(invocation, {
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    ...StoreAdd,
+  })
+
+  assert.like(result, {
+    name: "InvalidClaim",
+    message: `Claimed capability {"can":"store/add","with":"${alice.did()}","link":null} is invalid
+  - Capability can not be (self) issued by '${bob.did()}'
+  - prf:0 Linked proof '${
+    delegation.cid
+  }' is not included nor available locally`,
+  })
+})
+
+test("invalid claim / invalid audience", async assert => {
+  const delegation = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: mallory,
+    audience: service.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+    proofs: [delegation],
+  })
+
+  const result = await access(invocation, {
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    ...StoreAdd,
+  })
+
+  assert.like(result, {
+    name: "InvalidClaim",
+    message: `Claimed capability {"can":"store/add","with":"${alice.did()}","link":null} is invalid
+  - Capability can not be (self) issued by '${mallory.did()}'
+  - prf:0 Delegates to '${bob.did()}' instead of '${mallory.did()}'`,
   })
 })
 

@@ -3,7 +3,11 @@ import { CID } from "multiformats/cid"
 import * as API from "../../../src/api.js"
 import { solve as checkWith } from "../../../src/solver.js"
 import * as UCAN from "@ipld/dag-ucan"
-import { UnknownCapability } from "../../../src/error.js"
+import {
+  MalformedCapability,
+  UnknownCapability,
+  Failure,
+} from "../../../src/error.js"
 export const can = the("store/add")
 
 /**
@@ -24,15 +28,21 @@ export const parse = source => {
     ...capability
   } = /** @type {API.Capability} */ (source)
 
-  if (capability.can === can && did.startsWith("did:")) {
-    return {
-      ...capability,
-      can,
-      with: /** @type {API.DID} */ (did),
-      link: CID.asCID(link),
+  if (capability.can === can) {
+    if (did.startsWith("did:")) {
+      return {
+        ...capability,
+        can,
+        with: /** @type {API.DID} */ (did),
+        link: CID.asCID(link),
+      }
+    } else {
+      return new MalformedCapability(source, [
+        new Failure(`Expected 'with' to be 'did:' URI instead got, '${did}'`),
+      ])
     }
   } else {
-    return new UnknownCapability({ with: did, link, ...capability })
+    return new UnknownCapability(source)
   }
 }
 

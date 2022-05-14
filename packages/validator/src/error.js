@@ -3,10 +3,7 @@ import { the } from "./util.js"
 import { CID } from "multiformats"
 import * as Digest from "multiformats/hashes/digest"
 
-class Failure extends Error {
-  constructor() {
-    super()
-  }
+export class Failure extends Error {
   get error() {
     return this
   }
@@ -217,8 +214,8 @@ export class UnavailableProof extends Failure {
     this.name = the("UnavailableProof")
     this.link = link
   }
-  desciribe() {
-    return `Proof with CID ${this.link} is not included nor available locally`
+  describe() {
+    return `Linked proof '${this.link}' is not included nor available locally`
   }
 }
 
@@ -237,7 +234,7 @@ export class InvalidAudience extends Failure {
     this.delegation = delegation
   }
   describe() {
-    return `Capabilities are delegated to '${this.delegation.audience.did()}' instead of '${this.audience.did()}'`
+    return `Delegates to '${this.delegation.audience.did()}' instead of '${this.audience.did()}'`
   }
 }
 
@@ -249,7 +246,7 @@ export class MalformedCapability extends Failure {
    * @param {API.Capability} capability
    * @param {Failure[]} problems
    */
-  constructor(capability, problems) {
+  constructor(capability, problems = []) {
     super()
     this.name = the("MalformedCapability")
     this.capability = capability
@@ -257,7 +254,7 @@ export class MalformedCapability extends Failure {
   }
   describe() {
     return [
-      `Encountered malformed capability`,
+      `Encountered malformed capability: ${format(this.capability)}`,
       ...this.problems.map($ => li($.message)),
     ].join("\n")
   }
