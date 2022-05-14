@@ -1,5 +1,5 @@
 import * as API from "../api.js"
-import { ok, the } from "../../src/util.js"
+import { ok, the } from "../../packages/validator/src/util.js"
 
 /**
  * @returns {API.AccessProvider}

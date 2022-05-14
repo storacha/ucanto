@@ -3,6 +3,7 @@ import { CID } from "multiformats/cid"
 import * as API from "../../../src/api.js"
 import { solve as checkWith } from "../../../src/solver.js"
 import * as UCAN from "@ipld/dag-ucan"
+import { UnknownCapability } from "../../../src/error.js"
 export const can = the("store/add")
 
 /**
@@ -14,7 +15,7 @@ export const can = the("store/add")
 
 /**
  * @param {UCAN.Capability} source
- * @returns {API.Result<Add>}
+ * @returns {API.Result<Add, API.UnknownCapability>}
  */
 export const parse = source => {
   const {
@@ -24,16 +25,14 @@ export const parse = source => {
   } = /** @type {API.Capability} */ (source)
 
   if (capability.can === can && did.startsWith("did:")) {
-    return ok({
+    return {
       ...capability,
       can,
       with: /** @type {API.DID} */ (did),
       link: CID.asCID(link),
-    })
+    }
   } else {
-    return new Error(
-      `Unknown capability {can: "${capability.can}" with: "${did}"}`
-    )
+    return new UnknownCapability({ with: did, link, ...capability })
   }
 }
 
@@ -64,7 +63,7 @@ export const validate = (claim, capability) => {
 /**
  * @param {Add} claim
  * @param {Add[]} capabilities
- * @returns {API.Result<IterableIterator<API.Evidence<Add>>, API.ClaimError<Add>>}
+ * @returns {API.Result<IterableIterator<API.Evidence<Add>>, API.EscalatedClaim<Add>>}
  */
 export const check = (claim, capabilities) =>
   checkWith(claim, capabilities, {

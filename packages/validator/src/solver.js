@@ -1,5 +1,10 @@
 import * as API from "./api.js"
-import { ok, the, unreachable } from "./util.js"
+import { the, unreachable } from "./util.js"
+import {
+  EscalatedClaim,
+  EscalationError,
+  ConstraintViolationError,
+} from "./error.js"
 
 /**
  * Goes over provided capabilities and attempts to find the one that satisfies
@@ -23,7 +28,7 @@ export const analyze = function* (claim, capabilities, config) {
       const match = /** @type {T} */ (capability)
       const violations = config.check(claim, match)
       if (violations.length === 0) {
-        yield ok(the([match]))
+        yield the([match])
       } else {
         yield escaltes(violations, claim, match)
       }
@@ -57,10 +62,10 @@ export const solve = function (claim, capabilities, config) {
 function* categorize(analysis) {
   const esclacations = []
   for (const result of analysis) {
-    if (result.ok) {
-      yield result.value
-    } else {
+    if (result.error) {
       esclacations.push(result)
+    } else {
+      yield result
     }
   }
   return esclacations
@@ -69,14 +74,14 @@ function* categorize(analysis) {
 /**
  * @template T
  * @param {Generator<API.Evidence<T>, API.EscalationError<T>[]>} evidence
- * @returns {API.Result<IterableIterator<API.Evidence<T>>, API.ClaimError<T>>}
+ * @returns {API.Result<IterableIterator<API.Evidence<T>>, API.EscalatedClaim<T>>}
  */
 export const check = evidence => {
   const head = evidence.next()
   if (head.done) {
-    return new ClaimError(head.value)
+    return new EscalatedClaim(head.value)
   } else {
-    return ok(prepend(head.value, evidence))
+    return prepend(head.value, evidence)
   }
 }
 
@@ -85,7 +90,7 @@ export const check = evidence => {
  * @param {T} claim
  * @param {T[]} capabilities
  * @param {(claim:T, capabilities:T[]) => Generator<T, API.EscalationError<T>[]>} checker
- * @returns {API.Result<IterableIterator<API.Evidence<T>>, API.ClaimError<T>>}
+ * @returns {API.Result<IterableIterator<API.Evidence<T>>, API.EscalatedClaim<T>>}
  */
 export const checkWith = (claim, capabilities, checker) =>
   check(map(checker(claim, capabilities), proof => evidence(claim, proof)))
@@ -153,7 +158,7 @@ export const escaltes = (constraints, claim, capability) => {
   for (const constraint of constraints) {
     violations.push(violates(constraint, claim, capability))
   }
-  return new EscalationError(claim, capability, violations.values())
+  return new EscalationError(claim, capability, violations)
 }
 
 /**
@@ -182,58 +187,5 @@ class Constraint {
     this.capability = capability
     this.name = name
     this.value = value
-  }
-}
-
-/**
- * @template C
- */
-export class EscalationError {
-  /**
-   *
-   * @param {C} claimed
-   * @param {C} escalated
-   * @param {IterableIterator<API.ConstraintViolationError<C>>} violations
-   */
-  constructor(claimed, escalated, violations) {
-    this.name = the("EscalationError")
-    this.claimed = claimed
-    this.escalated = escalated
-    this.violations = violations
-  }
-  get message() {
-    return `Escalation error`
-  }
-}
-
-/**
- * @template {API.Capability} C
- */
-class ConstraintViolationError {
-  /**
-   * @param {API.Constraint<C>} claimed
-   * @param {API.Constraint<C>} violated
-   */
-  constructor(claimed, violated) {
-    this.name = the("ConstraintViolationError")
-    this.claimed = claimed
-    this.violated = violated
-  }
-  get message() {
-    return `Claimed capability '${this.claimed.capability.can}' violates imposed constraint ${this.claimed.name}: ${this.violated.value}`
-  }
-}
-
-/**
- * @template C
- */
-class ClaimError extends Error {
-  /**
-   * @param {API.EscalationError<C>[]} esclacations
-   */
-  constructor(esclacations) {
-    super()
-    this.name = the("ClaimError")
-    this.esclacations = esclacations
   }
 }

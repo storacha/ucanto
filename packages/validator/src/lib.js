@@ -1,127 +1,210 @@
-import { ok, the } from "./util.js"
 import * as API from "./api.js"
 import * as UCAN from "@ipld/dag-ucan"
 import { isLink, Delegation } from "@ucanto/core"
+import {
+  UnavailableProof,
+  InvalidClaim,
+  InvalidAudience,
+  InvalidEvidence,
+  Expired,
+  NotYetValid,
+  InvalidSignature,
+} from "./error.js"
 
 const empty = () => []
 
 /**
  * @param {UCAN.Proof} proof
  */
-const canNotResolve = proof => new ProofNotFound(proof)
+const unavailable = proof => new UnavailableProof(proof)
 
 /**
- * @template C
- * @param {API.Invocation|API.Delegation} invocation
- * @param {API.ValidationOptions<C>} config
- * @returns {Promise<API.Result<API.Access<C>, API.InvalidClaim<C> | API.UnsupportedClaim>>}
+ * @template I, O
+ * @param {(input:I) => O} execute
+ * @param {I} input
+ * @param {Map<string, any>} cache
+ * @param {string} [key]
+ * @returns {O}
  */
-export const access = async (
-  invocation,
-  { canIssue, my = empty, resolve = canNotResolve, parse, check }
-) => {
-  const config = { canIssue, my, resolve, parse, check }
-  const claim = parse(invocation.capabilities[0])
-  if (claim.ok) {
-    const authorization = await authorize(claim.value, invocation, config)
-    if (authorization.ok) {
-      return ok({
-        capability: claim.value,
-        proof: authorization.value,
-      })
-    } else {
-      return authorization
-    }
+const withCache = (execute, input, cache, key = String(input)) => {
+  if (cache.has(key)) {
+    return /** @type {O} */ (cache.get(key))
   } else {
-    return new UnsupportedClaim({
-      issuer: invocation.issuer,
-      capability: invocation.capabilities[0],
-      message: "unknown capability",
-    })
+    const output = execute(input)
+    cache.set(key, output)
+    return output
   }
 }
 
 /**
- * @template C
- * @param {C} capability
- * @param {API.Delegation} delegation
+ * @template {{}} C
+ * @param {API.Delegation} invocation
  * @param {API.ValidationOptions<C>} config
- * @returns {Promise<API.Result<API.Authorization<C>, API.InvalidClaim<C>>>}
+ * @returns {Promise<API.Result<API.Access<C>, API.DenyAccess<C>>>}
  */
-export const authorize = async (
-  capability,
-  delegation,
-  { canIssue, resolve = canNotResolve, parse, check, my }
+export const access = async (
+  invocation,
+  { canIssue, my = empty, resolve = unavailable, parse, check }
 ) => {
-  const { issuer } = delegation
-  const signature = await validate(delegation)
-  if (!signature.ok) {
-    return new InvalidClaim(delegation, capability, signature)
+  // First we validate time bounds and signature ensuring that invocation
+  // is valid.
+  const delegation = await validate(invocation)
+  if (delegation.error) {
+    return delegation.error
   }
 
-  if (canIssue(capability, delegation.issuer.did())) {
-    // If can self issue no need to evaluate this any further and just provide
-    // access.
-    return ok({
-      issuer: delegation.issuer,
-      audience: delegation.issuer,
-      capabilities: [capability],
-      proofs: [],
-    })
-  } else {
-    const errors = []
-    for (const proof of delegation.proofs) {
-      const result = isLink(proof) ? await resolve(proof) : ok(proof)
-      if (!result.ok) {
-        return new InvalidClaim(delegation, capability, result)
-      } else {
-        const proof = result.value
-        if (proof.audience.did() !== issuer.did()) {
-          errors.push(new WrongAudience(proof, issuer))
-        } else {
-          const { known, unknown } = parseCapabilities(proof, parse, my)
-          if (known.length > 0) {
-            const result = check(capability, known)
-            if (result.ok) {
-              for (const evidence of result.value) {
-                const proofs = []
-                for (const capability of evidence.capabilities) {
-                  const authorization = await authorize(capability, proof, {
-                    canIssue,
-                    resolve,
-                    parse,
-                    check,
-                  })
-                  if (!authorization.ok) {
-                    break
-                  } else {
-                    proofs.push(authorization.value)
-                  }
-                }
+  // Next we parse capability, if failed terminate early with an error
+  const capabality = parse(delegation.capabilities[0])
+  if (capabality.error) {
+    return capabality.error
+  }
 
-                return ok({
-                  issuer: proof.issuer,
-                  audience: proof.audience,
-                  capabilities: evidence.capabilities,
-                  proofs,
-                })
-              }
-            } else {
-              return new InvalidClaim(
-                delegation,
-                capability,
-                new ViolatingClaim(delegation, capability, result.esclacations)
-              )
-            }
-          }
+  const authorization = await authorize(capabality, delegation, {
+    canIssue,
+    my,
+    resolve,
+    parse,
+    check,
+  })
+
+  return authorization.error
+    ? authorization.error
+    : new Access(capabality, delegation, authorization)
+}
+
+/**
+ * Verifies whether any of the delegated proofs grant give capabality.
+ *
+ * @template {{}} C
+ * @param {C} capability
+ * @param {API.Delegation} delegation
+ * @param {Required<API.ValidationOptions<C>>} config
+ * @returns {API.Await<API.Result<API.Authorization<C>, API.InvalidClaim<C>>>}
+ */
+
+const authorize = (capability, delegation, config) => {
+  // If we got this far we have a valid token and a capabality which is either
+  // self-issued or delegated. If issuer can issue this capability we grant
+  // access without looking for a proof.
+  if (config.canIssue(capability, delegation.issuer.did())) {
+    return new Authorization([capability], delegation)
+  } else {
+    return claim(capability, delegation, config)
+  }
+}
+
+/**
+ * Verifies whether any of the delegated proofs grant give capabality.
+ *
+ * @template {{}} C
+ * @param {C} capability
+ * @param {API.Delegation} delegation
+ * @param {Required<API.ValidationOptions<C>>} config
+ * @returns {Promise<API.Result<API.Authorization<C>, API.InvalidClaim<C>>>}
+ */
+
+const claim = (capability, delegation, config) =>
+  new Promise(async resolve => {
+    /** @type {API.ProofError<C>[]} */
+    const proofs = []
+    const { issuer } = delegation
+    // We evaluate claim against every proof concurrently, first succesful one
+    // will resolve the promise. Failures are added to errors.
+    const promises = delegation.proofs.map((proof, index) =>
+      prove(issuer, capability, proof, config).then(result => {
+        if (result.error) {
+          proofs[index] = result.error
+        } else {
+          resolve(result)
         }
+      })
+    )
+
+    // When all promises resolve we resolve with `InvalidClaim` containing
+    // errors for each evaluated proof. Note that if any of the proof succeeded
+    // it would have resolved promise already so this will be a noop.
+    await Promise.all(promises)
+    resolve(new InvalidClaim(capability, delegation, proofs))
+  })
+
+/**
+ * @template {{}} C
+ * @param {API.Authority} issuer
+ * @param {C} capability
+ * @param {API.Proof} proof
+ * @param {Required<API.ValidationOptions<C>>} config
+ * @returns {Promise<API.Result<API.Authorization<C>, API.ProofError<C>>>}
+ */
+
+const prove = async (issuer, capability, proof, config) => {
+  const delegation = isLink(proof)
+    ? await config.resolve(proof)
+    : /** @type {API.Delegation & {error?:undefined}} */ (proof)
+
+  if (delegation.error) {
+    return delegation.error
+  }
+
+  const signature = await validate(delegation)
+  if (signature.error) {
+    return signature.error
+  }
+
+  if (delegation.audience.did() !== issuer.did()) {
+    return new InvalidAudience(issuer, delegation)
+  } else {
+    const parsed = parseCapabilities(delegation, config)
+    if (parsed.capabilities.length === 0) {
+      return new InvalidClaim(capability, delegation, [])
+    }
+
+    const check = config.check(capability, parsed.capabilities)
+    // TODO: wrap ClaimError into something else
+    if (check.error) {
+      return check.error
+    }
+
+    // here we consider each possible path sequentially although we could
+    // run those concurrently instead.
+    const errors = []
+
+    // we need to ensure that each capability here is valid
+    for (const evidence of check) {
+      const auth = await verify(evidence, delegation, config)
+      if (auth.error) {
+        errors.push(auth.error)
+      } else {
+        return auth
       }
     }
-    return new InvalidClaim(
-      delegation,
-      capability,
-      new UnfundedClaim(delegation, capability)
-    )
+
+    return new InvalidClaim(capability, delegation, errors)
+  }
+}
+
+/**
+ * @template {{}} C
+ * @param {API.Evidence<C>} evidence
+ * @param {API.Delegation} proof
+ * @param {Required<API.ValidationOptions<C>>} config
+ * @returns {Promise<API.Result<API.Authorization<C>, API.InvalidEvidence<C>>>}
+ */
+const verify = async (evidence, proof, config) => {
+  const results = evidence.capabilities.map($ => authorize($, proof, config))
+  const invalid = []
+  const proofs = []
+  for (const result of await Promise.all(results)) {
+    if (result.error) {
+      invalid.push(result.error)
+    } else {
+      proofs.push(result)
+    }
+  }
+
+  if (invalid.length === 0) {
+    return new Authorization(evidence.capabilities, proof, proofs)
+  } else {
+    return new InvalidEvidence(evidence, proof, invalid)
   }
 }
 
@@ -129,27 +212,58 @@ const ALL = "*"
 
 /**
  * @template C
- * @param {API.Delegation} delegation
- * @param {API.ValidationOptions<C>['parse']} parse
- * @param {API.ValidationOptions<C>['my']} my
+ * @implements {API.Authorization<C>}
  */
-const parseCapabilities = (delegation, parse, my = empty) => {
-  const unknown = []
-  const known = []
+class Authorization {
+  /**
+   * @param {C[]} capabilities
+   * @param {API.Delegation} delegation
+   * @param {API.Authorization<C>[]} proofs
+   */
+  constructor(capabilities, delegation, proofs = []) {
+    this.capabilities = capabilities
+    this.delegation = delegation
+    this.proofs = proofs
+
+    Object.defineProperties(this, {
+      delegation: { enumerable: false },
+    })
+  }
+  get issuer() {
+    return this.delegation.issuer
+  }
+  get audience() {
+    return this.proofs.length === 0
+      ? this.delegation.issuer
+      : this.delegation.audience
+  }
+}
+
+/**
+ * Takes delegation object and parses delegated capabilities with a given
+ * configuration. Returns parsed `capabilities` and `errors` for capabilities
+ * that could not be parsed.
+ *
+ * @template {{}} C
+ * @param {API.Delegation} delegation
+ * @param {Required<API.ValidationOptions<C>>} parse
+ * @returns {{capabilities:C[], errors:API.InvalidCapability[]}}
+ */
+const parseCapabilities = (delegation, { parse, my }) => {
+  const capabilities = []
+  const errors = []
+  const issuer = delegation.issuer.did()
   for (const capability of delegation.capabilities) {
     const result = parse(capability)
-    if (result.ok) {
-      known.push(result.value)
-    } else {
+    if (result.error) {
       const can = capability.can
       const resource =
-        parseMyURI(capability.with, delegation.issuer.did()) ||
-        parseAsURI(capability.with)
+        parseMyURI(capability.with, issuer) || parseAsURI(capability.with)
 
-      const capabilities = resource ? my(resource.did) : []
+      const delegatedCapabilities = resource ? my(resource.did) : []
       const protocol = resource ? resource.protocol : ""
 
-      for (const capability of capabilities) {
+      for (const capability of delegatedCapabilities) {
         const matches =
           capability.with.startsWith(protocol) ||
           capability.can === can ||
@@ -157,17 +271,20 @@ const parseCapabilities = (delegation, parse, my = empty) => {
 
         if (matches) {
           const result = parse(capability)
-          if (result.ok) {
-            known.push(result.value)
+          if (result.error) {
+            errors.push(result.error)
           } else {
-            unknown.push(capability)
+            capabilities.push(result)
           }
         }
       }
+    } else {
+      result
+      capabilities.push(result)
     }
   }
 
-  return { known, unknown }
+  return { capabilities, errors }
 }
 
 const AS_PATTERN = /as:(.*):(.*)/
@@ -198,202 +315,53 @@ const parseMyURI = (uri, did) => {
 }
 
 /**
- * @param {API.Delegation | API.Invocation} delegation
- * @returns {Promise<API.Result<null, API.InvalidSignature|API.ExpriedClaim|API.InactiveClaim>>}
+ * @param {API.Delegation} delegation
+ * @returns {Promise<API.Result<API.Delegation, API.InvalidProof>>}
  */
 const validate = async delegation => {
   if (UCAN.isExpired(delegation.data)) {
-    return new ExpriedClaim(delegation)
+    return new Expired(
+      /** @type {API.Delegation & {expiration: number}} */ (delegation)
+    )
   } else if (UCAN.isTooEarly(delegation.data)) {
-    return new InactiveClaim(delegation)
+    return new NotYetValid(
+      /** @type {API.Delegation & {notBefore: number}} */ (delegation)
+    )
   } else {
     return await verifySignature(delegation)
   }
 }
 
 /**
- * @template C
- */
-class Claim {
-  /**
-   * @param {C} claim
-   * @param {API.Delegation} delegation
-   */
-  constructor(claim, delegation) {
-    this.claim = claim
-    this.delegation = delegation
-  }
-}
-
-/**
- * @param {API.Delegation | API.Invocation} delegation
- * @returns {Promise<API.Result<null, API.InvalidSignature>>}
+ * @param {API.Delegation} delegation
+ * @returns {Promise<API.Result<API.Delegation, API.InvalidSignature>>}
  */
 const verifySignature = async delegation => {
   const valid = await UCAN.verifySignature(delegation.data, delegation.issuer)
 
-  return valid ? ok() : new InvalidSignature(delegation)
+  return valid ? delegation : new InvalidSignature(delegation)
 }
 
 /**
- * @implements {API.UnsupportedClaim}
+ * @template C
+ * @implements {API.Access<C>}
  */
-class UnsupportedClaim extends Error {
+class Access {
   /**
-   * @param {{
-   * issuer: API.UCAN.Identity
-   * capability: API.UCAN.Capability
-   * message?: string
-   * }} data
+   * @param {C} capability
+   * @param {API.Delegation} delegation
+   * @param {API.Authorization<C>} [proof]
    */
-  constructor({ issuer, capability, message }) {
-    super("Unknow capability")
-    this.issuer = issuer
+  constructor(
+    capability,
+    delegation,
+    proof = new Authorization([capability], delegation)
+  ) {
     this.capability = capability
-    this.name = the("UnsupportedClaim")
-  }
-}
-
-/**
- * @template C
- * @implements {API.InvalidClaim<C>}
- */
-class InvalidClaim extends Error {
-  /**
-   * @param {API.Delegation} delegation
-   * @param {C} claim
-   * @param {API.ClaimErrorReason<C>} reason
-   */
-  constructor(delegation, claim, reason) {
-    super()
-    this.name = the("InvalidClaim")
-    this.claim = claim
-    this.issuer = delegation.issuer
-    this.audience = delegation.audience
-    this.reason = reason
-  }
-  get message() {
-    return `Invalid claim ${JSON.stringify(this.claim)}
-${this.reason}
-`
-  }
-}
-
-/**
- * @implements {API.ExpriedClaim}
- */
-class ExpriedClaim extends Error {
-  /**
-   * @param {API.Invocation|API.Delegation} invocation
-   */
-  constructor(invocation) {
-    super("Expired claim")
-    this.name = the("ExpriedClaim")
-    this.issuer = invocation.issuer
-    this.audience = invocation.audience
-    this.expiredAt = invocation.data.expiration
-  }
-}
-
-/**
- * @implements {API.InactiveClaim}
- */
-class InactiveClaim extends Error {
-  /**
-   * @param {API.Invocation|API.Delegation} invocation
-   */
-  constructor(invocation) {
-    super("Expired claim")
-    this.name = the("InactiveClaim")
-    this.issuer = invocation.issuer
-    this.audience = invocation.audience
-    this.activeAt = /** @type {number} */ (invocation.data.notBefore)
-  }
-}
-
-/**
- * @implements {API.InvalidSignature}
- */
-
-class InvalidSignature extends Error {
-  /**
-   * @param {API.Invocation|API.Delegation} delegation
-   */
-  constructor(delegation) {
-    super("Invalid signature")
-    this.name = the("InvalidSignature")
-    this.issuer = delegation.issuer
-    this.audience = delegation.audience
-    this.delegation = delegation.data
-  }
-}
-
-class ProofNotFound extends Error {
-  /**
-   * @param {UCAN.Proof} link
-   */
-  constructor(link) {
-    super(`Proof ${link} not found`)
-    this.name = the("ProofNotFound")
-    this.link = link
-  }
-}
-
-/**
- * @template C
- * @implements {API.UnfundedClaim<C>}
- */
-class UnfundedClaim extends Error {
-  /**
-   * @param {API.Delegation} delegation
-   * @param {C} claim
-   */
-  constructor(delegation, claim) {
-    super(`No proof for the claim is found`)
-    this.name = the("UnfundedClaim")
-    this.claim = claim
-    this.issuer = delegation.issuer
-    this.audience = delegation.audience
-  }
-}
-
-/**
- * @implements {API.WrongAudience}
- */
-class WrongAudience extends Error {
-  /**
-   * @param {API.Delegation} delegation
-   * @param {UCAN.Audience} audience
-   */
-  constructor(delegation, audience) {
-    super(
-      `Invalid delegation audience ${delegation.audience.did()} does not match ${audience.did()}`
-    )
-    this.name = the("WrongAudience")
     this.delegation = delegation
-    this.audience = audience
-  }
-  get issuer() {
-    return this.delegation.issuer
-  }
-}
-
-/**
- * @template C
- * @implements {API.ViolatingClaim<C>}
- */
-class ViolatingClaim extends Error {
-  /**
-   * @param {API.Delegation} delegation
-   * @param {C} claim
-   * @param {API.EscalationError<C>[]} escalations
-   */
-  constructor(delegation, claim, escalations) {
-    super()
-    this.name = the("ViolatingClaim")
-    this.issuer = delegation.issuer
-    this.audience = delegation.audience
-    this.claim = claim
-    this.escalates = escalations
+    this.proof = proof
+    Object.defineProperties(this, {
+      delegation: { enumerable: false },
+    })
   }
 }

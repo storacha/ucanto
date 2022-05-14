@@ -1,6 +1,6 @@
 import * as API from "../api.js"
 import { UnknownDIDError, create as Accounts } from "./account.js"
-import { the, ok, unreachable } from "../../src/util.js"
+import { the, ok, unreachable } from "../../packages/validator/src/util.js"
 
 /**
  * @param {Partial<Model> & { accounts: API.AccessProvider }} config

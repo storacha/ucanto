@@ -44,7 +44,7 @@ export class Delegation {
     return this.root.data
   }
   /**
-   * @returns {IterableIterator<API.Block<Capability>>}
+   * @returns {IterableIterator<API.Block>}
    */
   export() {
     return exportDelegation(/** @type {API.Delegation<Capability>} */ (this))
@@ -125,7 +125,7 @@ export class Delegation {
 /**
  * @template {UCAN.Capability} C
  * @param {API.Delegation<C>} delegation
- * @returns {IterableIterator<API.Transport.Block<C>>}
+ * @returns {IterableIterator<API.Block>}
  */
 export const exportDelegation = function* ({ cid, bytes, data, proofs = [] }) {
   for (const proof of proofs) {

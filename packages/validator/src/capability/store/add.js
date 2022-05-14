@@ -1,17 +1,8 @@
 import * as API from "../../api.js"
-import { ok, the, unreachable } from "../../../util.js"
+import { ok, the, unreachable } from "../../../src/util.js"
 import { CID } from "multiformats/cid"
 import * as DID from "@ipld/dag-ucan/src/did.js"
-import {
-  prepend,
-  evidence,
-  escaltes,
-  checkWith,
-  EscalationError,
-  analize,
-  solve,
-  violates,
-} from "../../solver.js"
+import { solve } from "../../solver.js"
 
 /**
  * @typedef {{can: "store/add", with:API.DID, link: API.Link | null }} Add
@@ -66,7 +57,7 @@ export const check = (claim, capability) => {
 /**
  * @param {Add} claimed
  * @param {Add[]} capabilities
- * @returns {API.Result<IterableIterator<API.Evidence<Add>>, API.ClaimError<Add>>}
+ * @returns {API.Result<IterableIterator<API.Evidence<Add>>, API.EscalatedClaim<Add>>}
  */
 export const claim = (claimed, capabilities) =>
   solve(claimed, capabilities, {

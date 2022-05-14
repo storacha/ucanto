@@ -23,7 +23,7 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^1.4.1-beta"
+    "@ipld/dag-ucan": "^1.5.0-beta"
   },
   "devDependencies": {
     "typescript": "^4.6.3"
