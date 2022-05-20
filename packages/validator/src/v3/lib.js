@@ -4,16 +4,17 @@ import * as API from "./api.js"
  * @template T
  * @template [U=T]
  * @template {API.Matcher<API.Match<U>>} [M=API.DirectMatcher<U>]
- * @param {API.MatcherDescriptor<T, M>} descriptor
- * @returns {API.Matcher<API.MatchMember<T, U, M>>}
+ * @param {API.MatcherDescriptor<T, U, M>} descriptor
+ * @returns {API.Matcher<API.MatchMember<T, U>>}
  */
 export const matcher = ({ delegates, ...descriptor }) => {
   if (delegates) {
     return new Matcher({ delegates, ...descriptor })
   } else {
-    /** @type {API.DirectMatcher<T | U>} */
-    const matcher = new DirectMatcher(descriptor)
-    return /** @type {API.Matcher<API.MatchMember<T, U, M>>} */ (matcher)
+    const matcher = new DirectMatcher(
+      /** @type {API.MatcherDescriptor<T|U, T|U, never>} */ (descriptor)
+    )
+    return /** @type {API.Matcher<API.MatchMember<T, U>>} */ (matcher)
   }
 }
 
@@ -28,11 +29,11 @@ export const group = members => new GroupMatcher(members)
  * @template T
  * @template U
  * @template {API.Matcher<API.Match<U>>} M
- * @implements {API.Matcher<API.MatchMember<T, U, M>>}
+ * @implements {API.Matcher<API.MatchMember<T, U>>}
  */
 class Matcher {
   /**
-   * @param {Required<API.MatcherDescriptor<T, M>>} descriptor
+   * @param {Required<API.MatcherDescriptor<T, U, M>>} descriptor
    */
   constructor({ parse, check, delegates }) {
     this.parse = parse
@@ -41,14 +42,14 @@ class Matcher {
   }
   /**
    * @param {API.Capability[]} capabilities
-   * @returns {API.MatchMember<T, U, M>[]}
+   * @returns {API.MatchMember<T, U>[]}
    */
   match(capabilities) {
     const matches = []
     for (const capability of capabilities) {
       const result = this.parse(capability)
       if (!result.error) {
-        matches.push(new MatchMember(result, this.delegates))
+        matches.push(new MatchMember(result, this.delegates, this))
       }
     }
 
@@ -64,10 +65,12 @@ class Matcher {
 
 class DirectMatcher extends Matcher {
   /**
-   * @param {API.MatcherDescriptor<T, never>} descriptor
+   * @param {API.MatcherDescriptor<T, T, never>} descriptor
    */
   constructor(descriptor) {
-    super(/** @type {Required<API.MatcherDescriptor<T, never>>} */ (descriptor))
+    super(
+      /** @type {Required<API.MatcherDescriptor<T, T, never>>} */ (descriptor)
+    )
     this.delegates = this
   }
 }
@@ -129,27 +132,34 @@ const combine = dataset => {
 
 /**
  * @template T, U
- * @template {API.Match<U>} N
- * @template {API.Matcher<N>} M
- * @implements {API.MatchMember<T, U, M>}
+ * @template {API.Matcher<API.Match<U>>} M
+ * @implements {API.MatchMember<T, U>}
  */
 class MatchMember {
   /**
    *
    * @param {T} value
    * @param {M} matcher
+   * @param {API.Checker<T, U>} checker
    */
-  constructor(value, matcher) {
+  constructor(value, matcher, checker) {
     this.group = /** @type {false} */ (false)
     this.value = value
     this.matcher = matcher
+    this.checher = checker
   }
   /**
    * @param {API.Capability[]} capabilities
-   * @returns {N[]}
+   * @returns {API.Match<U>[]}
    */
   match(capabilities) {
-    return this.matcher.match(capabilities)
+    const matches = []
+    for (const match of this.matcher.match(capabilities)) {
+      if (this.checher.check(this.value, match.value)) {
+        matches.push(match)
+      }
+    }
+    return matches
   }
 }
 

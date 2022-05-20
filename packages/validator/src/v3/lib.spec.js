@@ -47,7 +47,7 @@ test("only matches corret ones", assert => {
   const v1 = read.match([
     { can: "file/read", with: "space://zAlice" },
     { can: "file/write", with: "file:///home/zAlice/" },
-    { can: "file/read", with: "file:///home/zAlice" },
+    { can: "file/read", with: "file:///home/zAlice/photos" },
     { can: "file/read+write", with: "file:///home/zAlice" },
   ])
 
@@ -56,14 +56,15 @@ test("only matches corret ones", assert => {
       {
         group: false,
         matcher: read,
-        value: { can: "file/read", url: new URL("file:///home/zAlice") },
+        value: { can: "file/read", url: new URL("file:///home/zAlice/photos") },
       },
     ],
   })
 
   const v2 = v1[0].match([
     { can: "file/read+write", with: "file:///home/zAlice" },
-    { can: "file/read", with: "file:///home/zAlice/photos" },
+    { can: "file/read", with: "file:///home/zAlice/" },
+    { can: "file/read", with: "file:///home/zAlice/photos/public" },
     { can: "file/read", with: "file:///home/zBob" },
   ])
 
@@ -76,7 +77,7 @@ test("only matches corret ones", assert => {
         matcher: read,
         value: {
           can: "file/read",
-          url: { href: "file:///home/zAlice/photos" },
+          url: { href: "file:///home/zAlice/" },
         },
       },
     ],
