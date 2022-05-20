@@ -1,22 +1,17 @@
 import * as API from "./api.js"
 
-/**
- * @template T
- * @template [U=T]
- * @template {API.Matcher<API.Match<U>>} [M=API.DirectMatcher<U>]
- * @param {API.MatcherDescriptor<T, U, M>} descriptor
- * @returns {API.Matcher<API.MatchMember<T, U>>}
- */
-export const matcher = ({ delegates, ...descriptor }) => {
-  if (delegates) {
-    return new Matcher({ delegates, ...descriptor })
-  } else {
-    const matcher = new DirectMatcher(
-      /** @type {API.MatcherDescriptor<T|U, T|U, never>} */ (descriptor)
-    )
-    return /** @type {API.Matcher<API.MatchMember<T, U>>} */ (matcher)
+export const matcher = /** @type {API.MatcherFactory} */ (
+  /**
+   * @param {API.MatcherDescriptor<unknown, unknown>} descriptor
+   */
+  descriptor => {
+    if (descriptor.delegates) {
+      return new Matcher(descriptor)
+    } else {
+      return new DirectMatcher(descriptor)
+    }
   }
-}
+)
 
 /**
  * @template {API.Group} Members
@@ -28,12 +23,11 @@ export const group = members => new GroupMatcher(members)
 /**
  * @template T
  * @template U
- * @template {API.Matcher<API.Match<U>>} M
  * @implements {API.Matcher<API.MatchMember<T, U>>}
  */
 class Matcher {
   /**
-   * @param {Required<API.MatcherDescriptor<T, U, M>>} descriptor
+   * @param {Required<API.IndirectMatcherDescriptor<T, U>>} descriptor
    */
   constructor({ parse, check, delegates }) {
     this.parse = parse
@@ -60,17 +54,15 @@ class Matcher {
 /**
  * @template T
  * @implements {API.DirectMatcher<T>}
- * @extends {Matcher<T, T, API.DirectMatcher<T>>}
+ * @extends {Matcher<T, T>}
  */
 
 class DirectMatcher extends Matcher {
   /**
-   * @param {API.MatcherDescriptor<T, T, never>} descriptor
+   * @param {API.DirectMatcherDescriptor<T>} descriptor
    */
   constructor(descriptor) {
-    super(
-      /** @type {Required<API.MatcherDescriptor<T, T, never>>} */ (descriptor)
-    )
+    super(/** @type {any} */ (descriptor))
     this.delegates = this
   }
 }

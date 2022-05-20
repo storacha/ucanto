@@ -66,18 +66,37 @@ export interface Check<T, U> {
   (claim: T, provided: U): boolean
 }
 
-export interface MatcherDescriptor<T, U, M extends Matcher<Match<U>>> {
+export type MatcherDescriptor<T, U> =
+  | IndirectMatcherDescriptor<T, U>
+  | DirectMatcherDescriptor<T>
+
+export interface IndirectMatcherDescriptor<T, U> {
   parse: Parse<T>
   check: Check<T, U>
-  delegates?: M
+  delegates: Matcher<Match<U>>
+}
+
+export interface DirectMatcherDescriptor<T> {
+  parse: Parse<T>
+  check: Check<T, T>
+  delegates?: undefined
 }
 
 declare function group<Members extends Group>(
   members: Members
 ): GroupMatcher<Members>
 
-declare function matcher<
-  T,
-  U = T,
-  M extends Matcher<Match<U>> = DirectMatcher<U>
->(descriptor: MatcherDescriptor<T, U, M>): Matcher<MatchMember<T, U>>
+// declare function matcher<
+//   T,
+//   U = T,
+//   M extends Matcher<Match<U>> = DirectMatcher<U>
+// >(descriptor: MatcherDescriptor<T, U, M>): Matcher<MatchMember<T, U>>
+
+export interface MatcherFactory {
+  <T, U>(descriptor: IndirectMatcherDescriptor<T, U>): Matcher<
+    MatchMember<T, U>
+  >
+  <T>(descriptor: DirectMatcherDescriptor<T>): Matcher<MatchMember<T, T>>
+}
+
+export declare var matcher: MatcherFactory
