@@ -14,6 +14,8 @@ export type InferSubGroup<Members extends Group> = {
 
 export interface Matcher<M extends Match<unknown, any> = Match<unknown, any>> {
   match(capabilites: API.Capability[]): M[]
+
+  derive<E>(descriptor: DeriveDescriptor<E, M["value"]>): Matcher<Match<E, M>>
 }
 
 export interface Checker<T, U> {

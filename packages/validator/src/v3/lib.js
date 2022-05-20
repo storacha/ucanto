@@ -29,12 +29,12 @@ export const group = members => new GroupMatcher(members)
 
 /**
  * @template T
- * @template {API.Match<unknown, any>} Match
- * @implements {API.Matcher<API.Match<T, Match>>}
+ * @template {API.Match<unknown, any>} M
+ * @implements {API.Matcher<API.Match<T, M>>}
  */
 class Matcher {
   /**
-   * @param {Required<API.IndirectMatcherDescriptor<T, Match>>} descriptor
+   * @param {Required<API.IndirectMatcherDescriptor<T, M>>} descriptor
    */
   constructor({ parse, check, delegates }) {
     this.parse = parse
@@ -43,7 +43,7 @@ class Matcher {
   }
   /**
    * @param {API.Capability[]} capabilities
-   * @returns {API.Match<T, Match>[]}
+   * @returns {API.Match<T, M>[]}
    */
   match(capabilities) {
     const matches = []
@@ -57,15 +57,25 @@ class Matcher {
     return matches
   }
 
-  // /**
-  //  * @template E
-  //  * @param {API.DeriveDescriptor<E, T>} descriptor
-  //  * @returns {API.Matcher<API.Match<E, T>>}
-  //  */
-  // derive({ parse, check }) {
-  //   return new Matcher({ parse, check, delegates: this })
-  // }
+  /**
+   * @template E
+   * @param {API.DeriveDescriptor<E, T>} descriptor
+   * @returns {API.Matcher<API.Match<E, API.Match<T, M>>>}
+   */
+  derive(descriptor) {
+    return derive(this, descriptor)
+  }
 }
+
+/**
+ * @template T
+ * @template {API.Match<unknown, any>} M
+ * @param {API.Matcher<M>} matcher
+ * @param {API.DeriveDescriptor<T, M["value"]>} descriptor
+ * @returns {API.Matcher<API.Match<T, M>>}
+ */
+export const derive = (matcher, { parse, check }) =>
+  new Matcher({ parse, check, delegates: matcher })
 
 /**
  * @template T
@@ -121,6 +131,15 @@ class GroupMatcher {
     const results = matches.map(match => new GroupMatch(match))
 
     return results
+  }
+
+  /**
+   * @template E
+   * @param {API.DeriveDescriptor<E, API.GroupMatch<Members>['value']>} descriptor
+   * @returns {API.Matcher<API.Match<E, API.GroupMatch<Members>>>}
+   */
+  derive(descriptor) {
+    return derive(this, descriptor)
   }
 }
 

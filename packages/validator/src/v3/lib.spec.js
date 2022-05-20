@@ -155,6 +155,59 @@ test("indirect chains", assert => {
   })
 })
 
+test("derive chains", assert => {
+  const register = verify.derive({
+    /**
+     * @param {API.Capability} capability
+     */
+    parse: capability =>
+      parseAs(capability, { can: "account/register", protocol: "did:" }),
+    check: (claimed, provided) => {
+      return true
+    },
+  })
+
+  const v1 = register.match([
+    {
+      can: "account/register",
+      with: "did:key:zAlice",
+    },
+  ])
+
+  assert.like(v1, {
+    ...[
+      {
+        group: false,
+        matcher: verify,
+        value: {
+          can: "account/register",
+          uri: { href: "did:key:zAlice" },
+        },
+      },
+    ],
+  })
+
+  const v2 = v1[0].match([
+    {
+      can: "account/verify",
+      with: "mailto:zAlice@web.mail",
+    },
+  ])
+
+  assert.like(v2, {
+    ...[
+      {
+        group: false,
+        matcher: verify,
+        value: {
+          can: "account/verify",
+          uri: { href: "mailto:zAlice@web.mail" },
+        },
+      },
+    ],
+  })
+})
+
 const write = matcher({
   /**
    * @param {API.Capability} capability
