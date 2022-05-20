@@ -24,39 +24,23 @@ export type InferGroupValue<D extends Group> = {
   [K in keyof D]: D[K] extends Matcher<Match<infer T>> ? T : never
 }
 
-export type InferGroupMatch<D extends Group> = {
-  [K in keyof D]: D[K] extends Matcher<infer M> ? M : never
+export type InferSubGroupValue<D extends Group> = {
+  [K in keyof D]: D[K] extends Matcher<Match<any, infer U>> ? U : never
 }
 
-export interface DirectMatcher<T> extends Matcher<MatchMember<T, T>> {}
+export type InferGroupMatch<D extends Group> = {
+  [K in keyof D]: D[K] extends Matcher<infer Match> ? Match : never
+}
 
-export interface GroupMatcher<D extends Group> extends Matcher<GroupMatch<D>> {}
+export interface DirectMatcher<T> extends Matcher<Match<T, T>> {}
 
-// interface Match<T = unknown, M extends Record<string, Matcher> = {}> {
-//   value: T
-
-//   next: M
-// }
-
-export interface MatchMember<T = unknown, U = unknown> {
-  group: false
+export interface Match<T = unknown, U = unknown> {
   value: T
-
   match(capabilites: API.Capability[]): Match<U>[]
 }
 
-export interface MatchGroup<T extends {} = {}, M = unknown> {
-  group: true
-  value: T
-  matched: M
-
-  // match(capabilites: API.Capability[]): MatchGroup<T, M>[]
-}
-
-export type Match<T = unknown> = MatchMember<T> | MatchGroup<T>
-
 export interface GroupMatch<D extends Group>
-  extends MatchGroup<InferGroupValue<D>, InferGroupMatch<D>> {}
+  extends Match<InferGroupValue<D>, InferSubGroupValue<D>> {}
 
 export interface Parse<T> {
   (capability: API.Capability): API.Result<T, API.InvalidCapability>
@@ -89,7 +73,7 @@ export interface DirectMatcherDescriptor<T> {
 
 declare function group<Members extends Group>(
   members: Members
-): GroupMatcher<Members>
+): Matcher<GroupMatch<Members>>
 
 // declare function matcher<
 //   T,
@@ -98,10 +82,8 @@ declare function group<Members extends Group>(
 // >(descriptor: MatcherDescriptor<T, U, M>): Matcher<MatchMember<T, U>>
 
 export interface MatcherFactory {
-  <T, U>(descriptor: IndirectMatcherDescriptor<T, U>): Matcher<
-    MatchMember<T, U>
-  >
-  <T>(descriptor: DirectMatcherDescriptor<T>): Matcher<MatchMember<T, T>>
+  <T, U>(descriptor: IndirectMatcherDescriptor<T, U>): Matcher<Match<T, U>>
+  <T>(descriptor: DirectMatcherDescriptor<T>): Matcher<Match<T, T>>
 }
 
 export declare var matcher: MatcherFactory

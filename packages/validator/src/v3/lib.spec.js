@@ -154,3 +154,154 @@ test("indirect chains", assert => {
     ],
   })
 })
+
+const write = matcher({
+  /**
+   * @param {API.Capability} capability
+   */
+  parse: capability =>
+    parseAs(capability, { can: "file/write", protocol: "file:" }),
+  check: (claimed, delegated) => {
+    return claimed.uri.pathname.startsWith(delegated.uri.pathname)
+  },
+})
+
+const readwrite = matcher({
+  /**
+   * @param {API.Capability} capability
+   */
+  parse: capability =>
+    parseAs(capability, { can: "file/read+write", protocol: "file:" }),
+  delegates: group({ read, write }),
+  check: (claimed, { read, write }) => {
+    return (
+      claimed.uri.pathname.startsWith(read.uri.pathname) &&
+      claimed.uri.pathname.startsWith(write.uri.pathname)
+    )
+  },
+})
+
+test("amplification", assert => {
+  assert.deepEqual(
+    readwrite.match([
+      { can: "file/read", with: "file:///home/zAlice/" },
+      { can: "file/write", with: "file:///home/zAlice/" },
+    ]),
+    []
+  )
+
+  const matches = readwrite.match([
+    { can: "file/read+write", with: "file:///home/zAlice/public" },
+    { can: "file/write", with: "file:///home/zAlice/" },
+  ])
+
+  assert.like(matches, {
+    ...[
+      {
+        group: false,
+        matcher: group({ read, write }),
+        value: {
+          can: "file/read+write",
+          uri: { href: "file:///home/zAlice/public" },
+        },
+      },
+    ],
+    length: 1,
+  })
+
+  const [rw] = matches
+
+  assert.deepEqual(
+    rw.match([{ can: "file/read+write", with: "file:///home/zAlice/public" }]),
+    []
+  )
+
+  const rnw = rw.match([
+    { can: "file/read", with: "file:///home/zAlice/" },
+    { can: "file/write", with: "file:///home/zAlice/" },
+  ])
+
+  assert.like(rnw, {
+    ...[
+      {
+        group: true,
+        value: {
+          read: {
+            can: "file/read",
+            uri: { href: "file:///home/zAlice/" },
+          },
+          write: {
+            can: "file/write",
+            uri: { href: "file:///home/zAlice/" },
+          },
+        },
+      },
+    ],
+    length: 1,
+  })
+
+  const [subrnw] = rnw
+  assert.like(
+    subrnw.match([
+      { can: "file/read", with: "file:///home/zAlice/" },
+      { can: "file/write", with: "file:///home/zAlice/" },
+    ]),
+    {
+      ...[
+        {
+          group: true,
+          value: {
+            read: {
+              can: "file/read",
+              uri: { href: "file:///home/zAlice/" },
+            },
+            write: {
+              can: "file/write",
+              uri: { href: "file:///home/zAlice/" },
+            },
+          },
+        },
+      ],
+      length: 1,
+    }
+  )
+
+  assert.like(
+    subrnw.match([
+      { can: "file/read", with: "file:///home/zAlice/" },
+      { can: "file/write", with: "file:///home/zAlice/" },
+      { can: "file/read", with: "file:///home/" },
+    ]),
+    {
+      ...[
+        {
+          group: true,
+          value: {
+            read: {
+              can: "file/read",
+              uri: { href: "file:///home/zAlice/" },
+            },
+            write: {
+              can: "file/write",
+              uri: { href: "file:///home/zAlice/" },
+            },
+          },
+        },
+        {
+          group: true,
+          value: {
+            read: {
+              can: "file/read",
+              uri: { href: "file:///home/" },
+            },
+            write: {
+              can: "file/write",
+              uri: { href: "file:///home/zAlice/" },
+            },
+          },
+        },
+      ],
+      length: 2,
+    }
+  )
+})
