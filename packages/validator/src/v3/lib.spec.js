@@ -1,5 +1,5 @@
 import test from "ava"
-import { matcher, group, ok } from "./lib.js"
+import { matcher, group, ok, or } from "./lib.js"
 import * as API from "./api.js"
 import { UnknownCapability, MalformedCapability, Failure } from "../error.js"
 import { the } from "../util.js"
@@ -357,4 +357,30 @@ test("amplification", assert => {
       length: 2,
     }
   )
+})
+
+test("or combinator", assert => {
+  const readwrite = read.or(write)
+  const matches = readwrite.match([
+    { can: "file/read", with: "file:///home/zAlice/" },
+    { can: "file/write", with: "file:///home/zAlice/" },
+  ])
+
+  assert.like(matches, {
+    ...[
+      {
+        value: {
+          can: "file/read",
+          uri: { href: "file:///home/zAlice/" },
+        },
+      },
+      {
+        value: {
+          can: "file/write",
+          uri: { href: "file:///home/zAlice/" },
+        },
+      },
+    ],
+    length: 2,
+  })
 })

@@ -30,6 +30,25 @@ export const group = members => new GroupMatcher(members)
 /**
  * @template T
  * @template {API.Match<unknown, any>} M
+ * @param {API.Matcher<M>} matcher
+ * @param {API.DeriveDescriptor<T, M["value"]>} descriptor
+ * @returns {API.Matcher<API.Match<T, M>>}
+ */
+export const derive = (matcher, { parse, check }) =>
+  new Matcher({ parse, check, delegates: matcher })
+
+/**
+ * @template {API.Match<unknown, any>} L
+ * @template {API.Match<unknown, any>} R
+ * @param {API.Matcher<L>} left
+ * @param {API.Matcher<R>} right
+ * @returns {API.Matcher<L|R>}
+ */
+export const or = (left, right) => new OrMatcher(left, right)
+
+/**
+ * @template T
+ * @template {API.Match<unknown, any>} M
  * @implements {API.Matcher<API.Match<T, M>>}
  */
 class Matcher {
@@ -65,17 +84,16 @@ class Matcher {
   derive(descriptor) {
     return derive(this, descriptor)
   }
-}
 
-/**
- * @template T
- * @template {API.Match<unknown, any>} M
- * @param {API.Matcher<M>} matcher
- * @param {API.DeriveDescriptor<T, M["value"]>} descriptor
- * @returns {API.Matcher<API.Match<T, M>>}
- */
-export const derive = (matcher, { parse, check }) =>
-  new Matcher({ parse, check, delegates: matcher })
+  /**
+   * @template {API.Match<unknown, any>} W
+   * @param {API.Matcher<W>} other
+   * @returns {API.Matcher<API.Match<T, M>|W>}
+   */
+  or(other) {
+    return or(this, other)
+  }
+}
 
 /**
  * @template T
@@ -141,8 +159,57 @@ class GroupMatcher {
   derive(descriptor) {
     return derive(this, descriptor)
   }
+
+  /**
+   * @template {API.Match<unknown, any>} W
+   * @param {API.Matcher<W>} other
+   * @returns {API.Matcher<API.GroupMatch<Members>|W>}
+   */
+  or(other) {
+    return or(this, other)
+  }
 }
 
+/**
+ * @template {API.Match<unknown, any>} L
+ * @template {API.Match<unknown, any>} R
+ * @implements {API.Matcher<L|R>}
+ */
+class OrMatcher {
+  /**
+   * @param {API.Matcher<L>} left
+   * @param {API.Matcher<R>} right
+   */
+  constructor(left, right) {
+    this.left = left
+    this.right = right
+  }
+  /**
+   * @param {API.Capability[]} capabilities
+   * @returns {(L|R)[]}
+   */
+  match(capabilities) {
+    return [...this.left.match(capabilities), ...this.right.match(capabilities)]
+  }
+
+  /**
+   * @template E
+   * @param {API.DeriveDescriptor<E, (L|R)['value']>} descriptor
+   * @returns {API.Matcher<API.Match<E, L|R>>}
+   */
+  derive(descriptor) {
+    return derive(this, descriptor)
+  }
+
+  /**
+   * @template {API.Match<unknown, any>} W
+   * @param {API.Matcher<W>} other
+   * @returns {API.Matcher<L|R|W>}
+   */
+  or(other) {
+    return or(this, other)
+  }
+}
 /**
  * @template {Record<string, unknown[]>} T
  * @param {T} dataset

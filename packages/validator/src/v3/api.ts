@@ -16,6 +16,8 @@ export interface Matcher<M extends Match<unknown, any> = Match<unknown, any>> {
   match(capabilites: API.Capability[]): M[]
 
   derive<E>(descriptor: DeriveDescriptor<E, M["value"]>): Matcher<Match<E, M>>
+
+  or<W extends Match<unknown, any>>(other: Matcher<W>): Matcher<M | W>
 }
 
 export interface Checker<T, U> {
