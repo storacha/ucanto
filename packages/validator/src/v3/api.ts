@@ -6,7 +6,13 @@ export type Group<K extends string = string, M extends Matcher = Matcher> = {
   [Key in K]: M
 }
 
-export interface Matcher<M extends Match = Match> {
+export type InferSubGroup<Members extends Group> = {
+  [Key in keyof Members]: Members[Key] extends Matcher<Match<unknown, infer M>>
+    ? Matcher<M>
+    : never
+}
+
+export interface Matcher<M extends Match<unknown, any> = Match<unknown, any>> {
   match(capabilites: API.Capability[]): M[]
 }
 
@@ -14,33 +20,35 @@ export interface Checker<T, U> {
   check: Check<T, U>
 }
 
-type InferMatched<M extends Matcher> = M extends Matcher<infer T>
-  ? T extends Match<infer U>
-    ? U
-    : never
-  : never
-
 export type InferGroupValue<D extends Group> = {
-  [K in keyof D]: D[K] extends Matcher<Match<infer T>> ? T : never
+  [K in keyof D]: D[K] extends Matcher<Match<infer T, any>> ? T : never
 }
 
 export type InferSubGroupValue<D extends Group> = {
-  [K in keyof D]: D[K] extends Matcher<Match<any, infer U>> ? U : never
+  [K in keyof D]: D[K] extends Matcher<Match<unknown, Match<infer U, any>>>
+    ? U
+    : never
 }
 
 export type InferGroupMatch<D extends Group> = {
   [K in keyof D]: D[K] extends Matcher<infer Match> ? Match : never
 }
 
-export interface DirectMatcher<T> extends Matcher<Match<T, T>> {}
-
-export interface Match<T = unknown, U = unknown> {
-  value: T
-  match(capabilites: API.Capability[]): Match<U>[]
+export type InferSubGroupMatch<Members extends Group> = {
+  [K in keyof Members]: Members[K] extends Matcher<Match<unknown, infer Match>>
+    ? Match
+    : never
 }
 
-export interface GroupMatch<D extends Group>
-  extends Match<InferGroupValue<D>, InferSubGroupValue<D>> {}
+export interface Match<T, M extends Match<unknown, any>> {
+  value: T
+  match(capabilites: API.Capability[]): M[]
+}
+
+export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
+
+export interface GroupMatch<Members extends Group>
+  extends Match<InferGroupValue<Members>, GroupMatch<InferSubGroup<Members>>> {}
 
 export interface Parse<T> {
   (capability: API.Capability): API.Result<T, API.InvalidCapability>
@@ -50,19 +58,15 @@ export interface Check<T, U> {
   (claim: T, provided: U): boolean
 }
 
-export type MatcherDescriptor<T, U> =
-  | IndirectMatcherDescriptor<T, U>
-  | DirectMatcherDescriptor<T>
-
 export interface DeriveDescriptor<T, U> {
   parse: Parse<T>
   check: Check<T, U>
 }
 
-export interface IndirectMatcherDescriptor<T, U> {
+export interface IndirectMatcherDescriptor<T, M extends Match<any, any>> {
   parse: Parse<T>
-  check: Check<T, U>
-  delegates: Matcher<Match<U>>
+  check: Check<T, M["value"]>
+  delegates: Matcher<M>
 }
 
 export interface DirectMatcherDescriptor<T> {
@@ -82,8 +86,10 @@ declare function group<Members extends Group>(
 // >(descriptor: MatcherDescriptor<T, U, M>): Matcher<MatchMember<T, U>>
 
 export interface MatcherFactory {
-  <T, U>(descriptor: IndirectMatcherDescriptor<T, U>): Matcher<Match<T, U>>
-  <T>(descriptor: DirectMatcherDescriptor<T>): Matcher<Match<T, T>>
+  <T, M extends Match<unknown, any>>(
+    descriptor: IndirectMatcherDescriptor<T, M>
+  ): Matcher<Match<T, M>>
+  <T>(descriptor: DirectMatcherDescriptor<T>): Matcher<DirectMatch<T>>
 }
 
 export declare var matcher: MatcherFactory

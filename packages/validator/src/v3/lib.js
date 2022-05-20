@@ -2,17 +2,20 @@ import * as API from "./api.js"
 
 export const matcher = /** @type {API.MatcherFactory} */ (
   /**
-   * @template T, U
-   * @param {API.MatcherDescriptor<T, U>} descriptor
-   * @returns {API.Matcher<API.Match<T, U>>}
+   * @template T
+   * @template {API.Match<unknown, any>} [M=API.DirectMatch<T>]
+   * @param {API.DirectMatcherDescriptor<T> | API.IndirectMatcherDescriptor<T, M>} descriptor
+   * @returns {API.Matcher<API.Match<T, M>>}
    */
   descriptor => {
     if (descriptor.delegates) {
       return new Matcher(descriptor)
     } else {
-      return new DirectMatcher(
-        /** @type {API.DirectMatcherDescriptor<T&U>} */ (descriptor)
-      )
+      const matcher =
+        /** @type {API.Matcher<API.Match<T, API.DirectMatch<T>>>} */ (
+          new DirectMatcher(descriptor)
+        )
+      return /** @type {API.Matcher<API.Match<T, M>>} */ (matcher)
     }
   }
 )
@@ -26,12 +29,12 @@ export const group = members => new GroupMatcher(members)
 
 /**
  * @template T
- * @template U
- * @implements {API.Matcher<API.Match<T, U>>}
+ * @template {API.Match<unknown, any>} Match
+ * @implements {API.Matcher<API.Match<T, Match>>}
  */
 class Matcher {
   /**
-   * @param {Required<API.IndirectMatcherDescriptor<T, U>>} descriptor
+   * @param {Required<API.IndirectMatcherDescriptor<T, Match>>} descriptor
    */
   constructor({ parse, check, delegates }) {
     this.parse = parse
@@ -40,7 +43,7 @@ class Matcher {
   }
   /**
    * @param {API.Capability[]} capabilities
-   * @returns {API.Match<T, U>[]}
+   * @returns {API.Match<T, Match>[]}
    */
   match(capabilities) {
     const matches = []
@@ -54,20 +57,20 @@ class Matcher {
     return matches
   }
 
-  /**
-   * @template E
-   * @param {API.DeriveDescriptor<E, T>} descriptor
-   * @returns {API.Matcher<API.Match<E, T>>}
-   */
-  derive({ parse, check }) {
-    return new Matcher({ parse, check, delegates: this })
-  }
+  // /**
+  //  * @template E
+  //  * @param {API.DeriveDescriptor<E, T>} descriptor
+  //  * @returns {API.Matcher<API.Match<E, T>>}
+  //  */
+  // derive({ parse, check }) {
+  //   return new Matcher({ parse, check, delegates: this })
+  // }
 }
 
 /**
  * @template T
- * @implements {API.DirectMatcher<T>}
- * @extends {Matcher<T, T>}
+ * @implements {API.Matcher<API.DirectMatch<T>>}
+ * @extends {Matcher<T, API.DirectMatch<T>>}
  */
 
 class DirectMatcher extends Matcher {
@@ -97,7 +100,8 @@ class GroupMatcher {
    * @returns {API.GroupMatch<Members>[]}
    */
   match(capabilities) {
-    const dataset = /** @type {{ [K in keyof Members]: API.Match[] }} */ ({})
+    const dataset =
+      /** @type {{ [K in keyof Members]: API.Match<unknown, any>[] }} */ ({})
     for (const [name, matcher] of entries(this.members)) {
       const matches = matcher.match(capabilities)
       // if any of the members matches no capabilties we won't be able to create
@@ -140,16 +144,15 @@ const combine = dataset => {
 }
 
 /**
- * @template T, U
- * @template {API.Matcher<API.Match<U>>} M
- * @implements {API.Match<T, U>}
+ * @template T
+ * @template {API.Match<unknown, any>} M
+ * @implements {API.Match<T, M>}
  */
 class Match {
   /**
-   *
    * @param {T} value
-   * @param {M} matcher
-   * @param {API.Checker<T, U>} checker
+   * @param {API.Matcher<M>} matcher
+   * @param {API.Checker<T, M['value']>} checker
    */
   constructor(value, matcher, checker) {
     this.group = /** @type {false} */ (false)
@@ -159,7 +162,7 @@ class Match {
   }
   /**
    * @param {API.Capability[]} capabilities
-   * @returns {API.Match<U>[]}
+   * @returns {M[]}
    */
   match(capabilities) {
     const matches = []
@@ -200,10 +203,11 @@ class GroupMatch {
 
   /**
    * @param {API.Capability[]} capabilities
-   * @returns {API.Match<API.InferSubGroupValue<Members>>[]}
+   * @returns {API.GroupMatch<API.InferSubGroup<Members>>[]}
    */
   match(capabilities) {
-    const dataset = /** @type {{ [K in keyof Members]: API.Match[] }} */ ({})
+    const dataset =
+      /** @type {{ [K in keyof Members]: API.Match<unknown, any>[] }} */ ({})
     for (const [name, matched] of entries(this.matched)) {
       const matches = matched.match(capabilities)
       // if any of the members matches no capabilties we won't be able to create
@@ -218,7 +222,10 @@ class GroupMatch {
     const matches = /** @type {API.InferGroupMatch<Members>[]} */ (
       combine(dataset)
     )
-    return matches.map(match => new GroupMatch(match))
+
+    return /** @type {API.GroupMatch<API.InferSubGroup<Members>>[]} */ (
+      matches.map(match => new GroupMatch(match))
+    )
   }
 }
 
