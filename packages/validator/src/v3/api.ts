@@ -70,6 +70,11 @@ export type MatcherDescriptor<T, U> =
   | IndirectMatcherDescriptor<T, U>
   | DirectMatcherDescriptor<T>
 
+export interface DeriveDescriptor<T, U> {
+  parse: Parse<T>
+  check: Check<T, U>
+}
+
 export interface IndirectMatcherDescriptor<T, U> {
   parse: Parse<T>
   check: Check<T, U>

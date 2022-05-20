@@ -49,6 +49,15 @@ class Matcher {
 
     return matches
   }
+
+  /**
+   * @template E
+   * @param {API.DeriveDescriptor<E, T>} descriptor
+   * @returns {API.Matcher<API.MatchMember<E, T>>}
+   */
+  derive({ parse, check }) {
+    return new Matcher({ parse, check, delegates: this })
+  }
 }
 
 /**
