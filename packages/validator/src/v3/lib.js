@@ -1,9 +1,98 @@
 import * as API from "./api.js"
+import { MalformedCapability, UnknownCapability } from "../error.js"
+
+/**
+ * @template {API.Ability} Ability
+ * @template {API.Caveats} Caveats
+ * @param {API.CapabilityDescriptor<Ability, Caveats>} descriptor
+ * @returns {API.Matcher<API.DirectMatch<API.CapabilityView<Ability, Caveats>>>}
+ */
+export const capability = descriptor => new Capability(descriptor)
+
+/**
+ * @template {API.Ability} Ability
+ * @template {API.Caveats} Caveats
+ * @implements {API.CapabilityMatcher<Ability, Caveats>}
+ */
+class Capability {
+  /**
+   * @param {API.CapabilityDescriptor<Ability, Caveats>} descriptor
+   */
+  constructor({ can, check, with: parseWith, caveats }) {
+    this.can = can
+    this.check = check
+    this.parseWith = parseWith
+    this.parsers = caveats
+  }
+  /**
+   * @param {API.UCAN.Capability} capability
+   * @returns {API.Result<API.CapabilityView<Ability, Caveats>, API.InvalidCapability>}
+   */
+  parse(capability) {
+    const { can, parsers, parseWith } = this
+    if (capability.can !== can) {
+      return new UnknownCapability(capability)
+    }
+
+    const uri = parseWith(capability.with)
+    if (uri.error) {
+      return new MalformedCapability(capability, [uri.error])
+    }
+
+    const caveats = /** @type {API.InferCaveats<Caveats>} */ ({})
+
+    if (parsers) {
+      for (const [name, parse] of entries(parsers)) {
+        const result = parse(capability[/** @type {string} */ (name)])
+        if (!result.error) {
+          caveats[name] = /** @type {any} */ (result)
+        } else {
+          return new MalformedCapability(capability, [result.error])
+        }
+      }
+    }
+
+    return { can, with: uri, caveats }
+  }
+  /**
+   * @param {API.Capability[]} capabilities
+   * @returns {API.DirectMatch<API.CapabilityView<Ability, Caveats>>[]}
+   */
+  match(capabilities) {
+    const matches = []
+    for (const capability of capabilities) {
+      const result = this.parse(capability)
+      if (!result.error) {
+        matches.push(new Match(result, this, this))
+      }
+    }
+
+    return matches
+  }
+
+  /**
+   * @template {{ can: API.Ability }} E
+   * @param {API.DeriveDescriptor<E, API.Match<T, M>>} descriptor
+   * @returns {API.Matcher<API.Match<E, API.Match<T, M>>>}
+   */
+  derive(descriptor) {
+    return derive(this, descriptor)
+  }
+
+  /**
+   * @template {API.Match<{ can: API.Ability }, any>} W
+   * @param {API.Matcher<W>} other
+   * @returns {API.Matcher<API.Match<T, M>|W>}
+   */
+  or(other) {
+    return or(this, other)
+  }
+}
 
 export const matcher = /** @type {API.MatcherFactory} */ (
   /**
-   * @template T
-   * @template {API.Match<unknown, any>} [M=API.DirectMatch<T>]
+   * @template {{ can: API.Ability }} T
+   * @template {API.Match<{ can: API.Ability }, any>} [M=API.DirectMatch<T>]
    * @param {API.DirectMatcherDescriptor<T> | API.IndirectMatcherDescriptor<T, M>} descriptor
    * @returns {API.Matcher<API.Match<T, M>>}
    */
@@ -28,8 +117,8 @@ export const matcher = /** @type {API.MatcherFactory} */ (
 export const group = members => new GroupMatcher(members)
 
 /**
- * @template T
- * @template {API.Match<unknown, any>} M
+ * @template {{ can: API.Ability }} T
+ * @template {API.Match<{ can: API.Ability }, any>} M
  * @param {API.Matcher<M>} matcher
  * @param {API.DeriveDescriptor<T, M>} descriptor
  * @returns {API.Matcher<API.Match<T, M>>}
@@ -38,8 +127,8 @@ export const derive = (matcher, { parse, check }) =>
   new Matcher({ parse, check, delegates: matcher })
 
 /**
- * @template {API.Match<unknown, any>} L
- * @template {API.Match<unknown, any>} R
+ * @template {API.Match<{ can: API.Ability }, any>} L
+ * @template {API.Match<{ can: API.Ability }, any>} R
  * @param {API.Matcher<L>} left
  * @param {API.Matcher<R>} right
  * @returns {API.Matcher<L|R>}
@@ -47,8 +136,8 @@ export const derive = (matcher, { parse, check }) =>
 export const or = (left, right) => new OrMatcher(left, right)
 
 /**
- * @template T
- * @template {API.Match<unknown, any>} M
+ * @template {{ can: API.Ability }} T
+ * @template {API.Match<{ can: API.Ability }, any>} M
  * @implements {API.Matcher<API.Match<T, M>>}
  */
 class Matcher {
@@ -77,7 +166,7 @@ class Matcher {
   }
 
   /**
-   * @template E
+   * @template {{ can: API.Ability }} E
    * @param {API.DeriveDescriptor<E, API.Match<T, M>>} descriptor
    * @returns {API.Matcher<API.Match<E, API.Match<T, M>>>}
    */
@@ -86,7 +175,7 @@ class Matcher {
   }
 
   /**
-   * @template {API.Match<unknown, any>} W
+   * @template {API.Match<{ can: API.Ability }, any>} W
    * @param {API.Matcher<W>} other
    * @returns {API.Matcher<API.Match<T, M>|W>}
    */
@@ -96,7 +185,7 @@ class Matcher {
 }
 
 /**
- * @template T
+ * @template {{ can: API.Ability }} T
  * @implements {API.Matcher<API.DirectMatch<T>>}
  * @extends {Matcher<T, API.DirectMatch<T>>}
  */
@@ -128,8 +217,7 @@ class GroupMatcher {
    * @returns {API.GroupMatch<Members>[]}
    */
   match(capabilities) {
-    const dataset =
-      /** @type {{ [K in keyof Members]: API.Match<unknown, any>[] }} */ ({})
+    const dataset = /** @type {{ [K in keyof Members]: API.Match[] }} */ ({})
     for (const [name, matcher] of entries(this.members)) {
       const matches = matcher.match(capabilities)
       // if any of the members matches no capabilties we won't be able to create
@@ -152,7 +240,7 @@ class GroupMatcher {
   }
 
   /**
-   * @template E
+   * @template {{ can: API.Ability }} E
    * @param {API.DeriveDescriptor<E, API.GroupMatch<Members>>} descriptor
    * @returns {API.Matcher<API.Match<E, API.GroupMatch<Members>>>}
    */
@@ -161,7 +249,7 @@ class GroupMatcher {
   }
 
   /**
-   * @template {API.Match<unknown, any>} W
+   * @template {API.Match<{ can: API.Ability }, any>} W
    * @param {API.Matcher<W>} other
    * @returns {API.Matcher<API.GroupMatch<Members>|W>}
    */
@@ -171,8 +259,8 @@ class GroupMatcher {
 }
 
 /**
- * @template {API.Match<unknown, any>} L
- * @template {API.Match<unknown, any>} R
+ * @template {API.Match<{ can: API.Ability }, any>} L
+ * @template {API.Match<{ can: API.Ability }, any>} R
  * @implements {API.Matcher<L|R>}
  */
 class OrMatcher {
@@ -193,7 +281,7 @@ class OrMatcher {
   }
 
   /**
-   * @template E
+   * @template {{ can: API.Ability }} E
    * @param {API.DeriveDescriptor<E, L|R>} descriptor
    * @returns {API.Matcher<API.Match<E, L|R>>}
    */
@@ -202,7 +290,7 @@ class OrMatcher {
   }
 
   /**
-   * @template {API.Match<unknown, any>} W
+   * @template {API.Match<{ can: API.Ability }, any>} W
    * @param {API.Matcher<W>} other
    * @returns {API.Matcher<L|R|W>}
    */
@@ -230,8 +318,8 @@ const combine = dataset => {
 }
 
 /**
- * @template T
- * @template {API.Match<unknown, any>} M
+ * @template {{ can: API.Ability }} T
+ * @template {API.Match<{ can: API.Ability }, any>} M
  * @implements {API.Match<T, M>}
  */
 class Match {
@@ -293,7 +381,7 @@ class GroupMatch {
    */
   match(capabilities) {
     const dataset =
-      /** @type {{ [K in keyof Members]: API.Match<unknown, any>[] }} */ ({})
+      /** @type {{ [K in keyof Members]: API.Match<{ can: API.Ability }, any>[] }} */ ({})
     for (const [name, matched] of entries(this.matched)) {
       const matches = matched.match(capabilities)
       // if any of the members matches no capabilties we won't be able to create

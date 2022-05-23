@@ -384,3 +384,70 @@ test("or combinator", assert => {
     length: 2,
   })
 })
+
+test("amplification with or", assert => {
+  const readwrite = matcher({
+    /**
+     * @param {API.Capability} capability
+     */
+    parse: capability =>
+      parseAs(capability, { can: "file/read+write", protocol: "file:" }),
+    check: (claimed, provided) =>
+      claimed.uri.pathname.startsWith(provided.uri.pathname),
+  })
+
+  const readnwrite = group({
+    read,
+    write,
+  }).derive({
+    /**
+     * @param {API.Capability} capability
+     */
+    parse: capability =>
+      parseAs(capability, { can: "file/read+write", protocol: "file:" }),
+    check: (claimed, { read, write }) => {
+      return (
+        claimed.uri.href.startsWith(read.uri.href) &&
+        claimed.uri.href.startsWith(write.uri.href)
+      )
+    },
+  })
+
+  const rw = readwrite.or(readnwrite)
+
+  assert.deepEqual(
+    rw.match([
+      { can: "file/read", with: "file:///home/zAlice/" },
+      { can: "file/write", with: "file:///home/zAlice/" },
+    ]),
+    []
+  )
+
+  const matches = rw.match([
+    { can: "file/read+write", with: "file:///home/zAlice/public" },
+    { can: "file/write", with: "file:///home/zAlice/" },
+  ])
+
+  assert.like(matches, {
+    ...[
+      {
+        matcher: readwrite,
+        value: {
+          can: "file/read+write",
+          uri: { href: "file:///home/zAlice/public" },
+        },
+      },
+      {
+        matcher: group({
+          read,
+          write,
+        }),
+        value: {
+          can: "file/read+write",
+          uri: { href: "file:///home/zAlice/public" },
+        },
+      },
+    ],
+    length: 2,
+  })
+})
