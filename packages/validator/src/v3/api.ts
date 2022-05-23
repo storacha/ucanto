@@ -15,17 +15,21 @@ export type InferSubGroup<Members extends Group> = {
 export interface Matcher<M extends Match<unknown, any> = Match<unknown, any>> {
   match(capabilites: API.Capability[]): M[]
 
-  derive<E>(descriptor: DeriveDescriptor<E, M["value"]>): Matcher<Match<E, M>>
+  derive<E>(descriptor: DeriveDescriptor<E, M>): Matcher<Match<E, M>>
 
   or<W extends Match<unknown, any>>(other: Matcher<W>): Matcher<M | W>
 }
 
-export interface Checker<T, U> {
-  check: Check<T, U>
+export interface Checker<T, M extends Match<unknown, any>> {
+  check: Check<T, M>
 }
 
 export type InferGroupValue<D extends Group> = {
-  [K in keyof D]: D[K] extends Matcher<Match<infer T, any>> ? T : never
+  [K in keyof D]: D[K] extends Matcher<Match<infer T, any>>
+    ? T
+    : D[K] extends string
+    ? D[K]
+    : never
 }
 
 export type InferSubGroupValue<D extends Group> = {
@@ -58,24 +62,24 @@ export interface Parse<T> {
   (capability: API.Capability): API.Result<T, API.InvalidCapability>
 }
 
-export interface Check<T, U> {
-  (claim: T, provided: U): boolean
+export interface Check<T, M extends Match<unknown, any>> {
+  (claim: T, provided: M["value"]): boolean
 }
 
-export interface DeriveDescriptor<T, U> {
+export interface DeriveDescriptor<T, M extends Match<unknown, any>> {
   parse: Parse<T>
-  check: Check<T, U>
+  check: Check<T, M>
 }
 
 export interface IndirectMatcherDescriptor<T, M extends Match<any, any>> {
   parse: Parse<T>
-  check: Check<T, M["value"]>
+  check: Check<T, M>
   delegates: Matcher<M>
 }
 
 export interface DirectMatcherDescriptor<T> {
   parse: Parse<T>
-  check: Check<T, T>
+  check: Check<T, DirectMatch<T>>
   delegates?: undefined
 }
 
@@ -93,7 +97,7 @@ export interface MatcherFactory {
   <T, M extends Match<unknown, any>>(
     descriptor: IndirectMatcherDescriptor<T, M>
   ): Matcher<Match<T, M>>
-  <T>(descriptor: DirectMatcherDescriptor<T>): Matcher<DirectMatch<T>>
+  <T>(descriptor: DirectMatcherDescriptor<T>): Matcher<Match<T, DirectMatch<T>>>
 }
 
 export declare var matcher: MatcherFactory

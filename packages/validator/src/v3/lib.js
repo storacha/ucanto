@@ -31,7 +31,7 @@ export const group = members => new GroupMatcher(members)
  * @template T
  * @template {API.Match<unknown, any>} M
  * @param {API.Matcher<M>} matcher
- * @param {API.DeriveDescriptor<T, M["value"]>} descriptor
+ * @param {API.DeriveDescriptor<T, M>} descriptor
  * @returns {API.Matcher<API.Match<T, M>>}
  */
 export const derive = (matcher, { parse, check }) =>
@@ -78,7 +78,7 @@ class Matcher {
 
   /**
    * @template E
-   * @param {API.DeriveDescriptor<E, T>} descriptor
+   * @param {API.DeriveDescriptor<E, API.Match<T, M>>} descriptor
    * @returns {API.Matcher<API.Match<E, API.Match<T, M>>>}
    */
   derive(descriptor) {
@@ -153,7 +153,7 @@ class GroupMatcher {
 
   /**
    * @template E
-   * @param {API.DeriveDescriptor<E, API.GroupMatch<Members>['value']>} descriptor
+   * @param {API.DeriveDescriptor<E, API.GroupMatch<Members>>} descriptor
    * @returns {API.Matcher<API.Match<E, API.GroupMatch<Members>>>}
    */
   derive(descriptor) {
@@ -194,7 +194,7 @@ class OrMatcher {
 
   /**
    * @template E
-   * @param {API.DeriveDescriptor<E, (L|R)['value']>} descriptor
+   * @param {API.DeriveDescriptor<E, L|R>} descriptor
    * @returns {API.Matcher<API.Match<E, L|R>>}
    */
   derive(descriptor) {
@@ -238,7 +238,7 @@ class Match {
   /**
    * @param {T} value
    * @param {API.Matcher<M>} matcher
-   * @param {API.Checker<T, M['value']>} checker
+   * @param {API.Checker<T, M>} checker
    */
   constructor(value, matcher, checker) {
     this.group = /** @type {false} */ (false)
