@@ -5,9 +5,109 @@ import { MalformedCapability, UnknownCapability } from "../error.js"
  * @template {API.Ability} Ability
  * @template {API.Caveats} Caveats
  * @param {API.CapabilityDescriptor<Ability, Caveats>} descriptor
- * @returns {API.Matcher<API.DirectMatch<API.CapabilityView<Ability, Caveats>>>}
+ * @returns {API.CapabilityMatcher<Ability, Caveats>}
  */
 export const capability = descriptor => new Capability(descriptor)
+
+/**
+ * @template {API.Matcher[]} M
+ * @param {M} capabilities
+ * @returns {API.AmilficationMatcher<API.InferAmplificationInput<M>>}
+ */
+export const amplify = (...capabilities) => new Amilfication(capabilities)
+
+/**
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
+ * @template {API.Match} M
+ * @implements {API.Matcher<API.CapabilityMatch<A, C, M>>}
+ */
+class DerivedCapability {
+  /**
+   * @param {API.DeriveOptions<A, C, M>} options
+   * @param {API.Matcher<M>} matcher
+   */
+  constructor({ can, check, with: parseWith, caveats }, matcher) {
+    this.can = can
+    this.check = check
+    this.parseWith = parseWith
+    this.parsers = caveats
+    this.matcher = matcher
+  }
+  /**
+   * @param {API.UCAN.Capability} capability
+   * @returns {API.Result<API.CapabilityView<A, C>, API.InvalidCapability>}
+   */
+  parse(capability) {
+    const { can, parsers, parseWith } = this
+    if (capability.can !== can) {
+      return new UnknownCapability(capability)
+    }
+
+    const uri = parseWith(capability.with)
+    if (uri.error) {
+      return new MalformedCapability(capability, [uri.error])
+    }
+
+    const caveats = /** @type {API.InferCaveats<C>} */ ({})
+
+    if (parsers) {
+      for (const [name, parse] of entries(parsers)) {
+        const result = parse(capability[/** @type {string} */ (name)])
+        if (!result.error) {
+          caveats[name] = /** @type {any} */ (result)
+        } else {
+          return new MalformedCapability(capability, [result.error])
+        }
+      }
+    }
+
+    return { can, with: uri, caveats }
+  }
+  /**
+   * @param {API.Capability[]} capabilities
+   * @returns {API.Match<API.CapabilityView<A, C>, M>[]}
+   */
+  match(capabilities) {
+    const matches = []
+    for (const capability of capabilities) {
+      const result = this.parse(capability)
+      if (!result.error) {
+        matches.push(new Match(result, this.matcher, this))
+      }
+    }
+
+    return matches
+  }
+
+  /**
+   * @template {{ can: API.Ability }} E
+   * @param {API.DeriveDescriptor<E, API.Match<T, M>>} descriptor
+   * @returns {API.Matcher<API.Match<E, API.Match<T, M>>>}
+   */
+  derive(descriptor) {
+    return derive(this, descriptor)
+  }
+
+  /**
+   * @template {API.Ability} B
+   * @template {API.Caveats} D
+   * @param {API.DeriveOptions<B, D, API.CapabilityMatch<A, C, M>>} descriptor
+   * @returns {API.Matcher<API.CapabilityMatch<B, D, API.CapabilityMatch<A, C, M>>>}
+   */
+  and(descriptor) {
+    return and(this, descriptor)
+  }
+
+  /**
+   * @template {API.Match<{ can: API.Ability }, any>} W
+   * @param {API.Matcher<W>} other
+   * @returns {API.Matcher<API.Match<T, M>|W>}
+   */
+  or(other) {
+    return or(this, other)
+  }
+}
 
 /**
  * @template {API.Ability} Ability
@@ -71,21 +171,144 @@ class Capability {
   }
 
   /**
+   * @template {API.Ability} B
+   * @template {API.Caveats} D
+   * @param {API.DeriveOptions<B, D, API.CapabilityMatch<A, C, M>>} descriptor
+   * @returns {API.Matcher<API.CapabilityMatch<B, D, API.CapabilityMatch<A, C, M>>>}
+   */
+
+  /**
    * @template {{ can: API.Ability }} E
    * @param {API.DeriveDescriptor<E, API.Match<T, M>>} descriptor
    * @returns {API.Matcher<API.Match<E, API.Match<T, M>>>}
    */
-  derive(descriptor) {
-    return derive(this, descriptor)
+  and(descriptor) {
+    return and(this, descriptor)
   }
 
   /**
    * @template {API.Match<{ can: API.Ability }, any>} W
    * @param {API.Matcher<W>} other
-   * @returns {API.Matcher<API.Match<T, M>|W>}
+   * @returns {API.Matcher<API.Match<this, Match|W>>}
    */
   or(other) {
     return or(this, other)
+  }
+}
+
+/**
+ * @template {API.Matcher[]} M
+ * @returns {API.AmilficationMatcher<M>}
+ */
+export class Amilfication {
+  /**
+   * @param {M} members
+   */
+  constructor(members) {
+    this.members = members
+  }
+  /**
+   * @param {API.Capability[]} capabilities
+   * @returns {API.MatchAmilfication<M>[]}
+   */
+  match(capabilities) {
+    const matrix = this.members.map(member => member.match(capabilities))
+    const matches = comb(matrix)
+    return matches.map(match => new MatchAmilpification(match))
+  }
+  /**
+   * @template {API.Ability} A
+   * @template {API.Caveats} C
+   * @param {(...values: API.InferAmplification<M>) => API.CapabilityView<A, C>[]} into
+   * @returns {API.CapabilityMatcher<A, C, API.Match<API.CapabilityView<A, C>, API.MatchAmilfication<API.InferAmplificationMatch<M>>>>}
+   */
+
+  join(into) {
+    return new Join(this, into)
+  }
+}
+
+/**
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
+ * @template {API.Match[]} M
+ * @implements {API.CapabilityMatcher<A, C, API.Match<API.CapabilityView<A, C>, API.MatchAmilfication<API.InferAmplificationMatch<M>>>>}
+ */
+class Join {
+  /**
+   * @param {API.AmilficationMatcher<API.InferAmplificationMatch<M>>} matchers
+   * @param {(...values: API.InferAmplification<M>) => API.CapabilityView<A, C>[]} into
+   */
+  constructor(matchers, into) {
+    this.matchers = matchers
+    this.into = into
+  }
+  /**
+   * @param {API.Capability[]} capabilities
+   * @returns {API.Match<API.CapabilityView<A, C>, API.MatchAmilfication<API.InferAmplificationMatch<M>>>[]}
+   */
+  match(capabilities) {
+    const matches = []
+    for (const match of this.matchers.match(capabilities)) {
+      for (const capability of this.into(...match.value)) {
+        matches.push(new JoinMatch(capability, match))
+      }
+    }
+
+    return matches
+  }
+}
+
+/**
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
+ * @template {API.Match[]} M
+ * @implements {API.Match<API.CapabilityView<A, C>, API.MatchAmilfication<API.InferAmplificationMatch<M>>>}
+ */
+class JoinMatch {
+  /**
+   * @param {API.CapabilityView<A, C>} value
+   * @param {API.MatchAmilfication<M>} matched
+   */
+  constructor(value, matched) {
+    this.value = value
+    this.matched = matched
+  }
+  /**
+   * @param {API.Capability[]} capabilities
+   * @returns {API.MatchAmilfication<API.InferAmplificationMatch<M>>[]}
+   */
+  match(capabilities) {
+    return this.matched.match(capabilities)
+  }
+}
+
+/**
+ * @template {API.Match[]} M
+ * @implements {API.MatchAmilfication<M>}
+ */
+class MatchAmilpification {
+  /**
+   * @param {M} matches
+   */
+  constructor(matches) {
+    this.matches = matches
+  }
+  get value() {
+    const value = /** @type {API.InferAmplification<M>} */ (
+      this.matches.map(match => match.value)
+    )
+
+    Object.defineProperties(this, { value: { value } })
+    return value
+  }
+  /**
+   * @param {API.Capability[]} capabilities
+   */
+  match(capabilities) {
+    const matrix = this.matches.map(match => match.match(capabilities))
+    const matches = comb(matrix)
+    return matches.map(match => new MatchAmilpification(match))
   }
 }
 
@@ -125,6 +348,17 @@ export const group = members => new GroupMatcher(members)
  */
 export const derive = (matcher, { parse, check }) =>
   new Matcher({ parse, check, delegates: matcher })
+
+/**
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
+ * @template {API.Match<{ can: API.Ability }>} M
+ * @param {API.Matcher<M>} matcher
+ * @param {API.DeriveOptions<A, C, M>} descriptor
+ * @returns {API.Matcher<API.CapabilityMatch<A, C, M>>}
+ */
+export const and = (matcher, descriptor) =>
+  new DerivedCapability(descriptor, matcher)
 
 /**
  * @template {API.Match<{ can: API.Ability }, any>} L
@@ -317,6 +551,23 @@ const combine = dataset => {
   return /** @type {any} */ (results)
 }
 
+/**
+ * @template T
+ * @param {T[][]} dataset
+ * @returns {T[][]}
+ */
+const comb = ([first, ...rest]) => {
+  const results = first.map(value => [value])
+  for (const values of rest) {
+    const tuples = results.splice(0)
+    for (const value of values) {
+      for (const tuple of tuples) {
+        results.push([...tuple, value])
+      }
+    }
+  }
+  return results
+}
 /**
  * @template {{ can: API.Ability }} T
  * @template {API.Match<{ can: API.Ability }, any>} M
