@@ -40,11 +40,11 @@ export const derive = ({ from, to, derives }) => new Derive(from, to, derives)
  */
 class Selector {
   /**
-   * @param {API.Capability} _capability
-   * @returns {M|null}
+   * @param {API.Capability} capability
+   * @returns {API.MatchResult<M>}
    */
-  match(_capability) {
-    return null
+  match(capability) {
+    return new UnknownCapability(capability)
   }
 
   /**
@@ -81,10 +81,9 @@ class Selector {
  */
 class UnitSelector extends Selector {
   /**
-   * @template U
    * @template {API.Match} W
-   * @param {API.Selector<API.Match<U, W>>} other
-   * @returns {API.GroupSelector<[M, API.Match<U, W>]>}
+   * @param {API.Selector<W>} other
+   * @returns {API.GroupSelector<[M, W]>}
    */
   and(other) {
     return and(/** @type {API.UnitSelector<M>} */ (this), other)
@@ -107,11 +106,11 @@ class Capability extends UnitSelector {
 
   /**
    * @param {API.Capability} capability
-   * @returns {API.DirectMatch<T>|null}
+   * @returns {API.MatchResult<API.DirectMatch<T>>}
    */
   match(capability) {
     const result = parse(this, capability)
-    return result.error ? null : new Match(result, this.descriptor)
+    return result.error ? result.error : new Match(result, this.descriptor)
   }
 }
 
@@ -133,9 +132,15 @@ class Or extends UnitSelector {
   }
   /**
    * @param {API.Capability} capability
+   * @return {API.MatchResult<M|W>}
    */
   match(capability) {
-    return this.left.match(capability) || this.right.match(capability)
+    const result = this.left.match(capability)
+    if (result.error) {
+      return this.right.match(capability)
+    } else {
+      return result
+    }
   }
   /**
    * @param {API.Capability[]} capabilites
@@ -160,15 +165,16 @@ class And extends Selector {
   }
   /**
    * @param {API.Capability} capability
+   * @returns {API.MatchResult<API.Amplify<API.InferMembers<Selectors>>>}
    */
   match(capability) {
     const tuple = []
     for (const selector of this.selectors) {
       const result = selector.match(capability)
-      if (result) {
-        tuple.push(result)
+      if (result.error) {
+        return result.error
       } else {
-        return null
+        tuple.push(result)
       }
     }
 
@@ -220,14 +226,15 @@ class Derive extends UnitSelector {
   }
   /**
    * @param {API.Capability} capability
-   * @returns {API.DerivedMatch<T, M>|null}
+   * @returns {API.MatchResult<API.DerivedMatch<T, M>>}
    */
   match(capability) {
     const match = this.to.match(capability)
-    if (match) {
+    if (match.error) {
+      return match.error
+    } else {
       return new DerivedMatch(match, this.from, this.to, this.derives)
     }
-    return null
   }
 }
 
@@ -246,16 +253,17 @@ class Match {
   }
   /**
    * @param {API.Capability} capability
-   * @returns {API.DirectMatch<T>|null}
+   * @returns {API.MatchResult<API.DirectMatch<T>>}
    */
   match(capability) {
     const result = parse(this, capability)
     if (result.error) {
-      return null
+      return result.error
     }
 
-    if (!this.descriptor.derives(this.value, result)) {
-      return null
+    const claim = this.descriptor.derives(this.value, result)
+    if (claim.error) {
+      return claim.error
     }
 
     return new Match(result, this.descriptor)
@@ -398,7 +406,7 @@ const parse = (self, capability) => {
 
 /**
  * @template {API.Match} M
- * @param {API.Select<M>} matcher
+ * @param {API.Matcher<M>} matcher
  * @param {API.Capability[]} capabilities
  * @returns {M[]}
  */
@@ -407,7 +415,7 @@ const select = (matcher, capabilities) => {
   const matches = []
   for (const capability of capabilities) {
     const result = matcher.match(capability)
-    if (result) {
+    if (!result.error) {
       matches.push(result)
     }
   }

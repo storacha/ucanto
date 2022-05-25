@@ -1,11 +1,13 @@
 export * from "../api.js"
 import * as API from "../api.js"
 
-export type { Capability, Ability, Resource } from "../api.js"
-
-export interface Checker<T, M extends Match<any, any>> {
-  check: Check<T, M>
-}
+export type {
+  Capability,
+  Ability,
+  Resource,
+  EscalatedClaim as EscalatedCapability,
+} from "../api.js"
+import type { EscalatedClaim as EscalatedCapability } from "../api.js"
 
 export interface Match<T = unknown, M extends Match = Match<unknown, any>> {
   value: T
@@ -13,14 +15,6 @@ export interface Match<T = unknown, M extends Match = Match<unknown, any>> {
 }
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
-
-export interface Parse<T> {
-  (capability: API.Capability): API.Result<T, API.InvalidCapability>
-}
-
-export interface Check<T, M extends Match<{ can: API.Ability }, any>> {
-  (claim: T, provided: M["value"]): boolean
-}
 
 export interface Parser<
   I,
@@ -37,23 +31,21 @@ export interface Failure extends Error {
 
 export interface Caveats
   extends Record<string, Parser<unknown, unknown, Failure>> {}
-export interface CapabilityDescriptor<
-  Can extends API.Ability = API.Ability,
-  C extends Caveats = Caveats
-> {
-  can: Can
-  with: Parser<string, URL, Failure>
-  caveats?: C
-
-  check: Check<CapabilityView<Can, C>, DirectMatch<CapabilityView<Can, C>>>
-}
 
 export interface Descriptor<T extends CapabilityView, M extends Match> {
   can: T["can"]
   with: Parser<string, T["with"], Failure>
   caveats?: InferCaveatsDescriptor<T>
-  derives: (claim: T, capability: M["value"]) => boolean
+  derives: (
+    claim: T,
+    capability: M["value"]
+  ) => API.Result<T, EscalatedCapability<T>>
 }
+
+export type MatchResult<M extends Match> = API.Result<
+  M,
+  API.InvalidCapability | EscalatedCapability<M["value"]>
+>
 
 export interface CapabilityConfig<
   Ability extends API.Ability,
@@ -67,8 +59,11 @@ export type InferCaveatsDescriptor<T extends CapabilityView> = {
     : never
 }
 
-export interface Selector<M extends Match> {
-  match(capability: API.Capability): M | null
+export interface Matcher<M extends Match> {
+  match(capability: API.Capability): MatchResult<M>
+}
+
+export interface Selector<M extends Match> extends Matcher<M> {
   select(capabilites: API.Capability[]): M[]
   or<W extends Match>(other: Selector<W>): Selector<M | W>
   derive<T>(options: DeriveSelector<M, T>): Selector<DerivedMatch<T, M>>
@@ -136,20 +131,4 @@ export interface CapabilityView<
 
 export type InferCaveats<C> = {
   [Key in keyof C]: C[Key] extends Parser<unknown, infer T, Failure> ? T : never
-}
-
-export interface DeriveOptions<
-  Can extends API.Ability,
-  C extends Caveats,
-  M extends Match<{ can: API.Ability }, any>
-> {
-  can: Can
-  with: Parser<string, URL, Failure>
-  caveats?: C
-
-  check: Check<CapabilityView<Can, C>, M>
-}
-
-export interface Select<M extends Match> {
-  match(capability: API.Capability): null | M
 }
