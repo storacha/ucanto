@@ -1,18 +1,31 @@
 export * from "../api.js"
 import * as API from "../api.js"
 
+import type { Capability as Source } from "../api.js"
 export type {
-  Capability,
+  Capability as Source,
   Ability,
   Resource,
   EscalatedClaim as EscalatedCapability,
 } from "../api.js"
 import type { EscalatedClaim as EscalatedCapability } from "../api.js"
 
-export interface Match<T = unknown, M extends Match = Match<unknown, any>> {
+export interface Match<T = unknown, M extends Match = Match<unknown, any>>
+  extends Selector<M> {
   value: T
-  select(capabilites: API.Capability[]): M[]
 }
+
+export interface Matcher<M extends Match> {
+  match(capability: Source): MatchResult<M>
+}
+
+export interface Selector<M extends Match> {
+  select(capabilites: Source[]): M[]
+}
+
+export interface MatchSelector<M extends Match>
+  extends Matcher<M>,
+    Selector<M> {}
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
@@ -32,7 +45,7 @@ export interface Failure extends Error {
 export interface Caveats
   extends Record<string, Parser<unknown, unknown, Failure>> {}
 
-export interface Descriptor<T extends CapabilityView, M extends Match> {
+export interface Descriptor<T extends ParsedCapability, M extends Match> {
   can: T["can"]
   with: Parser<string, T["with"], Failure>
   caveats?: InferCaveatsDescriptor<T>
@@ -47,33 +60,23 @@ export type MatchResult<M extends Match> = API.Result<
   API.InvalidCapability | EscalatedCapability<M["value"]>
 >
 
-export interface CapabilityConfig<
+export interface Config<
   Ability extends API.Ability,
   Constraints extends Caveats,
   M extends Match
-> extends Descriptor<CapabilityView<Ability, Constraints>, M> {}
+> extends Descriptor<ParsedCapability<Ability, Constraints>, M> {}
 
-export type InferCaveatsDescriptor<T extends CapabilityView> = {
+export type InferCaveatsDescriptor<T extends ParsedCapability> = {
   [Key in keyof T["caveats"]]: T["caveats"][Key] extends infer U
     ? Parser<unknown, T["caveats"][Key], Failure>
     : never
-}
-
-export interface Matcher<M extends Match> {
-  match(capability: API.Capability): MatchResult<M>
-}
-
-export interface Selector<M extends Match> extends Matcher<M> {
-  select(capabilites: API.Capability[]): M[]
-  or<W extends Match>(other: Selector<W>): Selector<M | W>
-  derive<T>(options: DeriveSelector<M, T>): Selector<DerivedMatch<T, M>>
 }
 
 export interface DerivedMatch<T, M extends Match>
   extends Match<T, M | DerivedMatch<T, M>> {}
 
 export interface DeriveSelector<M extends Match, T> {
-  to: Selector<DirectMatch<T>>
+  to: MatchSelector<DirectMatch<T>>
   derives: (self: T, from: M["value"]) => boolean
 }
 
@@ -81,26 +84,31 @@ export interface Derives<T, U> {
   (self: T, from: U): boolean
 }
 
-export interface UnitSelector<M extends Match> extends Selector<M> {
-  and<W extends Match>(other: Selector<W>): Selector<Amplify<[M, W]>>
+export interface View<M extends Match> extends Matcher<M>, Selector<M> {
+  or<W extends Match>(other: MatchSelector<W>): MatchSelector<M | W>
+  derive<T>(options: DeriveSelector<M, T>): MatchSelector<DerivedMatch<T, M>>
 }
 
-export interface GroupSelector<M extends Match[]> extends Selector<Amplify<M>> {
-  and<W extends Match>(other: Selector<W>): GroupSelector<[...M, W]>
+export interface Capability<M extends Match> extends View<M> {
+  and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[M, W]>
+}
+
+export interface CapabilityGroup<M extends Match[]> extends View<Amplify<M>> {
+  and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[...M, W]>
 }
 
 export type Derive<M extends Match, W extends Match> = W extends Match<
   infer T,
   infer N
 >
-  ? Selector<Match<T, N | M>>
+  ? MatchSelector<Match<T, N | M>>
   : never
 
 export interface Amplify<Members extends Match[]>
   extends Match<InferValue<Members>, Amplify<InferMatch<Members>>> {}
 
 export type InferMembers<Selectors extends unknown[]> = Selectors extends [
-  Selector<infer Match>,
+  MatchSelector<infer Match>,
   ...infer Rest
 ]
   ? [Match, ...InferMembers<Rest>]
@@ -120,7 +128,7 @@ export type InferMatch<Members extends unknown[]> = Members extends []
   ? [M, ...InferMatch<Rest>]
   : never
 
-export interface CapabilityView<
+export interface ParsedCapability<
   Can extends API.Ability = API.Ability,
   C extends Caveats = Caveats
 > {

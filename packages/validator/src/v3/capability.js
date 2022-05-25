@@ -5,42 +5,42 @@ import { MalformedCapability, UnknownCapability } from "../error.js"
 /**
  * @template {API.Ability} A
  * @template {API.Caveats} C
- * @param {API.CapabilityConfig<A, C, API.DirectMatch<API.CapabilityView<A, C>>>} descriptor
- * @returns {API.UnitSelector<API.DirectMatch<API.CapabilityView<A, C>>>}
+ * @param {API.Config<A, C, API.DirectMatch<API.ParsedCapability<A, C>>>} descriptor
+ * @returns {API.Capability<API.DirectMatch<API.ParsedCapability<A, C>>>}
  */
 export const capability = descriptor => new Capability(descriptor)
 
 /**
  * @template {API.Match} M
  * @template {API.Match} W
- * @param {API.Selector<M>} left
- * @param {API.Selector<W>} right
- * @returns {API.Selector<M|W>}
+ * @param {API.MatchSelector<M>} left
+ * @param {API.MatchSelector<W>} right
+ * @returns {API.MatchSelector<M|W>}
  */
 export const or = (left, right) => new Or(left, right)
 
 /**
- * @template {API.Selector<API.Match>[]} Selectors
+ * @template {API.MatchSelector<API.Match>[]} Selectors
  * @param {Selectors} selectors
- * @returns {API.GroupSelector<API.InferMembers<Selectors>>}
+ * @returns {API.CapabilityGroup<API.InferMembers<Selectors>>}
  */
 export const and = (...selectors) => new And(selectors)
 
 /**
  * @template {API.Match} M
  * @template T
- * @param {API.DeriveSelector<M, T> & { from: API.Selector<M> }} options
- * @returns {API.Selector<API.DerivedMatch<T, M>>}
+ * @param {API.DeriveSelector<M, T> & { from: API.MatchSelector<M> }} options
+ * @returns {API.MatchSelector<API.DerivedMatch<T, M>>}
  */
 export const derive = ({ from, to, derives }) => new Derive(from, to, derives)
 
 /**
  * @template {API.Match} M
- * @implements {API.Selector<M>}
+ * @implements {API.View<M>}
  */
-class Selector {
+class View {
   /**
-   * @param {API.Capability} capability
+   * @param {API.Source} capability
    * @returns {API.MatchResult<M>}
    */
   match(capability) {
@@ -48,7 +48,7 @@ class Selector {
   }
 
   /**
-   * @param {API.Capability[]} capabilities
+   * @param {API.Source[]} capabilities
    * @returns {M[]}
    */
   select(capabilities) {
@@ -57,8 +57,8 @@ class Selector {
 
   /**
    * @template {API.Match} W
-   * @param {API.Selector<W>} other
-   * @returns {API.Selector<M | W>}
+   * @param {API.MatchSelector<W>} other
+   * @returns {API.MatchSelector<M | W>}
    */
   or(other) {
     return or(this, other)
@@ -67,7 +67,7 @@ class Selector {
   /**
    * @template U
    * @param {API.DeriveSelector<M, U>} options
-   * @returns {API.Selector<API.DerivedMatch<U, M>>}
+   * @returns {API.MatchSelector<API.DerivedMatch<U, M>>}
    */
   derive({ derives, to }) {
     return derive({ derives, to, from: this })
@@ -76,26 +76,26 @@ class Selector {
 
 /**
  * @template {API.Match} M
- * @implements {API.UnitSelector<M>}
- * @extends {Selector<M>}
+ * @implements {API.Capability<M>}
+ * @extends {View<M>}
  */
-class UnitSelector extends Selector {
+class Unit extends View {
   /**
    * @template {API.Match} W
-   * @param {API.Selector<W>} other
-   * @returns {API.GroupSelector<[M, W]>}
+   * @param {API.Capability<W>} other
+   * @returns {API.CapabilityGroup<[M, W]>}
    */
   and(other) {
-    return and(/** @type {API.UnitSelector<M>} */ (this), other)
+    return and(/** @type {API.Capability<M>} */ (this), other)
   }
 }
 
 /**
- * @template {API.CapabilityView} T
- * @implements {API.UnitSelector<API.DirectMatch<T>>}
- * @extends {UnitSelector<API.DirectMatch<T>>}
+ * @template {API.ParsedCapability} T
+ * @implements {API.Capability<API.DirectMatch<T>>}
+ * @extends {Unit<API.DirectMatch<T>>}
  */
-class Capability extends UnitSelector {
+class Capability extends Unit {
   /**
    * @param {API.Descriptor<T, API.DirectMatch<T>>} descriptor
    */
@@ -105,7 +105,7 @@ class Capability extends UnitSelector {
   }
 
   /**
-   * @param {API.Capability} capability
+   * @param {API.Source} capability
    * @returns {API.MatchResult<API.DirectMatch<T>>}
    */
   match(capability) {
@@ -117,13 +117,13 @@ class Capability extends UnitSelector {
 /**
  * @template {API.Match} M
  * @template {API.Match} W
- * @implements {API.Selector<M|W>}
- * @extends {UnitSelector<M|W>}
+ * @implements {API.Capability<M|W>}
+ * @extends {Unit<M|W>}
  */
-class Or extends UnitSelector {
+class Or extends Unit {
   /**
-   * @param {API.Selector<M>} left
-   * @param {API.Selector<W>} right
+   * @param {API.MatchSelector<M>} left
+   * @param {API.MatchSelector<W>} right
    */
   constructor(left, right) {
     super()
@@ -131,7 +131,7 @@ class Or extends UnitSelector {
     this.right = right
   }
   /**
-   * @param {API.Capability} capability
+   * @param {API.Source} capability
    * @return {API.MatchResult<M|W>}
    */
   match(capability) {
@@ -143,7 +143,7 @@ class Or extends UnitSelector {
     }
   }
   /**
-   * @param {API.Capability[]} capabilites
+   * @param {API.Source[]} capabilites
    */
   select(capabilites) {
     return [...this.left.select(capabilites), ...this.right.select(capabilites)]
@@ -151,11 +151,11 @@ class Or extends UnitSelector {
 }
 
 /**
- * @template {API.Selector<API.Match>[]} Selectors
- * @implements {API.GroupSelector<API.InferMembers<Selectors>>}
- * @extends {Selector<API.Amplify<API.InferMembers<Selectors>>>}
+ * @template {API.MatchSelector<API.Match>[]} Selectors
+ * @implements {API.CapabilityGroup<API.InferMembers<Selectors>>}
+ * @extends {View<API.Amplify<API.InferMembers<Selectors>>>}
  */
-class And extends Selector {
+class And extends View {
   /**
    * @param {Selectors} selectors
    */
@@ -164,7 +164,7 @@ class And extends Selector {
     this.selectors = selectors
   }
   /**
-   * @param {API.Capability} capability
+   * @param {API.Source} capability
    * @returns {API.MatchResult<API.Amplify<API.InferMembers<Selectors>>>}
    */
   match(capability) {
@@ -184,7 +184,7 @@ class And extends Selector {
     )
   }
   /**
-   * @param {API.Capability[]} capabilities
+   * @param {API.Source[]} capabilities
    */
   select(capabilities) {
     const data = this.selectors.map(selector => selector.select(capabilities))
@@ -197,8 +197,8 @@ class And extends Selector {
   /**
    * @template E
    * @template {API.Match} X
-   * @param {API.Selector<API.Match<E, X>>} other
-   * @returns {API.GroupSelector<[...API.InferMembers<Selectors>, API.Match<E, X>]>}
+   * @param {API.MatchSelector<API.Match<E, X>>} other
+   * @returns {API.CapabilityGroup<[...API.InferMembers<Selectors>, API.Match<E, X>]>}
    */
   and(other) {
     return new And([...this.selectors, other])
@@ -208,14 +208,14 @@ class And extends Selector {
 /**
  * @template T
  * @template {API.Match} M
- * @implements {API.Selector<API.DerivedMatch<T, M>>}
- * @extends {UnitSelector<API.DerivedMatch<T, M>>}
+ * @implements {API.Capability<API.DerivedMatch<T, M>>}
+ * @extends {Unit<API.DerivedMatch<T, M>>}
  */
 
-class Derive extends UnitSelector {
+class Derive extends Unit {
   /**
-   * @param {API.Selector<M>} from
-   * @param {API.Selector<API.DirectMatch<T>>} to
+   * @param {API.MatchSelector<M>} from
+   * @param {API.MatchSelector<API.DirectMatch<T>>} to
    * @param {(self:T, from:M['value']) => boolean} derives
    */
   constructor(from, to, derives) {
@@ -225,7 +225,7 @@ class Derive extends UnitSelector {
     this.derives = derives
   }
   /**
-   * @param {API.Capability} capability
+   * @param {API.Source} capability
    * @returns {API.MatchResult<API.DerivedMatch<T, M>>}
    */
   match(capability) {
@@ -239,7 +239,7 @@ class Derive extends UnitSelector {
 }
 
 /**
- * @template {API.CapabilityView} T
+ * @template {API.ParsedCapability} T
  * @implements {API.DirectMatch<T>}
  */
 class Match {
@@ -252,7 +252,7 @@ class Match {
     this.descriptor = descriptor
   }
   /**
-   * @param {API.Capability} capability
+   * @param {API.Source} capability
    * @returns {API.MatchResult<API.DirectMatch<T>>}
    */
   match(capability) {
@@ -269,7 +269,7 @@ class Match {
     return new Match(result, this.descriptor)
   }
   /**
-   * @param {API.Capability[]} capabilities
+   * @param {API.Source[]} capabilities
    */
   select(capabilities) {
     return select(this, capabilities)
@@ -285,8 +285,8 @@ class Match {
 class DerivedMatch {
   /**
    * @param {API.DirectMatch<T>} selected
-   * @param {API.Selector<M>} from
-   * @param {API.Selector<API.DirectMatch<T>>} to
+   * @param {API.MatchSelector<M>} from
+   * @param {API.MatchSelector<API.DirectMatch<T>>} to
    * @param {API.Derives<T, M['value']>} derives
    */
   constructor(selected, from, to, derives) {
@@ -300,7 +300,7 @@ class DerivedMatch {
   }
   /**
    *
-   * @param {API.Capability[]} capabilities
+   * @param {API.Source[]} capabilities
    * @returns {(API.DerivedMatch<T, M>|M)[]}
    */
   select(capabilities) {
@@ -319,7 +319,7 @@ class DerivedMatch {
 }
 
 /**
- * @template {API.Selector<API.Match>[]} Selectors
+ * @template {API.MatchSelector<API.Match>[]} Selectors
  * @implements {API.Amplify<API.InferMembers<Selectors>>}
  */
 class AndMatch {
@@ -345,7 +345,7 @@ class AndMatch {
   }
 
   /**
-   * @param {API.Capability[]} capabilities
+   * @param {API.Source[]} capabilities
    * @returns {API.Amplify<API.InferMatch<API.InferMembers<Selectors>>>[]} 
 
    */
@@ -360,10 +360,10 @@ class AndMatch {
 }
 
 /**
- * @template {API.CapabilityView} T
+ * @template {API.ParsedCapability} T
  * @template {API.Match} M
  * @param {{descriptor: API.Descriptor<T, M>}} self
- * @param {API.Capability} capability
+ * @param {API.Source} capability
  * @returns {API.Result<T, API.InvalidCapability>}
  */
 
@@ -395,19 +395,19 @@ const parse = (self, capability) => {
 }
 
 /**
- * @template {API.CapabilityView} T
+ * @template {API.ParsedCapability} T
  * @template {API.Match} M
  * @typedef {{
  * value?: T
  * descriptor: API.Descriptor<T, M>
- * next: API.Selector<M>
+ * next: API.MatchSelector<M>
  * }} Self
  */
 
 /**
  * @template {API.Match} M
  * @param {API.Matcher<M>} matcher
- * @param {API.Capability[]} capabilities
+ * @param {API.Source[]} capabilities
  * @returns {M[]}
  */
 
