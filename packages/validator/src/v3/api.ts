@@ -1,14 +1,13 @@
 export * from "../api.js"
 import * as API from "../api.js"
 
-import type { Capability as Source } from "../api.js"
+import type { Capability as Source, InvalidCapability } from "../api.js"
 export type {
   Capability as Source,
   Ability,
   Resource,
-  EscalatedClaim as EscalatedCapability,
+  Problem,
 } from "../api.js"
-import type { EscalatedClaim as EscalatedCapability } from "../api.js"
 
 export interface Match<T = unknown, M extends Match = Match<unknown, any>>
   extends Selector<M> {
@@ -20,8 +19,11 @@ export interface Matcher<M extends Match> {
 }
 
 export interface Selector<M extends Match> {
-  select(capabilites: Source[]): M[]
+  select(capabilites: Source[]): IterableIterator<MatchResult<M>>
 }
+
+export interface GroupSelector<M extends Match[] = Match[]>
+  extends Selector<Amplify<M>> {}
 
 export interface MatchSelector<M extends Match>
   extends Matcher<M>,
@@ -29,11 +31,11 @@ export interface MatchSelector<M extends Match>
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
-export interface Parser<
-  I,
-  O extends NonNullable<unknown>,
-  X extends { error: Error }
-> {
+export interface WithParser<I, O, X extends { error: Error }> {
+  (input: I): API.Result<O, X>
+}
+
+export interface Parser<I, O, X extends { error: Error }> {
   (input: I): API.Result<O, X>
 }
 
@@ -49,16 +51,25 @@ export interface Descriptor<T extends ParsedCapability, M extends Match> {
   can: T["can"]
   with: Parser<string, T["with"], Failure>
   caveats?: InferCaveatsDescriptor<T>
-  derives: (
-    claim: T,
-    capability: M["value"]
-  ) => API.Result<T, EscalatedCapability<T>>
+  derives: Derives<T, M["value"]>
 }
 
-export type MatchResult<M extends Match> = API.Result<
-  M,
-  API.InvalidCapability | EscalatedCapability<M["value"]>
+export interface WithContext<Problem extends API.Problem> extends API.Problem {
+  context: Capability | CapabilityGroup
+  problems: Problem[]
+}
+
+export type MatchError = API.DelegationError<
+  InvalidCapability | EscalatedCapability | MatchError
 >
+export interface EscalatedCapability extends Error {
+  name: "EscalatedCapability"
+  error: this
+  claimed: ParsedCapability
+  delegated: object
+  cause: API.Problem
+}
+export type MatchResult<M extends Match> = API.Result<M, MatchError>
 
 export interface Config<
   Ability extends API.Ability,
@@ -77,23 +88,26 @@ export interface DerivedMatch<T, M extends Match>
 
 export interface DeriveSelector<M extends Match, T> {
   to: MatchSelector<DirectMatch<T>>
-  derives: (self: T, from: M["value"]) => boolean
+  derives: Derives<T, M["value"]>
 }
 
 export interface Derives<T, U> {
-  (self: T, from: U): boolean
+  (self: T, from: U): API.Result<true, API.Problem>
 }
 
 export interface View<M extends Match> extends Matcher<M>, Selector<M> {
   or<W extends Match>(other: MatchSelector<W>): MatchSelector<M | W>
-  derive<T>(options: DeriveSelector<M, T>): MatchSelector<DerivedMatch<T, M>>
+  derive<T extends ParsedCapability>(
+    options: DeriveSelector<M, T>
+  ): MatchSelector<DerivedMatch<T, M>>
 }
 
-export interface Capability<M extends Match> extends View<M> {
+export interface Capability<M extends Match = Match> extends View<M> {
   and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[M, W]>
 }
 
-export interface CapabilityGroup<M extends Match[]> extends View<Amplify<M>> {
+export interface CapabilityGroup<M extends Match[] = Match[]>
+  extends View<Amplify<M>> {
   and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[...M, W]>
 }
 

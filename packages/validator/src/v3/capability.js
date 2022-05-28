@@ -1,6 +1,12 @@
 import * as API from "./api.js"
 import { entries, combine } from "./util.js"
-import { MalformedCapability, UnknownCapability } from "../error.js"
+import {
+  Failure,
+  EscalatedCapability,
+  MalformedCapability,
+  UnknownCapability,
+  DelegationError as MatchError,
+} from "../error.js"
 
 /**
  * @template {API.Ability} A
@@ -28,7 +34,7 @@ export const and = (...selectors) => new And(selectors)
 
 /**
  * @template {API.Match} M
- * @template T
+ * @template {API.ParsedCapability} T
  * @param {API.DeriveSelector<M, T> & { from: API.MatchSelector<M> }} options
  * @returns {API.MatchSelector<API.DerivedMatch<T, M>>}
  */
@@ -44,12 +50,11 @@ class View {
    * @returns {API.MatchResult<M>}
    */
   match(capability) {
-    return new UnknownCapability(capability)
+    return new MatchError([new UnknownCapability(capability)], this)
   }
 
   /**
    * @param {API.Source[]} capabilities
-   * @returns {M[]}
    */
   select(capabilities) {
     return select(this, capabilities)
@@ -65,7 +70,7 @@ class View {
   }
 
   /**
-   * @template U
+   * @template {API.ParsedCapability} U
    * @param {API.DeriveSelector<M, U>} options
    * @returns {API.MatchSelector<API.DerivedMatch<U, M>>}
    */
@@ -104,13 +109,22 @@ class Capability extends Unit {
     this.descriptor = descriptor
   }
 
+  get can() {
+    return this.descriptor.can
+  }
+
   /**
    * @param {API.Source} capability
    * @returns {API.MatchResult<API.DirectMatch<T>>}
    */
   match(capability) {
     const result = parse(this, capability)
-    return result.error ? result.error : new Match(result, this.descriptor)
+    return result.error
+      ? new MatchError([result.error], this)
+      : new Match(result, this.descriptor)
+  }
+  toString() {
+    return JSON.stringify({ can: this.descriptor.can })
   }
 }
 
@@ -135,18 +149,47 @@ class Or extends Unit {
    * @return {API.MatchResult<M|W>}
    */
   match(capability) {
-    const result = this.left.match(capability)
-    if (result.error) {
-      return this.right.match(capability)
+    const left = this.left.match(capability)
+    if (left.error) {
+      const right = this.right.match(capability)
+      if (right.error) {
+        return new MatchError([left, right], this)
+      } else {
+        return right
+      }
     } else {
-      return result
+      return left
     }
   }
   /**
    * @param {API.Source[]} capabilites
    */
-  select(capabilites) {
-    return [...this.left.select(capabilites), ...this.right.select(capabilites)]
+  *select(capabilites) {
+    const left = []
+    for (const capability of this.left.select(capabilites)) {
+      if (capability.error) {
+        left.push(capability)
+      } else {
+        yield capability
+      }
+    }
+
+    const right = []
+    for (const capability of this.right.select(capabilites)) {
+      if (capability.error) {
+        right.push(capability)
+      } else {
+        yield capability
+      }
+    }
+
+    yield new MatchError(
+      [new MatchError(left, this.left), new MatchError(right, this.right)],
+      this
+    )
+  }
+  toString() {
+    return `${this.left.toString()}|${this.right.toString()}`
   }
 }
 
@@ -168,31 +211,23 @@ class And extends View {
    * @returns {API.MatchResult<API.Amplify<API.InferMembers<Selectors>>>}
    */
   match(capability) {
-    const tuple = []
+    const group = []
     for (const selector of this.selectors) {
       const result = selector.match(capability)
       if (result.error) {
-        return result.error
+        return new MatchError([result.error], this)
       } else {
-        tuple.push(result)
+        group.push(result)
       }
     }
 
-    return new AndMatch(
-      this.selectors,
-      /** @type {API.InferMembers<Selectors>} */ (tuple)
-    )
+    return new AndMatch(/** @type {API.InferMembers<Selectors>} */ (group))
   }
   /**
    * @param {API.Source[]} capabilities
    */
   select(capabilities) {
-    const data = this.selectors.map(selector => selector.select(capabilities))
-    const result = combine(data).map(
-      selected => new AndMatch(this.selectors, selected)
-    )
-
-    return /** @type {any[]} */ (result)
+    return selectGroup(this, capabilities)
   }
   /**
    * @template E
@@ -203,10 +238,13 @@ class And extends View {
   and(other) {
     return new And([...this.selectors, other])
   }
+  toString() {
+    return `[${this.selectors.map(String).join(", ")}]`
+  }
 }
 
 /**
- * @template T
+ * @template {API.ParsedCapability} T
  * @template {API.Match} M
  * @implements {API.Capability<API.DerivedMatch<T, M>>}
  * @extends {Unit<API.DerivedMatch<T, M>>}
@@ -216,7 +254,7 @@ class Derive extends Unit {
   /**
    * @param {API.MatchSelector<M>} from
    * @param {API.MatchSelector<API.DirectMatch<T>>} to
-   * @param {(self:T, from:M['value']) => boolean} derives
+   * @param {API.Derives<T, M['value']>} derives
    */
   constructor(from, to, derives) {
     super()
@@ -231,10 +269,13 @@ class Derive extends Unit {
   match(capability) {
     const match = this.to.match(capability)
     if (match.error) {
-      return match.error
+      return match
     } else {
-      return new DerivedMatch(match, this.from, this.to, this.derives)
+      return new DerivedMatch(match, this.from, this.derives)
     }
+  }
+  toString() {
+    return this.to.toString()
   }
 }
 
@@ -258,12 +299,17 @@ class Match {
   match(capability) {
     const result = parse(this, capability)
     if (result.error) {
-      return result.error
+      return new MatchError([result], this)
     }
 
     const claim = this.descriptor.derives(this.value, result)
-    if (claim.error) {
-      return claim.error
+    if (claim?.error) {
+      // TODO: Consider passing source capbility instead or along with parsed
+      // capability.
+      return new MatchError(
+        [new EscalatedCapability(this.value, result, claim)],
+        this
+      )
     }
 
     return new Match(result, this.descriptor)
@@ -274,10 +320,20 @@ class Match {
   select(capabilities) {
     return select(this, capabilities)
   }
+  toString() {
+    return JSON.stringify({
+      can: this.descriptor.can,
+      with: this.value.with.href,
+      caveats:
+        Object.keys(this.value.caveats).length > 0
+          ? this.value.caveats
+          : undefined,
+    })
+  }
 }
 
 /**
- * @template T
+ * @template {API.ParsedCapability} T
  * @template {API.Match} M
  * @implements {API.DerivedMatch<T, M>}
  */
@@ -286,13 +342,11 @@ class DerivedMatch {
   /**
    * @param {API.DirectMatch<T>} selected
    * @param {API.MatchSelector<M>} from
-   * @param {API.MatchSelector<API.DirectMatch<T>>} to
    * @param {API.Derives<T, M['value']>} derives
    */
-  constructor(selected, from, to, derives) {
+  constructor(selected, from, derives) {
     this.selected = selected
     this.from = from
-    this.to = to
     this.derives = derives
   }
   get value() {
@@ -301,20 +355,51 @@ class DerivedMatch {
   /**
    *
    * @param {API.Source[]} capabilities
-   * @returns {(API.DerivedMatch<T, M>|M)[]}
    */
-  select(capabilities) {
-    const { derives, selected, from, to } = this
+  *select(capabilities) {
+    const { derives, selected, from } = this
     const { value } = selected
-    const derived = selected
-      .select(capabilities)
-      .map(match => new DerivedMatch(match, from, to, derives))
+    const errors = []
 
-    const delegated = from
-      .select(capabilities)
-      .filter(delegated => derives(value, delegated.value))
+    for (const match of selected.select(capabilities)) {
+      if (!match.error) {
+        // When capability `account/register` is derived from `account/verify`
+        // we consider proofs delegating `account/register` along with
+        // `account/verify`. We do need to wrap `account/register` matches
+        // like below so that subdelegated `account/verify` could continues
+        // to be a valid proof several levels deep.
+        yield new DerivedMatch(match, from, derives)
+      } else {
+        errors.push(match)
+      }
+    }
 
-    return [...derived, ...delegated]
+    // Next we consider proofs delegating capabilities this was derived from e.g
+    // if this represents `account/register` derived from `account/verify` here
+    // we are considering `account/verify`. This time around we no longer wrap
+    // matches because `account/verify` is proved by whatever it is derived from.
+    for (const match of from.select(capabilities)) {
+      if (match.error) {
+        errors.push(match)
+      } else {
+        // If capability can not be derived it escalates
+        const result = derives(value, match.value)
+        if (result.error) {
+          errors.push(new EscalatedCapability(value, match.value, result))
+        } else {
+          yield match
+        }
+      }
+    }
+
+    // If we encountered some errors report them.
+    if (errors.length > 0) {
+      yield new MatchError(errors, this)
+    }
+  }
+
+  toString() {
+    return this.selected.toString()
   }
 }
 
@@ -324,12 +409,13 @@ class DerivedMatch {
  */
 class AndMatch {
   /**
-   * @param {Selectors} selectors
-   * @param {API.Match[]} selected
+   * @param {API.Match[]} matches
    */
-  constructor(selectors, selected) {
-    this.selected = selected
-    this.selectors = selectors
+  constructor(matches) {
+    this.matches = matches
+  }
+  get selectors() {
+    return this.matches
   }
   /**
    * @type {API.InferValue<API.InferMembers<Selectors>>}
@@ -337,7 +423,7 @@ class AndMatch {
   get value() {
     const value = []
 
-    for (const match of this.selected) {
+    for (const match of this.matches) {
       value.push(match.value)
     }
     Object.defineProperties(this, { value: { value } })
@@ -346,16 +432,13 @@ class AndMatch {
 
   /**
    * @param {API.Source[]} capabilities
-   * @returns {API.Amplify<API.InferMatch<API.InferMembers<Selectors>>>[]} 
 
    */
   select(capabilities) {
-    const data = this.selectors.map(selector => selector.select(capabilities))
-    const result = combine(data).map(
-      selected => new AndMatch(this.selectors, selected)
-    )
-
-    return /** @type {any[]} */ (result)
+    return selectGroup(this, capabilities)
+  }
+  toString() {
+    return `[${this.matches.map(match => match.toString()).join(", ")}]`
   }
 }
 
@@ -375,7 +458,7 @@ const parse = (self, capability) => {
 
   const uri = parseWith(capability.with)
   if (uri.error) {
-    return new MalformedCapability(capability, [uri.error])
+    return new MalformedCapability(capability, uri.error)
   }
 
   const caveats = /** @type {T['caveats']} */ ({})
@@ -383,10 +466,10 @@ const parse = (self, capability) => {
   if (parsers) {
     for (const [name, parse] of entries(parsers)) {
       const result = parse(capability[/** @type {string} */ (name)])
-      if (!result.error) {
-        caveats[name] = result
+      if (result?.error) {
+        return new MalformedCapability(capability, result.error)
       } else {
-        return new MalformedCapability(capability, [result.error])
+        caveats[name] = result
       }
     }
   }
@@ -408,16 +491,52 @@ const parse = (self, capability) => {
  * @template {API.Match} M
  * @param {API.Matcher<M>} matcher
  * @param {API.Source[]} capabilities
- * @returns {M[]}
  */
 
-const select = (matcher, capabilities) => {
-  const matches = []
+const select = function* (matcher, capabilities) {
   for (const capability of capabilities) {
-    const result = matcher.match(capability)
-    if (!result.error) {
-      matches.push(result)
+    yield matcher.match(capability)
+  }
+}
+
+/**
+ * @template {API.Selector<API.Match>[]} S
+ * @param {{selectors:S}} self
+ * @param {API.Source[]} capabilities
+ */
+
+const selectGroup = function* (self, capabilities) {
+  const errors = []
+  const data = []
+
+  for (const selector of self.selectors) {
+    const matches = []
+    const causes = []
+    for (const capability of selector.select(capabilities)) {
+      if (capability.error) {
+        causes.push(capability.error)
+      } else {
+        matches.push(capability)
+      }
+    }
+
+    errors.push(new MatchError(causes, selector))
+
+    // If we have 0 matches on one of the selectors we will not be able to
+    // match so there is no point exploring other selectors.
+    if (matches.length === 0) {
+      break
+    } else {
+      data.push(matches)
     }
   }
-  return matches
+
+  for (const group of combine(data)) {
+    yield new AndMatch(group)
+  }
+
+  // also yield the error if we encountered them
+  if (errors.length > 0) {
+    yield new MatchError(errors, self)
+  }
 }

@@ -1,8 +1,15 @@
 import test from "ava"
 import { capability } from "./lib.js"
 import * as API from "./api.js"
-import { UnknownCapability, MalformedCapability, Failure } from "../error.js"
+import { EscalatedCapability, Failure, UnknownCapability } from "../error.js"
 import { the } from "../util.js"
+
+/**
+ * @param {unknown} value
+ * @returns {any}
+ */
+const like = value =>
+  Array.isArray(value) ? { ...value, length: value.length } : value
 
 /**
  * @param {string} href
@@ -13,7 +20,7 @@ const parseURI = (href, protocol = "*") => {
   try {
     const url = new URL(href)
     if (protocol != "*" && url.protocol !== protocol) {
-      return new Failure(`Expected ${protocol} URI instead got ${url.protocol}`)
+      return new Failure(`Expected ${protocol} URI instead got ${url.href}`)
     } else {
       return url
     }
@@ -22,50 +29,191 @@ const parseURI = (href, protocol = "*") => {
   }
 }
 
-test("capability selects matches", assert => {
+test.only("capability selects matches", assert => {
   const read = capability({
     can: "file/read",
     with: href => parseURI(href, "file:"),
-    derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname),
+    derives: (claimed, delegated) => {
+      if (claimed.with.pathname.startsWith(delegated.with.pathname)) {
+        return true
+      } else {
+        return new Failure(
+          `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+        )
+      }
+    },
   })
 
-  const v1 = read.select([
-    { can: "file/read", with: "space://zAlice" },
-    { can: "file/write", with: "file:///home/zAlice/" },
-    { can: "file/read", with: "file:///home/zAlice/photos" },
-    { can: "file/read+write", with: "file:///home/zAlice" },
-  ])
+  const v1 = [
+    ...read.select([
+      { can: "file/read", with: "space://zAlice" },
+      { can: "file/write", with: "file:///home/zAlice/" },
+      { can: "file/read", with: "file:///home/zAlice/photos" },
+      { can: "file/read+write", with: "file:///home/zAlice" },
+    ]),
+  ]
 
-  assert.like(v1, {
-    ...[
+  assert.like(
+    v1,
+    like([
+      {
+        error: {
+          name: "InvalidClaim",
+          // capability: { can: "file/read", with: "space://zAlice" },
+          context: {
+            can: "file/read",
+          },
+          causes: like([
+            {
+              name: "MalformedCapability",
+              capability: { can: "file/read", with: "space://zAlice" },
+              cause: {
+                message: "Expected file: URI instead got space://zAlice",
+              },
+            },
+          ]),
+        },
+      },
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            can: "file/read",
+          },
+          causes: like([
+            {
+              name: "UnknownCapability",
+              capability: { can: "file/write", with: "file:///home/zAlice/" },
+            },
+          ]),
+        },
+      },
       {
         value: {
           can: "file/read",
           with: new URL("file:///home/zAlice/photos"),
         },
       },
-    ],
-  })
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            can: "file/read",
+          },
+          causes: like([
+            {
+              name: "UnknownCapability",
+              capability: {
+                can: "file/read+write",
+                with: "file:///home/zAlice",
+              },
+            },
+          ]),
+        },
+      },
+    ])
+  )
 
-  const v2 = v1[0].select([
-    { can: "file/read+write", with: "file:///home/zAlice" },
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/read", with: "file:///home/zAlice/photos/public" },
-    { can: "file/read", with: "file:///home/zBob" },
-  ])
+  const match = v1[2]
+  const v2 = match.error
+    ? []
+    : [
+        ...match.select([
+          { can: "file/read+write", with: "file:///home/zAlice" },
+          { can: "file/read", with: "file:///home/zAlice/" },
+          { can: "file/read", with: "file:///home/zAlice/photos/public" },
+          { can: "file/read", with: "file:///home/zBob" },
+        ]),
+      ]
 
-  assert.like(v2, {
-    ...[
+  assert.like(
+    v2,
+    like([
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            value: {
+              can: "file/read",
+              with: { href: "file:///home/zAlice/photos" },
+              caveats: {},
+            },
+          },
+          causes: like([
+            {
+              name: "UnknownCapability",
+              capability: {
+                can: "file/read+write",
+                with: "file:///home/zAlice",
+              },
+            },
+          ]),
+        },
+      },
       {
         value: {
           can: "file/read",
           with: { href: "file:///home/zAlice/" },
         },
       },
-    ],
-    length: 1,
-  })
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            value: {
+              can: "file/read",
+              with: { href: "file:///home/zAlice/photos" },
+              caveats: {},
+            },
+          },
+          causes: like([
+            {
+              name: "EscalatedCapability",
+              claimed: {
+                can: "file/read",
+                with: { href: "file:///home/zAlice/photos" },
+              },
+              delegated: {
+                can: "file/read",
+                with: { href: "file:///home/zAlice/photos/public" },
+              },
+              cause: {
+                message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zAlice/photos/public'`,
+              },
+            },
+          ]),
+        },
+      },
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            value: {
+              can: "file/read",
+              with: { href: "file:///home/zAlice/photos" },
+              caveats: {},
+            },
+          },
+          causes: like([
+            {
+              name: "EscalatedCapability",
+              claimed: {
+                can: "file/read",
+                with: { href: "file:///home/zAlice/photos" },
+              },
+              delegated: {
+                can: "file/read",
+                with: { href: "file:///home/zBob" },
+              },
+              cause: {
+                message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zBob'`,
+              },
+            },
+          ]),
+        },
+      },
+    ])
+  )
 })
 
 test("derived capability chain", assert => {
@@ -73,7 +221,25 @@ test("derived capability chain", assert => {
     can: "account/verify",
     with: href => parseURI(href, "mailto:"),
     derives: (claim, provided) => {
-      return claim.with.href.startsWith(provided.with.href)
+      if (claim.with.href.startsWith(provided.with.href)) {
+        return claim
+      } else {
+        const violation = new ConstraintViolationError(
+          {
+            capability: claim,
+            name: "with",
+            value: claim.with.href,
+          },
+          {
+            capability: provided,
+            name: "with",
+            value: claim.with.href,
+          }
+        )
+
+        const esclacation = new EscalationError(claim, provided, [violation])
+        return new EscalatedClaim([esclacation])
+      }
     },
   })
 
