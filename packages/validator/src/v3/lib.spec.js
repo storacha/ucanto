@@ -216,29 +216,17 @@ test.only("capability selects matches", assert => {
   )
 })
 
-test("derived capability chain", assert => {
+test.only("derived capability chain", assert => {
   const verify = capability({
     can: "account/verify",
     with: href => parseURI(href, "mailto:"),
-    derives: (claim, provided) => {
-      if (claim.with.href.startsWith(provided.with.href)) {
-        return claim
+    derives: (claimed, delegated) => {
+      if (claimed.with.href.startsWith(delegated.with.href)) {
+        return true
       } else {
-        const violation = new ConstraintViolationError(
-          {
-            capability: claim,
-            name: "with",
-            value: claim.with.href,
-          },
-          {
-            capability: provided,
-            name: "with",
-            value: claim.with.href,
-          }
+        return new Failure(
+          `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
         )
-
-        const esclacation = new EscalationError(claim, provided, [violation])
-        return new EscalatedClaim([esclacation])
       }
     },
   })
@@ -247,95 +235,163 @@ test("derived capability chain", assert => {
     to: capability({
       can: "account/register",
       with: href => parseURI(href, "mailto:"),
-      derives: (claimed, provided) => {
+      derives: (claimed, delegated) => {
         /** @type {"account/register"} */
         const c1 = claimed.can
         /** @type {"account/register"} */
-        const c2 = provided.can
+        const c2 = delegated.can
 
-        return claimed.with.href === provided.with.href
+        return (
+          claimed.with.href === delegated.with.href ||
+          new Failure(`'${claimed.with.href}' != '${delegated.with.href}'`)
+        )
       },
     }),
-    derives: (claimed, provided) => {
+    derives: (claimed, delegated) => {
       /** @type {"account/register"} */
       const c1 = claimed.can
       /** @type {"account/verify"} */
-      const c2 = provided.can
+      const c2 = delegated.can
 
-      return claimed.with.href === provided.with.href
+      return (
+        claimed.with.href === delegated.with.href ||
+        new Failure(`'${claimed.with.href}' != '${delegated.with.href}'`)
+      )
     },
   })
 
-  const regs = register.select([
-    {
-      can: "account/register",
-      with: "mailto:zAlice@web.mail",
-    },
-  ])
+  const regs = [
+    ...register.select([
+      {
+        can: "account/register",
+        with: "mailto:zAlice@web.mail",
+      },
+    ]),
+  ]
 
   assert.like(
     regs,
-    {
-      ...[
-        {
-          value: {
-            can: "account/register",
-            with: new URL("mailto:zAlice@web.mail"),
+    like([
+      {
+        value: {
+          can: "account/register",
+          with: {
+            href: "mailto:zAlice@web.mail",
           },
         },
-      ],
-      length: 1,
-    },
+      },
+    ]),
     "selects registration capability"
   )
 
   assert.like(
-    register.select([
+    [
+      ...register.select([
+        {
+          can: "account/register",
+          with: "did:key:zAlice",
+        },
+      ]),
+    ],
+    like([
       {
-        can: "account/register",
-        with: "did:key:zAlice",
+        error: {
+          name: "InvalidClaim",
+          context: {
+            can: "account/register",
+          },
+          causes: like([
+            {
+              name: "MalformedCapability",
+              capability: {
+                can: "account/register",
+                with: "did:key:zAlice",
+              },
+              cause: {
+                message: `Expected mailto: URI instead got did:key:zAlice`,
+              },
+            },
+          ]),
+        },
       },
-    ]),
-    {
-      length: 0,
-    }
+    ])
   )
 
   const [reg] = regs
+  if (reg.error) {
+    return assert.fail("Expect to be a match")
+  }
 
-  assert.like(
-    reg.select([
+  console.log([
+    ...reg.select([
       {
         can: "account/verify",
         with: "mailto:zAlice@web.mail",
       },
     ]),
-    {
-      ...[
+  ])
+
+  assert.like(
+    [
+      ...reg.select([
         {
-          value: {
-            can: "account/verify",
-            with: new URL("mailto:zAlice@web.mail"),
+          can: "account/verify",
+          with: "mailto:zAlice@web.mail",
+        },
+      ]),
+    ],
+    like([
+      {
+        value: {
+          can: "account/verify",
+          with: {
+            href: "mailto:zAlice@web.mail",
           },
         },
-      ],
-      length: 1,
-    },
+      },
+    ]),
     "matches verification"
   )
 
   assert.like(
-    reg.select([
+    [
+      ...reg.select([
+        {
+          can: "account/verify",
+          with: "mailto:bob@web.mail",
+        },
+      ]),
+    ],
+    like([
       {
-        can: "account/verify",
-        with: "mailto:bob@web.mail",
+        error: {
+          name: "InvalidClaim",
+          context: {
+            can: "account/register",
+          },
+          causes: like([
+            {
+              name: "EscalatedCapability",
+              claimed: {
+                can: "account/register",
+                with: { href: "mailto:zAlice@web.mail" },
+              },
+              delegated: {
+                can: "account/verify",
+                with: { href: "mailto:bob@web.mail" },
+              },
+              cause: {
+                message: `mailto:zAlice@web.mail != mailto:bob@web.mail`,
+              },
+            },
+          ]),
+        },
       },
     ]),
-    {
-      length: 0,
-    },
     "does not match on different email"
   )
+
+  return
 
   assert.like(
     reg.select([
