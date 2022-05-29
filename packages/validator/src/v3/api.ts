@@ -103,6 +103,14 @@ export interface Derives<T, U> {
 }
 
 export interface View<M extends Match> extends Matcher<M>, Selector<M> {
+  /**
+   * Defines capability that is either `this` or the the given `other`. This
+   * allows you to compose multiple capabilities into one so that you could
+   * validate any of one of them without having to maintain list of supported
+   * capabilities. It is especially useful when dealiving with derived
+   * capability chains when you might derive capability from either one or the
+   * other.
+   */
   or<W extends Match>(other: MatchSelector<W>): MatchSelector<M | W>
 
   /**
@@ -143,11 +151,58 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
 }
 
 export interface Capability<M extends Match = Match> extends View<M> {
+  /**
+   * Combines this capability and the other into a capability group. This allows
+   * you to define right amplifications e.g `file/read+write` could be derived
+   * from `file/read` and `file/write`.
+   * @example
+   * ```js
+   * const read = capability({
+   *   can: "file/read",
+   *   with: URI({ protocol: "file:" }),
+   *   derives: (claimed, delegated) =>
+   *   claimed.with.pathname.startsWith(delegated.with.pathname) ||
+   *   new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`)
+   * })
+   *
+   * const write = capability({
+   *   can: "file/write",
+   *   with: URI({ protocol: "file:" }),
+   *   derives: (claimed, delegated) =>
+   *     claimed.with.pathname.startsWith(delegated.with.pathname) ||
+   *     new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`)
+   * })
+   *
+   * const readwrite = read.and(write).derive({
+   *   to: capability({
+   *     can: "file/read+write",
+   *     with: URI({ protocol: "file:" }),
+   *     derives: (claimed, delegated) =>
+   *       claimed.with.pathname.startsWith(delegated.with.pathname) ||
+   *       new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`)
+   *     }),
+   *   derives: (claimed, [read, write]) => {
+   *     if (!claimed.with.pathname.startsWith(read.with.pathname)) {
+   *       return new Failure(`'${claimed.with.href}' is not contained in '${read.with.href}'`)
+   *     } else if (!claimed.with.pathname.startsWith(write.with.pathname)) {
+   *       return new Failure(`'${claimed.with.href}' is not contained in '${write.with.href}'`)
+   *     } else {
+   *       return true
+   *     }
+   *   }
+   * })
+   *```
+   */
   and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[M, W]>
 }
 
 export interface CapabilityGroup<M extends Match[] = Match[]>
   extends View<Amplify<M>> {
+  /**
+   * Creates new capability group containing capabilities from this group and
+   * provedid `other` capability. This method complements `and` method on
+   * `Capability` to allow chaining e.g. `read.and(write).and(modify)`.
+   */
   and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[...M, W]>
 }
 
