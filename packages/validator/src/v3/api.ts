@@ -16,10 +16,19 @@ export interface Match<T = unknown, M extends Match = Match<unknown, any>>
 
 export interface Matcher<M extends Match> {
   match(capability: Source): MatchResult<M>
+  // match2(capability: Source): Match2Result<M>
 }
 
 export interface Selector<M extends Match> {
   select(capabilites: Source[]): IterableIterator<MatchResult<M>>
+  // select2(capabilities: Source[]): Select<M>
+}
+
+export interface Select<M extends Match> {
+  matched: M[]
+  unknown: API.Capability[]
+  malformed: API.MalformedCapability[]
+  escalated: EscalatedCapability[]
 }
 
 export interface GroupSelector<M extends Match[] = Match[]>
@@ -39,17 +48,12 @@ export interface Parser<I, O, X extends { error: Error }> {
   (input: I): API.Result<O, X>
 }
 
-export interface Failure extends Error {
-  error: this
-  describe(): string
-}
-
 export interface Caveats
-  extends Record<string, Parser<unknown, unknown, Failure>> {}
+  extends Record<string, Parser<unknown, unknown, API.Problem>> {}
 
 export interface Descriptor<T extends ParsedCapability, M extends Match> {
   can: T["can"]
-  with: Parser<string, T["with"], Failure>
+  with: Parser<string, T["with"], API.Problem>
   caveats?: InferCaveatsDescriptor<T>
   derives: Derives<T, M["value"]>
 }
@@ -59,9 +63,7 @@ export interface WithContext<Problem extends API.Problem> extends API.Problem {
   problems: Problem[]
 }
 
-export type MatchError = API.DelegationError<
-  InvalidCapability | EscalatedCapability | MatchError
->
+export type MatchError = API.DelegationError
 export interface EscalatedCapability extends Error {
   name: "EscalatedCapability"
   error: this
@@ -71,6 +73,11 @@ export interface EscalatedCapability extends Error {
 }
 export type MatchResult<M extends Match> = API.Result<M, MatchError>
 
+export type Match2Result<M extends Match> = API.Result<
+  M | null,
+  API.MalformedCapability | EscalatedCapability
+>
+
 export interface Config<
   Ability extends API.Ability,
   Constraints extends Caveats,
@@ -79,7 +86,7 @@ export interface Config<
 
 export type InferCaveatsDescriptor<T extends ParsedCapability> = {
   [Key in keyof T["caveats"]]: T["caveats"][Key] extends infer U
-    ? Parser<unknown, T["caveats"][Key], Failure>
+    ? Parser<unknown, T["caveats"][Key], API.Problem>
     : never
 }
 
@@ -97,6 +104,39 @@ export interface Derives<T, U> {
 
 export interface View<M extends Match> extends Matcher<M>, Selector<M> {
   or<W extends Match>(other: MatchSelector<W>): MatchSelector<M | W>
+
+  /**
+   * Defined a derived capability which can be delegated from `this` capability.
+   * For example if you define `"account/validate"` capability and derive
+   * `"account/register"` capability from it when validating claimed
+   * `"account/register"` capability it could be proved with either
+   * "account/register" delegation or "account/validate" delegation.
+   *
+   * ```js
+   * // capability issued by account verification service on email validation
+   * const verify = capability({
+   *   can: "account/verify",
+   *   with: URI({ protocol: "mailto:" })
+   *   derives: ({ with: url }, from) =>
+   *     url.href.startsWith(from.with.href) ||
+   *     new Failure(`${url.href} is not contained in ${from.with.href}`)
+   * })
+   *
+   * // derive registration capability from email verification
+   * const register = validate.derive({
+   *   to: capability({
+   *     can: "account/register",
+   *     with: URI({ protocol: "mailto:" }),
+   *     derives: ({ with: url }, from) =>
+   *       url.href.startsWith(from.with.href) ||
+   *       new Failure(`${url.href} is not contained in ${from.with.href}`)
+   *   }),
+   *   derives: (registered, verified) =>
+   *     registered.with.href === verified.with.href ||
+   *     new Failure(`Registration email ${registered.pathname} does not match verified email ${verified.with.pathname}`)
+   * })
+   * ```
+   */
   derive<T extends ParsedCapability>(
     options: DeriveSelector<M, T>
   ): MatchSelector<DerivedMatch<T, M>>
@@ -152,5 +192,7 @@ export interface ParsedCapability<
 }
 
 export type InferCaveats<C> = {
-  [Key in keyof C]: C[Key] extends Parser<unknown, infer T, Failure> ? T : never
+  [Key in keyof C]: C[Key] extends Parser<unknown, infer T, API.Problem>
+    ? T
+    : never
 }

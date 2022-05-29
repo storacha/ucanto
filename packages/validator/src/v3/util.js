@@ -24,3 +24,21 @@ export const combine = ([first, ...rest]) => {
   }
   return results
 }
+
+/**
+ * @template T
+ * @param {T[]} left
+ * @param {T[]} right
+ * @returns {T[]}
+ */
+
+export const intersection = (left, right) => {
+  const [result, exclude] =
+    left.length < right.length ? [new Set(left), right] : [new Set(right), left]
+
+  for (const item of exclude) {
+    result.delete(item)
+  }
+
+  return [...result]
+}

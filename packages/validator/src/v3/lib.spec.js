@@ -1,5 +1,5 @@
 import test from "ava"
-import { capability } from "./lib.js"
+import { capability, URI } from "./lib.js"
 import * as API from "./api.js"
 import { EscalatedCapability, Failure, UnknownCapability } from "../error.js"
 import { the } from "../util.js"
@@ -11,28 +11,10 @@ import { the } from "../util.js"
 const like = value =>
   Array.isArray(value) ? { ...value, length: value.length } : value
 
-/**
- * @param {string} href
- * @param {string} [protocol="*"]
- * @returns {API.Result<URL, Failure>}
- */
-const parseURI = (href, protocol = "*") => {
-  try {
-    const url = new URL(href)
-    if (protocol != "*" && url.protocol !== protocol) {
-      return new Failure(`Expected ${protocol} URI instead got ${url.href}`)
-    } else {
-      return url
-    }
-  } catch (error) {
-    return new Failure(/** @type {Error} */ (error).message)
-  }
-}
-
 test.only("capability selects matches", assert => {
   const read = capability({
     can: "file/read",
-    with: href => parseURI(href, "file:"),
+    with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) => {
       if (claimed.with.pathname.startsWith(delegated.with.pathname)) {
         return true
@@ -219,7 +201,7 @@ test.only("capability selects matches", assert => {
 test.only("derived capability chain", assert => {
   const verify = capability({
     can: "account/verify",
-    with: href => parseURI(href, "mailto:"),
+    with: URI({ protocol: "mailto:" }),
     derives: (claimed, delegated) => {
       if (claimed.with.href.startsWith(delegated.with.href)) {
         return true
@@ -234,7 +216,7 @@ test.only("derived capability chain", assert => {
   const register = verify.derive({
     to: capability({
       can: "account/register",
-      with: href => parseURI(href, "mailto:"),
+      with: URI({ protocol: "mailto:" }),
       derives: (claimed, delegated) => {
         /** @type {"account/register"} */
         const c1 = claimed.can
@@ -322,15 +304,6 @@ test.only("derived capability chain", assert => {
     return assert.fail("Expect to be a match")
   }
 
-  console.log([
-    ...reg.select([
-      {
-        can: "account/verify",
-        with: "mailto:zAlice@web.mail",
-      },
-    ]),
-  ])
-
   assert.like(
     [
       ...reg.select([
@@ -367,7 +340,10 @@ test.only("derived capability chain", assert => {
         error: {
           name: "InvalidClaim",
           context: {
-            can: "account/register",
+            value: {
+              can: "account/register",
+              with: { href: "mailto:zAlice@web.mail" },
+            },
           },
           causes: like([
             {
@@ -381,7 +357,7 @@ test.only("derived capability chain", assert => {
                 with: { href: "mailto:bob@web.mail" },
               },
               cause: {
-                message: `mailto:zAlice@web.mail != mailto:bob@web.mail`,
+                message: `'mailto:zAlice@web.mail' != 'mailto:bob@web.mail'`,
               },
             },
           ]),
@@ -391,26 +367,23 @@ test.only("derived capability chain", assert => {
     "does not match on different email"
   )
 
-  return
-
   assert.like(
-    reg.select([
+    [
+      ...reg.select([
+        {
+          can: "account/register",
+          with: "mailto:zAlice@web.mail",
+        },
+      ]),
+    ],
+    like([
       {
-        can: "account/register",
-        with: "mailto:zAlice@web.mail",
+        value: {
+          can: "account/register",
+          with: { href: "mailto:zAlice@web.mail" },
+        },
       },
     ]),
-    {
-      ...[
-        {
-          value: {
-            can: "account/register",
-            with: new URL("mailto:zAlice@web.mail"),
-          },
-        },
-      ],
-      length: 1,
-    },
     "normal delegation also works"
   )
 
@@ -424,188 +397,326 @@ test.only("derived capability chain", assert => {
   }
 
   assert.like(
-    register
-      .select([registration])[0]
-      .select([registration])[0]
-      .select([registration])[0]
-      .select([registration])[0]
-      .select([verification])[0]
-      .select([verification]),
-    {
-      length: 1,
-    },
+    [
+      ...register
+        .select([registration])
+        .next()
+        .value.select([registration])
+        .next()
+        .value.select([registration])
+        .next()
+        .value.select([registration])
+        .next()
+        .value.select([verification])
+        .next()
+        .value.select([verification]),
+    ],
+    like([
+      {
+        value: {
+          can: "account/verify",
+          with: { href: "mailto:zAlice@web.mail" },
+        },
+      },
+    ]),
     "derived capability is recursive"
   )
 
-  assert.deepEqual(
-    register
-      .select([registration])[0]
-      .select([verification])[0]
-      .select([registration]),
-    [],
+  assert.like(
+    [
+      ...register
+        .select([registration])
+        .next()
+        .value.select([verification])
+        .next()
+        .value.select([registration]),
+    ],
+    like([
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            value: {
+              can: "account/verify",
+              with: { href: "mailto:zAlice@web.mail" },
+            },
+          },
+          causes: like([
+            {
+              name: "UnknownCapability",
+              capability: registration,
+            },
+          ]),
+        },
+      },
+    ]),
     "deriviation is works one way"
   )
 })
 
-test("capability amplification", assert => {
+test.only("capability amplification", assert => {
   const read = capability({
     can: "file/read",
-    with: href => parseURI(href, "file:"),
+    with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname),
+      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      new Failure(
+        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+      ),
   })
 
   const write = capability({
     can: "file/write",
-    with: href => parseURI(href, "file:"),
+    with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname),
+      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      new Failure(
+        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+      ),
   })
 
   const readwrite = read.and(write).derive({
     to: capability({
       can: "file/read+write",
-      with: url => parseURI(url, "file:"),
-      derives: (claimed, delegated) => {
-        return claimed.with.pathname.startsWith(delegated.with.pathname)
-      },
+      with: URI({ protocol: "file:" }),
+      derives: (claimed, delegated) =>
+        claimed.with.pathname.startsWith(delegated.with.pathname) ||
+        new Failure(
+          `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+        ),
     }),
     derives: (claimed, [read, write]) => {
-      return (
-        claimed.with.pathname.startsWith(read.with.pathname) &&
-        claimed.with.pathname.startsWith(write.with.pathname)
-      )
+      if (!claimed.with.pathname.startsWith(read.with.pathname)) {
+        return new Failure(
+          `'${claimed.with.href}' is not contained in '${read.with.href}'`
+        )
+      } else if (!claimed.with.pathname.startsWith(write.with.pathname)) {
+        return new Failure(
+          `'${claimed.with.href}' is not contained in '${write.with.href}'`
+        )
+      } else {
+        return true
+      }
     },
   })
 
-  assert.deepEqual(
-    readwrite.select([
-      { can: "file/read", with: "file:///home/zAlice/" },
-      { can: "file/write", with: "file:///home/zAlice/" },
+  assert.like(
+    [
+      ...readwrite.select([
+        { can: "file/read", with: "file:///home/zAlice/" },
+        { can: "file/write", with: "file:///home/zAlice/" },
+      ]),
+    ],
+    like([
+      {
+        error: {
+          name: "InvalidClaim",
+          context: { can: "file/read+write" },
+        },
+        causes: like([
+          {
+            name: "UnknownCapability",
+            capability: { can: "file/read", with: "file:///home/zAlice/" },
+          },
+        ]),
+      },
+      {
+        error: {
+          name: "InvalidClaim",
+          context: { can: "file/read+write" },
+        },
+        causes: like([
+          {
+            name: "UnknownCapability",
+            capability: { can: "file/write", with: "file:///home/zAlice/" },
+          },
+        ]),
+      },
     ]),
-    [],
     "expects derived capability read+write"
   )
 
-  const selected = readwrite.select([
-    { can: "file/read+write", with: "file:///home/zAlice/public" },
-    { can: "file/write", with: "file:///home/zAlice/" },
-  ])
+  const selected = [
+    ...readwrite.select([
+      { can: "file/read+write", with: "file:///home/zAlice/public" },
+      { can: "file/write", with: "file:///home/zAlice/" },
+    ]),
+  ]
 
   assert.like(
     selected,
-    {
-      ...[
-        {
-          value: {
-            can: "file/read+write",
-            with: new URL("file:///home/zAlice/public"),
-          },
+    like([
+      {
+        value: {
+          can: "file/read+write",
+          with: { href: "file:///home/zAlice/public" },
         },
-      ],
-      length: 1,
-    },
+      },
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            can: "file/read+write",
+          },
+          causes: like([
+            {
+              name: "UnknownCapability",
+              capability: { can: "file/write", with: "file:///home/zAlice/" },
+            },
+          ]),
+        },
+      },
+    ]),
     "only selected matched"
   )
 
   const [rw] = selected
+  if (rw.error) {
+    return assert.fail(`Expected to be a match`)
+  }
 
   assert.like(
-    rw.select([{ can: "file/read+write", with: "file:///home/zAlice/public" }]),
-    {
-      ...[
-        {
-          value: {
-            can: "file/read+write",
-            with: new URL("file:///home/zAlice/public"),
-          },
+    [
+      ...rw.select([
+        { can: "file/read+write", with: "file:///home/zAlice/public" },
+      ]),
+    ],
+    like([
+      {
+        value: {
+          can: "file/read+write",
+          with: { href: "file:///home/zAlice/public" },
         },
-      ],
-      length: 1,
-    },
+      },
+    ]),
     "can derive from matching"
   )
 
   assert.like(
-    rw.select([
-      { can: "file/read+write", with: "file:///home/zAlice/public/photos" },
+    [
+      ...rw.select([
+        { can: "file/read+write", with: "file:///home/zAlice/public/photos" },
+      ]),
+    ],
+    like([
+      {
+        error: {
+          name: "InvalidClaim",
+          context: {
+            value: {
+              can: "file/read+write",
+              with: { href: "file:///home/zAlice/public" },
+            },
+          },
+          causes: like([
+            {
+              name: "InvalidClaim",
+              context: {
+                value: {
+                  can: "file/read+write",
+                  with: { href: "file:///home/zAlice/public" },
+                },
+              },
+              causes: like([
+                {
+                  name: "EscalatedCapability",
+                  claimed: {
+                    can: "file/read+write",
+                    with: { href: "file:///home/zAlice/public" },
+                  },
+                  delegated: {
+                    can: "file/read+write",
+                    with: { href: "file:///home/zAlice/public/photos" },
+                  },
+                  cause: {
+                    message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
+                  },
+                },
+              ]),
+            },
+          ]),
+        },
+      },
     ]),
-    {
-      ...[],
-      length: 0,
-    },
     "can not derive from escalated path"
   )
 
   assert.like(
-    rw.select([{ can: "file/read+write", with: "file:///home/zAlice/" }]),
-    {
-      ...[
-        {
-          value: {
-            can: "file/read+write",
-            with: new URL("file:///home/zAlice/"),
-          },
+    [...rw.select([{ can: "file/read+write", with: "file:///home/zAlice/" }])],
+    like([
+      {
+        value: {
+          can: "file/read+write",
+          with: new URL("file:///home/zAlice/"),
         },
-      ],
-      length: 1,
-    },
+      },
+    ]),
     "can derive from greater capabilities"
   )
 
-  const rnw = rw.select([
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/write", with: "file:///home/zAlice/public" },
-  ])
+  const rnw = [
+    ...rw.select([
+      { can: "file/read", with: "file:///home/zAlice/" },
+      { can: "file/write", with: "file:///home/zAlice/public" },
+    ]),
+  ]
 
-  assert.like(rnw, {
-    ...[
+  return assert.like(
+    rnw,
+    like([
       {
-        value: {
-          ...[
-            {
-              can: "file/read",
-              with: new URL("file:///home/zAlice/"),
-            },
-            {
-              can: "file/write",
-              with: new URL("file:///home/zAlice/public"),
-            },
-          ],
-          length: 2,
-        },
+        value: like([
+          {
+            can: "file/read",
+            with: { href: "file:///home/zAlice/" },
+          },
+          {
+            can: "file/write",
+            with: { href: "file:///home/zAlice/public" },
+          },
+        ]),
       },
-    ],
-    length: 1,
-  })
+    ]),
+    "can derive amplification"
+  )
 
   const [reandnwrite] = rnw
-  assert.like(
+  if (reandnwrite.error) {
+    return assert.fail("Expected a match")
+  }
+
+  return console.log(
     reandnwrite.select([
       { can: "file/read", with: "file:///home/zAlice/" },
       { can: "file/write", with: "file:///home/zAlice/" },
-    ]),
-    {
-      ...[
-        {
-          value: {
-            ...[
-              {
-                can: "file/read",
-                with: new URL("file:///home/zAlice/"),
-              },
-              {
-                can: "file/write",
-                with: new URL("file:///home/zAlice/"),
-              },
-            ],
-            length: 2,
-          },
-        },
-      ],
-      length: 1,
-    }
+    ])
   )
+
+  assert.like(
+    [
+      ...reandnwrite.select([
+        { can: "file/read", with: "file:///home/zAlice/" },
+        { can: "file/write", with: "file:///home/zAlice/" },
+      ]),
+    ],
+    like([
+      {
+        value: like([
+          {
+            can: "file/read",
+            with: { href: "file:///home/zAlice/" },
+          },
+          {
+            can: "file/write",
+            with: { href: "file:///home/zAlice/" },
+          },
+        ]),
+      },
+    ]),
+    "can derive amplification"
+  )
+
+  return
 
   assert.like(
     reandnwrite.select([

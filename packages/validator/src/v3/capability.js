@@ -1,5 +1,5 @@
 import * as API from "./api.js"
-import { entries, combine } from "./util.js"
+import { entries, combine, intersection } from "./util.js"
 import {
   Failure,
   EscalatedCapability,
@@ -161,6 +161,7 @@ class Or extends Unit {
       return left
     }
   }
+
   /**
    * @param {API.Source[]} capabilites
    */
@@ -223,6 +224,7 @@ class And extends View {
 
     return new AndMatch(/** @type {API.InferMembers<Selectors>} */ (group))
   }
+
   /**
    * @param {API.Source[]} capabilities
    */
@@ -274,6 +276,7 @@ class Derive extends Unit {
       return new DerivedMatch(match, this.from, this.derives)
     }
   }
+
   toString() {
     return this.to.toString()
   }
@@ -314,11 +317,35 @@ class Match {
 
     return new Match(result, this.descriptor)
   }
+
+  /**
+   * @param {API.Source} capability
+   */
+  match2(capability) {
+    const result = parse(this, capability)
+    if (result.error) {
+      return result.name === "MalformedCapability" ? result : null
+    } else {
+      const claim = this.descriptor.derives(this.value, result)
+      if (claim.error) {
+        return new EscalatedCapability(this.value, result, claim)
+      } else {
+        return new Match(result, this.descriptor)
+      }
+    }
+  }
   /**
    * @param {API.Source[]} capabilities
    */
   select(capabilities) {
     return select(this, capabilities)
+  }
+  /**
+   * @param {API.Source[]} capabilities
+   * @returns {API.Select<API.DirectMatch<T>>}
+   */
+  select2(capabilities) {
+    return select2(this, capabilities)
   }
   toString() {
     return JSON.stringify({
@@ -349,17 +376,20 @@ class DerivedMatch {
     this.from = from
     this.derives = derives
   }
+  get can() {
+    return this.value.can
+  }
   get value() {
     return this.selected.value
   }
   /**
-   *
    * @param {API.Source[]} capabilities
    */
   *select(capabilities) {
     const { derives, selected, from } = this
     const { value } = selected
     const errors = []
+    const unknowns = new Map()
 
     for (const match of selected.select(capabilities)) {
       if (!match.error) {
@@ -370,7 +400,12 @@ class DerivedMatch {
         // to be a valid proof several levels deep.
         yield new DerivedMatch(match, from, derives)
       } else {
-        errors.push(match)
+        const { cause } = match
+        if (cause.name === "UnknownCapability") {
+          unknowns.set(cause.capability, match)
+        } else {
+          errors.push(match)
+        }
       }
     }
 
@@ -379,8 +414,22 @@ class DerivedMatch {
     // we are considering `account/verify`. This time around we no longer wrap
     // matches because `account/verify` is proved by whatever it is derived from.
     for (const match of from.select(capabilities)) {
+      // If capability isn't unknown or it was unknown according to other
+      // selector
       if (match.error) {
-        errors.push(match)
+        const { cause } = match
+        // If error is due to capability been unknown we only want to keep it
+        // if it's truly unknown, that is other selector also reported it
+        // as unknown. If both marked it unknown we keep both errors as they'll
+        // have different contexts.
+        if (cause.name === "UnknownCapability") {
+          const error = unknowns.get(cause.capability)
+          if (error) {
+            errors.push(error, match)
+          }
+        } else {
+          errors.push(match)
+        }
       } else {
         // If capability can not be derived it escalates
         const result = derives(value, match.value)
@@ -478,16 +527,6 @@ const parse = (self, capability) => {
 }
 
 /**
- * @template {API.ParsedCapability} T
- * @template {API.Match} M
- * @typedef {{
- * value?: T
- * descriptor: API.Descriptor<T, M>
- * next: API.MatchSelector<M>
- * }} Self
- */
-
-/**
  * @template {API.Match} M
  * @param {API.Matcher<M>} matcher
  * @param {API.Source[]} capabilities
@@ -500,6 +539,39 @@ const select = function* (matcher, capabilities) {
 }
 
 /**
+ * @template {API.Match} M
+ * @param {{match2(capability:API.Source):API.Result<M|null, API.MalformedCapability|API.EscalatedCapability>}} matcher
+ * @param {API.Source[]} capabilities
+ * @returns {API.Select<M>}
+ */
+
+const select2 = (matcher, capabilities) => {
+  const unknown = []
+  const malformed = []
+  const matched = []
+  const escalated = []
+  for (const capability of capabilities) {
+    const result = matcher.match2(capability)
+    if (result == null) {
+      unknown.push(capability)
+    } else if (result.error) {
+      switch (result.name) {
+        case "EscalatedCapability":
+          escalated.push(result)
+          break
+        case "MalformedCapability":
+          malformed.push(result)
+          break
+      }
+    } else if (result) {
+      matched.push(result)
+    }
+  }
+
+  return { escalated, matched, malformed, unknown }
+}
+
+/**
  * @template {API.Selector<API.Match>[]} S
  * @param {{selectors:S}} self
  * @param {API.Source[]} capabilities
@@ -508,35 +580,55 @@ const select = function* (matcher, capabilities) {
 const selectGroup = function* (self, capabilities) {
   const errors = []
   const data = []
+  const unknown = new Map()
 
   for (const selector of self.selectors) {
     const matches = []
     const causes = []
     for (const capability of selector.select(capabilities)) {
       if (capability.error) {
-        causes.push(capability.error)
+        const cause = capability.cause
+        if (cause.name === "UnknownCapability") {
+          const errors = unknown.get(cause.capability) || []
+          unknown.set(cause.capability, [...errors, capability.error])
+        } else {
+          causes.push(capability.error)
+        }
       } else {
         matches.push(capability)
       }
     }
 
-    errors.push(new MatchError(causes, selector))
+    if (causes.length > 0) {
+      errors.push(new MatchError(causes, selector))
+    }
 
     // If we have 0 matches on one of the selectors we will not be able to
     // match so there is no point exploring other selectors.
     if (matches.length === 0) {
+      data.length = 0
       break
     } else {
       data.push(matches)
     }
   }
 
-  for (const group of combine(data)) {
-    yield new AndMatch(group)
+  if (data.length > 0) {
+    for (const group of combine(data)) {
+      yield new AndMatch(group)
+    }
   }
 
   // also yield the error if we encountered them
   if (errors.length > 0) {
     yield new MatchError(errors, self)
+  }
+
+  // yield errors for all the unknown capabilities that were not know
+  // by any of the selectors.
+  for (const errors of unknown.values()) {
+    if (errors.length === self.selectors.length) {
+      yield new MatchError(errors, self)
+    }
   }
 }
