@@ -661,7 +661,7 @@ test.only("capability amplification", assert => {
     ]),
   ]
 
-  return assert.like(
+  assert.like(
     rnw,
     like([
       {
@@ -684,13 +684,6 @@ test.only("capability amplification", assert => {
   if (reandnwrite.error) {
     return assert.fail("Expected a match")
   }
-
-  return console.log(
-    reandnwrite.select([
-      { can: "file/read", with: "file:///home/zAlice/" },
-      { can: "file/write", with: "file:///home/zAlice/" },
-    ])
-  )
 
   assert.like(
     [
@@ -716,49 +709,40 @@ test.only("capability amplification", assert => {
     "can derive amplification"
   )
 
-  return
-
   assert.like(
-    reandnwrite.select([
-      { can: "file/read", with: "file:///home/zAlice/" },
-      { can: "file/write", with: "file:///home/zAlice/" },
-      { can: "file/read", with: "file:///home/" },
+    [
+      ...reandnwrite.select([
+        { can: "file/read", with: "file:///home/zAlice/" },
+        { can: "file/write", with: "file:///home/zAlice/" },
+        { can: "file/read", with: "file:///home/" },
+      ]),
+    ],
+    like([
+      {
+        value: like([
+          {
+            can: "file/read",
+            with: { href: "file:///home/zAlice/" },
+          },
+          {
+            can: "file/write",
+            with: { href: "file:///home/zAlice/" },
+          },
+        ]),
+      },
+      {
+        value: like([
+          {
+            can: "file/read",
+            with: { href: "file:///home/" },
+          },
+          {
+            can: "file/write",
+            with: { href: "file:///home/zAlice/" },
+          },
+        ]),
+      },
     ]),
-    {
-      ...[
-        {
-          value: {
-            ...[
-              {
-                can: "file/read",
-                with: { href: "file:///home/zAlice/" },
-              },
-              {
-                can: "file/write",
-                with: { href: "file:///home/zAlice/" },
-              },
-            ],
-            length: 2,
-          },
-        },
-        {
-          value: {
-            ...[
-              {
-                can: "file/read",
-                with: { href: "file:///home/" },
-              },
-              {
-                can: "file/write",
-                with: { href: "file:///home/zAlice/" },
-              },
-            ],
-            length: 2,
-          },
-        },
-      ],
-      length: 2,
-    },
     "selects all combinations"
   )
 })
