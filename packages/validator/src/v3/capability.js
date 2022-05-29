@@ -166,10 +166,16 @@ class Or extends Unit {
    * @param {API.Source[]} capabilites
    */
   *select(capabilites) {
+    const unknown = new Map()
     const left = []
     for (const capability of this.left.select(capabilites)) {
       if (capability.error) {
-        left.push(capability)
+        const { cause } = capability.error
+        if (cause.name === "UnknownCapability") {
+          unknown.set(cause.capability, capability)
+        } else {
+          left.push(capability)
+        }
       } else {
         yield capability
       }
@@ -178,16 +184,32 @@ class Or extends Unit {
     const right = []
     for (const capability of this.right.select(capabilites)) {
       if (capability.error) {
-        right.push(capability)
+        const { cause } = capability.error
+        if (cause.name === "UnknownCapability") {
+          const other = unknown.get(cause.capability)
+          if (other) {
+            left.push(other)
+            right.push(other)
+          }
+        } else {
+          right.push(capability)
+        }
       } else {
         yield capability
       }
     }
 
-    yield new MatchError(
-      [new MatchError(left, this.left), new MatchError(right, this.right)],
-      this
-    )
+    const causes = []
+    if (left.length > 0) {
+      causes.push(new MatchError(left, this.left))
+    }
+    if (right.length > 0) {
+      causes.push(new MatchError(right, this.right))
+    }
+
+    if (causes.length > 0) {
+      yield new MatchError(causes, this)
+    }
   }
   toString() {
     return `${this.left.toString()}|${this.right.toString()}`

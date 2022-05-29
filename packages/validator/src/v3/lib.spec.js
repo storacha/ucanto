@@ -11,7 +11,7 @@ import { the } from "../util.js"
 const like = value =>
   Array.isArray(value) ? { ...value, length: value.length } : value
 
-test.only("capability selects matches", assert => {
+test("capability selects matches", assert => {
   const read = capability({
     can: "file/read",
     with: URI({ protocol: "file:" }),
@@ -198,7 +198,7 @@ test.only("capability selects matches", assert => {
   )
 })
 
-test.only("derived capability chain", assert => {
+test("derived capability chain", assert => {
   const verify = capability({
     can: "account/verify",
     with: URI({ protocol: "mailto:" }),
@@ -454,7 +454,7 @@ test.only("derived capability chain", assert => {
   )
 })
 
-test.only("capability amplification", assert => {
+test("capability amplification", assert => {
   const read = capability({
     can: "file/read",
     with: URI({ protocol: "file:" }),
@@ -750,26 +750,35 @@ test.only("capability amplification", assert => {
 test("capability or combinator", assert => {
   const read = capability({
     can: "file/read",
-    with: href => parseURI(href, "file:"),
+    with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname),
+      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      new Failure(
+        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+      ),
   })
 
   const write = capability({
     can: "file/write",
-    with: href => parseURI(href, "file:"),
+    with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname),
+      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      new Failure(
+        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+      ),
   })
 
   const readwrite = read.or(write)
-  const matches = readwrite.select([
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/write", with: "file:///home/zAlice/" },
-  ])
+  const matches = [
+    ...readwrite.select([
+      { can: "file/read", with: "file:///home/zAlice/" },
+      { can: "file/write", with: "file:///home/zAlice/" },
+    ]),
+  ]
 
-  assert.like(matches, {
-    ...[
+  assert.like(
+    matches,
+    like([
       {
         value: {
           can: "file/read",
@@ -782,7 +791,7 @@ test("capability or combinator", assert => {
           with: { href: "file:///home/zAlice/" },
         },
       },
-    ],
-    length: 2,
-  })
+    ]),
+    "matches both capabilities"
+  )
 })
