@@ -92,16 +92,6 @@ export interface Derives<T, U> {
 
 export interface View<M extends Match> extends Matcher<M>, Selector<M> {
   /**
-   * Defines capability that is either `this` or the the given `other`. This
-   * allows you to compose multiple capabilities into one so that you could
-   * validate any of one of them without having to maintain list of supported
-   * capabilities. It is especially useful when dealiving with derived
-   * capability chains when you might derive capability from either one or the
-   * other.
-   */
-  or<W extends Match>(other: MatchSelector<W>): Capability<M | W>
-
-  /**
    * Defined a derived capability which can be delegated from `this` capability.
    * For example if you define `"account/validate"` capability and derive
    * `"account/register"` capability from it when validating claimed
@@ -139,6 +129,16 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
 }
 
 export interface Capability<M extends Match = Match> extends View<M> {
+  /**
+   * Defines capability that is either `this` or the the given `other`. This
+   * allows you to compose multiple capabilities into one so that you could
+   * validate any of one of them without having to maintain list of supported
+   * capabilities. It is especially useful when dealiving with derived
+   * capability chains when you might derive capability from either one or the
+   * other.
+   */
+  or<W extends Match>(other: MatchSelector<W>): Capability<M | W>
+
   /**
    * Combines this capability and the other into a capability group. This allows
    * you to define right amplifications e.g `file/read+write` could be derived

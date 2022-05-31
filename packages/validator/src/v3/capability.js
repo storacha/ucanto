@@ -22,7 +22,7 @@ export const capability = descriptor => new Capability(descriptor)
  * @template {API.Match} W
  * @param {API.MatchSelector<M>} left
  * @param {API.MatchSelector<W>} right
- * @returns {API.MatchSelector<M|W>}
+ * @returns {API.Capability<M|W>}
  */
 export const or = (left, right) => new Or(left, right)
 
@@ -37,7 +37,7 @@ export const and = (...selectors) => new And(selectors)
  * @template {API.Match} M
  * @template {API.ParsedCapability} T
  * @param {API.DeriveSelector<M, T> & { from: API.MatchSelector<M> }} options
- * @returns {API.MatchSelector<API.DerivedMatch<T, M>>}
+ * @returns {API.Capability<API.DerivedMatch<T, M>>}
  */
 export const derive = ({ from, to, derives }) => new Derive(from, to, derives)
 
@@ -76,18 +76,9 @@ class View {
   }
 
   /**
-   * @template {API.Match} W
-   * @param {API.MatchSelector<W>} other
-   * @returns {API.MatchSelector<M | W>}
-   */
-  or(other) {
-    return or(this, other)
-  }
-
-  /**
    * @template {API.ParsedCapability} U
    * @param {API.DeriveSelector<M, U>} options
-   * @returns {API.MatchSelector<API.DerivedMatch<U, M>>}
+   * @returns {API.Capability<API.DerivedMatch<U, M>>}
    */
   derive({ derives, to }) {
     return derive({ derives, to, from: this })
@@ -100,6 +91,15 @@ class View {
  * @extends {View<M>}
  */
 class Unit extends View {
+  /**
+   * @template {API.Match} W
+   * @param {API.MatchSelector<W>} other
+   * @returns {API.Capability<M | W>}
+   */
+  or(other) {
+    return or(this, other)
+  }
+
   /**
    * @template {API.Match} W
    * @param {API.Capability<W>} other
@@ -200,7 +200,7 @@ class Or extends Unit {
             return left
           case "MalformedCapability":
             return left.name === "UnknownCapability" ? right : right
-          case "EscalatedCapability":
+          case "InvalidClaim":
           default:
             return left.name === "UnknownCapability" ? right : right
         }
@@ -473,7 +473,10 @@ class Match {
     } else {
       const claim = this.descriptor.derives(this.value, result)
       if (claim.error) {
-        return new EscalatedCapability(this.value, result, claim)
+        return new MatchError(
+          [new EscalatedCapability(this.value, result, claim)],
+          this
+        )
       } else {
         return new Match(result, this.descriptor)
       }
@@ -501,7 +504,7 @@ class Match {
             break
           case "InvalidClaim":
           default:
-            errors.push(new MatchError([result], this))
+            errors.push(result)
             break
         }
       }
@@ -640,8 +643,8 @@ class DerivedMatch {
       unknown: intersection(direct.unknown, derived.unknown),
       errors: [
         ...errors,
-        ...direct.errors.map(error => new MatchError([error], this)),
-        ...derived.errors,
+        ...direct.errors,
+        ...derived.errors.map(error => new MatchError([error], this)),
       ],
       matches: [
         ...direct.matches.map(match => new DerivedMatch(match, from, derives)),

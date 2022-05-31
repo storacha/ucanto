@@ -1247,29 +1247,18 @@ test.only("capability amplification 2", assert => {
             },
             causes: like([
               {
-                name: "InvalidClaim",
-                context: {
-                  value: {
-                    can: "file/read+write",
-                    with: { href: "file:///home/zAlice/public" },
-                  },
+                name: "EscalatedCapability",
+                claimed: {
+                  can: "file/read+write",
+                  with: { href: "file:///home/zAlice/public" },
                 },
-                causes: like([
-                  {
-                    name: "EscalatedCapability",
-                    claimed: {
-                      can: "file/read+write",
-                      with: { href: "file:///home/zAlice/public" },
-                    },
-                    delegated: {
-                      can: "file/read+write",
-                      with: { href: "file:///home/zAlice/public/photos" },
-                    },
-                    cause: {
-                      message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
-                    },
-                  },
-                ]),
+                delegated: {
+                  can: "file/read+write",
+                  with: { href: "file:///home/zAlice/public/photos" },
+                },
+                cause: {
+                  message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
+                },
               },
             ]),
           },
@@ -1348,6 +1337,51 @@ test.only("capability amplification 2", assert => {
       ]),
       unknown: [],
       errors: [],
+    },
+    "can derive amplification"
+  )
+
+  assert.like(
+    rw.select2([
+      { can: "file/read", with: "file:///home/zAlice/public/photos/" },
+      { can: "file/write", with: "file:///home/zAlice/public" },
+    ]),
+    {
+      matches: [],
+      unknown: [],
+      errors: like([
+        {
+          name: "InvalidClaim",
+          context: {
+            value: {
+              can: "file/read+write",
+              with: { href: "file:///home/zAlice/public" },
+            },
+          },
+          causes: like([
+            {
+              name: "EscalatedCapability",
+              claimed: {
+                can: "file/read+write",
+                with: { href: "file:///home/zAlice/public" },
+              },
+              delegated: like([
+                {
+                  can: "file/read",
+                  with: { href: "file:///home/zAlice/public/photos/" },
+                },
+                {
+                  can: "file/write",
+                  with: { href: "file:///home/zAlice/public" },
+                },
+              ]),
+              cause: {
+                message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos/'`,
+              },
+            },
+          ]),
+        },
+      ]),
     },
     "can derive amplification"
   )
