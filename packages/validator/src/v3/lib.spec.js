@@ -26,7 +26,7 @@ test("capability selects matches", assert => {
     },
   })
 
-  const v1 = read.select2([
+  const v1 = read.select([
     { can: "file/read", with: "space://zAlice" },
     { can: "file/write", with: "file:///home/zAlice/" },
     { can: "file/read", with: "file:///home/zAlice/photos" },
@@ -70,7 +70,7 @@ test("capability selects matches", assert => {
   })
 
   const [match] = v1.matches
-  const v2 = match.select2([
+  const v2 = match.select([
     { can: "file/read+write", with: "file:///home/zAlice" },
     { can: "file/read", with: "file:///home/zAlice/" },
     { can: "file/read", with: "file:///home/zAlice/photos/public" },
@@ -193,7 +193,7 @@ test("derived capability chain 2", assert => {
     },
   })
 
-  const regs = register.select2([
+  const regs = register.select([
     {
       can: "account/register",
       with: "mailto:zAlice@web.mail",
@@ -220,7 +220,7 @@ test("derived capability chain 2", assert => {
   )
 
   assert.like(
-    register.select2([
+    register.select([
       {
         can: "account/register",
         with: "did:key:zAlice",
@@ -255,7 +255,7 @@ test("derived capability chain 2", assert => {
   const [reg] = regs.matches
 
   assert.like(
-    reg.select2([
+    reg.select([
       {
         can: "account/verify",
         with: "mailto:zAlice@web.mail",
@@ -279,7 +279,7 @@ test("derived capability chain 2", assert => {
   )
 
   assert.like(
-    reg.select2([
+    reg.select([
       {
         can: "account/verify",
         with: "mailto:bob@web.mail",
@@ -320,7 +320,7 @@ test("derived capability chain 2", assert => {
   )
 
   assert.like(
-    reg.select2([
+    reg.select([
       {
         can: "account/register",
         with: "mailto:zAlice@web.mail",
@@ -352,12 +352,12 @@ test("derived capability chain 2", assert => {
 
   assert.like(
     register
-      .select2([registration])
-      .matches[0].select2([registration])
-      .matches[0].select2([registration])
-      .matches[0].select2([registration])
-      .matches[0].select2([verification])
-      .matches[0].select2([verification]),
+      .select([registration])
+      .matches[0].select([registration])
+      .matches[0].select([registration])
+      .matches[0].select([registration])
+      .matches[0].select([verification])
+      .matches[0].select([verification]),
     {
       matches: like([
         {
@@ -375,9 +375,9 @@ test("derived capability chain 2", assert => {
 
   assert.like(
     register
-      .select2([registration])
-      .matches[0].select2([verification])
-      .matches[0].select2([registration]),
+      .select([registration])
+      .matches[0].select([verification])
+      .matches[0].select([registration]),
     {
       matches: [],
       unknown: [registration],
@@ -387,7 +387,7 @@ test("derived capability chain 2", assert => {
   )
 })
 
-test("capability amplification 2", assert => {
+test("capability amplification", assert => {
   const read = capability({
     can: "file/read",
     with: URI({ protocol: "file:" }),
@@ -434,7 +434,7 @@ test("capability amplification 2", assert => {
   })
 
   assert.like(
-    readwrite.select2([
+    readwrite.select([
       { can: "file/read", with: "file:///home/zAlice/" },
       { can: "file/write", with: "file:///home/zAlice/" },
     ]),
@@ -449,7 +449,7 @@ test("capability amplification 2", assert => {
     "expects derived capability read+write"
   )
 
-  const selected = readwrite.select2([
+  const selected = readwrite.select([
     { can: "file/read+write", with: "file:///home/zAlice/public" },
     { can: "file/write", with: "file:///home/zAlice/" },
   ])
@@ -474,9 +474,7 @@ test("capability amplification 2", assert => {
   const [rw] = selected.matches
 
   assert.like(
-    rw.select2([
-      { can: "file/read+write", with: "file:///home/zAlice/public" },
-    ]),
+    rw.select([{ can: "file/read+write", with: "file:///home/zAlice/public" }]),
     {
       matches: like([
         {
@@ -493,7 +491,7 @@ test("capability amplification 2", assert => {
   )
 
   assert.like(
-    rw.select2([
+    rw.select([
       { can: "file/read+write", with: "file:///home/zAlice/public/photos" },
     ]),
     {
@@ -533,7 +531,7 @@ test("capability amplification 2", assert => {
   )
 
   assert.like(
-    rw.select2([{ can: "file/read+write", with: "file:///home/zAlice/" }]),
+    rw.select([{ can: "file/read+write", with: "file:///home/zAlice/" }]),
     {
       matches: like([
         {
@@ -549,7 +547,7 @@ test("capability amplification 2", assert => {
     "can derive from greater capabilities"
   )
 
-  const rnw = rw.select2([
+  const rnw = rw.select([
     { can: "file/read", with: "file:///home/zAlice/" },
     { can: "file/write", with: "file:///home/zAlice/public" },
   ])
@@ -580,7 +578,7 @@ test("capability amplification 2", assert => {
   const [reandnwrite] = rnw.matches
 
   assert.like(
-    reandnwrite.select2([
+    reandnwrite.select([
       { can: "file/read", with: "file:///home/zAlice/" },
       { can: "file/write", with: "file:///home/zAlice/" },
     ]),
@@ -606,7 +604,7 @@ test("capability amplification 2", assert => {
   )
 
   assert.like(
-    rw.select2([
+    rw.select([
       { can: "file/read", with: "file:///home/zAlice/public/photos/" },
       { can: "file/write", with: "file:///home/zAlice/public" },
     ]),
@@ -651,7 +649,7 @@ test("capability amplification 2", assert => {
   )
 
   assert.like(
-    reandnwrite.select2([
+    reandnwrite.select([
       { can: "file/read", with: "file:///home/zAlice/" },
       { can: "file/write", with: "file:///home/zAlice/" },
       { can: "file/read", with: "file:///home/" },
@@ -712,7 +710,7 @@ test("capability or combinator 2", assert => {
   })
 
   const readwrite = read.or(write)
-  const selection = readwrite.select2([
+  const selection = readwrite.select([
     { can: "file/read", with: "file:///home/zAlice/" },
     { can: "file/write", with: "file:///home/zAlice/" },
   ])

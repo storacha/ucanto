@@ -16,11 +16,11 @@ export interface Match<T = unknown, M extends Match = Match<unknown, any>>
 }
 
 export interface Matcher<M extends Match> {
-  match2(capability: Source): Match2Result<M>
+  match(capability: Source): MatchResult<M>
 }
 
 export interface Selector<M extends Match> {
-  select2(capabilities: Source[]): Select<M>
+  select(capabilities: Source[]): Select<M>
 }
 
 export interface Select<M extends Match> {
@@ -56,13 +56,9 @@ export interface Descriptor<T extends ParsedCapability, M extends Match> {
   derives: Derives<T, M["value"]>
 }
 
-export type MatchError = API.DelegationError
-export type MatchResult<M extends Match> = API.Result<M, MatchError>
+export type MatchError = API.InvalidCapability | API.DelegationError
 
-export type Match2Result<M extends Match> = API.Result<
-  M,
-  API.InvalidCapability | API.DelegationError
->
+export type MatchResult<M extends Match> = API.Result<M, MatchError>
 
 export interface Config<
   Ability extends API.Ability,
