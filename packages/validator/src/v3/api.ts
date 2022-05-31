@@ -12,23 +12,23 @@ export type {
 export interface Match<T = unknown, M extends Match = Match<unknown, any>>
   extends Selector<M> {
   value: T
+  value2?: T
 }
 
 export interface Matcher<M extends Match> {
   match(capability: Source): MatchResult<M>
-  // match2(capability: Source): Match2Result<M>
+  match2(capability: Source): Match2Result<M>
 }
 
 export interface Selector<M extends Match> {
-  select(capabilites: Source[]): IterableIterator<MatchResult<M>>
-  // select2(capabilities: Source[]): Select<M>
+  select(capabilities: Source[]): IterableIterator<MatchResult<M>>
+  select2(capabilities: Source[]): Select<M>
 }
 
 export interface Select<M extends Match> {
-  matched: M[]
+  matches: M[]
+  errors: API.DelegationError[]
   unknown: API.Capability[]
-  malformed: API.MalformedCapability[]
-  escalated: EscalatedCapability[]
 }
 
 export interface GroupSelector<M extends Match[] = Match[]>
@@ -58,24 +58,12 @@ export interface Descriptor<T extends ParsedCapability, M extends Match> {
   derives: Derives<T, M["value"]>
 }
 
-export interface WithContext<Problem extends API.Problem> extends API.Problem {
-  context: Capability | CapabilityGroup
-  problems: Problem[]
-}
-
 export type MatchError = API.DelegationError
-export interface EscalatedCapability extends Error {
-  name: "EscalatedCapability"
-  error: this
-  claimed: ParsedCapability
-  delegated: object
-  cause: API.Problem
-}
 export type MatchResult<M extends Match> = API.Result<M, MatchError>
 
 export type Match2Result<M extends Match> = API.Result<
-  M | null,
-  API.MalformedCapability | EscalatedCapability
+  M,
+  API.InvalidCapability | API.DelegationError
 >
 
 export interface Config<
@@ -111,7 +99,7 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
    * capability chains when you might derive capability from either one or the
    * other.
    */
-  or<W extends Match>(other: MatchSelector<W>): MatchSelector<M | W>
+  or<W extends Match>(other: MatchSelector<W>): Capability<M | W>
 
   /**
    * Defined a derived capability which can be delegated from `this` capability.
@@ -147,7 +135,7 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
    */
   derive<T extends ParsedCapability>(
     options: DeriveSelector<M, T>
-  ): MatchSelector<DerivedMatch<T, M>>
+  ): Capability<DerivedMatch<T, M>>
 }
 
 export interface Capability<M extends Match = Match> extends View<M> {

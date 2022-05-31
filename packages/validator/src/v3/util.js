@@ -33,11 +33,15 @@ export const combine = ([first, ...rest]) => {
  */
 
 export const intersection = (left, right) => {
-  const [result, exclude] =
-    left.length < right.length ? [new Set(left), right] : [new Set(right), left]
+  const [result, other] =
+    left.length < right.length
+      ? [new Set(left), new Set(right)]
+      : [new Set(right), new Set(left)]
 
-  for (const item of exclude) {
-    result.delete(item)
+  for (const item of result) {
+    if (!other.has(item)) {
+      result.delete(item)
+    }
   }
 
   return [...result]

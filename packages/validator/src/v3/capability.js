@@ -6,6 +6,7 @@ import {
   MalformedCapability,
   UnknownCapability,
   DelegationError as MatchError,
+  InvalidDelegation,
 } from "../error.js"
 
 /**
@@ -52,12 +53,26 @@ class View {
   match(capability) {
     return new MatchError([new UnknownCapability(capability)], this)
   }
+  /**
+   * @param {API.Source} capability
+   * @returns {API.Match2Result<M>}
+   */
+  match2(capability) {
+    return new UnknownCapability(capability)
+  }
 
   /**
    * @param {API.Source[]} capabilities
    */
   select(capabilities) {
     return select(this, capabilities)
+  }
+
+  /**
+   * @param {API.Source[]} capabilities
+   */
+  select2(capabilities) {
+    return select2(this, capabilities)
   }
 
   /**
@@ -123,6 +138,15 @@ class Capability extends Unit {
       ? new MatchError([result.error], this)
       : new Match(result, this.descriptor)
   }
+
+  /**
+   * @param {API.Source} capability
+   * @returns {API.Match2Result<API.DirectMatch<T>>}
+   */
+  match2(capability) {
+    const result = parse(this, capability)
+    return result.error ? result : new Match(result, this.descriptor)
+  }
   toString() {
     return JSON.stringify({ can: this.descriptor.can })
   }
@@ -163,12 +187,38 @@ class Or extends Unit {
   }
 
   /**
-   * @param {API.Source[]} capabilites
+   * @param {API.Source} capability
+   * @return {API.Match2Result<M|W>}
    */
-  *select(capabilites) {
+  match2(capability) {
+    const left = this.left.match2(capability)
+    if (left.error) {
+      const right = this.right.match2(capability)
+      if (right.error) {
+        switch (right.name) {
+          case "UnknownCapability":
+            return left
+          case "MalformedCapability":
+            return left.name === "UnknownCapability" ? right : right
+          case "EscalatedCapability":
+          default:
+            return left.name === "UnknownCapability" ? right : right
+        }
+      } else {
+        return right
+      }
+    } else {
+      return left
+    }
+  }
+
+  /**
+   * @param {API.Source[]} capabilities
+   */
+  *select(capabilities) {
     const unknown = new Map()
     const left = []
-    for (const capability of this.left.select(capabilites)) {
+    for (const capability of this.left.select(capabilities)) {
       if (capability.error) {
         const { cause } = capability.error
         if (cause.name === "UnknownCapability") {
@@ -182,7 +232,7 @@ class Or extends Unit {
     }
 
     const right = []
-    for (const capability of this.right.select(capabilites)) {
+    for (const capability of this.right.select(capabilities)) {
       if (capability.error) {
         const { cause } = capability.error
         if (cause.name === "UnknownCapability") {
@@ -217,6 +267,30 @@ class Or extends Unit {
 }
 
 /**
+ * @implements {API.DirectMatch<never>}
+ */
+class Never {
+  constructor() {
+    /** @type {never} */
+    this.value
+  }
+  /**
+   * @param {API.Source[]} capabilities
+   */
+  *select(capabilities) {}
+  /**
+   * @param {API.Source[]} capabilities
+   */
+  select2(capabilities) {
+    return {
+      unknown: capabilities,
+      errors: [],
+      matches: [],
+    }
+  }
+}
+
+/**
  * @template {API.MatchSelector<API.Match>[]} Selectors
  * @implements {API.CapabilityGroup<API.InferMembers<Selectors>>}
  * @extends {View<API.Amplify<API.InferMembers<Selectors>>>}
@@ -246,12 +320,35 @@ class And extends View {
 
     return new AndMatch(/** @type {API.InferMembers<Selectors>} */ (group))
   }
+  /**
+   * @param {API.Source} capability
+   * @returns {API.Match2Result<API.Amplify<API.InferMembers<Selectors>>>}
+   */
+  match2(capability) {
+    const group = []
+    for (const selector of this.selectors) {
+      const result = selector.match2(capability)
+      if (result.error) {
+        return result
+      } else {
+        group.push(result)
+      }
+    }
+
+    return new AndMatch(/** @type {API.InferMembers<Selectors>} */ (group))
+  }
 
   /**
    * @param {API.Source[]} capabilities
    */
   select(capabilities) {
     return selectGroup(this, capabilities)
+  }
+  /**
+   * @param {API.Source[]} capabilities
+   */
+  select2(capabilities) {
+    return selectGroup2(this, capabilities)
   }
   /**
    * @template E
@@ -298,6 +395,18 @@ class Derive extends Unit {
       return new DerivedMatch(match, this.from, this.derives)
     }
   }
+  /**
+   * @param {API.Source} capability
+   * @returns {API.Match2Result<API.DerivedMatch<T, M>>}
+   */
+  match2(capability) {
+    const match = this.to.match2(capability)
+    if (match.error) {
+      return match
+    } else {
+      return new DerivedMatch(match, this.from, this.derives)
+    }
+  }
 
   toString() {
     return this.to.toString()
@@ -316,6 +425,12 @@ class Match {
   constructor(value, descriptor) {
     this.value = value
     this.descriptor = descriptor
+  }
+  get value2() {
+    return this.value
+  }
+  get can() {
+    return this.value.can
   }
   /**
    * @param {API.Source} capability
@@ -341,12 +456,20 @@ class Match {
   }
 
   /**
+   * @param {API.Source[]} capabilities
+   */
+  select(capabilities) {
+    return select(this, capabilities)
+  }
+
+  /**
    * @param {API.Source} capability
+   * @returns {API.Match2Result<API.DirectMatch<T>>}
    */
   match2(capability) {
     const result = parse(this, capability)
     if (result.error) {
-      return result.name === "MalformedCapability" ? result : null
+      return result.error
     } else {
       const claim = this.descriptor.derives(this.value, result)
       if (claim.error) {
@@ -358,16 +481,33 @@ class Match {
   }
   /**
    * @param {API.Source[]} capabilities
-   */
-  select(capabilities) {
-    return select(this, capabilities)
-  }
-  /**
-   * @param {API.Source[]} capabilities
    * @returns {API.Select<API.DirectMatch<T>>}
    */
   select2(capabilities) {
-    return select2(this, capabilities)
+    const unknown = []
+    const errors = []
+    const matches = []
+    for (const capability of capabilities) {
+      const result = this.match2(capability)
+      if (!result.error) {
+        matches.push(result)
+      } else {
+        switch (result.name) {
+          case "UnknownCapability":
+            unknown.push(result.capability)
+            break
+          case "MalformedCapability":
+            errors.push(new MatchError([result], this))
+            break
+          case "InvalidClaim":
+          default:
+            errors.push(new MatchError([result], this))
+            break
+        }
+      }
+    }
+
+    return { matches, unknown, errors }
   }
   toString() {
     return JSON.stringify({
@@ -469,6 +609,47 @@ class DerivedMatch {
     }
   }
 
+  /**
+   * @param {API.Source[]} capabilities
+   */
+  select2(capabilities) {
+    const { derives, selected, from } = this
+    const { value } = selected
+
+    const direct = selected.select2(capabilities)
+
+    const derived = from.select2(capabilities)
+    const matches = []
+    const errors = []
+    for (const match of derived.matches) {
+      // If capability can not be derived it escalates
+      const result = derives(value, match.value)
+      if (result.error) {
+        errors.push(
+          new MatchError(
+            [new EscalatedCapability(value, match.value, result)],
+            this
+          )
+        )
+      } else {
+        matches.push(match)
+      }
+    }
+
+    return {
+      unknown: intersection(direct.unknown, derived.unknown),
+      errors: [
+        ...errors,
+        ...direct.errors.map(error => new MatchError([error], this)),
+        ...derived.errors,
+      ],
+      matches: [
+        ...direct.matches.map(match => new DerivedMatch(match, from, derives)),
+        ...matches,
+      ],
+    }
+  }
+
   toString() {
     return this.selected.toString()
   }
@@ -503,13 +684,51 @@ class AndMatch {
 
   /**
    * @param {API.Source[]} capabilities
-
    */
   select(capabilities) {
     return selectGroup(this, capabilities)
   }
+
+  /**
+   * @param {API.Source[]} capabilities
+   */
+  select2(capabilities) {
+    return selectGroup2(this, capabilities)
+  }
   toString() {
     return `[${this.matches.map(match => match.toString()).join(", ")}]`
+  }
+}
+
+/**
+ * @template {API.Selector<API.Match>[]} S
+ * @param {{selectors:S}} self
+ * @param {API.Source[]} capabilities
+ */
+
+const selectGroup2 = (self, capabilities) => {
+  let unknown
+  const data = []
+  const errors = []
+  for (const selector of self.selectors) {
+    const selected = selector.select2(capabilities)
+    unknown = unknown
+      ? intersection(unknown, selected.unknown)
+      : selected.unknown
+
+    for (const error of selected.errors) {
+      errors.push(new MatchError([error], self))
+    }
+
+    data.push(selected.matches)
+  }
+
+  const matches = combine(data).map(group => new AndMatch(group))
+
+  return {
+    unknown: unknown || [],
+    errors,
+    matches,
   }
 }
 
@@ -562,35 +781,35 @@ const select = function* (matcher, capabilities) {
 
 /**
  * @template {API.Match} M
- * @param {{match2(capability:API.Source):API.Result<M|null, API.MalformedCapability|API.EscalatedCapability>}} matcher
+ * @param {API.Matcher<M>} matcher
  * @param {API.Source[]} capabilities
- * @returns {API.Select<M>}
  */
 
 const select2 = (matcher, capabilities) => {
   const unknown = []
-  const malformed = []
-  const matched = []
-  const escalated = []
+  const matches = []
+  const errors = []
   for (const capability of capabilities) {
     const result = matcher.match2(capability)
-    if (result == null) {
-      unknown.push(capability)
-    } else if (result.error) {
+    if (result.error) {
       switch (result.name) {
-        case "EscalatedCapability":
-          escalated.push(result)
+        case "UnknownCapability":
+          unknown.push(result.capability)
           break
         case "MalformedCapability":
-          malformed.push(result)
+          errors.push(new MatchError([result], result.capability))
+          break
+        case "InvalidClaim":
+        default:
+          errors.push(result)
           break
       }
-    } else if (result) {
-      matched.push(result)
+    } else {
+      matches.push(result)
     }
   }
 
-  return { escalated, matched, malformed, unknown }
+  return { matches, errors, unknown }
 }
 
 /**
