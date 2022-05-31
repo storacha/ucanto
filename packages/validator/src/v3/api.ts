@@ -16,12 +16,10 @@ export interface Match<T = unknown, M extends Match = Match<unknown, any>>
 }
 
 export interface Matcher<M extends Match> {
-  match(capability: Source): MatchResult<M>
   match2(capability: Source): Match2Result<M>
 }
 
 export interface Selector<M extends Match> {
-  select(capabilities: Source[]): IterableIterator<MatchResult<M>>
   select2(capabilities: Source[]): Select<M>
 }
 
