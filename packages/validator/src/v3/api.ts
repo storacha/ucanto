@@ -1,16 +1,26 @@
 export * from "../api.js"
 import * as API from "../api.js"
 
-import type { Capability as Source, InvalidCapability } from "../api.js"
+import type {
+  Capability as SourceCapability,
+  InvalidCapability,
+} from "../api.js"
 export type {
-  Capability as Source,
+  Capability as SourceCapability,
   Ability,
   Resource,
   Problem,
 } from "../api.js"
 
+export interface Source {
+  capability: API.Capability
+  delegation: API.Delegation
+  index: number
+}
+
 export interface Match<T = unknown, M extends Match = Match<unknown, any>>
   extends Selector<M> {
+  source: Source[]
   value: T
 }
 

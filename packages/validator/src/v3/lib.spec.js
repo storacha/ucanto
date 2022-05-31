@@ -11,6 +11,20 @@ import { the } from "../util.js"
 const like = value =>
   Array.isArray(value) ? { ...value, length: value.length } : value
 
+/**
+ *
+ * @param {API.SourceCapability[]} capabilities
+ * @param {object} delegation
+ * @returns {API.Source[]}
+ */
+const delegate = (capabilities, delegation = {}) =>
+  // @ts-expect-error - this represents Delegation
+  capabilities.map((capability, index) => ({
+    capability,
+    delegation,
+    index,
+  }))
+
 test("capability selects matches", assert => {
   const read = capability({
     can: "file/read",
@@ -26,16 +40,19 @@ test("capability selects matches", assert => {
     },
   })
 
-  const v1 = read.select([
+  const d1 = delegate([
     { can: "file/read", with: "space://zAlice" },
     { can: "file/write", with: "file:///home/zAlice/" },
     { can: "file/read", with: "file:///home/zAlice/photos" },
     { can: "file/read+write", with: "file:///home/zAlice" },
   ])
 
+  const v1 = read.select(d1)
+
   assert.like(v1, {
     matches: like([
       {
+        source: [d1[2]],
         value: {
           can: "file/read",
           uri: { href: "file:///home/zAlice/photos" },
@@ -70,16 +87,18 @@ test("capability selects matches", assert => {
   })
 
   const [match] = v1.matches
-  const v2 = match.select([
+  const d2 = delegate([
     { can: "file/read+write", with: "file:///home/zAlice" },
     { can: "file/read", with: "file:///home/zAlice/" },
     { can: "file/read", with: "file:///home/zAlice/photos/public" },
     { can: "file/read", with: "file:///home/zBob" },
   ])
+  const v2 = match.select(d2)
 
   assert.like(v2, {
     matches: like([
       {
+        source: [d2[1]],
         value: {
           can: "file/read",
           uri: { href: "file:///home/zAlice/" },
@@ -193,18 +212,21 @@ test("derived capability chain", assert => {
     },
   })
 
-  const regs = register.select([
+  const d1 = delegate([
     {
       can: "account/register",
       with: "mailto:zAlice@web.mail",
     },
   ])
 
+  const regs = register.select(d1)
+
   assert.like(
     regs,
     {
       matches: like([
         {
+          source: [d1[0]],
           value: {
             can: "account/register",
             uri: {
@@ -219,51 +241,53 @@ test("derived capability chain", assert => {
     "selects registration capability"
   )
 
-  assert.like(
-    register.select([
+  const d2 = delegate([
+    {
+      can: "account/register",
+      with: "did:key:zAlice",
+    },
+  ])
+
+  assert.like(register.select(d2), {
+    matches: like([]),
+    errors: like([
       {
-        can: "account/register",
-        with: "did:key:zAlice",
+        name: "InvalidClaim",
+        context: {
+          can: "account/register",
+        },
+        causes: like([
+          {
+            name: "MalformedCapability",
+            capability: {
+              can: "account/register",
+              with: "did:key:zAlice",
+            },
+            cause: {
+              message: `Expected mailto: URI instead got did:key:zAlice`,
+            },
+          },
+        ]),
       },
     ]),
-    {
-      matches: like([]),
-      errors: like([
-        {
-          name: "InvalidClaim",
-          context: {
-            can: "account/register",
-          },
-          causes: like([
-            {
-              name: "MalformedCapability",
-              capability: {
-                can: "account/register",
-                with: "did:key:zAlice",
-              },
-              cause: {
-                message: `Expected mailto: URI instead got did:key:zAlice`,
-              },
-            },
-          ]),
-        },
-      ]),
-      unknown: like([]),
-    }
-  )
+    unknown: like([]),
+  })
 
   const [reg] = regs.matches
 
+  const d3 = delegate([
+    {
+      can: "account/verify",
+      with: "mailto:zAlice@web.mail",
+    },
+  ])
+
   assert.like(
-    reg.select([
-      {
-        can: "account/verify",
-        with: "mailto:zAlice@web.mail",
-      },
-    ]),
+    reg.select(d3),
     {
       matches: like([
         {
+          source: [d3[0]],
           value: {
             can: "account/verify",
             uri: {
@@ -278,13 +302,15 @@ test("derived capability chain", assert => {
     "matches verification"
   )
 
+  const d4 = delegate([
+    {
+      can: "account/verify",
+      with: "mailto:bob@web.mail",
+    },
+  ])
+
   assert.like(
-    reg.select([
-      {
-        can: "account/verify",
-        with: "mailto:bob@web.mail",
-      },
-    ]),
+    reg.select(d4),
     {
       matches: [],
       unknown: [],
@@ -319,13 +345,15 @@ test("derived capability chain", assert => {
     "does not match on different email"
   )
 
+  const d5 = delegate([
+    {
+      can: "account/register",
+      with: "mailto:zAlice@web.mail",
+    },
+  ])
+
   assert.like(
-    reg.select([
-      {
-        can: "account/register",
-        with: "mailto:zAlice@web.mail",
-      },
-    ]),
+    reg.select(d5),
     {
       matches: like([
         {
@@ -350,17 +378,19 @@ test("derived capability chain", assert => {
     with: the("mailto:zAlice@web.mail"),
   }
 
+  const d6 = delegate([verification])
   assert.like(
     register
-      .select([registration])
-      .matches[0].select([registration])
-      .matches[0].select([registration])
-      .matches[0].select([registration])
-      .matches[0].select([verification])
-      .matches[0].select([verification]),
+      .select(delegate([registration]))
+      .matches[0].select(delegate([registration]))
+      .matches[0].select(delegate([registration]))
+      .matches[0].select(delegate([registration]))
+      .matches[0].select(delegate([verification]))
+      .matches[0].select(d6),
     {
       matches: like([
         {
+          source: [d6[0]],
           value: {
             can: "account/verify",
             uri: { href: "mailto:zAlice@web.mail" },
@@ -375,9 +405,9 @@ test("derived capability chain", assert => {
 
   assert.like(
     register
-      .select([registration])
-      .matches[0].select([verification])
-      .matches[0].select([registration]),
+      .select(delegate([registration]))
+      .matches[0].select(delegate([verification]))
+      .matches[0].select(delegate([registration])),
     {
       matches: [],
       unknown: [registration],
@@ -433,11 +463,13 @@ test("capability amplification", assert => {
     },
   })
 
+  const d1 = delegate([
+    { can: "file/read", with: "file:///home/zAlice/" },
+    { can: "file/write", with: "file:///home/zAlice/" },
+  ])
+
   assert.like(
-    readwrite.select([
-      { can: "file/read", with: "file:///home/zAlice/" },
-      { can: "file/write", with: "file:///home/zAlice/" },
-    ]),
+    readwrite.select(d1),
     {
       matches: [],
       errors: [],
@@ -449,16 +481,19 @@ test("capability amplification", assert => {
     "expects derived capability read+write"
   )
 
-  const selected = readwrite.select([
+  const d2 = delegate([
     { can: "file/read+write", with: "file:///home/zAlice/public" },
     { can: "file/write", with: "file:///home/zAlice/" },
   ])
+
+  const selected = readwrite.select(d2)
 
   assert.like(
     selected,
     {
       matches: like([
         {
+          source: [d2[0]],
           value: {
             can: "file/read+write",
             uri: { href: "file:///home/zAlice/public" },
@@ -473,11 +508,16 @@ test("capability amplification", assert => {
 
   const [rw] = selected.matches
 
+  const d3 = delegate([
+    { can: "file/read+write", with: "file:///home/zAlice/public" },
+  ])
+
   assert.like(
-    rw.select([{ can: "file/read+write", with: "file:///home/zAlice/public" }]),
+    rw.select(d3),
     {
       matches: like([
         {
+          source: [d3[0]],
           value: {
             can: "file/read+write",
             uri: { href: "file:///home/zAlice/public" },
@@ -490,10 +530,12 @@ test("capability amplification", assert => {
     "can derive from matching"
   )
 
+  const d4 = delegate([
+    { can: "file/read+write", with: "file:///home/zAlice/public/photos" },
+  ])
+
   assert.like(
-    rw.select([
-      { can: "file/read+write", with: "file:///home/zAlice/public/photos" },
-    ]),
+    rw.select(d4),
     {
       matches: [],
       unknown: [],
@@ -530,11 +572,16 @@ test("capability amplification", assert => {
     "can not derive from escalated path"
   )
 
+  const d5 = delegate([
+    { can: "file/read+write", with: "file:///home/zAlice/" },
+  ])
+
   assert.like(
-    rw.select([{ can: "file/read+write", with: "file:///home/zAlice/" }]),
+    rw.select(d5),
     {
       matches: like([
         {
+          source: [d5[0]],
           value: {
             can: "file/read+write",
             uri: { href: "file:///home/zAlice/" },
@@ -547,16 +594,19 @@ test("capability amplification", assert => {
     "can derive from greater capabilities"
   )
 
-  const rnw = rw.select([
+  const d6 = delegate([
     { can: "file/read", with: "file:///home/zAlice/" },
     { can: "file/write", with: "file:///home/zAlice/public" },
   ])
+
+  const rnw = rw.select(d6)
 
   assert.like(
     rnw,
     {
       matches: like([
         {
+          source: [d6[0], d6[1]],
           value: like([
             {
               can: "file/read",
@@ -577,14 +627,17 @@ test("capability amplification", assert => {
 
   const [reandnwrite] = rnw.matches
 
+  const d7 = delegate([
+    { can: "file/read", with: "file:///home/zAlice/" },
+    { can: "file/write", with: "file:///home/zAlice/" },
+  ])
+
   assert.like(
-    reandnwrite.select([
-      { can: "file/read", with: "file:///home/zAlice/" },
-      { can: "file/write", with: "file:///home/zAlice/" },
-    ]),
+    reandnwrite.select(d7),
     {
       matches: like([
         {
+          source: [d7[0], d7[1]],
           value: like([
             {
               can: "file/read",
@@ -603,11 +656,13 @@ test("capability amplification", assert => {
     "can derive amplification"
   )
 
+  const d8 = delegate([
+    { can: "file/read", with: "file:///home/zAlice/public/photos/" },
+    { can: "file/write", with: "file:///home/zAlice/public" },
+  ])
+
   assert.like(
-    rw.select([
-      { can: "file/read", with: "file:///home/zAlice/public/photos/" },
-      { can: "file/write", with: "file:///home/zAlice/public" },
-    ]),
+    rw.select(d8),
     {
       matches: [],
       unknown: [],
@@ -648,15 +703,19 @@ test("capability amplification", assert => {
     "can derive amplification"
   )
 
+  const [r1, w1] = delegate([
+    { can: "file/read", with: "file:///home/zAlice/" },
+    { can: "file/write", with: "file:///home/zAlice/" },
+  ])
+
+  const [r2] = delegate([{ can: "file/read", with: "file:///home/" }])
+
   assert.like(
-    reandnwrite.select([
-      { can: "file/read", with: "file:///home/zAlice/" },
-      { can: "file/write", with: "file:///home/zAlice/" },
-      { can: "file/read", with: "file:///home/" },
-    ]),
+    reandnwrite.select([r1, w1, r2]),
     {
       matches: like([
         {
+          source: [r1, w1],
           value: like([
             {
               can: "file/read",
@@ -669,6 +728,7 @@ test("capability amplification", assert => {
           ]),
         },
         {
+          source: [r2, w1],
           value: like([
             {
               can: "file/read",
@@ -710,22 +770,27 @@ test("capability or combinator", assert => {
   })
 
   const readwrite = read.or(write)
-  const selection = readwrite.select([
+
+  const [r, w] = delegate([
     { can: "file/read", with: "file:///home/zAlice/" },
     { can: "file/write", with: "file:///home/zAlice/" },
   ])
+
+  const selection = readwrite.select([r, w])
 
   assert.like(
     selection,
     {
       matches: like([
         {
+          source: [r],
           value: {
             can: "file/read",
             uri: { href: "file:///home/zAlice/" },
           },
         },
         {
+          source: [w],
           value: {
             can: "file/write",
             uri: { href: "file:///home/zAlice/" },
