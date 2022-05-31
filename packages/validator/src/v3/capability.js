@@ -11,9 +11,10 @@ import {
 
 /**
  * @template {API.Ability} A
+ * @template {API.Resource} R
  * @template {API.Caveats} C
- * @param {API.Config<A, C, API.DirectMatch<API.ParsedCapability<A, C>>>} descriptor
- * @returns {API.Capability<API.DirectMatch<API.ParsedCapability<A, C>>>}
+ * @param {API.Config<A, R, C, API.DirectMatch<API.ParsedCapability<A, R, C>>>} descriptor
+ * @returns {API.Capability<API.DirectMatch<API.ParsedCapability<A, R, C>>>}
  */
 export const capability = descriptor => new Capability(descriptor)
 
@@ -275,9 +276,6 @@ class Match {
     this.value = value
     this.descriptor = descriptor
   }
-  get value2() {
-    return this.value
-  }
   get can() {
     return this.value.can
   }
@@ -335,7 +333,8 @@ class Match {
   toString() {
     return JSON.stringify({
       can: this.descriptor.can,
-      with: this.value.with.href,
+      with: this.value.uri.href,
+      uri: this.value.uri,
       caveats:
         Object.keys(this.value.caveats).length > 0
           ? this.value.caveats
@@ -483,7 +482,7 @@ const parse = (self, capability) => {
     }
   }
 
-  return /** @type {T} */ ({ can, with: uri, caveats })
+  return /** @type {T} */ ({ can, uri, with: capability.with, caveats })
 }
 
 /**

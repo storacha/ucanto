@@ -12,7 +12,6 @@ export type {
 export interface Match<T = unknown, M extends Match = Match<unknown, any>>
   extends Selector<M> {
   value: T
-  value2?: T
 }
 
 export interface Matcher<M extends Match> {
@@ -51,7 +50,7 @@ export interface Caveats
 
 export interface Descriptor<T extends ParsedCapability, M extends Match> {
   can: T["can"]
-  with: Parser<string, T["with"], API.Problem>
+  with: Parser<string, T["uri"], API.Problem>
   caveats?: InferCaveatsDescriptor<T>
   derives: Derives<T, M["value"]>
 }
@@ -62,9 +61,10 @@ export type MatchResult<M extends Match> = API.Result<M, MatchError>
 
 export interface Config<
   Ability extends API.Ability,
+  Resource extends API.Resource,
   Constraints extends Caveats,
   M extends Match
-> extends Descriptor<ParsedCapability<Ability, Constraints>, M> {}
+> extends Descriptor<ParsedCapability<Ability, Resource, Constraints>, M> {}
 
 export type InferCaveatsDescriptor<T extends ParsedCapability> = {
   [Key in keyof T["caveats"]]: T["caveats"][Key] extends infer U
@@ -221,10 +221,12 @@ export type InferMatch<Members extends unknown[]> = Members extends []
 
 export interface ParsedCapability<
   Can extends API.Ability = API.Ability,
+  With extends API.Resource = API.Resource,
   C extends Caveats = Caveats
-> {
+> extends API.Capability {
   can: Can
-  with: URL
+  with: With
+  uri: URL
   caveats: InferCaveats<C>
 }
 

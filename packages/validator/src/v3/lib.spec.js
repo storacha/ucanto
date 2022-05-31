@@ -16,11 +16,11 @@ test("capability selects matches", assert => {
     can: "file/read",
     with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) => {
-      if (claimed.with.pathname.startsWith(delegated.with.pathname)) {
+      if (claimed.uri.pathname.startsWith(delegated.uri.pathname)) {
         return true
       } else {
         return new Failure(
-          `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
         )
       }
     },
@@ -38,7 +38,7 @@ test("capability selects matches", assert => {
       {
         value: {
           can: "file/read",
-          with: { href: "file:///home/zAlice/photos" },
+          uri: { href: "file:///home/zAlice/photos" },
         },
       },
     ]),
@@ -82,7 +82,7 @@ test("capability selects matches", assert => {
       {
         value: {
           can: "file/read",
-          with: { href: "file:///home/zAlice/" },
+          uri: { href: "file:///home/zAlice/" },
         },
       },
     ]),
@@ -98,7 +98,7 @@ test("capability selects matches", assert => {
         context: {
           value: {
             can: "file/read",
-            with: { href: "file:///home/zAlice/photos" },
+            uri: { href: "file:///home/zAlice/photos" },
             caveats: {},
           },
         },
@@ -107,11 +107,11 @@ test("capability selects matches", assert => {
             name: "EscalatedCapability",
             claimed: {
               can: "file/read",
-              with: { href: "file:///home/zAlice/photos" },
+              uri: { href: "file:///home/zAlice/photos" },
             },
             delegated: {
               can: "file/read",
-              with: { href: "file:///home/zAlice/photos/public" },
+              uri: { href: "file:///home/zAlice/photos/public" },
             },
             cause: {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zAlice/photos/public'`,
@@ -124,7 +124,7 @@ test("capability selects matches", assert => {
         context: {
           value: {
             can: "file/read",
-            with: { href: "file:///home/zAlice/photos" },
+            uri: { href: "file:///home/zAlice/photos" },
             caveats: {},
           },
         },
@@ -133,11 +133,11 @@ test("capability selects matches", assert => {
             name: "EscalatedCapability",
             claimed: {
               can: "file/read",
-              with: { href: "file:///home/zAlice/photos" },
+              uri: { href: "file:///home/zAlice/photos" },
             },
             delegated: {
               can: "file/read",
-              with: { href: "file:///home/zBob" },
+              uri: { href: "file:///home/zBob" },
             },
             cause: {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zBob'`,
@@ -149,16 +149,16 @@ test("capability selects matches", assert => {
   })
 })
 
-test("derived capability chain 2", assert => {
+test("derived capability chain", assert => {
   const verify = capability({
     can: "account/verify",
     with: URI({ protocol: "mailto:" }),
     derives: (claimed, delegated) => {
-      if (claimed.with.href.startsWith(delegated.with.href)) {
+      if (claimed.uri.href.startsWith(delegated.uri.href)) {
         return true
       } else {
         return new Failure(
-          `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
         )
       }
     },
@@ -175,8 +175,8 @@ test("derived capability chain 2", assert => {
         const c2 = delegated.can
 
         return (
-          claimed.with.href === delegated.with.href ||
-          new Failure(`'${claimed.with.href}' != '${delegated.with.href}'`)
+          claimed.uri.href === delegated.uri.href ||
+          new Failure(`'${claimed.uri.href}' != '${delegated.uri.href}'`)
         )
       },
     }),
@@ -187,8 +187,8 @@ test("derived capability chain 2", assert => {
       const c2 = delegated.can
 
       return (
-        claimed.with.href === delegated.with.href ||
-        new Failure(`'${claimed.with.href}' != '${delegated.with.href}'`)
+        claimed.uri.href === delegated.uri.href ||
+        new Failure(`'${claimed.uri.href}' != '${delegated.uri.href}'`)
       )
     },
   })
@@ -207,7 +207,7 @@ test("derived capability chain 2", assert => {
         {
           value: {
             can: "account/register",
-            with: {
+            uri: {
               href: "mailto:zAlice@web.mail",
             },
           },
@@ -266,7 +266,7 @@ test("derived capability chain 2", assert => {
         {
           value: {
             can: "account/verify",
-            with: {
+            uri: {
               href: "mailto:zAlice@web.mail",
             },
           },
@@ -294,7 +294,7 @@ test("derived capability chain 2", assert => {
           context: {
             value: {
               can: "account/register",
-              with: { href: "mailto:zAlice@web.mail" },
+              uri: { href: "mailto:zAlice@web.mail" },
             },
           },
           causes: like([
@@ -302,11 +302,11 @@ test("derived capability chain 2", assert => {
               name: "EscalatedCapability",
               claimed: {
                 can: "account/register",
-                with: { href: "mailto:zAlice@web.mail" },
+                uri: { href: "mailto:zAlice@web.mail" },
               },
               delegated: {
                 can: "account/verify",
-                with: { href: "mailto:bob@web.mail" },
+                uri: { href: "mailto:bob@web.mail" },
               },
               cause: {
                 message: `'mailto:zAlice@web.mail' != 'mailto:bob@web.mail'`,
@@ -331,7 +331,7 @@ test("derived capability chain 2", assert => {
         {
           value: {
             can: "account/register",
-            with: { href: "mailto:zAlice@web.mail" },
+            uri: { href: "mailto:zAlice@web.mail" },
           },
         },
       ]),
@@ -363,7 +363,7 @@ test("derived capability chain 2", assert => {
         {
           value: {
             can: "account/verify",
-            with: { href: "mailto:zAlice@web.mail" },
+            uri: { href: "mailto:zAlice@web.mail" },
           },
         },
       ]),
@@ -392,9 +392,9 @@ test("capability amplification", assert => {
     can: "file/read",
     with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
-        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
       ),
   })
 
@@ -402,9 +402,9 @@ test("capability amplification", assert => {
     can: "file/write",
     with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
-        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
       ),
   })
 
@@ -413,19 +413,19 @@ test("capability amplification", assert => {
       can: "file/read+write",
       with: URI({ protocol: "file:" }),
       derives: (claimed, delegated) =>
-        claimed.with.pathname.startsWith(delegated.with.pathname) ||
+        claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
         new Failure(
-          `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
         ),
     }),
     derives: (claimed, [read, write]) => {
-      if (!claimed.with.pathname.startsWith(read.with.pathname)) {
+      if (!claimed.uri.pathname.startsWith(read.uri.pathname)) {
         return new Failure(
-          `'${claimed.with.href}' is not contained in '${read.with.href}'`
+          `'${claimed.uri.href}' is not contained in '${read.uri.href}'`
         )
-      } else if (!claimed.with.pathname.startsWith(write.with.pathname)) {
+      } else if (!claimed.uri.pathname.startsWith(write.uri.pathname)) {
         return new Failure(
-          `'${claimed.with.href}' is not contained in '${write.with.href}'`
+          `'${claimed.uri.href}' is not contained in '${write.uri.href}'`
         )
       } else {
         return true
@@ -461,7 +461,7 @@ test("capability amplification", assert => {
         {
           value: {
             can: "file/read+write",
-            with: { href: "file:///home/zAlice/public" },
+            uri: { href: "file:///home/zAlice/public" },
           },
         },
       ]),
@@ -480,7 +480,7 @@ test("capability amplification", assert => {
         {
           value: {
             can: "file/read+write",
-            with: { href: "file:///home/zAlice/public" },
+            uri: { href: "file:///home/zAlice/public" },
           },
         },
       ]),
@@ -504,7 +504,7 @@ test("capability amplification", assert => {
             context: {
               value: {
                 can: "file/read+write",
-                with: { href: "file:///home/zAlice/public" },
+                uri: { href: "file:///home/zAlice/public" },
               },
             },
             causes: like([
@@ -512,11 +512,11 @@ test("capability amplification", assert => {
                 name: "EscalatedCapability",
                 claimed: {
                   can: "file/read+write",
-                  with: { href: "file:///home/zAlice/public" },
+                  uri: { href: "file:///home/zAlice/public" },
                 },
                 delegated: {
                   can: "file/read+write",
-                  with: { href: "file:///home/zAlice/public/photos" },
+                  uri: { href: "file:///home/zAlice/public/photos" },
                 },
                 cause: {
                   message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
@@ -537,7 +537,7 @@ test("capability amplification", assert => {
         {
           value: {
             can: "file/read+write",
-            with: new URL("file:///home/zAlice/"),
+            uri: { href: "file:///home/zAlice/" },
           },
         },
       ]),
@@ -560,11 +560,11 @@ test("capability amplification", assert => {
           value: like([
             {
               can: "file/read",
-              with: { href: "file:///home/zAlice/" },
+              uri: { href: "file:///home/zAlice/" },
             },
             {
               can: "file/write",
-              with: { href: "file:///home/zAlice/public" },
+              uri: { href: "file:///home/zAlice/public" },
             },
           ]),
         },
@@ -588,11 +588,11 @@ test("capability amplification", assert => {
           value: like([
             {
               can: "file/read",
-              with: { href: "file:///home/zAlice/" },
+              uri: { href: "file:///home/zAlice/" },
             },
             {
               can: "file/write",
-              with: { href: "file:///home/zAlice/" },
+              uri: { href: "file:///home/zAlice/" },
             },
           ]),
         },
@@ -617,7 +617,7 @@ test("capability amplification", assert => {
           context: {
             value: {
               can: "file/read+write",
-              with: { href: "file:///home/zAlice/public" },
+              uri: { href: "file:///home/zAlice/public" },
             },
           },
           causes: like([
@@ -625,16 +625,16 @@ test("capability amplification", assert => {
               name: "EscalatedCapability",
               claimed: {
                 can: "file/read+write",
-                with: { href: "file:///home/zAlice/public" },
+                uri: { href: "file:///home/zAlice/public" },
               },
               delegated: like([
                 {
                   can: "file/read",
-                  with: { href: "file:///home/zAlice/public/photos/" },
+                  uri: { href: "file:///home/zAlice/public/photos/" },
                 },
                 {
                   can: "file/write",
-                  with: { href: "file:///home/zAlice/public" },
+                  uri: { href: "file:///home/zAlice/public" },
                 },
               ]),
               cause: {
@@ -660,11 +660,11 @@ test("capability amplification", assert => {
           value: like([
             {
               can: "file/read",
-              with: { href: "file:///home/zAlice/" },
+              uri: { href: "file:///home/zAlice/" },
             },
             {
               can: "file/write",
-              with: { href: "file:///home/zAlice/" },
+              uri: { href: "file:///home/zAlice/" },
             },
           ]),
         },
@@ -672,11 +672,11 @@ test("capability amplification", assert => {
           value: like([
             {
               can: "file/read",
-              with: { href: "file:///home/" },
+              uri: { href: "file:///home/" },
             },
             {
               can: "file/write",
-              with: { href: "file:///home/zAlice/" },
+              uri: { href: "file:///home/zAlice/" },
             },
           ]),
         },
@@ -688,14 +688,14 @@ test("capability amplification", assert => {
   )
 })
 
-test("capability or combinator 2", assert => {
+test("capability or combinator", assert => {
   const read = capability({
     can: "file/read",
     with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
-        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
       ),
   })
 
@@ -703,9 +703,9 @@ test("capability or combinator 2", assert => {
     can: "file/write",
     with: URI({ protocol: "file:" }),
     derives: (claimed, delegated) =>
-      claimed.with.pathname.startsWith(delegated.with.pathname) ||
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
-        `'${claimed.with.href}' is not contained in '${delegated.with.href}'`
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
       ),
   })
 
@@ -722,13 +722,13 @@ test("capability or combinator 2", assert => {
         {
           value: {
             can: "file/read",
-            with: { href: "file:///home/zAlice/" },
+            uri: { href: "file:///home/zAlice/" },
           },
         },
         {
           value: {
             can: "file/write",
-            with: { href: "file:///home/zAlice/" },
+            uri: { href: "file:///home/zAlice/" },
           },
         },
       ]),
