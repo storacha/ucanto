@@ -15,12 +15,10 @@ export class Delegation {
    * @param {UCAN.ByteView<UCAN.UCAN<Capability>>} root.bytes
    * @param {UCAN.View<Capability>} root.data
    * @param {Map<string, API.Block<Capability>>} blocks
-   * @param {{authority: API.AuthorityParser}} config
    */
-  constructor(root, blocks = new Map(), config) {
+  constructor(root, blocks = new Map()) {
     this.root = root
     this.blocks = blocks
-    this.config = config
     Object.defineProperties(this, {
       blocks: {
         enumerable: false,
@@ -57,7 +55,7 @@ export class Delegation {
     for (const proof of data.proofs) {
       const block = blocks.get(proof.toString())
       if (block) {
-        proofs.push(new Delegation(block, this.blocks, this.config))
+        proofs.push(new Delegation(block, this.blocks))
       } else {
         proofs.push(/** @type {UCAN.Proof<Capability>} */ (proof))
       }
@@ -68,21 +66,17 @@ export class Delegation {
   }
 
   /**
-   * @type {API.Authority}
+   * @type {API.Identity}
    */
   get issuer() {
-    const issuer = this.config.authority.parse(this.data.issuer.did())
-    Object.defineProperties(this, { issuer: { value: issuer } })
-    return issuer
+    return this.data.issuer
   }
 
   /**
-   * @type {API.Authority}
+   * @type {API.Identity}
    */
   get audience() {
-    const audience = this.config.authority.parse(this.data.audience.did())
-    Object.defineProperties(this, { audience: { value: audience } })
-    return audience
+    return this.data.audience
   }
 
   /**
