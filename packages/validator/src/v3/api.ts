@@ -4,12 +4,14 @@ import * as API from "../api.js"
 import type {
   Capability as SourceCapability,
   InvalidCapability,
+  CanIssue,
 } from "../api.js"
 export type {
   Capability as SourceCapability,
   Ability,
   Resource,
   Problem,
+  CanIssue,
 } from "../api.js"
 
 export interface Source {
@@ -18,18 +20,24 @@ export interface Source {
   index: number
 }
 
-export interface Match<T = unknown, M extends Match = Match<unknown, any>>
+export interface Match<T = unknown, M extends Match = UnknownMatch>
   extends Selector<M> {
   source: Source[]
   value: T
+
+  proofs: API.Delegation[]
+
+  prune: (config: API.CanIssue) => null | Match
 }
+
+export interface UnknownMatch extends Match {}
 
 export interface Matcher<M extends Match> {
   match(capability: Source): MatchResult<M>
 }
 
 export interface Selector<M extends Match> {
-  select(capabilities: Source[]): Select<M>
+  select(sources: Source[]): Select<M>
 }
 
 export interface Select<M extends Match> {
@@ -56,31 +64,18 @@ export interface Parser<I, O, X extends { error: Error }> {
 }
 
 export interface Caveats
-  extends Record<string, Parser<unknown, unknown, API.Problem>> {}
-
-export interface Descriptor<T extends ParsedCapability, M extends Match> {
-  can: T["can"]
-  with: Parser<string, T["uri"], API.Problem>
-  caveats?: InferCaveatsDescriptor<T>
-  derives: Derives<T, M["value"]>
-}
+  extends Record<
+    string,
+    Parser<
+      unknown,
+      string | number | object | boolean | undefined | null,
+      API.Problem
+    >
+  > {}
 
 export type MatchError = API.InvalidCapability | API.DelegationError
 
 export type MatchResult<M extends Match> = API.Result<M, MatchError>
-
-export interface Config<
-  Ability extends API.Ability,
-  Resource extends API.Resource,
-  Constraints extends Caveats,
-  M extends Match
-> extends Descriptor<ParsedCapability<Ability, Resource, Constraints>, M> {}
-
-export type InferCaveatsDescriptor<T extends ParsedCapability> = {
-  [Key in keyof T["caveats"]]: T["caveats"][Key] extends infer U
-    ? Parser<unknown, T["caveats"][Key], API.Problem>
-    : never
-}
 
 export interface DerivedMatch<T, M extends Match>
   extends Match<T, M | DerivedMatch<T, M>> {}
@@ -231,17 +226,32 @@ export type InferMatch<Members extends unknown[]> = Members extends []
 
 export interface ParsedCapability<
   Can extends API.Ability = API.Ability,
-  With extends API.Resource = API.Resource,
-  C extends Caveats = Caveats
-> extends API.Capability {
-  can: Can
-  with: With
+  C extends object = {}
+> extends API.Capability<Can> {
   uri: URL
-  caveats: InferCaveats<C>
+  caveats: C
 }
 
 export type InferCaveats<C> = {
-  [Key in keyof C]: C[Key] extends Parser<unknown, infer T, API.Problem>
-    ? T
+  [Key in keyof C]: C[Key] extends () => infer T
+    ? Exclude<T, API.Problem>
     : never
 }
+
+export type InferCaveatsDescriptor<C> = {
+  [Key in keyof C]: Parser<unknown, C[Key], API.Problem>
+}
+
+export interface Descriptor<A extends API.Ability, C extends Caveats> {
+  can: A
+  with: Parser<API.Resource, URL, API.Problem>
+  caveats?: C
+
+  derives: Derives<
+    ParsedCapability<A, InferCaveats<C>>,
+    ParsedCapability<A, InferCaveats<C>>
+  >
+}
+
+export interface CapabilityMatch<A extends API.Ability, C extends Caveats>
+  extends DirectMatch<ParsedCapability<A, InferCaveats<C>>> {}

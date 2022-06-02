@@ -3,6 +3,7 @@ import { capability, URI } from "./lib.js"
 import * as API from "./api.js"
 import { Failure } from "../error.js"
 import { the } from "../util.js"
+import { CID } from "multiformats"
 
 /**
  * @param {unknown} value
@@ -802,4 +803,242 @@ test("capability or combinator", assert => {
     },
     "matches both capabilities"
   )
+})
+
+test("parse with caveats", assert => {
+  const storeAdd = capability({
+    can: "store/add",
+    with: URI({ protocol: "did:" }),
+    caveats: {
+      link: cid => {
+        if (cid == null) {
+          return undefined
+        } else {
+          const result = CID.asCID(cid)
+          if (result) {
+            return result
+          } else {
+            return new Failure(`Expected 'link' to be a CID instead of ${cid}`)
+          }
+        }
+      },
+    },
+    derives: (claimed, delegated) => {
+      if (claimed.uri.href !== delegated.uri.href) {
+        return new Failure(
+          `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+        )
+      } else if (
+        delegated.caveats.link &&
+        `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+      ) {
+        return new Failure(
+          `Link ${
+            claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+          }violates imposed ${delegated.caveats.link} constraint`
+        )
+      } else {
+        return true
+      }
+    },
+  })
+
+  const v1 = storeAdd.select(
+    delegate([{ can: "store/add", with: "did:key:zAlice", link: 5 }])
+  )
+
+  assert.like(v1, {
+    matches: [],
+    unknown: [],
+    errors: like([
+      {
+        name: "InvalidClaim",
+        context: {
+          can: "store/add",
+        },
+        causes: like([
+          {
+            name: "MalformedCapability",
+            capability: { can: "store/add", with: "did:key:zAlice", link: 5 },
+            cause: {
+              message: "Expected 'link' to be a CID instead of 5",
+            },
+          },
+        ]),
+      },
+    ]),
+  })
+
+  const v2 = storeAdd.select(
+    delegate([{ can: "store/add", with: "did:key:zAlice" }])
+  )
+
+  assert.like(v2, {
+    unknown: [],
+    errors: [],
+    matches: like([
+      {
+        value: {
+          can: "store/add",
+          uri: { href: "did:key:zAlice" },
+          caveats: {},
+        },
+      },
+    ]),
+  })
+
+  const [match] = v2.matches
+
+  const v3 = match.select(
+    delegate([
+      {
+        can: "store/add",
+        with: "did:key:zAlice",
+        link: CID.parse(
+          "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+        ),
+      },
+    ])
+  )
+
+  assert.like(v3, {
+    errors: like([
+      {
+        name: "InvalidClaim",
+        context: {
+          value: {
+            can: "store/add",
+            uri: { href: "did:key:zAlice" },
+            caveats: {},
+          },
+        },
+        causes: like([
+          {
+            name: "EscalatedCapability",
+            claimed: {
+              can: "store/add",
+              uri: { href: "did:key:zAlice" },
+              caveats: {},
+            },
+            delegated: {
+              can: "store/add",
+              uri: { href: "did:key:zAlice" },
+              caveats: {
+                link: CID.parse(
+                  "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+                ),
+              },
+            },
+            cause: {
+              message: `Link violates imposed bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4 constraint`,
+            },
+          },
+        ]),
+      },
+    ]),
+    unknown: [],
+    matches: [],
+  })
+
+  const v4 = storeAdd.select(
+    delegate([
+      {
+        can: "store/add",
+        with: "did:key:zAlice",
+        link: CID.parse(
+          "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+        ),
+      },
+    ])
+  )
+  const [match2] = v4.matches
+
+  const v5 = match2.select(
+    delegate([
+      {
+        can: "store/add",
+        with: "did:key:zAlice",
+        link: CID.parse(
+          "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+        ),
+      },
+    ])
+  )
+
+  assert.like(v5, {
+    unknown: [],
+    errors: [],
+    matches: like([
+      {
+        value: {
+          can: "store/add",
+          uri: { href: "did:key:zAlice" },
+          caveats: {
+            link: CID.parse(
+              "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+            ),
+          },
+        },
+      },
+    ]),
+  })
+
+  const v6 = match2.select(
+    delegate([
+      {
+        can: "store/add",
+        with: "did:key:zAlice",
+        link: CID.parse(
+          "bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny"
+        ),
+      },
+    ])
+  )
+
+  assert.like(v6, {
+    errors: like([
+      {
+        name: "InvalidClaim",
+        context: {
+          value: {
+            can: "store/add",
+            uri: { href: "did:key:zAlice" },
+            caveats: {
+              link: CID.parse(
+                "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+              ),
+            },
+          },
+        },
+        causes: like([
+          {
+            name: "EscalatedCapability",
+            claimed: {
+              can: "store/add",
+              uri: { href: "did:key:zAlice" },
+              caveats: {
+                link: CID.parse(
+                  "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+                ),
+              },
+            },
+            delegated: {
+              can: "store/add",
+              uri: { href: "did:key:zAlice" },
+              caveats: {
+                link: CID.parse(
+                  "bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny"
+                ),
+              },
+            },
+            cause: {
+              message: `Link bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4 violates imposed bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny constraint`,
+            },
+          },
+        ]),
+      },
+    ]),
+    unknown: [],
+    matches: [],
+  })
 })

@@ -6,13 +6,13 @@ import {
   UnknownCapability,
   DelegationError as MatchError,
 } from "../error.js"
+export * from "./api.js"
 
 /**
  * @template {API.Ability} A
- * @template {API.Resource} R
  * @template {API.Caveats} C
- * @param {API.Config<A, R, C, API.DirectMatch<API.ParsedCapability<A, R, C>>>} descriptor
- * @returns {API.Capability<API.DirectMatch<API.ParsedCapability<A, R, C>>>}
+ * @param {API.Descriptor<A, C>} descriptor
+ * @returns {API.Capability<API.CapabilityMatch<A, C>>}
  */
 export const capability = descriptor => new Capability(descriptor)
 
@@ -96,13 +96,14 @@ class Unit extends View {
 }
 
 /**
- * @template {API.ParsedCapability} T
- * @implements {API.Capability<API.DirectMatch<T>>}
- * @extends {Unit<API.DirectMatch<T>>}
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
+ * @implements {API.Capability<API.CapabilityMatch<A, C>>}
+ * @extends {Unit<API.CapabilityMatch<A, C>>}
  */
 class Capability extends Unit {
   /**
-   * @param {API.Descriptor<T, API.DirectMatch<T>>} descriptor
+   * @param {API.Descriptor<A, C>} descriptor
    */
   constructor(descriptor) {
     super()
@@ -115,7 +116,7 @@ class Capability extends Unit {
 
   /**
    * @param {API.Source} source
-   * @returns {API.MatchResult<API.DirectMatch<T>>}
+   * @returns {API.MatchResult<API.CapabilityMatch<A, C>>}
    */
   match(source) {
     const result = parse(this, source)
@@ -262,14 +263,15 @@ class Derive extends Unit {
 }
 
 /**
- * @template {API.ParsedCapability} T
- * @implements {API.DirectMatch<T>}
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
+ * @implements {API.CapabilityMatch<A, C>}
  */
 class Match {
   /**
    * @param {API.Source} source
-   * @param {T} value
-   * @param {API.Descriptor<T, API.DirectMatch<T>>} descriptor
+   * @param {API.ParsedCapability<A, API.InferCaveats<C>>} value
+   * @param {API.Descriptor<A, C>} descriptor
    */
   constructor(source, value, descriptor) {
     this.source = [source]
@@ -280,9 +282,29 @@ class Match {
     return this.value.can
   }
 
+  get proofs() {
+    const proofs = [this.source[0].delegation]
+    Object.defineProperties(this, {
+      proofs: { value: proofs },
+    })
+    return proofs
+  }
+
+  /**
+   * @param {API.CanIssue} context
+   * @returns {API.CapabilityMatch<A, C>|null}
+   */
+  prune(context) {
+    if (context.canIssue(this.value, this.source[0].delegation.issuer.did())) {
+      return null
+    } else {
+      return this
+    }
+  }
+
   /**
    * @param {API.Source} capability
-   * @returns {API.MatchResult<API.DirectMatch<T>>}
+   * @returns {API.MatchResult<API.CapabilityMatch<A, C>>}
    */
   match(capability) {
     const result = parse(this, capability)
@@ -302,7 +324,7 @@ class Match {
   }
   /**
    * @param {API.Source[]} capabilities
-   * @returns {API.Select<API.DirectMatch<T>>}
+   * @returns {API.Select<API.CapabilityMatch<A, C>>}
    */
   select(capabilities) {
     const unknown = []
@@ -366,8 +388,26 @@ class DerivedMatch {
   get source() {
     return this.selected.source
   }
+  get proofs() {
+    const proofs = []
+    for (const { delegation } of this.selected.source) {
+      proofs.push(delegation)
+    }
+    Object.defineProperties(this, { proofs: { value: proofs } })
+    return proofs
+  }
   get value() {
     return this.selected.value
+  }
+
+  /**
+   * @param {API.CanIssue} context
+   */
+  prune(context) {
+    const selected =
+      /** @type {API.DirectMatch<T>|null} */
+      (this.selected.prune(context))
+    return selected ? new DerivedMatch(selected, this.from, this.derives) : null
   }
 
   /**
@@ -442,6 +482,31 @@ class AndMatch {
     Object.defineProperties(this, { source: { value: source } })
     return source
   }
+
+  /**
+   * @param {API.CanIssue} context
+   */
+  prune(context) {
+    const matches = []
+    for (const match of this.matches) {
+      const pruned = match.prune(context)
+      if (pruned) {
+        matches.push(pruned)
+      }
+    }
+    return matches.length === 0 ? null : new AndMatch(matches)
+  }
+
+  get proofs() {
+    const proofs = []
+
+    for (const { delegation } of this.source) {
+      proofs.push(delegation)
+    }
+
+    Object.defineProperties(this, { source: { value: proofs } })
+    return proofs
+  }
   /**
    * @type {API.InferValue<API.InferMembers<Selectors>>}
    */
@@ -466,11 +531,12 @@ class AndMatch {
 }
 
 /**
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
  * @template {API.ParsedCapability} T
- * @template {API.Match} M
- * @param {{descriptor: API.Descriptor<T, M>}} self
+ * @param {{descriptor: API.Descriptor<A, C>}} self
  * @param {API.Source} source
- * @returns {API.Result<T, API.InvalidCapability>}
+ * @returns {API.Result<API.ParsedCapability<A, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
 const parse = (self, { capability }) => {
@@ -488,16 +554,22 @@ const parse = (self, { capability }) => {
 
   if (parsers) {
     for (const [name, parse] of entries(parsers)) {
-      const result = parse(capability[/** @type {string} */ (name)])
+      const value = capability[/** @type {string} */ (name)]
+      const result = parse(value)
       if (result?.error) {
-        return new MalformedCapability(capability, result.error)
-      } else {
+        return new MalformedCapability(capability, result)
+      } else if (result != null) {
         caveats[name] = result
       }
     }
   }
 
-  return /** @type {T} */ ({ can, uri, with: capability.with, caveats })
+  return /** @type {API.ParsedCapability<A, API.InferCaveats<C>>} */ ({
+    can,
+    uri,
+    with: capability.with,
+    caveats,
+  })
 }
 
 /**
