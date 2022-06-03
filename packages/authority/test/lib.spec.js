@@ -1,8 +1,10 @@
 import * as Lib from "../src/lib.js"
 import { assert } from "chai"
 import { sha256 } from "multiformats/hashes/sha2"
+import { varint } from "multiformats"
 
 describe("signing authority", () => {
+  const { SigningAuthority } = Lib
   it("exports", () => {
     assert.equal(Lib.name, "Ed25519")
     assert.equal(Lib.code, 0x1300)
@@ -52,6 +54,41 @@ describe("signing authority", () => {
       assert.match(String(error), /Expected Uint8Array with byteLength of 32/)
     }
   })
+
+  it("SigningAuthority.decode", async () => {
+    const signer = await Lib.generate()
+
+    assert.deepEqual(SigningAuthority.decode(signer.bytes), signer)
+
+    const invalid = new Uint8Array(signer.bytes)
+    varint.encodeTo(4, invalid, 0)
+    assert.throws(
+      () => SigningAuthority.decode(invalid),
+      /must be a multiformat with/
+    )
+
+    assert.throws(
+      () => SigningAuthority.decode(signer.bytes.slice(0, 32)),
+      /Expected Uint8Array with byteLength/
+    )
+
+    const malformed = new Uint8Array(signer.bytes)
+    varint.encodeTo(4, malformed, signer.authority.byteOffset)
+
+    assert.throws(
+      () => SigningAuthority.decode(malformed),
+      /must contain public key/
+    )
+  })
+
+  it("SigningAuthority.format", async () => {
+    const signer = await Lib.generate()
+
+    assert.deepEqual(
+      SigningAuthority.parse(SigningAuthority.format(signer)),
+      signer
+    )
+  })
 })
 
 describe("authority", () => {
@@ -92,7 +129,7 @@ describe("authority", () => {
     assert.deepEqual(Authority.format(signer.authority), signer.did())
   })
 
-  it("Authority.format", async () => {
+  it("Authority.encode", async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(

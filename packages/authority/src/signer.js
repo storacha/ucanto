@@ -56,8 +56,8 @@ export const decode = bytes => {
   }
 
   {
-    const [code] = varint.decode(bytes)
-    if (code !== code) {
+    const [keyCode] = varint.decode(bytes)
+    if (keyCode !== code) {
       throw new Error(`Given bytes must be a multiformat with ${code} tag`)
     }
   }
