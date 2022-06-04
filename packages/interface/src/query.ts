@@ -1,3 +1,5 @@
+// @ts-ignore
+
 import type {
   InvocationOptions,
   IssuedInvocation,
@@ -9,14 +11,16 @@ import type {
   Result,
   Connection,
   Service,
-  Agent,
+  Authority,
+  SigningAuthority,
 } from "./lib.js"
 
 export type QueryInput = {
   [K in string]: Select | QueryInput
 }
 
-export interface Input<Resource extends UCAN.Resource = UCAN.Resource> {
+export interface Input<Resource extends UCAN.Resource = UCAN.Resource>
+  extends Record<string, unknown> {
   with: Resource
 
   proofs?: Proof[]
@@ -135,8 +139,8 @@ type Store = {
 }
 declare var store: Store
 declare var channel: Connection<{ store: Store }>
-declare const alice: UCAN.Issuer
-declare const bob: Agent
+declare const alice: SigningAuthority
+declare const bob: Authority
 declare const car: UCAN.Link
 
 type ToPath<T extends string> = T extends `${infer Base}/${infer Path}`
@@ -186,9 +190,9 @@ const demo = async () => {
     },
   })
 
-  {
-    const [a, b] = batch(add, remove).execute(channel)
-  }
+  const a = add.execute(channel)
+  const b = remove.execute(channel)
+  const c = batch(add, remove).execute(channel)
 
   const result = await add.execute(channel)
   if (result.ok) {

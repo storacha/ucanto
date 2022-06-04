@@ -42,14 +42,17 @@ export * from "./authority.js"
  * Proof can either be a link to a delegated UCAN or a materialized `Delegation`
  * view.
  */
-export type Proof<C extends UCAN.Capability = UCAN.Capability> =
-  | UCAN.Proof<C>
-  | Delegation<C>
+export type Proof<
+  C extends [Capability, ...Capability[]] = [Capability, ...Capability[]]
+> = UCAN.Proof<C[number]> | Delegation<C>
 
-export interface DelegationOptions<C extends Capability, A extends number> {
+export interface DelegationOptions<
+  C extends [Capability, ...Capability[]],
+  A extends number = number
+> {
   issuer: SigningAuthority<A>
-  audience: Authority
-  capabilities: C[]
+  audience: Identity
+  capabilities: C
   lifetimeInSeconds?: number
   expiration?: number
   notBefore?: number
@@ -61,17 +64,21 @@ export interface DelegationOptions<C extends Capability, A extends number> {
 }
 
 export interface Delegation<
-  Capability extends UCAN.Capability = UCAN.Capability
+  C extends [Capability, ...Capability[]] = [Capability, ...Capability[]]
 > {
-  readonly data: UCAN.View<Capability>
+  readonly root: Transport.Block<C>
+  readonly blocks: Map<string, Transport.Block>
+
   readonly cid: UCAN.Proof<Capability>
   readonly bytes: UCAN.ByteView<UCAN.UCAN<Capability>>
 
-  export(): IterableIterator<Transport.Block>
+  asCID: UCAN.Proof<Capability>
 
-  issuer: Authority
-  audience: Authority
-  capabilities: Capability[]
+  export(): IterableIterator<Transport.Block & { data: UCAN.View }>
+
+  issuer: Identity
+  audience: Identity
+  capabilities: C
   expiration?: number
   notBefore?: number
 
@@ -83,9 +90,7 @@ export interface Delegation<
 
 export interface Invocation<
   Capability extends UCAN.Capability = UCAN.Capability
-> extends Delegation {
-  readonly capability: Capability
-}
+> extends Delegation<[Capability]> {}
 
 export interface InvocationOptions<
   Capability extends UCAN.Capability = UCAN.Capability
@@ -98,10 +103,10 @@ export interface InvocationOptions<
 
 export interface IssuedInvocation<
   Capability extends UCAN.Capability = UCAN.Capability
-> {
+> extends DelegationOptions<[Capability]> {
   readonly issuer: SigningAuthority
-  readonly audience: Audience
-  readonly capability: Capability
+  readonly audience: Identity
+  readonly capabilities: [Capability]
 
   readonly proofs: Proof[]
 }
@@ -157,14 +162,6 @@ type SubServiceInvocations<T, Path extends string> = {
     ? Invocation<Capability>
     : SubServiceInvocations<Path, Key & string>
 }[keyof T]
-
-export interface InvocationView<
-  Capability extends UCAN.Capability = UCAN.Capability
-> extends Invocation<Capability> {
-  execute<T extends InvocationService<Capability>>(
-    service: Connection<T>
-  ): ExecuteInvocation<Capability, T>
-}
 
 export type InvocationService<
   Capability extends UCAN.Capability,

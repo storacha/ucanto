@@ -13,21 +13,19 @@ export interface EncodeOptions {
 
 export interface Channel<T> extends Phantom<T> {
   request<I extends ServiceInvocations<T>[]>(
-    request: HTTPRequest<Batch<I>>
+    request: HTTPRequest<I>
   ): Await<HTTPResponse<ExecuteBatchInvocation<I, T>>>
 }
 
 export interface RequestEncoder {
   encode<I extends IssuedInvocation[]>(
-    input: Batch<I>,
+    invocations: I,
     options?: EncodeOptions
-  ): Await<HTTPRequest<Batch<I>>>
+  ): Await<HTTPRequest<I>>
 }
 
 export interface RequestDecoder {
-  decode<I extends Invocation[]>(
-    request: HTTPRequest<Batch<I>>
-  ): Await<Batch<I>>
+  decode<I extends Invocation[]>(request: HTTPRequest<I>): Await<I>
 }
 
 export interface ResponseEncoder {
@@ -37,6 +35,14 @@ export interface ResponseEncoder {
 export interface ResponseDecoder {
   decode<I>(response: HTTPResponse<I>): Await<I>
 }
+
+export type InferInvocation<T> = T extends []
+  ? []
+  : T extends [IssuedInvocation<infer C>, ...infer Rest]
+  ? [Invocation<C>, ...InferInvocation<Rest>]
+  : T extends Array<IssuedInvocation<infer U>>
+  ? Invocation<U>[]
+  : never
 
 export interface HTTPRequest<T = unknown> extends Phantom<T> {
   headers: Readonly<Record<string, string>>
@@ -54,14 +60,13 @@ export interface Packet<I extends Invocation[]> extends Phantom<I> {
 }
 
 export interface Block<
-  C extends UCAN.Capability = UCAN.Capability,
+  C extends [UCAN.Capability, ...UCAN.Capability[]] = [
+    UCAN.Capability,
+    ...UCAN.Capability[]
+  ],
   A extends number = number
 > {
-  readonly cid: UCAN.Proof<C, A>
-  readonly bytes: UCAN.ByteView<UCAN.UCAN<C>>
-  readonly data: UCAN.View<C>
-}
-
-export interface Batch<In extends unknown[]> {
-  invocations: In
+  readonly cid: UCAN.Proof<C[number], A>
+  readonly bytes: UCAN.ByteView<UCAN.UCAN<C[number]>>
+  data?: UCAN.View<C[number]>
 }
