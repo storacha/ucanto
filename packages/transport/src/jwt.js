@@ -1,7 +1,7 @@
 import * as API from "@ucanto/interface"
 import * as UCAN from "@ipld/dag-ucan"
-import { pack, unpack } from "./packet.js"
 import * as UTF8 from "./utf8.js"
+import { Delegation } from "@ucanto/core"
 
 const HEADER_PREFIX = "x-auth-"
 
@@ -13,25 +13,25 @@ const HEADERS = Object.freeze({
  * Encodes invocation batch into an HTTPRequest.
  *
  * @template {API.IssuedInvocation[]} I
- * @param {API.Batch<I>} batch
- * @returns {Promise<API.HTTPRequest<I>>}
+ * @param {I} batch
+ * @returns {Promise<API.HTTPRequest<API.InferInvocation<API.IssuedInvocation[]>>>}
  */
 export const encode = async batch => {
   /** @type {Record<string, string>} */
-  const headers = {}
+  const headers = { ...HEADERS }
   /** @type {string[]} */
   const body = []
-  const { invocations, delegations } = await pack(batch)
-  for (const invocation of invocations) {
-    headers[`${HEADER_PREFIX}${invocation.cid}`] = UCAN.format(invocation.data)
-    body.push(`${invocation.cid}`)
-  }
-  for (const delegation of Object.values(delegations)) {
-    headers[`${HEADER_PREFIX}${delegation.cid}`] = UCAN.format(delegation.data)
+  for (const invocation of batch) {
+    const delegation = await Delegation.delegate(invocation)
+
+    body.push(`${delegation.cid}`)
+    for (const block of delegation.export()) {
+      headers[`${HEADER_PREFIX}${block.cid}`] = UCAN.format(block.data)
+    }
   }
 
   return {
-    headers: HEADERS,
+    headers,
     body: UTF8.encode(JSON.stringify(body)),
   }
 }
@@ -41,7 +41,7 @@ export const encode = async batch => {
  *
  * @template {API.Invocation[]} Invocations
  * @param {API.HTTPRequest<Invocations>} request
- * @returns {Promise<API.Batch<Invocations>>}
+ * @returns {Promise<Invocations>}
  */
 export const decode = async ({ headers, body }) => {
   const contentType = headers["content-type"] || headers["Content-Type"]
@@ -52,11 +52,11 @@ export const decode = async ({ headers, body }) => {
   }
   /** @type {API.Block[]} */
   const invocations = []
-  const delegations = new Map()
+  const blocks = new Map()
   for (const [name, value] of Object.entries(headers)) {
     if (name.startsWith(HEADER_PREFIX)) {
       const key = name.slice(HEADER_PREFIX.length)
-      const data = UCAN.parse(value)
+      const data = UCAN.parse(/** @type {UCAN.JWT<any>} */ (value))
       const { cid, bytes } = await UCAN.write(data)
 
       if (cid.toString() != key) {
@@ -64,20 +64,21 @@ export const decode = async ({ headers, body }) => {
           `Invalid request, proof with key ${key} has mismatching cid ${cid}`
         )
       }
-      delegations.set(cid.toString(), { data, cid, bytes })
+      blocks.set(cid.toString(), { data, cid, bytes })
     }
   }
 
   for (const cid of JSON.parse(UTF8.decode(body))) {
-    const block = delegations.get(cid.toString())
-    if (!block) {
+    const root = blocks.get(cid.toString())
+    if (!root) {
       throw TypeError(
         `Invalid request proof of invocation ${cid} is not provided`
       )
+    } else {
+      invocations.push(Delegation.create({ root, blocks }))
+      blocks.delete(cid.toString())
     }
-    invocations.push(block)
-    delegations.delete(block)
   }
 
-  return unpack({ invocations, delegations })
+  return /** @type {Invocations} */ (invocations)
 }

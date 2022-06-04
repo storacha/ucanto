@@ -62,6 +62,64 @@ test("create delegation", async () => {
   ])
 })
 
+test("create delegation (with just cid and bytes)", async () => {
+  const data = await UCAN.issue({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+  })
+
+  const { cid, bytes } = await UCAN.write(data)
+  const delegation = Delegation.create({
+    root: {
+      cid,
+      bytes,
+    },
+  })
+
+  assert.containSubset(delegation, {
+    data,
+    cid,
+    bytes,
+    issuer: data.issuer,
+    audience: data.audience,
+    version: data.version,
+    signature: data.signature,
+
+    capabilities: {
+      ...[
+        {
+          can: "store/add",
+          with: alice.did(),
+        },
+      ],
+    },
+
+    notBefore: undefined,
+    expiration: data.expiration,
+    nonce: undefined,
+    facts: [],
+    proofs: [],
+  })
+
+  assert.equal(delegation.issuer.did(), alice.did())
+  assert.equal(delegation.audience.did(), bob.did())
+
+  const dag = [...delegation.export()]
+  assert.containSubset(dag, [
+    {
+      cid,
+      bytes,
+      data,
+    },
+  ])
+})
+
 test("create delegation with attached proof", async () => {
   let proof
   {
@@ -347,7 +405,7 @@ test("issue chained delegation", async () => {
       with: alice.did(),
     },
   ])
-  assert.ok(Delegation.isLink(invocation.root.data.proofs[0]))
+
   const [delegation] = invocation.proofs || []
 
   if (Delegation.isLink(delegation)) {

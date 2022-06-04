@@ -5,16 +5,13 @@ import * as API from "@ucanto/interface"
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of
  * this as UCAN interface of the CAR.
  *
- * @template {UCAN.Capability} Capability
- * @implements {API.Delegation<Capability>}
- * @extends {DelegationView<Capability>}
+ * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @implements {API.Delegation<C>}
+ * @extends {DelegationView<C>}
  */
 export class Delegation {
   /**
-   * @param {object} root
-   * @param {UCAN.Proof<Capability>} root.cid
-   * @param {UCAN.ByteView<UCAN.UCAN<Capability>>} root.bytes
-   * @param {UCAN.View<Capability>} root.data
+   * @param {API.Block<C>} root
    * @param {Map<string, API.Block>} [blocks]
    */
   constructor(root, blocks = new Map()) {
@@ -29,10 +26,10 @@ export class Delegation {
   }
 
   get version() {
-    return this.root.data.version
+    return this.data.version
   }
   get signature() {
-    return this.root.data.signature
+    return this.data.signature
   }
   get cid() {
     return this.root.cid
@@ -44,11 +41,10 @@ export class Delegation {
     return this.root.bytes
   }
   get data() {
-    return this.root.data
+    const data = decode(this.root)
+    Object.defineProperties(this, { data: { value: data, enumerable: false } })
+    return data
   }
-  /**
-   * @returns {IterableIterator<API.Block>}
-   */
   export() {
     return exportDAG(this.root, this.blocks)
   }
@@ -75,10 +71,10 @@ export class Delegation {
   }
 
   /**
-   * @returns {Capability[]}
+   * @returns {C}
    */
   get capabilities() {
-    return this.data.capabilities
+    return /** @type {C} */ (this.data.capabilities)
   }
 
   /**
@@ -112,6 +108,21 @@ export class Delegation {
 }
 
 /**
+ * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @param {API.Block<C>} block
+ */
+const decode = block => {
+  const { data } = block
+  if (data) {
+    return data
+  } else {
+    const data = UCAN.decode(block.bytes)
+    block.data = data
+    return data
+  }
+}
+
+/**
  * Type predicate returns true if value is the link.
  *
  * @param {unknown} value
@@ -126,8 +137,8 @@ export const isLink = value =>
  * representation.
  *
  * @template {number} A
- * @template {UCAN.Capability} C
- * @param {API.DelegationOptions<C, A>} input
+ * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @param {API.DelegationOptions<C, A>} options
  * @returns {Promise<API.Delegation<C>>}
  */
 
@@ -154,6 +165,7 @@ export const delegate = async ({ issuer, audience, proofs = [], ...input }) => {
   })
   const { cid, bytes } = await UCAN.write(data)
 
+  /** @type {API.Delegation<C>} */
   const delegation = new Delegation({ cid, bytes, data }, blocks)
   Object.defineProperties(delegation, { proofs: { value: proofs } })
 
@@ -161,14 +173,14 @@ export const delegate = async ({ issuer, audience, proofs = [], ...input }) => {
 }
 
 /**
- * @template {UCAN.Capability} C
+ * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
  * @param {API.Block<C>} root
  * @param {Map<string, API.Block>} blocks
- * @returns {IterableIterator<API.Block>}
+ * @returns {IterableIterator<API.Block & {data: UCAN.View}>}
  */
 
 const exportDAG = function* (root, blocks) {
-  for (const link of root.data.proofs) {
+  for (const link of decode(root).proofs) {
     // Check if block is included in this delegation
     const root = blocks.get(link.toString())
     if (root) {
@@ -176,11 +188,11 @@ const exportDAG = function* (root, blocks) {
     }
   }
 
-  yield root
+  yield /** @type {API.Block & {data: UCAN.View<C[number]>}} */ (root)
 }
 
 /**
- * @template {UCAN.Capability} C
+ * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
  * @param {Iterable<API.Block & { data?: UCAN.UCAN }>} dag
  * @returns {API.Delegation<C>}
  */
@@ -202,14 +214,11 @@ export const importDAG = dag => {
 }
 
 /**
- * @template {UCAN.Capability} Capability
+ * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
  * @param {object} dag
- * @param {object} dag.root
- * @param {UCAN.Proof<Capability>} dag.root.cid
- * @param {UCAN.ByteView<UCAN.UCAN<Capability>>} dag.root.bytes
- * @param {UCAN.View<Capability>} dag.root.data
+ * @param {API.Block<C>} dag.root
  * @param {Map<string, API.Block>} [dag.blocks]
- * @returns {API.Delegation<Capability>}
+ * @returns {API.Delegation<C>}
  */
 export const create = ({ root, blocks }) => new Delegation(root, blocks)
 
@@ -221,7 +230,7 @@ const proofs = delegation => {
   const proofs = []
   const { root, blocks } = delegation
   // Iterate over proof links and materialize Delegation views.
-  for (const link of root.data.proofs) {
+  for (const link of decode(root).proofs) {
     // Check if linked proof is included in our blocks if so create delegation
     // view otherwise use a link
     const root = blocks.get(link.toString())
@@ -234,4 +243,4 @@ const proofs = delegation => {
   return proofs
 }
 
-export { exportDAG as export, importDAG as import }
+export { exportDAG as export, importDAG as import, Delegation as View }
