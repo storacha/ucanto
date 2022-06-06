@@ -2,6 +2,8 @@ import * as API from "@ucanto/interface"
 import * as CAR from "./car/codec.js"
 import { Delegation } from "@ucanto/core"
 
+export { CAR }
+
 const HEADERS = Object.freeze({
   "content-type": "application/car",
 })
@@ -9,10 +11,10 @@ const HEADERS = Object.freeze({
 /**
  * Encodes invocation batch into an HTTPRequest.
  *
- * @template {API.IssuedInvocation[]} I
+ * @template {API.Tuple<API.ServiceInvocation>} I
  * @param {I} invocations
  * @param {API.EncodeOptions} [options]
- * @returns {Promise<API.HTTPRequest<API.InferInvocation<API.IssuedInvocation[]>>>}
+ * @returns {Promise<API.HTTPRequest<I>>}
  */
 export const encode = async (invocations, options) => {
   const roots = []
@@ -36,9 +38,9 @@ export const encode = async (invocations, options) => {
 /**
  * Decodes HTTPRequest to an invocation batch.
  *
- * @template {API.Invocation[]} Invocations
+ * @template {API.Tuple<API.ServiceInvocation>} Invocations
  * @param {API.HTTPRequest<Invocations>} request
- * @returns {Promise<Invocations>}
+ * @returns {Promise<API.InferInvocations<Invocations>>}
  */
 export const decode = async ({ headers, body }) => {
   const contentType = headers["content-type"] || headers["Content-Type"]
@@ -61,5 +63,5 @@ export const decode = async ({ headers, body }) => {
     )
   }
 
-  return /** @type {Invocations} */ (invocations)
+  return /** @type {API.InferInvocations<Invocations>} */ (invocations)
 }

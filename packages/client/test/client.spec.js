@@ -1,285 +1,219 @@
-import { assert } from "chai"
-import * as Client from "../packages/client/src/client.js/index.js"
-import * as Transport from "../packages/transport/transport.js/index.js"
-import * as Packet from "../src/transport/packet.js"
-import { writeCAR, writeCBOR, importActors } from "./util.js"
-import { isLink } from "../src/transport/packet.js"
+import { test, assert } from "./test.js"
+import * as Client from "../src/lib.js"
+import * as HTTP from "@ucanto/transport/http"
+import * as CAR from "@ucanto/transport/car"
+import * as CBOR from "@ucanto/transport/cbor"
+import { writeCAR, writeCBOR } from "./util.js"
+import { Delegation } from "@ucanto/core"
 import * as Service from "./service.js"
+import { alice, bob, mallory, service as web3Storage } from "./fixtures.js"
+import fetch from "@web-std/fetch"
 
-describe("delegation", () => {
-  it("delegation can be transpcoded as ucan", async () => {
-    const { alice, bob } = await importActors()
-    const token = await Client.delegate({
-      issuer: alice,
-      audience: bob,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-    })
-
-    const ucan = Packet.importDelegation(token.export())
-
-    assert.equal(ucan.issuer.did(), alice.did())
-    assert.equal(ucan.audience.did(), bob.did())
-    assert.deepEqual(ucan.capabilities, [
-      {
-        can: "store/add",
-        with: alice.did(),
-      },
-    ])
+test("encode inovocation", async () => {
+  /** @type {Client.ConnectionView<Service.Service>} */
+  const connection = Client.connect({
+    channel: HTTP.open({ url: new URL("about:blank"), fetch }),
+    encoder: CAR,
+    decoder: CBOR,
   })
 
-  it("delegation can be decoded", async () => {
-    const { alice, bob } = await importActors()
-    const token = await Client.delegate({
-      issuer: alice,
-      audience: bob,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-    })
-
-    const ucan = Packet.importDelegation(token.export())
-
-    assert.deepEqual(ucan, token)
+  const car = await writeCAR([await writeCBOR({ hello: "world " })])
+  const add = Client.invoke({
+    issuer: alice,
+    audience: web3Storage,
+    capability: {
+      can: "store/add",
+      with: alice.did(),
+      link: car.cid,
+    },
+    proofs: [],
   })
 
-  it("delegation can be chained", async () => {
-    const { alice, bob, mallory } = await importActors()
-    const u1 = await Client.delegate({
-      issuer: alice,
-      audience: bob,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-    })
+  const payload = await connection.encoder.encode([add])
 
-    const u2 = await Client.delegate({
-      issuer: bob,
-      audience: mallory,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-      proofs: [u1],
-    })
-
-    assert.deepEqual(u2.issuer.did(), bob.did())
-    assert.deepEqual(u2.audience.did(), mallory.did())
-    assert.deepEqual(u2.capabilities, [
-      {
-        can: "store/add",
-        with: alice.did(),
-      },
-    ])
-    assert.ok(isLink(u2.data.proofs[0]))
-    const [proof] = u2.proofs || []
-
-    if (isLink(proof)) {
-      assert.fail("must be a delegation")
-    }
-
-    assert.deepEqual(u1.bytes, proof.bytes)
-
-    assert.deepEqual(
-      [...u1.export()],
-      [{ cid: u1.cid, bytes: u1.bytes, data: u1.data }]
-    )
-    assert.deepEqual(
-      [...proof.export()],
-      [{ cid: u1.cid, bytes: u1.bytes, data: u1.data }]
-    )
-
-    assert.deepEqual(
-      [...u2.export()],
-      [
-        { cid: u1.cid, bytes: u1.bytes, data: u1.data },
-        { cid: u2.cid, bytes: u2.bytes, data: u2.data },
-      ]
-    )
-
-    assert.deepEqual(Packet.importDelegation(u2.export()), u2)
+  assert.deepEqual(payload.headers, {
+    "content-type": "application/car",
   })
+  assert.ok(payload.body instanceof Uint8Array)
 
-  it("3 level deep chain", async () => {
-    const { alice, bob, mallory, web3Storage } = await importActors()
-    const u1 = await Client.delegate({
-      issuer: alice,
-      audience: bob,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-    })
+  const request = await CAR.decode(payload)
 
-    const u2 = await Client.delegate({
-      issuer: bob,
-      audience: mallory,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-      proofs: [u1],
-    })
-
-    const u3 = await Client.delegate({
-      issuer: mallory,
-      audience: web3Storage,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-      proofs: [u2],
-    })
-
-    assert.deepEqual(
-      [...u3.export()],
-      [
-        { cid: u1.cid, bytes: u1.bytes, data: u1.data },
-        { cid: u2.cid, bytes: u2.bytes, data: u2.data },
-        { cid: u3.cid, bytes: u3.bytes, data: u3.data },
-      ]
-    )
-
-    assert.deepEqual(Packet.importDelegation(u3.export()), u3)
-  })
-})
-
-describe("invoke", () => {
-  it("encode inovocation", async () => {
-    const { alice, web3Storage } = await importActors()
-    /** @type {Client.ConnectionView<Service.Service>} */
-    const connection = Client.connect({
-      channel: Transport.HTTP.open(new URL("about:blank")),
-      encoder: Transport.CAR,
-      decoder: Transport.CBOR,
-    })
-
-    const car = await writeCAR([await writeCBOR({ hello: "world " })])
-    const add = Client.invoke({
-      issuer: alice,
-      audience: web3Storage,
-      capability: {
-        can: "store/add",
-        with: alice.did(),
-        link: car.cid,
-      },
-      proofs: [],
-    })
-
-    const batch = Client.batch(add)
-    const payload = await connection.encoder.encode(batch)
-
-    assert.deepEqual(payload.headers, {
-      "content-type": "application/car",
-    })
-    assert.ok(payload.body instanceof Uint8Array)
-
-    const request = await Transport.CAR.decode(payload)
-
-    const [invocation] = request.invocations
-    assert.equal(request.invocations.length, 1)
-    assert.equal(invocation.issuer.did(), alice.did())
-    assert.equal(invocation.audience.did(), web3Storage.did())
-    assert.deepEqual(invocation.proofs, [])
-    assert.deepEqual(invocation.capability, {
+  const [invocation] = request
+  assert.equal(request.length, 1)
+  assert.equal(invocation.issuer.did(), alice.did())
+  assert.equal(invocation.audience.did(), web3Storage.did())
+  assert.deepEqual(invocation.proofs, [])
+  assert.deepEqual(invocation.capabilities, [
+    {
       can: "store/add",
       with: alice.did(),
       // @ts-ignore
       link: car.cid,
-    })
+    },
+  ])
+})
+
+test("encode delegated invocation", async () => {
+  const car = await writeCAR([await writeCBOR({ hello: "world " })])
+
+  /** @type {Client.ConnectionView<Service.Service>} */
+  const connection = Client.connect({
+    channel: HTTP.open({ url: new URL("about:blank"), fetch }),
+    encoder: CAR,
+    decoder: CBOR,
   })
 
-  it("encode delegated invocation", async () => {
-    const { alice, bob, web3Storage } = await importActors()
-    const car = await writeCAR([await writeCBOR({ hello: "world " })])
+  const proof = await Client.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+  })
 
-    /** @type {Client.ConnectionView<Service.Service>} */
-    const connection = Client.connect({
-      channel: Transport.HTTP.open(new URL("about:blank")),
-      encoder: Transport.CAR,
-      decoder: Transport.CBOR,
-    })
+  const add = Client.invoke({
+    issuer: bob,
+    audience: web3Storage,
+    capability: {
+      can: "store/add",
+      with: alice.did(),
+      link: car.cid,
+    },
+    proofs: [proof],
+  })
 
-    const proof = await Client.delegate({
-      issuer: alice,
-      audience: bob,
-      capabilities: [
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-    })
+  const remove = Client.invoke({
+    issuer: alice,
+    audience: web3Storage,
+    capability: {
+      can: "store/remove",
+      with: alice.did(),
+      link: car.cid,
+    },
+  })
 
-    const add = await Client.invoke({
-      issuer: bob,
-      audience: web3Storage,
-      capability: {
+  const payload = await connection.encoder.encode([add, remove])
+  const request = await CAR.decode(payload)
+  {
+    const [add, remove] = request
+    assert.equal(request.length, 2)
+
+    assert.equal(add.issuer.did(), bob.did())
+    assert.equal(add.audience.did(), web3Storage.did())
+    assert.deepEqual(add.capabilities, [
+      {
         can: "store/add",
         with: alice.did(),
         link: car.cid,
       },
-      proofs: [proof],
-    })
+    ])
 
-    const remove = await Client.invoke({
-      issuer: alice,
-      audience: web3Storage,
-      capability: {
+    assert.deepEqual(add.proofs, [proof])
+    const delegation = /** @type {Client.Delegation} */ (
+      add.proofs && add.proofs[0]
+    )
+    assert.equal(delegation.issuer.did(), proof.issuer.did())
+    assert.equal(delegation.audience.did(), proof.audience.did())
+    assert.deepEqual(delegation.capabilities, proof.capabilities)
+
+    assert.equal(remove.issuer.did(), alice.did())
+    assert.equal(remove.audience.did(), web3Storage.did())
+    assert.deepEqual(remove.proofs, [])
+    assert.deepEqual(remove.capabilities, [
+      {
         can: "store/remove",
         with: alice.did(),
         link: car.cid,
       },
-    })
+    ])
+  }
+})
 
-    const payload = await connection.encoder.encode(Client.batch(add, remove))
-    const request = await Transport.CAR.decode(payload)
-    {
-      const [add, remove] = request.invocations
-      assert.equal(request.invocations.length, 2)
-
-      assert.equal(add.issuer.did(), bob.did())
-      assert.equal(add.audience.did(), web3Storage.did())
-      assert.deepEqual(add.capability, {
-        can: "store/add",
-        with: alice.did(),
-        link: car.cid,
+const service = Service.create()
+/** @type {Client.ConnectionView<Service.Service>} */
+const connection = Client.connect({
+  channel: HTTP.open({
+    url: new URL("about:blank"),
+    fetch: async (url, input) => {
+      const invocations = await CAR.decode(input)
+      const promises = invocations.map(invocation => {
+        const [capabality] = invocation.capabilities
+        switch (capabality.can) {
+          case "store/add": {
+            return service.store.add(
+              /** @type {Client.Invocation<any>} */ (invocation)
+            )
+          }
+          case "store/remove": {
+            return service.store.remove(
+              /** @type {Client.Invocation<any>} */ (invocation)
+            )
+          }
+        }
       })
 
-      assert.deepEqual(add.proofs, [proof])
-      const delegation = /** @type {Client.Delegation} */ (
-        add.proofs && add.proofs[0]
-      )
-      assert.equal(delegation.issuer.did(), proof.issuer.did())
-      assert.equal(delegation.audience.did(), proof.audience.did())
-      assert.deepEqual(delegation.capabilities, proof.capabilities)
+      const results = await Promise.all(promises)
 
-      assert.equal(remove.issuer.did(), alice.did())
-      assert.equal(remove.audience.did(), web3Storage.did())
-      assert.deepEqual(remove.proofs, [])
-      assert.deepEqual(remove.capability, {
-        can: "store/remove",
-        with: alice.did(),
-        link: car.cid,
-      })
-    }
+      const { headers, body } = await CBOR.encode(results)
+
+      return {
+        ok: true,
+        headers: new Map(Object.entries(headers)),
+        arrayBuffer: () => body,
+      }
+    },
+  }),
+  encoder: CAR,
+  decoder: CBOR,
+})
+
+test("execute", async () => {
+  const car = await writeCAR([await writeCBOR({ hello: "world " })])
+  const add = Client.invoke({
+    issuer: alice,
+    audience: web3Storage,
+    capability: {
+      can: "store/add",
+      with: alice.did(),
+      link: car.cid,
+    },
+    proofs: [],
+  })
+
+  const remove = Client.invoke({
+    issuer: alice,
+    audience: web3Storage,
+    capability: {
+      can: "store/remove",
+      with: alice.did(),
+      link: car.cid,
+    },
+  })
+
+  const e1 = await add.execute(connection)
+
+  assert.deepEqual(e1, {
+    error: true,
+    name: "UnknownDIDError",
+    message: `DID ${alice.did()} has no account`,
+    did: alice.did(),
+  })
+
+  // fake register alice
+  service.access.accounts.register(
+    alice.did(),
+    "did:email:alice@web.mail",
+    car.cid
+  )
+
+  const [r1] = await connection.execute(add)
+  assert.deepEqual(r1, {
+    with: alice.did(),
+    link: car.cid,
+    status: "upload",
+    url: "http://localhost:9090/",
   })
 })

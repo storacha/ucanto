@@ -14,7 +14,7 @@ const HEADERS = Object.freeze({
  *
  * @template {API.IssuedInvocation[]} I
  * @param {I} batch
- * @returns {Promise<API.HTTPRequest<API.InferInvocation<API.IssuedInvocation[]>>>}
+ * @returns {Promise<API.HTTPRequest<API.InferInvocation<I>>>}
  */
 export const encode = async batch => {
   /** @type {Record<string, string>} */

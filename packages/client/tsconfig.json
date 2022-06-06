@@ -103,7 +103,8 @@
     "test"
   ],
   "references": [
-    { "path": "../interface"},
-    { "path": "../core"}
+    { "path": "../interface" },
+    { "path": "../core" },
+    { "path": "../transport" }
   ]
 }

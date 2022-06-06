@@ -11,7 +11,7 @@ import * as API from "@ucanto/interface"
  * statusText?: string
  * url?: string
  * }} FetchResponse
- * @typedef {(url:string, init:API.HTTPRequest|RequestInit) => API.Await<FetchResponse>} Fetch
+ * @typedef {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} Fetch
  */
 /**
  * @template T

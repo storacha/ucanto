@@ -4,28 +4,39 @@ import type {
   ServiceInvocations,
   IssuedInvocation,
   Invocation,
+  ServiceInvocation,
   ExecuteBatchInvocation,
+  InferServiceInvocations,
 } from "./lib.js"
+
+/**
+ * This utility type can be used in place of `T[]` where you
+ * want TS to infer things as tuples as opposed to array. This
+
+ */
+export type Tuple<T = unknown> = [T, ...T[]]
 
 export interface EncodeOptions {
   readonly hasher?: UCAN.MultihashHasher
 }
 
 export interface Channel<T> extends Phantom<T> {
-  request<I extends ServiceInvocations<T>[]>(
+  request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
     request: HTTPRequest<I>
-  ): Await<HTTPResponse<ExecuteBatchInvocation<I, T>>>
+  ): Await<HTTPResponse<InferServiceInvocations<I, T>>>
 }
 
 export interface RequestEncoder {
-  encode<I extends IssuedInvocation[]>(
+  encode<I extends Tuple<ServiceInvocation>>(
     invocations: I,
     options?: EncodeOptions
   ): Await<HTTPRequest<I>>
 }
 
 export interface RequestDecoder {
-  decode<I extends Invocation[]>(request: HTTPRequest<I>): Await<I>
+  decode<I extends Tuple<ServiceInvocation>>(
+    request: HTTPRequest<I>
+  ): Await<InferInvocations<I>>
 }
 
 export interface ResponseEncoder {
@@ -36,10 +47,10 @@ export interface ResponseDecoder {
   decode<I>(response: HTTPResponse<I>): Await<I>
 }
 
-export type InferInvocation<T> = T extends []
+export type InferInvocations<T> = T extends []
   ? []
-  : T extends [IssuedInvocation<infer C>, ...infer Rest]
-  ? [Invocation<C>, ...InferInvocation<Rest>]
+  : T extends [ServiceInvocation<infer C>, ...infer Rest]
+  ? [Invocation<C>, ...InferInvocations<Rest>]
   : T extends Array<IssuedInvocation<infer U>>
   ? Invocation<U>[]
   : never
@@ -53,11 +64,6 @@ export interface HTTPRequest<T = unknown> extends Phantom<T> {
 export interface HTTPResponse<T = unknown> extends Phantom<T> {
   headers: Readonly<Record<string, string>>
   body: Uint8Array
-}
-
-export interface Packet<I extends Invocation[]> extends Phantom<I> {
-  invocations: Block[]
-  delegations: Map<string, Block>
 }
 
 export interface Block<

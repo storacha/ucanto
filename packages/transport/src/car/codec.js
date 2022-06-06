@@ -3,6 +3,7 @@ import * as CARWriter from "@ipld/car/buffer-writer"
 import { CarReader } from "@ipld/car/reader"
 import { CID } from "multiformats/cid"
 import { base32 } from "multiformats/bases/base32"
+import * as UCAN from "@ipld/dag-ucan"
 
 export { CID }
 
@@ -12,7 +13,7 @@ export { CID }
 
 class Writer {
   /**
-   * @param {Block[]} blocks
+   * @param {UCAN.Block[]} blocks
    * @param {number} byteLength
    */
   constructor(blocks = [], byteLength = 0) {
@@ -21,7 +22,7 @@ class Writer {
     this.byteLength = byteLength
   }
   /**
-   * @param {Block[]} blocks
+   * @param {UCAN.Block[]} blocks
    */
   write(...blocks) {
     for (const block of blocks) {
@@ -37,7 +38,7 @@ class Writer {
     return this
   }
   /**
-   * @param {API.Block[]} rootBlocks
+   * @param {UCAN.Block[]} rootBlocks
    */
   flush(...rootBlocks) {
     const roots = []
@@ -70,7 +71,8 @@ class Writer {
 export const createWriter = () => new Writer()
 
 /**
- * @param {{roots:API.Block[], blocks:Map<string, API.Block> }} input
+ * @template {UCAN.Block} Block
+ * @param {{roots:Block[], blocks:Map<string, Block> }} input
  */
 export const encode = ({ roots, blocks }) => {
   const writer = new Writer()
@@ -84,7 +86,7 @@ export const encode = ({ roots, blocks }) => {
  */
 export const decode = async bytes => {
   const reader = await /** @type {any} */ (CarReader.fromBytes(bytes))
-  /** @type {{_header: { roots: CARWriter.CID[] }, _keys: string[], _blocks: API.Block[] }} */
+  /** @type {{_header: { roots: CARWriter.CID[] }, _keys: string[], _blocks: UCAN.Block[] }} */
   const { _header, _blocks, _keys } = reader
   const roots = []
   const blocks = new Map()
@@ -92,7 +94,7 @@ export const decode = async bytes => {
 
   for (const [n, block] of _blocks.entries()) {
     if (index.includes(n)) {
-      roots.push(block)
+      roots.push(/** @type {API.Block} */ (block))
     } else {
       blocks.set(block.cid.toString(), block)
     }

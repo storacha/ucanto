@@ -112,19 +112,73 @@ export interface IssuedInvocation<
   readonly proofs: Proof[]
 }
 
+export type ServiceInvocation<
+  C extends Capability = Capability,
+  S = InvocationService<C>
+> = IssuedInvocation<C> & ServiceInvocations<S>
+
+export type InferInvocation<T extends ServiceInvocation> =
+  T extends ServiceInvocation<infer C> ? Invocation<C> : never
+
+export interface ServiceMethod<
+  C extends Capability,
+  T,
+  X extends { error: true }
+> {
+  (input: Invocation<C>): Await<Result<T, X>>
+}
+
+export type ResolveServiceMethod<
+  S extends Record<string, any>,
+  Path extends string
+> = Path extends `${infer Base}/${infer SubPath}`
+  ? ResolveServiceMethod<S[Base], SubPath>
+  : S[Path] extends ServiceMethod<infer _C, infer _T, infer _X>
+  ? S[Path]
+  : never
+
+export type ResolveServiceInvocation<
+  S extends Record<string, any>,
+  C extends Capability
+> = ResolveServiceMethod<S, C["can"]> extends ServiceMethod<
+  infer C,
+  infer _T,
+  infer _X
+>
+  ? IssuedInvocation<C>
+  : never
+
+export type InferServiceInvocationReturn<
+  C extends Capability,
+  S
+> = ResolveServiceMethod<S, C["can"]> extends ServiceMethod<
+  infer _,
+  infer T,
+  infer X
+>
+  ? Result<T, X>
+  : never
+
+export type InferServiceInvocations<I extends unknown[], T> = I extends []
+  ? []
+  : I extends [ServiceInvocation<infer C, T>, ...infer Rest]
+  ? [InferServiceInvocationReturn<C, T>, ...InferServiceInvocations<Rest, T>]
+  : never
+
 export interface IssuedInvocationView<
   Capability extends UCAN.Capability = UCAN.Capability
 > extends IssuedInvocation<Capability> {
   execute<T extends InvocationService<Capability>>(
     service: Connection<T>
-  ): Await<ExecuteInvocation<Capability, T>>
+  ): Await<InferServiceInvocationReturn<Capability, T>>
 }
 
 export interface Batch<In extends unknown[]> {
   invocations: In
 }
 
-export interface BatchView<In extends unknown[]> extends Batch<In> {
+export interface BatchView<In extends [unknown, ...unknown[]]>
+  extends Batch<In> {
   execute<T>(connection: Connection<T>): Await<ExecuteBatchInvocation<In, T>>
 }
 
@@ -143,24 +197,22 @@ export type BatchInvocationService<In> = In extends [Invocation<infer C>, ...[]]
   : {}
 
 export type ExecuteBatchInvocation<In, T> = In extends [
-  Invocation<infer C>,
+  Invocation<infer C> | IssuedInvocation<infer C>,
   ...[]
 ]
   ? [Awaited<ExecuteInvocation<C, T>>]
-  : In extends [Invocation<infer C>, ...infer Rest]
+  : In extends [Invocation<infer C> | IssuedInvocation<infer C>, ...infer Rest]
   ? [Awaited<ExecuteInvocation<C, T>>, ...ExecuteBatchInvocation<Rest, T>]
   : never
 
-export type ServiceInvocations<T> = Invocation &
+export type ServiceInvocations<T> = IssuedInvocation<any> &
   {
     [Key in keyof T]: SubServiceInvocations<T[Key], Key & string>
   }[keyof T]
 
 type SubServiceInvocations<T, Path extends string> = {
-  [Key in keyof T]: T[Key] extends (
-    input: Invocation<infer Capability>
-  ) => Await<Result<any, any>>
-    ? Invocation<Capability>
+  [Key in keyof T]: T[Key] extends ServiceMethod<infer C, infer _R, infer _X>
+    ? IssuedInvocation<C>
     : SubServiceInvocations<Path, Key & string>
 }[keyof T]
 
@@ -170,9 +222,7 @@ export type InvocationService<
 > = Ability extends `${infer Base}/${infer Path}`
   ? { [Key in Base]: InvocationService<Capability, Path> }
   : {
-      [Key in Ability]: (
-        input: Invocation<Capability>
-      ) => Await<Result<any, any>>
+      [Key in Ability]: ServiceMethod<Capability, any, any>
     }
 
 export type ExecuteInvocation<
@@ -185,9 +235,10 @@ export type ExecuteInvocation<
   ? Out
   : never
 
-export type Result<T, E extends Error = Error> =
-  | { ok: true; value: T }
-  | (E & { ok?: false })
+export type Result<T, X extends { error: true }> =
+  | (T extends null | undefined ? T : never)
+  | (T & { error?: never })
+  | X
 
 export type API<T> = T[keyof T]
 
@@ -205,7 +256,14 @@ export interface Connection<T> extends UCAN.Phantom<T> {
   readonly hasher: MultihashHasher
 }
 
-export interface ConnectionView<T> extends Connection<T> {}
+export interface ConnectionView<T> extends Connection<T> {
+  execute<
+    C extends Capability,
+    I extends Transport.Tuple<ServiceInvocation<C, T>>
+  >(
+    ...invocations: I
+  ): Await<InferServiceInvocations<I, T>>
+}
 
 export interface Server<T> extends UCAN.Phantom<T> {
   /**
