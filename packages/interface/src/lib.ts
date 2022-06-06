@@ -69,12 +69,13 @@ export interface Delegation<
   readonly root: Transport.Block<C>
   readonly blocks: Map<string, Transport.Block>
 
-  readonly cid: UCAN.Proof<Capability>
-  readonly bytes: UCAN.ByteView<UCAN.UCAN<Capability>>
+  readonly cid: UCAN.Proof<C[number]>
+  readonly bytes: UCAN.ByteView<UCAN.UCAN<C[number]>>
+  readonly data: UCAN.View<C[number]>
 
   asCID: UCAN.Proof<Capability>
 
-  export(): IterableIterator<Transport.Block & { data: UCAN.View }>
+  export(): IterableIterator<Transport.Block>
 
   issuer: Identity
   audience: Identity

@@ -45,6 +45,7 @@ export type InferInvocation<T> = T extends []
   : never
 
 export interface HTTPRequest<T = unknown> extends Phantom<T> {
+  method?: string
   headers: Readonly<Record<string, string>>
   body: Uint8Array
 }
@@ -68,5 +69,4 @@ export interface Block<
 > {
   readonly cid: UCAN.Proof<C[number], A>
   readonly bytes: UCAN.ByteView<UCAN.UCAN<C[number]>>
-  data?: UCAN.View<C[number]>
 }
