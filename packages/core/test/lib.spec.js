@@ -20,7 +20,6 @@ test("create delegation", async () => {
     root: {
       cid,
       bytes,
-      data,
     },
   })
 
@@ -57,7 +56,6 @@ test("create delegation", async () => {
     {
       cid,
       bytes,
-      data,
     },
   ])
 })
@@ -111,11 +109,10 @@ test("create delegation (with just cid and bytes)", async () => {
   assert.equal(delegation.audience.did(), bob.did())
 
   const dag = [...delegation.export()]
-  assert.containSubset(dag, [
+  assert.deepEqual(dag, [
     {
       cid,
       bytes,
-      data,
     },
   ])
 })
@@ -135,7 +132,7 @@ test("create delegation with attached proof", async () => {
     })
 
     const { cid, bytes } = await UCAN.write(data)
-    proof = Delegation.create({ root: { cid, data, bytes } })
+    proof = Delegation.create({ root: { cid, bytes } })
   }
 
   const data = await UCAN.issue({
@@ -150,28 +147,26 @@ test("create delegation with attached proof", async () => {
     proofs: [proof.cid],
   })
 
-  const { cid, bytes } = await UCAN.write(data)
-  const root = { cid, data, bytes }
+  const root = await UCAN.write(data)
   const delegation = Delegation.create({
     root,
     blocks: new Map([[proof.cid.toString(), proof.root]]),
   })
 
   assert.containSubset(delegation, {
-    cid,
+    root,
     data,
-    bytes,
+    bytes: root.bytes,
+    cid: root.cid,
     issuer: data.issuer,
     audience: data.audience,
 
-    capabilities: {
-      ...[
-        {
-          can: "store/add",
-          with: alice.did(),
-        },
-      ],
-    },
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
 
     notBefore: undefined,
     expiration: data.expiration,
@@ -179,6 +174,7 @@ test("create delegation with attached proof", async () => {
     facts: [],
   })
 
+  assert.deepEqual(delegation.cid, root.cid)
   assert.equal(delegation.issuer.did(), bob.did())
   assert.equal(delegation.audience.did(), mallory.did())
 
@@ -191,10 +187,7 @@ test("create delegation with attached proof", async () => {
   const { proofs } = delegation
   assert.equal(proofs.length, 1)
   const [actual] = proofs
-  assert.containSubset(actual, {
-    cid: proof.cid,
-    bytes: proof.bytes,
-  })
+  assert.deepEqual(actual, proof)
 })
 
 test("create delegation chain", async () => {
@@ -212,7 +205,7 @@ test("create delegation chain", async () => {
     })
 
     const { cid, bytes } = await UCAN.write(data)
-    proof = Delegation.create({ root: { cid, data, bytes } })
+    proof = Delegation.create({ root: { cid, bytes } })
   }
 
   let delegation
@@ -231,7 +224,7 @@ test("create delegation chain", async () => {
 
     const { cid, bytes } = await UCAN.write(data)
     delegation = Delegation.create({
-      root: { cid, data, bytes },
+      root: { cid, bytes },
       blocks: new Map([[proof.cid.toString(), proof.root]]),
     })
   }

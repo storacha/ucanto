@@ -107,19 +107,20 @@ export class Delegation {
   }
 }
 
+const decodeCache = new WeakMap()
 /**
  * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
  * @param {API.Block<C>} block
+ * @returns {UCAN.View<C[number]>}
  */
-const decode = block => {
-  const { data } = block
-  if (data) {
-    return data
-  } else {
-    const data = UCAN.decode(block.bytes)
-    block.data = data
+const decode = ({ bytes }) => {
+  const data = decodeCache.get(bytes)
+  if (!data) {
+    const data = UCAN.decode(bytes)
+    decodeCache.set(bytes, data)
     return data
   }
+  return data
 }
 
 /**
@@ -138,11 +139,15 @@ export const isLink = value =>
  *
  * @template {number} A
  * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
- * @param {API.DelegationOptions<C, A>} options
+ * @param {API.DelegationOptions<C, A>} data
+ * @param {API.EncodeOptions} [options]
  * @returns {Promise<API.Delegation<C>>}
  */
 
-export const delegate = async ({ issuer, audience, proofs = [], ...input }) => {
+export const delegate = async (
+  { issuer, audience, proofs = [], ...input },
+  options
+) => {
   const links = []
   const blocks = new Map()
   for (const proof of proofs) {
@@ -163,10 +168,11 @@ export const delegate = async ({ issuer, audience, proofs = [], ...input }) => {
     audience,
     proofs: links,
   })
-  const { cid, bytes } = await UCAN.write(data)
+  const { cid, bytes } = await UCAN.write(data, options)
+  decodeCache.set(cid, data)
 
   /** @type {API.Delegation<C>} */
-  const delegation = new Delegation({ cid, bytes, data }, blocks)
+  const delegation = new Delegation({ cid, bytes }, blocks)
   Object.defineProperties(delegation, { proofs: { value: proofs } })
 
   return delegation
@@ -176,7 +182,7 @@ export const delegate = async ({ issuer, audience, proofs = [], ...input }) => {
  * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
  * @param {API.Block<C>} root
  * @param {Map<string, API.Block>} blocks
- * @returns {IterableIterator<API.Block & {data: UCAN.View}>}
+ * @returns {IterableIterator<API.Block>}
  */
 
 const exportDAG = function* (root, blocks) {
@@ -188,7 +194,7 @@ const exportDAG = function* (root, blocks) {
     }
   }
 
-  yield /** @type {API.Block & {data: UCAN.View<C[number]>}} */ (root)
+  yield root
 }
 
 /**
