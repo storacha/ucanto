@@ -1,9 +1,22 @@
 import * as API from "@ucanto/interface"
 
 /**
+ * @typedef {{
+ * ok: boolean
+ * arrayBuffer():API.Await<ArrayBuffer>
+ * headers: {
+ *  entries():Iterable<[string, string]>
+ * }
+ * status?: number
+ * statusText?: string
+ * url?: string
+ * }} FetchResponse
+ * @typedef {(url:string, init:API.HTTPRequest|RequestInit) => API.Await<FetchResponse>} Fetch
+ */
+/**
  * @template T
  * @param {object} options
- * @param {typeof fetch} [options.fetch]
+ * @param {Fetch} [options.fetch]
  * @param {URL} options.url
  * @param {string} [options.method]
  * @returns {API.Channel<T>}
@@ -20,7 +33,7 @@ class Channel {
   /**
    * @param {object} options
    * @param {URL} options.url
-   * @param {typeof fetch} options.fetch
+   * @param {Fetch} options.fetch
    * @param {string} [options.method]
    */
   constructor({ url, fetch, method }) {
@@ -36,6 +49,7 @@ class Channel {
     const response = await this.fetch(this.url.href, {
       headers,
       body,
+      method: this.method,
     })
 
     const buffer = response.ok
@@ -71,6 +85,8 @@ class HTTPError extends Error {
    */
   constructor(message, { url, status = 500, statusText = "Server error" }) {
     super(message)
+    /** @type {'HTTPError'} */
+    this.name = "HTTPError"
     this.url = url
     this.status = status
     this.statusText = statusText
