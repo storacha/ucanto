@@ -1,7 +1,6 @@
 import * as API from "@ucanto/interface"
-import { pack, unpack } from "./packet.js"
 import * as CAR from "./car/codec.js"
-import * as UCAN from "@ipld/dag-ucan"
+import { Delegation } from "@ucanto/core"
 
 const HEADERS = Object.freeze({
   "content-type": "application/car",
@@ -11,13 +10,22 @@ const HEADERS = Object.freeze({
  * Encodes invocation batch into an HTTPRequest.
  *
  * @template {API.IssuedInvocation[]} I
- * @param {API.Batch<I>} bundle
- * @param {API.EncodeOptions} options
- * @returns {Promise<API.HTTPRequest<API.Batch<I>>>}
+ * @param {I} invocations
+ * @param {API.EncodeOptions} [options]
+ * @returns {Promise<API.HTTPRequest<API.InferInvocation<API.IssuedInvocation[]>>>}
  */
-export const encode = async (bundle, options) => {
-  const { invocations, delegations } = await pack(bundle, options)
-  const body = CAR.encode({ roots: invocations, blocks: delegations.values() })
+export const encode = async (invocations, options) => {
+  const roots = []
+  const blocks = new Map()
+  for (const invocation of invocations) {
+    const delegation = await Delegation.delegate(invocation, options)
+    roots.push(delegation.root)
+    for (const block of delegation.export()) {
+      blocks.set(block.cid.toString(), block)
+    }
+    blocks.delete(delegation.root.cid.toString())
+  }
+  const body = CAR.encode({ roots, blocks })
 
   return {
     headers: HEADERS,
@@ -29,8 +37,8 @@ export const encode = async (bundle, options) => {
  * Decodes HTTPRequest to an invocation batch.
  *
  * @template {API.Invocation[]} Invocations
- * @param {API.HTTPRequest<API.Batch<Invocations>>} request
- * @returns {Promise<API.Batch<Invocations>>}
+ * @param {API.HTTPRequest<Invocations>} request
+ * @returns {Promise<Invocations>}
  */
 export const decode = async ({ headers, body }) => {
   const contentType = headers["content-type"] || headers["Content-Type"]
@@ -41,21 +49,17 @@ export const decode = async ({ headers, body }) => {
   }
 
   const { roots, blocks } = await CAR.decode(body)
-  const delegations = new Map()
-  /** @type {API.Block[]} */
+
   const invocations = []
 
-  for (const block of blocks) {
-    delegations.set(block.cid.toString(), block)
+  for (const root of roots) {
+    invocations.push(
+      Delegation.create({
+        root,
+        blocks,
+      })
+    )
   }
 
-  for (const { cid, bytes } of roots) {
-    invocations.push({
-      cid: /** @type {UCAN.Proof<any, any>} */ (cid),
-      bytes,
-      data: UCAN.decode(bytes),
-    })
-  }
-
-  return unpack({ invocations, delegations })
+  return /** @type {Invocations} */ (invocations)
 }

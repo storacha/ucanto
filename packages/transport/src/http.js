@@ -1,18 +1,31 @@
 import * as API from "@ucanto/interface"
-import fetch from "@web-std/fetch"
 
 /**
  * @template T
- * @param {URL} url
+ * @param {object} options
+ * @param {typeof fetch} [options.fetch]
+ * @param {URL} options.url
+ * @param {string} [options.method]
  * @returns {API.Channel<T>}
  */
-export const open = url => new Channel({ url })
+export const open = ({ url, method = "POST", fetch = globalThis.fetch }) => {
+  if (typeof fetch === "undefined") {
+    throw new TypeError(
+      `ucanto HTTP transport got undefined \`fetch\`. Try passing in a \`fetch\` implementation explicitly.`
+    )
+  }
+  return new Channel({ url, method, fetch })
+}
 class Channel {
   /**
    * @param {object} options
    * @param {URL} options.url
+   * @param {typeof fetch} options.fetch
+   * @param {string} [options.method]
    */
-  constructor({ url }) {
+  constructor({ url, fetch, method }) {
+    this.fetch = fetch
+    this.method = method
     this.url = url
   }
   /**
@@ -20,7 +33,7 @@ class Channel {
    * @returns {Promise<API.HTTPResponse>}
    */
   async request({ headers, body }) {
-    const response = await fetch(this.url.href, {
+    const response = await this.fetch(this.url.href, {
       headers,
       body,
     })

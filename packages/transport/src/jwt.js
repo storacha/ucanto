@@ -25,14 +25,28 @@ export const encode = async batch => {
     const delegation = await Delegation.delegate(invocation)
 
     body.push(`${delegation.cid}`)
-    for (const block of delegation.export()) {
-      headers[`${HEADER_PREFIX}${block.cid}`] = UCAN.format(block.data)
+    for (const proof of iterate(delegation)) {
+      headers[`${HEADER_PREFIX}${proof.cid}`] = UCAN.format(proof.data)
     }
+    headers[`${HEADER_PREFIX}${delegation.cid}`] = UCAN.format(delegation.data)
   }
 
   return {
     headers,
     body: UTF8.encode(JSON.stringify(body)),
+  }
+}
+
+/**
+ * @param {API.Delegation} delegation
+ * @return {IterableIterator<API.Delegation>}
+ */
+const iterate = function* (delegation) {
+  for (const proof of delegation.proofs) {
+    if (!Delegation.isLink(proof)) {
+      yield* iterate(proof)
+      yield proof
+    }
   }
 }
 
@@ -64,7 +78,7 @@ export const decode = async ({ headers, body }) => {
           `Invalid request, proof with key ${key} has mismatching cid ${cid}`
         )
       }
-      blocks.set(cid.toString(), { data, cid, bytes })
+      blocks.set(cid.toString(), { cid, bytes })
     }
   }
 
