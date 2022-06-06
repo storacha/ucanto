@@ -12,9 +12,9 @@ const HEADERS = Object.freeze({
 /**
  * Encodes invocation batch into an HTTPRequest.
  *
- * @template {API.IssuedInvocation[]} I
+ * @template {API.Tuple<API.IssuedInvocation>} I
  * @param {I} batch
- * @returns {Promise<API.HTTPRequest<API.InferInvocation<I>>>}
+ * @returns {Promise<API.HTTPRequest<I>>}
  */
 export const encode = async batch => {
   /** @type {Record<string, string>} */
@@ -53,9 +53,9 @@ const iterate = function* (delegation) {
 /**
  * Decodes HTTPRequest to an invocation batch.
  *
- * @template {API.Invocation[]} Invocations
- * @param {API.HTTPRequest<Invocations>} request
- * @returns {Promise<Invocations>}
+ * @template {API.Tuple<API.IssuedInvocation>} I
+ * @param {API.HTTPRequest<I>} request
+ * @returns {Promise<API.InferInvocations<I>>}
  */
 export const decode = async ({ headers, body }) => {
   const contentType = headers["content-type"] || headers["Content-Type"]
@@ -94,5 +94,5 @@ export const decode = async ({ headers, body }) => {
     }
   }
 
-  return /** @type {Invocations} */ (invocations)
+  return /** @type {API.InferInvocations<I>} */ (invocations)
 }

@@ -1,5 +1,3 @@
-// @ts-ignore
-
 import type {
   InvocationOptions,
   IssuedInvocation,
@@ -13,6 +11,7 @@ import type {
   Service,
   Authority,
   SigningAuthority,
+  Failure,
 } from "./lib.js"
 
 export type QueryInput = {
@@ -30,7 +29,7 @@ export type InstructionHandler<
   Ability extends UCAN.Ability = UCAN.Ability,
   In extends Input = Input,
   T = unknown,
-  X extends Error = Error
+  X extends Failure = Failure
 > = (instruction: Invocation<In & { can: Ability }>) => Result<T, X>
 
 interface Select<In extends Input = Input, S extends Selector = Selector> {
@@ -78,7 +77,7 @@ type ExecuteSubQuery<Path extends string, In, Service> = {
     : ExecuteSubQuery<`${Path}/${Key}`, In[Key], Service[Key]>
 }
 
-type ExecuteSelect<S extends Selector, T, X extends Error> = S extends true
+type ExecuteSelect<S extends Selector, T, X extends Failure> = S extends true
   ? Result<T, X>
   : Result<ExecuteSubSelect<S, T>, X>
 
@@ -126,12 +125,13 @@ type StoreAdd = (
   input: Invocation<{ can: "store/add"; with: UCAN.DID; link: UCAN.Link }>
 ) => Result<
   | { status: "done"; with: UCAN.DID; link: UCAN.Link }
-  | { status: "pending"; with: UCAN.DID; link: UCAN.Link; url: string }
+  | { status: "pending"; with: UCAN.DID; link: UCAN.Link; url: string },
+  Failure
 >
 
 type StoreRemove = (
   input: Invocation<{ can: "store/remove"; with: UCAN.DID; link: UCAN.Link }>
-) => Result<boolean>
+) => Result<boolean, Failure>
 
 type Store = {
   add: StoreAdd
@@ -195,8 +195,8 @@ const demo = async () => {
   const c = batch(add, remove).execute(channel)
 
   const result = await add.execute(channel)
-  if (result.ok) {
-    result.value
+  if (!result.error) {
+    result
   }
 
   const q = query({
@@ -219,8 +219,8 @@ const demo = async () => {
   })
 
   const r3 = q.execute(host)
-  if (r3.store.add.ok) {
-    if (r3.store.add.value) {
+  if (!r3.store.add.error) {
+    if (r3.store.add) {
     }
   }
 }

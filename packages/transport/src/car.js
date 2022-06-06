@@ -11,7 +11,7 @@ const HEADERS = Object.freeze({
 /**
  * Encodes invocation batch into an HTTPRequest.
  *
- * @template {API.Tuple<API.ServiceInvocation>} I
+ * @template {API.Tuple<API.IssuedInvocation>} I
  * @param {I} invocations
  * @param {API.EncodeOptions} [options]
  * @returns {Promise<API.HTTPRequest<I>>}
@@ -38,7 +38,7 @@ export const encode = async (invocations, options) => {
 /**
  * Decodes HTTPRequest to an invocation batch.
  *
- * @template {API.Tuple<API.ServiceInvocation>} Invocations
+ * @template {API.Tuple<API.IssuedInvocation>} Invocations
  * @param {API.HTTPRequest<Invocations>} request
  * @returns {Promise<API.InferInvocations<Invocations>>}
  */

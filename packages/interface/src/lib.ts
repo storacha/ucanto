@@ -240,6 +240,10 @@ export type Result<T, X extends { error: true }> =
   | (T & { error?: never })
   | X
 
+export interface Failure extends Error {
+  error: true
+}
+
 export type API<T> = T[keyof T]
 
 export interface ConnectionOptions<T> extends Transport.EncodeOptions {
