@@ -4,16 +4,26 @@ import { CarReader } from "@ipld/car/reader"
 import { CID } from "multiformats/cid"
 import { base32 } from "multiformats/bases/base32"
 import * as UCAN from "@ipld/dag-ucan"
+import { sha256 } from "multiformats/hashes/sha2"
 
 export { CID }
 
+export const code = 0x0202
+
 /**
- * @typedef {API.Block|CARWriter.Block} Block
+ * @typedef {{
+ * cid: API.Link
+ * bytes: Uint8Array
+ * }} Block
+ * @typedef {{
+ * roots: Block[]
+ * blocks: Map<string, Block>
+ * }} Model
  */
 
 class Writer {
   /**
-   * @param {UCAN.Block[]} blocks
+   * @param {Block[]} blocks
    * @param {number} byteLength
    */
   constructor(blocks = [], byteLength = 0) {
@@ -22,7 +32,7 @@ class Writer {
     this.byteLength = byteLength
   }
   /**
-   * @param {UCAN.Block[]} blocks
+   * @param {Block[]} blocks
    */
   write(...blocks) {
     for (const block of blocks) {
@@ -38,7 +48,7 @@ class Writer {
     return this
   }
   /**
-   * @param {UCAN.Block[]} rootBlocks
+   * @param {Block[]} rootBlocks
    */
   flush(...rootBlocks) {
     const roots = []
@@ -71,18 +81,23 @@ class Writer {
 export const createWriter = () => new Writer()
 
 /**
- * @template {UCAN.Block} Block
- * @param {{roots:Block[], blocks:Map<string, Block> }} input
+ 
  */
-export const encode = ({ roots, blocks }) => {
+
+/**
+ * @param {Partial<Model>} input
+ */
+export const encode = ({ roots = [], blocks }) => {
   const writer = new Writer()
-  writer.write(...blocks.values())
+  if (blocks) {
+    writer.write(...blocks.values())
+  }
   return writer.flush(...roots)
 }
 
 /**
  * @param {Uint8Array} bytes
- * @returns {Promise<{roots:API.Block[], blocks:Map<string, API.Block>}>}
+ * @returns {Promise<Model>}
  */
 export const decode = async bytes => {
   const reader = await /** @type {any} */ (CarReader.fromBytes(bytes))
@@ -94,11 +109,22 @@ export const decode = async bytes => {
 
   for (const [n, block] of _blocks.entries()) {
     if (index.includes(n)) {
-      roots.push(/** @type {API.Block} */ (block))
+      roots.push(/** @type {Block} */ (block))
     } else {
       blocks.set(block.cid.toString(), block)
     }
   }
 
   return { roots, blocks }
+}
+
+/**
+ * @param {Partial<Model>} data
+ * @param {{hasher?: import('multiformats/hashes/interface').MultihashHasher }} [options]
+ */
+export const write = async (data, { hasher = sha256 } = {}) => {
+  const bytes = encode(data)
+  const digest = await hasher.digest(bytes)
+  const cid = CID.createV1(code, digest)
+  return { bytes, cid }
 }

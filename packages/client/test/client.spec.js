@@ -3,8 +3,6 @@ import * as Client from "../src/lib.js"
 import * as HTTP from "@ucanto/transport/http"
 import * as CAR from "@ucanto/transport/car"
 import * as CBOR from "@ucanto/transport/cbor"
-import { writeCAR, writeCBOR } from "./util.js"
-import { Delegation } from "@ucanto/core"
 import * as Service from "./service.js"
 import { alice, bob, mallory, service as web3Storage } from "./fixtures.js"
 import fetch from "@web-std/fetch"
@@ -17,7 +15,10 @@ test("encode inovocation", async () => {
     decoder: CBOR,
   })
 
-  const car = await writeCAR([await writeCBOR({ hello: "world " })])
+  const car = await CAR.codec.write({
+    roots: [await CBOR.codec.write({ hello: "world " })],
+  })
+
   const add = Client.invoke({
     issuer: alice,
     audience: web3Storage,
@@ -54,7 +55,9 @@ test("encode inovocation", async () => {
 })
 
 test("encode delegated invocation", async () => {
-  const car = await writeCAR([await writeCBOR({ hello: "world " })])
+  const car = await CAR.codec.write({
+    roots: [await CBOR.codec.write({ hello: "world " })],
+  })
 
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
@@ -171,7 +174,10 @@ const connection = Client.connect({
 })
 
 test("execute", async () => {
-  const car = await writeCAR([await writeCBOR({ hello: "world " })])
+  const car = await CAR.codec.write({
+    roots: [await CBOR.codec.write({ hello: "world " })],
+  })
+
   const add = Client.invoke({
     issuer: alice,
     audience: web3Storage,

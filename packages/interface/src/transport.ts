@@ -1,12 +1,9 @@
 import type { Phantom, Await } from "@ipld/dag-ucan"
 import * as UCAN from "@ipld/dag-ucan"
 import type {
-  ServiceInvocations,
-  IssuedInvocation,
-  Invocation,
   ServiceInvocation,
-  ExecuteBatchInvocation,
   InferServiceInvocations,
+  InferInvocations,
 } from "./lib.js"
 
 /**
@@ -46,14 +43,6 @@ export interface ResponseEncoder {
 export interface ResponseDecoder {
   decode<I>(response: HTTPResponse<I>): Await<I>
 }
-
-export type InferInvocations<T> = T extends []
-  ? []
-  : T extends [ServiceInvocation<infer C>, ...infer Rest]
-  ? [Invocation<C>, ...InferInvocations<Rest>]
-  : T extends Array<IssuedInvocation<infer U>>
-  ? Invocation<U>[]
-  : never
 
 export interface HTTPRequest<T = unknown> extends Phantom<T> {
   method?: string

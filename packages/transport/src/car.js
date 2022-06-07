@@ -2,7 +2,7 @@ import * as API from "@ucanto/interface"
 import * as CAR from "./car/codec.js"
 import { Delegation } from "@ucanto/core"
 
-export { CAR }
+export { CAR as codec }
 
 const HEADERS = Object.freeze({
   "content-type": "application/car",
@@ -54,11 +54,11 @@ export const decode = async ({ headers, body }) => {
 
   const invocations = []
 
-  for (const root of roots) {
+  for (const root of /** @type {API.Block[]} */ (roots)) {
     invocations.push(
       Delegation.create({
         root,
-        blocks,
+        blocks: /** @type {Map<string, API.Block>} */ (blocks),
       })
     )
   }

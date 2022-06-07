@@ -27,13 +27,8 @@ class AccessProvider {
    * @param {API.DID} to
    * @param {API.Link} proof
    */
-  async register(from, to, proof) {
-    const result = associate(this.model, from, to, proof, true)
-    if (result?.error) {
-      return result
-    } else {
-      throw result
-    }
+  register(from, to, proof) {
+    return associate(this.model, from, to, proof, true)
   }
   /**
    * @param {API.DID} from

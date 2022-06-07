@@ -1,4 +1,5 @@
 import * as API from "@ucanto/interface"
+export * from "@ucanto/interface"
 
 /**
  * Creates a connection to a service.
@@ -24,90 +25,152 @@ class Server {
     this.service = options.service
   }
   /**
-   * @template {API.ServiceInvocations<Service>[]} I
-   * @param {API.Batch<I>} batch
-   * @returns {API.Await<API.ExecuteBatchInvocation<I, Service>>}
-   */
-  execute(batch) {
-    const result = execute(this, batch)
-    return result
-  }
-  /**
-   * @template {API.ServiceInvocations<Service>[]} I
-   * @param {API.Transport.HTTPRequest<API.Batch<I>>} request
-   * @returns {API.Await<API.Transport.HTTPResponse<API.ExecuteBatchInvocation<I, Service>>>}
+   * @template {API.Capability} C
+   * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
+   * @param {API.HTTPRequest<I>} request
+   * @returns {API.Await<API.HTTPResponse<API.InferServiceInvocations<I, Service>>>}
    */
   request(request) {
-    return handle(this, request)
+    return handle(/** @type {API.ServerView<Service>} */ (this), request)
   }
 }
 
 /**
- * @template Service
- * @template {API.ServiceInvocations<Service>[]} I
- * @param {API.ServerView<Service>} handler
- * @param {API.Transport.HTTPRequest<API.Batch<I>>} request
- * @returns {Promise<API.Transport.HTTPResponse<API.ExecuteBatchInvocation<I, Service>>>}
+ * @template T
+ * @template {API.Capability} C
+ * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
+ * @param {API.ServerView<T>} handler
+ * @param {API.HTTPRequest<I>} request
+ * @returns {Promise<API.HTTPResponse<API.InferServiceInvocations<I, T>>>}
  */
 export const handle = async (handler, request) => {
-  const batch = await handler.decoder.decode(request)
-  const result = await execute(handler, batch)
+  const invocations = await handler.decoder.decode(request)
+  const result = await execute(invocations, handler)
   return handler.encoder.encode(result)
 }
 
 /**
  * @template Service
- * @template {API.ServiceInvocations<Service>[]} I
+ * @template {API.Capability} C
+ * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
+ * @param {API.InferInvocations<I>} invocations
  * @param {API.ServerView<Service>} handler
- * @param {API.Batch<I>} request
- * @returns {Promise<API.ExecuteBatchInvocation<I, Service>>}
+ * @returns {Promise<API.InferServiceInvocations<I, Service>>}
  */
-export const execute = async ({ service }, { invocations }) => {
+export const execute = async (invocations, { service }) => {
   const results = []
-  for (const invocation of invocations) {
-    results.push(await invoke(service, invocation))
+  const input =
+    /** @type {API.InferInvocation<API.ServiceInvocation<C, Service>>[]} */ (
+      invocations
+    )
+  for (const invocation of input) {
+    results.push(await invoke(invocation, service))
   }
-  return /** @type {API.ExecuteBatchInvocation<I, Service>} */ (results)
+
+  return /** @type {API.InferServiceInvocations<I, Service>} */ (results)
 }
 
 /**
- * @template {API.Invocation[]} I
- * @template {API.BatchInvocationService<I>} Service
+ * @template Service
+ * @template {API.Capability} C
+ * @param {API.InferInvocation<API.ServiceInvocation<C, Service>>} invocation
  * @param {Service} service
- * @param {I[number]} invocation
+ * @returns {Promise<API.InferServiceInvocationReturn<C, Service>>}
  */
-export const invoke = async (service, invocation) => {
-  const { capability } = invocation
+export const invoke = async (invocation, service) => {
+  const [capability] = invocation.capabilities
   const path = capability.can.split("/")
   const method = /** @type {string} */ (path.pop())
   const handler = resolve(service, path)
   if (handler == null || typeof handler[method] !== "function") {
-    return inlineError(
-      new RangeError(`service does not have a handler for ${capability.can}`)
+    return /** @type {API.Result<any, API.HandlerNotFound>} */ (
+      new HandlerNotFound(capability)
     )
   } else {
     try {
-      const result = await handler[method](invocation)
-      if (result.ok) {
-        return result
-      } else {
-        return inlineError(result)
-      }
+      return await handler[method](invocation)
     } catch (error) {
-      return inlineError(/** @type {Error} */ (error))
+      return /** @type {API.Result<any, API.HandlerExecutionError>} */ (
+        new HandlerExecutionError(
+          /** @type {API.Result<any, API.HandlerNotFound>} */
+          capability,
+          /** @type {Error} */ (error)
+        )
+      )
     }
   }
 }
 
 /**
- * @param {Error} error
+ * @implements {API.HandlerNotFound}
  */
-const inlineError = ({ name, message, ...rest }) => ({
-  ...rest,
-  ok: false,
-  name,
-  message,
-})
+class HandlerNotFound extends RangeError {
+  /**
+   * @param {API.Capability} capability
+   */
+  constructor(capability) {
+    super()
+    /** @type {true} */
+    this.error = true
+    this.capability = capability
+  }
+  /** @type {'HandlerNotFound'} */
+  get name() {
+    return "HandlerNotFound"
+  }
+  get message() {
+    return `service does not implement {can: "${this.capability.can}"} handler`
+  }
+  toJSON() {
+    return {
+      name: this.name,
+      error: this.error,
+      capability: {
+        can: this.capability.can,
+        with: this.capability.with,
+      },
+      message: this.message,
+      stack: this.stack,
+    }
+  }
+}
+
+class HandlerExecutionError extends Error {
+  /**
+   * @param {API.Capability} capability
+   * @param {Error} cause
+   */
+  constructor(capability, cause) {
+    super()
+    this.capability = capability
+    this.cause = cause
+    this.error = true
+  }
+  get name() {
+    return "HandlerExecutionError"
+  }
+  get message() {
+    return `service handler {can: "${this.capability.can}"} error: ${this.cause.message}`
+  }
+  toJSON() {
+    return {
+      name: this.name,
+      error: this.error,
+      capability: {
+        can: this.capability.can,
+        with: this.capability.with,
+      },
+      cause: {
+        ...this.cause,
+        name: this.cause.name,
+        message: this.cause.message,
+        stack: this.cause.stack,
+      },
+      message: this.message,
+      stack: this.stack,
+    }
+  }
+}
 
 /**
  * @param {Record<string, any>} service

@@ -1,5 +1,6 @@
 import * as UCAN from "@ipld/dag-ucan"
 import type * as Transport from "./transport.js"
+import type { Tuple } from "./transport.js"
 import type {
   Authority,
   SigningAuthority,
@@ -120,6 +121,14 @@ export type ServiceInvocation<
 export type InferInvocation<T extends ServiceInvocation> =
   T extends ServiceInvocation<infer C> ? Invocation<C> : never
 
+export type InferInvocations<T> = T extends []
+  ? []
+  : T extends [ServiceInvocation<infer C>, ...infer Rest]
+  ? [Invocation<C>, ...InferInvocations<Rest>]
+  : T extends Array<IssuedInvocation<infer U>>
+  ? Invocation<U>[]
+  : never
+
 export interface ServiceMethod<
   C extends Capability,
   T,
@@ -156,7 +165,7 @@ export type InferServiceInvocationReturn<
   infer T,
   infer X
 >
-  ? Result<T, X>
+  ? Result<T, X | HandlerNotFound | HandlerExecutionError>
   : never
 
 export type InferServiceInvocations<I extends unknown[], T> = I extends []
@@ -244,6 +253,18 @@ export interface Failure extends Error {
   error: true
 }
 
+export interface HandlerNotFound extends RangeError {
+  error: true
+  capability: Capability
+  name: "HandlerNotFound"
+}
+
+export interface HandlerExecutionError extends Failure {
+  capability: Capability
+  cause: Error
+  name: "HandlerExecutionError"
+}
+
 export type API<T> = T[keyof T]
 
 export interface ConnectionOptions<T> extends Transport.EncodeOptions {
@@ -286,7 +307,7 @@ export interface Server<T> extends UCAN.Phantom<T> {
    * Takes authority parser that can be used to turn an `UCAN.Identity`
    * into `Ucanto.Authority`.
    */
-  readonly authorizer: AuthorityParser
+  readonly authorizer?: AuthorityParser
 
   /**
    * Actual service providing capability handlers.
@@ -294,11 +315,7 @@ export interface Server<T> extends UCAN.Phantom<T> {
   readonly service: T
 }
 
-export interface ServerView<T> extends Server<T>, Transport.Channel<T> {
-  execute<I extends ServiceInvocations<T>[]>(
-    batch: Batch<I>
-  ): Await<ExecuteBatchInvocation<I, T>>
-}
+export interface ServerView<T> extends Server<T>, Transport.Channel<T> {}
 
 export type Service = Record<
   string,
