@@ -17,7 +17,7 @@ import type {
   MatchError,
   ParsedCapability,
   Capability as CapabilityParser,
-} from "./v3/api.js"
+} from "./capability/api.js"
 
 export type {
   Capability,
@@ -133,14 +133,14 @@ export interface DelegationError extends Problem {
 
 export interface EscalatedDelegation extends Problem {
   name: "EscalatedCapability"
-  claimed: import("./v3/api").ParsedCapability
+  claimed: import("./capability/api").ParsedCapability
   delegated: object
   cause: Problem
 }
 
 export interface InvalidDelegation extends Problem {
   name: "InvalidDelegation"
-  claimed: import("./v3/api").Match
+  claimed: import("./capability/api").Match
   delegated: object
   cause: MalformedCapability | InvalidDelegation | EscalatedDelegation
 }

@@ -19,31 +19,9 @@ export class Failure extends Error {
   }
 }
 
-/**
- * @implements {API.InvalidDelegation}
- */
-export class InvalidDelegation extends Failure {
-  /**
-   * @param {import('./v3/api').Match} claimed
-   * @param {object} delegated
-   * @param {API.EscalatedDelegation|API.MalformedCapability|API.InvalidDelegation} cause
-   */
-  constructor(claimed, delegated, cause) {
-    super()
-    this.claimed = claimed
-    this.delegated = delegated
-    this.cause = cause
-    /** @type {"InvalidDelegation"} */
-    this.name = "InvalidDelegation"
-  }
-  describe() {
-    return `Can not derive ${this.claimed} from ${this.delegated}, ${this.cause.message}`
-  }
-}
-
 export class EscalatedCapability extends Failure {
   /**
-   * @param {import('./v3/api').ParsedCapability} claimed
+   * @param {import('./capability/api').ParsedCapability} claimed
    * @param {object} delegated
    * @param {API.Problem} cause
    */
@@ -95,192 +73,6 @@ export class DelegationError extends Failure {
   }
 }
 
-// /**
-//  * @implements {API.InvalidDelegation}
-//  */
-// export class InvalidDelegation extends Failure {
-//   /**
-//    * @param {API.InvalidCapability | API.InvalidDelegation} cause
-//    * @param {object} context
-//    */
-//   constructor(cause, context) {
-//     super()
-//     this.name = the("InvalidDelegation")
-//     this.cause = cause
-//     this.context = context
-//   }
-//   describe() {
-//     return [
-//       `Can not derive ${this.context} from delegated capabilities`,
-//       li(this.cause.message),
-//     ].join("\n")
-//   }
-// }
-
-/**
- * @template C
- * @implements {API.EscalationError<C>}
- */
-export class EscalationError extends Failure {
-  /**
-   *
-   * @param {C} claimed
-   * @param {C} escalated
-   * @param {API.ConstraintViolationError<C>[]} violations
-   */
-  constructor(claimed, escalated, violations) {
-    super()
-    this.name = the("EscalationError")
-    this.claimed = claimed
-    this.escalated = escalated
-    this.violations = violations
-  }
-  describe() {
-    return [
-      `Claimed capability ${format(
-        this.claimed
-      )} violates imposed constrainsts:`,
-      ...[...this.violations].map($ => li(`${$.message}`)),
-    ].join("\n")
-  }
-}
-
-/**
- * @template C
- * @implements {API.ConstraintViolationError<C>}
- */
-export class ConstraintViolationError extends Failure {
-  /**
-   * @param {API.Constraint<C>} claimed
-   * @param {API.Constraint<C>} violated
-   */
-  constructor(claimed, violated) {
-    super()
-    this.name = the("ConstraintViolationError")
-    this.claimed = claimed
-    this.violated = violated
-  }
-
-  describe() {
-    const { claimed, violated } = this
-    return `constraint ${format({
-      [violated.name]: violated.value,
-    })} is violated by ${format({ [claimed.name]: claimed.value })}`
-  }
-  get message() {
-    return this.describe()
-  }
-}
-
-/**
- * @template C
- * @implements {API.EscalatedClaim<C>}
- */
-export class EscalatedClaim extends Failure {
-  /**
-   * @param {API.EscalationError<C>[]} esclacations
-   */
-  constructor(esclacations) {
-    super()
-    this.name = the("EscalatedClaim")
-    this.esclacations = esclacations
-  }
-  describe() {
-    return [
-      `Capability escalates constraints`,
-      ...this.esclacations.map($ => li($.message)),
-    ].join("\n")
-  }
-}
-
-/**
- * @template C
- * @implements {API.InvalidClaim<C>}
- */
-export class InvalidClaim extends Failure {
-  /**
-   * @param {C} capability
-   * @param {API.Delegation} delegation
-   * @param {API.ProofError<C>[]} proofs
-   */
-  constructor(capability, delegation, proofs) {
-    super()
-    this.name = the("InvalidClaim")
-    this.capability = capability
-    this.delegation = delegation
-    this.proofs = proofs
-  }
-  describe() {
-    const capability = format(this.capability)
-    const did = this.delegation.issuer.did()
-    const proofs =
-      this.proofs.length > 0
-        ? this.proofs.map((proof, n) => li(`prf:${n} ${proof.message}`))
-        : [li(`There are no delegated proofs`)]
-
-    return [
-      `Claimed capability ${capability} is invalid`,
-      li(`Capability can not be (self) issued by '${did}'`),
-      ...proofs,
-    ].join("\n")
-  }
-}
-
-/**
- * @template C
- * @implements {API.InvalidClaim<C>}
- */
-export class NoEvidence extends Failure {
-  /**
-   * @param {C} capability
-   * @param {API.Delegation} delegation
-   * @param {API.DelegationError[]} errors
-   * @param {API.Capability[]} unknown
-   */
-  constructor(capability, delegation, errors, unknown) {
-    super()
-    this.name = the("InvalidClaim")
-    this.capability = capability
-    this.delegation = delegation
-    this.errors = errors
-    this.unknown = unknown
-  }
-  describe() {
-    const capability = format(this.capability)
-
-    return [
-      `Does not delegate matching capability ${capability}`,
-      ...this.errors.map(error => li(`${error.message}`)),
-    ].join("\n")
-  }
-}
-
-/**
- * @template C
- * @implements {API.InvalidEvidence<C>}
- */
-export class InvalidEvidence extends Failure {
-  /**
-   * @param {API.Evidence<C>} evidence
-   * @param {API.Delegation} delegation
-   * @param {API.InvalidClaim<C>[]} proofs
-   */
-  constructor(evidence, delegation, proofs) {
-    super()
-    this.name = the("InvalidEvidence")
-    this.evidence = evidence
-    this.delegation = delegation
-    this.proofs = proofs
-  }
-  describe() {
-    return [
-      `Claimed capability requires delegated capabilities:`,
-      ...this.evidence.capabilities.map($ => li(format($))),
-      `Which could not be satifised because:`,
-      ...this.proofs.map($ => li($.message)),
-    ].join("\n")
-  }
-}
 /**
  * @implements {API.InvalidSignature}
  */
@@ -310,14 +102,21 @@ export class InvalidSignature extends Failure {
 export class UnavailableProof extends Failure {
   /**
    * @param {API.UCAN.Proof} link
+   * @param {Error} [cause]
    */
-  constructor(link) {
+  constructor(link, cause) {
     super()
     this.name = the("UnavailableProof")
     this.link = link
+    this.cause = cause
   }
   describe() {
-    return `Linked proof '${this.link}' is not included nor available locally`
+    return [
+      `Linked proof '${this.link}' is not included nor could be resolved`,
+      ...(this.cause
+        ? [li(`Provided resolve failed: ${this.cause.message}`)]
+        : []),
+    ].join("\n")
   }
 }
 
@@ -409,22 +208,6 @@ export class NotValidBefore extends Failure {
   }
   get validAt() {
     return this.delegation.notBefore
-  }
-}
-
-/**
- * @template C
- */
-export class ClaimError extends Failure {
-  /**
-   * @param {API.EscalationError<C>[]} esclacations
-   * @param {API.UCAN.Capability[]} unknownCapabilities
-   */
-  constructor(esclacations, unknownCapabilities) {
-    super()
-    this.name = the("ClaimError")
-    this.esclacations = esclacations
-    this.unknownCapabilities = unknownCapabilities
   }
 }
 

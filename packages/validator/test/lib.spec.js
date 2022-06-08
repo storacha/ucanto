@@ -1,11 +1,10 @@
 import { test, assert } from "./test.js"
 import { access } from "../src/lib.js"
-import { capability, URI } from "../src/v3/lib.js"
+import { capability, URI } from "../src/capability.js"
 import { Failure } from "../src/error.js"
 import { Authority } from "@ucanto/authority"
 import * as Client from "@ucanto/client"
 import * as API from "@ucanto/interface"
-import * as StoreAdd from "./capability/store/add.js"
 import { alice, bob, mallory, service as w3 } from "./fixtures.js"
 import * as UCAN from "@ipld/dag-ucan"
 import { UnavailableProof } from "../src/error.js"
@@ -165,6 +164,33 @@ test("invalid signature", async () => {
     error: true,
     name: "InvalidSignature",
     message: `Signature is invalid`,
+  })
+})
+
+test("unknown capability", async () => {
+  const invocation = await Client.delegate({
+    issuer: alice,
+    audience: w3.authority,
+    capabilities: [
+      {
+        can: "store/write",
+        with: alice.did(),
+      },
+    ],
+    proofs: [],
+  })
+
+  const result = await access(invocation, {
+    capability: storeAdd,
+    authority: Authority,
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+  })
+
+  assert.containSubset(result, {
+    name: "UnknownCapability",
+    message: `Encountered unknown capability: {"can":"store/write","with":"${alice.did()}"}`,
   })
 })
 
@@ -510,7 +536,52 @@ test("invalid claim / unavailable proof", async () => {
     message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
-    - Linked proof '${delegation.cid}' is not included nor available locally`,
+    - Linked proof '${delegation.cid}' is not included nor could be resolved`,
+  })
+})
+
+test("invalid claim / failed to resolve", async () => {
+  const delegation = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: bob,
+    audience: w3.authority,
+    capabilities: [
+      {
+        can: "store/add",
+        with: alice.did(),
+      },
+    ],
+    proofs: [delegation.cid],
+  })
+
+  const result = await access(invocation, {
+    authority: Authority,
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    resolve() {
+      throw new Error("Boom!")
+    },
+    capability: storeAdd,
+  })
+
+  assert.containSubset(result, {
+    name: "InvalidClaim",
+    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+  - Capability can not be (self) issued by '${bob.did()}'
+  - Can not derive from prf:0 - ${delegation.cid} because:
+    - Linked proof '${delegation.cid}' is not included nor could be resolved
+      - Provided resolve failed: Boom!`,
   })
 })
 

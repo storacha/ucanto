@@ -1,9 +1,10 @@
-import { capability, URI } from "./lib.js"
-import * as API from "./api.js"
-import { Failure } from "../error.js"
-import { the } from "../util.js"
+import { capability, derive, URI } from "../src/capability.js"
+import * as API from "../src/capability/api.js"
+import { Failure } from "../src/error.js"
+import { the } from "../src/util.js"
 import { CID } from "multiformats"
-import { test, assert } from "../../test/test.js"
+import { test, assert } from "./test.js"
+import { alice, bob, mallory } from "./fixtures.js"
 
 /**
  *
@@ -1033,4 +1034,187 @@ test("parse with caveats", () => {
     unknown: [],
     matches: [],
   })
+})
+
+test("and prune", () => {
+  const read = capability({
+    can: "file/read",
+    with: URI({ protocol: "file:" }),
+    derives: (claimed, delegated) =>
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
+      new Failure(
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+      ),
+  })
+
+  const write = capability({
+    can: "file/write",
+    with: URI({ protocol: "file:" }),
+    derives: (claimed, delegated) =>
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
+      new Failure(
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+      ),
+  })
+
+  const readwrite = read.and(write)
+  const v1 = readwrite.select(
+    delegate(
+      [
+        { can: "file/read", with: `file:///${alice.did()}/public` },
+        { can: "file/write", with: `file:///${bob.did()}/@alice` },
+      ],
+      { issuer: alice.authority }
+    )
+  )
+
+  assert.containSubset(v1, {
+    matches: [
+      {
+        value: [
+          { can: "file/read", with: `file:///${alice.did()}/public` },
+          { can: "file/write", with: `file:///${bob.did()}/@alice` },
+        ],
+      },
+    ],
+  })
+
+  const [match] = v1.matches
+  const matchwrite = match.prune({
+    canIssue: (capabality, issuer) =>
+      capabality.uri.href.startsWith(`file:///${issuer}`),
+  })
+
+  const v2 = matchwrite?.select(
+    delegate([{ can: "file/write", with: `file:///${bob.did()}/@alice` }], {
+      issuer: bob.authority,
+    })
+  )
+
+  assert.containSubset(v2, {
+    matches: [
+      {
+        value: [{ can: "file/write", with: `file:///${bob.did()}/@alice` }],
+      },
+    ],
+  })
+
+  const none = v2?.matches[0].prune({
+    canIssue: (capabality, issuer) =>
+      capabality.uri.href.startsWith(`file:///${issuer}`),
+  })
+
+  assert.equal(none, null)
+})
+
+test("toString methods", () => {
+  const read = capability({
+    can: "file/read",
+    with: URI({ protocol: "file:" }),
+    derives: (claimed, delegated) =>
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
+      new Failure(
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+      ),
+  })
+
+  const write = capability({
+    can: "file/write",
+    with: URI({ protocol: "file:" }),
+    derives: (claimed, delegated) =>
+      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
+      new Failure(
+        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+      ),
+  })
+
+  assert.equal(read.toString(), '{"can":"file/read"}')
+
+  {
+    // @ts-expect-error it needs more props but we can ignore that
+    const match = read.match({
+      capability: {
+        can: "file/read",
+        with: `file:///home/alice`,
+      },
+    })
+    assert.equal(
+      match.toString(),
+      `{"can":"file/read","with":"file:///home/alice"}`
+    )
+  }
+
+  const readwrite = read.and(write)
+  assert.equal(
+    readwrite.toString(),
+    '[{"can":"file/read"}, {"can":"file/write"}]'
+  )
+  {
+    const {
+      matches: [match],
+    } = readwrite.select(
+      delegate([
+        {
+          can: "file/read",
+          with: `file:///home/alice`,
+        },
+        {
+          can: "file/write",
+          with: `file:///home/alice`,
+        },
+      ])
+    )
+
+    assert.equal(
+      match.toString(),
+      '[{"can":"file/read","with":"file:///home/alice"}, {"can":"file/write","with":"file:///home/alice"}]'
+    )
+  }
+
+  const readorwrite = read.or(write)
+  assert.equal(
+    readorwrite.toString(),
+    '{"can":"file/read"}|{"can":"file/write"}'
+  )
+
+  const rw = readwrite.derive({
+    to: capability({
+      can: "file/read+write",
+      with: URI({ protocol: "file:" }),
+      derives: (claimed, delegated) =>
+        claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
+        new Failure(
+          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+        ),
+    }),
+    derives: (claimed, [read, write]) => {
+      if (!claimed.uri.pathname.startsWith(read.uri.pathname)) {
+        return new Failure(
+          `'${claimed.uri.href}' is not contained in '${read.uri.href}'`
+        )
+      } else if (!claimed.uri.pathname.startsWith(write.uri.pathname)) {
+        return new Failure(
+          `'${claimed.uri.href}' is not contained in '${write.uri.href}'`
+        )
+      } else {
+        return true
+      }
+    },
+  })
+
+  assert.equal(rw.toString(), '{"can":"file/read+write"}')
+  {
+    // @ts-expect-error it needs more props but we can ignore that
+    const match = rw.match({
+      capability: {
+        can: "file/read+write",
+        with: `file:///home/alice`,
+      },
+    })
+
+    assert.equal(
+      match.toString(),
+      `{"can":"file/read+write","with":"file:///home/alice"}`
+    )
+  }
 })

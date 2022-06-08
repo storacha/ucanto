@@ -1,12 +1,13 @@
-import * as API from "./api.js"
-import { entries, combine, intersection } from "./util.js"
+import * as API from "./capability/api.js"
+import { entries, combine, intersection } from "./capability/util.js"
 import {
   EscalatedCapability,
   MalformedCapability,
   UnknownCapability,
   DelegationError as MatchError,
-} from "../error.js"
-export * from "./api.js"
+  Failure,
+} from "./error.js"
+export * from "./capability/api.js"
 
 /**
  * @template {API.Ability} A
@@ -39,6 +40,26 @@ export const and = (...selectors) => new And(selectors)
  * @returns {API.Capability<API.DerivedMatch<T, M>>}
  */
 export const derive = ({ from, to, derives }) => new Derive(from, to, derives)
+
+/**
+ * @template {`${string}:`} Protocol
+ * @param {{protocol?:Protocol}} options
+ * @return {(url:string) => API.Result<URL & {protocol:Protocol}, API.Problem>}
+ */
+export const URI =
+  ({ protocol }) =>
+  href => {
+    try {
+      const url = new URL(href)
+      if (protocol != null && url.protocol !== protocol) {
+        return new Failure(`Expected ${protocol} URI instead got ${url.href}`)
+      } else {
+        return /** @type {URL & {protocol:Protocol}} */ (url)
+      }
+    } catch (error) {
+      return new Failure(/** @type {Error} */ (error).message)
+    }
+  }
 
 /**
  * @template {API.Match} M
