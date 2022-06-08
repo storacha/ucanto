@@ -1,24 +1,49 @@
 import * as UCAN from "@ipld/dag-ucan"
-import type { Capability } from "@ipld/dag-ucan"
+import type { Ability, Capability, Resource } from "@ipld/dag-ucan"
 import type {
-  InvocationView,
+  Invocation,
   Delegation,
   Identity,
   Authority,
+  Result,
+  AuthorityParser,
 } from "@ucanto/interface"
 
-export type { Capability }
+import type {
+  Matcher,
+  Match,
+  Selector,
+  Source,
+  MatchError,
+  ParsedCapability,
+  Capability as CapabilityParser,
+} from "./v3/api.js"
+
+export type {
+  Capability,
+  Ability,
+  Source,
+  Resource,
+  Matcher,
+  Match,
+  Selector,
+  ParsedCapability,
+}
 export * from "@ucanto/interface"
 
 /**
  * Error produced when accessing a capability
  */
-export type DenyAccess<C> = InvalidProof | InvalidCapability | InvalidClaim<C>
+export type DenyAccess<C> = InvalidProof | InvalidCapability | DelegationError
 
 /**
  * Error produces by invalid proof
  */
-export type InvalidProof = Expired | NotValidBefore | InvalidSignature
+export type InvalidProof =
+  | Expired
+  | NotValidBefore
+  | InvalidSignature
+  | InvalidAudience
 
 /**
  * Error produced when parsing capabilities
@@ -28,41 +53,36 @@ export type InvalidCapability = UnknownCapability | MalformedCapability
 export type ProofError<C> =
   | UnavailableProof
   | InvalidProof
-  | InvalidAudience
   | InvalidClaim<C>
   | EscalatedClaim<C>
   | InvalidEvidence<C>
 
-export interface InvalidAudience extends Error {
-  readonly error: this
+export interface InvalidAudience extends Problem {
   readonly name: "InvalidAudience"
   readonly audience: Identity
   readonly delegation: Delegation
 }
 
-export interface Expired extends Error {
+export interface Expired extends Problem {
   readonly name: "Expired"
-  readonly error: this
   readonly delegation: Delegation
   readonly expiredAt: number
 }
 
-export interface NotValidBefore extends Error {
+export interface NotValidBefore extends Problem {
   readonly name: "NotValidBefore"
   readonly delegation: Delegation
   readonly validAt: number
-
-  readonly error: this
 }
 
-export interface Claim<C> {
-  capability: C
-  issuer: Authority
-}
+// export interface Claim<C> {
+//   capability: C
+//   issuer: Authority
+// }
 
 /**
  * Function checks if the claimed capability is met by given set of capaibilites. Note that function takes capability
- * views as opposed to raw capaibilites (This implies that raw JSON capabilites were succesfully parsed into known
+ * views as opposed to raw capaibilites (This implies that raw JSON capabilities were succesfully parsed into known
  * capability with specific semantics).
  *
  * Function returns either succesfull sets of proofs that support claimed capability or a set of escalation errors.
@@ -91,22 +111,6 @@ export interface CapabilityView<C extends UCAN.Capability = UCAN.Capability> {
   capability: C
 }
 
-export interface UCANView<C extends CapabilityView> {
-  ucan: UCAN.View
-  capabilityParser: CapabilityParser<C>
-  capabilities: C[]
-
-  // capabilities that parser was unable to parse
-  unkownCapabilities: IterableIterator<UCAN.Capability>
-}
-
-export interface CapabilityParser<C extends {}> {
-  /**
-   * Returns either succesfully parsed capability or null for unknown capability
-   */
-  (capability: UCAN.Capability): Result<C, InvalidCapability>
-}
-
 /**
  * Proof of a claimed capability, contains claimed capability (view) and subset of available
  * capaibilites that satisfy it.
@@ -116,9 +120,39 @@ export interface Evidence<C> {
   capabilities: C[]
 }
 
+export interface Problem extends Error {
+  error: true
+}
+
+export interface DelegationError extends Problem {
+  name: "InvalidClaim"
+  causes: (InvalidCapability | EscalatedDelegation | DelegationError)[]
+
+  cause: InvalidCapability | EscalatedDelegation | DelegationError
+}
+
+export interface EscalatedDelegation extends Problem {
+  name: "EscalatedCapability"
+  claimed: import("./v3/api").ParsedCapability
+  delegated: object
+  cause: Problem
+}
+
+export interface InvalidDelegation extends Problem {
+  name: "InvalidDelegation"
+  claimed: import("./v3/api").Match
+  delegated: object
+  cause: MalformedCapability | InvalidDelegation | EscalatedDelegation
+}
+
+export interface EscalatedCapability extends Problem {
+  name: "EscalatedCapability"
+  capability: Capability
+  cause: Problem
+}
 export interface EscalatedClaim<C> extends Error {
   name: "EscalatedClaim"
-  error: this
+  error: true
   esclacations: EscalationError<C>[]
 }
 
@@ -127,9 +161,8 @@ export interface EscalatedClaim<C> extends Error {
  * contstraint violations.
  */
 
-export interface EscalationError<C> extends Error {
+export interface EscalationError<C> extends Problem {
   readonly name: "EscalationError"
-  readonly error: this
 
   /**
    * claimed capability
@@ -150,8 +183,7 @@ export interface EscalationError<C> extends Error {
 /**
  * Represents specific constraint violation by the claimed capability.
  */
-export interface ConstraintViolationError<C> extends Error {
-  readonly error: this
+export interface ConstraintViolationError<C> extends Problem {
   readonly name: "ConstraintViolationError"
   /**
    * Constraint that was violated.
@@ -173,18 +205,17 @@ export interface Constraint<C> {
   readonly value: unknown
 }
 
-export interface InvalidClaim<C> extends Error {
+export interface InvalidClaim<C> extends Problem {
   readonly name: "InvalidClaim"
-  readonly error: this
   readonly capability: C
   readonly delegation: Delegation
 
-  readonly proofs: ProofError<C>[]
+  readonly errors: DelegationError[]
+  readonly unknown: Capability[]
 }
 
 export interface InvalidEvidence<C> extends Error {
   readonly name: "InvalidEvidence"
-  readonly error: this
   readonly evidence: Evidence<C>
   readonly delegation: Delegation
 
@@ -223,30 +254,25 @@ export interface UnfoundedClaim<C> {
   readonly delegation: Delegation
 }
 
-export interface ViolatingClaim<C> extends Error {
-  readonly error: this
+export interface ViolatingClaim<C> extends Problem {
   readonly name: "ViolatingClaim"
   readonly claim: C
   readonly escalates: EscalationError<C>[]
 }
 
-export interface InvalidSignature extends Error {
-  readonly error: this
+export interface InvalidSignature extends Problem {
   readonly name: "InvalidSignature"
   readonly issuer: Identity
   readonly audience: Identity
   readonly delegation: Delegation
 }
 
-export interface UnavailableProof extends Error {
+export interface UnavailableProof extends Problem {
   readonly name: "UnavailableProof"
   readonly link: UCAN.Proof
-
-  readonly error: this
 }
 
-export interface WrongAudience extends Error {
-  readonly error: this
+export interface WrongAudience extends Problem {
   readonly name: "WrongAudience"
   readonly issuer: Identity
   readonly audience: Identity
@@ -265,25 +291,34 @@ export interface Authorization<C> {
   proofs: Authorization<C>[]
 }
 
-export interface UnknownCapability extends Error {
-  error: this
+export interface Auth<C extends ParsedCapability> {
+  match: Match<C>
+  proof: Auth<C> | null
+}
+
+export interface UnknownCapability extends Problem {
+  name: "UnknownCapability"
   capability: UCAN.Capability
 }
 
-export interface MalformedCapability extends Error {
-  error: this
+export interface MalformedCapability extends Problem {
+  name: "MalformedCapability"
   capability: UCAN.Capability
 }
 
 export type Time = number
 
-export interface ValidationOptions<C extends object> {
+export interface CanIssue {
   /**
    * Informs validator whether given capability can be issued by a given
    * DID or whether it needs to be delegated to the issuer.
    */
-  canIssue: (capability: C, issuer: UCAN.DID) => boolean
+  canIssue(capability: ParsedCapability, issuer: UCAN.DID): boolean
+}
 
+export interface ValidationOptions<
+  C extends ParsedCapability = ParsedCapability
+> extends CanIssue {
   /**
    * You can provide default set of capabilities per did, which is used to
    * validate whether claim is satisfied by `{ with: my:*, can: "*" }`. If
@@ -301,49 +336,18 @@ export interface ValidationOptions<C extends object> {
     proof: UCAN.Proof
   ) => UCAN.Await<Result<Delegation, UnavailableProof>>
 
-  /**
-   * Capability parser that is used to parse generic capabilities into specific
-   * ones that checker can be run against.
-   */
-  parse: CapabilityParser<C>
-
-  /**
-   * Function which checks whether claimed capabily is met by provided
-   * capability set. Should eithter return iterable evidence paths that
-   * could be explored by a validator or a ClaimError.
-   */
-  check: (
-    claim: C,
-    capabilities: C[]
-  ) => Result<IterableIterator<Evidence<C>>, EscalatedClaim<C>>
+  authority: AuthorityParser
+  capability: CapabilityParser<Match<C>>
 }
 
 export interface Validate {
-  <C extends object>(
-    invocation: InvocationView<Capability>,
+  <C extends ParsedCapability>(
+    invocation: Invocation<Capability>,
     options: ValidationOptions<C>
   ): UCAN.Await<Result<Access<C>, InvalidClaim<C> | EscalatedClaim<C>>>
 }
 
-interface Matcher {
-  match<T, U>(capability: Capability): CapabilityHandler<T, U>
-}
-interface CapabilityHandler<T, U> {
-  /**
-   * @param {API.Capability} capability
-   */
-  match(capability: Capability): Result<T, InvalidCapability>
-  parse(capability: Capability): Result<U, InvalidCapability>
-  check(claim: T, capabilities: U[]): Result<U[][], CheckError<T, U>>
-}
-
-export interface CheckError<T, U> extends Error {
-  error: this
+export interface CheckError<T, U> extends Problem {
   claim: T
-  errors: { capabilites: U[]; violations: ViolatingClaim<U>[] }[]
+  errors: { capabilities: U[]; violations: ViolatingClaim<U>[] }[]
 }
-
-export type Result<
-  T extends NonNullable<unknown>,
-  X extends { error: Error }
-> = (T & { error?: undefined }) | X

@@ -3,9 +3,13 @@ import { the } from "./util.js"
 import { CID } from "multiformats"
 import * as Digest from "multiformats/hashes/digest"
 
+/**
+ * @implements {API.Problem}
+ */
 export class Failure extends Error {
+  /** @type {true} */
   get error() {
-    return this
+    return true
   }
   describe() {
     return this.name
@@ -14,6 +18,105 @@ export class Failure extends Error {
     return this.describe()
   }
 }
+
+/**
+ * @implements {API.InvalidDelegation}
+ */
+export class InvalidDelegation extends Failure {
+  /**
+   * @param {import('./v3/api').Match} claimed
+   * @param {object} delegated
+   * @param {API.EscalatedDelegation|API.MalformedCapability|API.InvalidDelegation} cause
+   */
+  constructor(claimed, delegated, cause) {
+    super()
+    this.claimed = claimed
+    this.delegated = delegated
+    this.cause = cause
+    /** @type {"InvalidDelegation"} */
+    this.name = "InvalidDelegation"
+  }
+  describe() {
+    return `Can not derive ${this.claimed} from ${this.delegated}, ${this.cause.message}`
+  }
+}
+
+export class EscalatedCapability extends Failure {
+  /**
+   * @param {import('./v3/api').ParsedCapability} claimed
+   * @param {object} delegated
+   * @param {API.Problem} cause
+   */
+  constructor(claimed, delegated, cause) {
+    super()
+    this.claimed = claimed
+    this.delegated = delegated
+    this.cause = cause
+    this.name = the("EscalatedCapability")
+  }
+  describe() {
+    return `Constraint violation: ${this.cause.message}`
+  }
+}
+
+/**
+ * @implements {API.DelegationError}
+ */
+export class DelegationError extends Failure {
+  /**
+   * @param {(API.InvalidCapability | API.EscalatedDelegation | API.DelegationError)[]} causes
+   * @param {object} context
+   */
+  constructor(causes, context) {
+    super()
+    this.name = the("InvalidClaim")
+    this.causes = causes
+    this.context = context
+  }
+  describe() {
+    return [
+      `Can not derive ${this.context} from delegated capabilities:`,
+      ...this.causes.map(cause => li(cause.message)),
+    ].join("\n")
+  }
+
+  /**
+   * @type {API.InvalidCapability | API.EscalatedDelegation | API.DelegationError}
+   */
+  get cause() {
+    if (this.causes.length !== 1) {
+      return this
+    } else {
+      const [cause] = this.causes
+      const value = cause.name === "InvalidClaim" ? cause.cause : cause
+      Object.defineProperties(this, { cause: { value } })
+      return value
+    }
+  }
+}
+
+// /**
+//  * @implements {API.InvalidDelegation}
+//  */
+// export class InvalidDelegation extends Failure {
+//   /**
+//    * @param {API.InvalidCapability | API.InvalidDelegation} cause
+//    * @param {object} context
+//    */
+//   constructor(cause, context) {
+//     super()
+//     this.name = the("InvalidDelegation")
+//     this.cause = cause
+//     this.context = context
+//   }
+//   describe() {
+//     return [
+//       `Can not derive ${this.context} from delegated capabilities`,
+//       li(this.cause.message),
+//     ].join("\n")
+//   }
+// }
+
 /**
  * @template C
  * @implements {API.EscalationError<C>}
@@ -43,7 +146,7 @@ export class EscalationError extends Failure {
 }
 
 /**
- * @template {API.Capability} C
+ * @template C
  * @implements {API.ConstraintViolationError<C>}
  */
 export class ConstraintViolationError extends Failure {
@@ -103,7 +206,6 @@ export class InvalidClaim extends Failure {
   constructor(capability, delegation, proofs) {
     super()
     this.name = the("InvalidClaim")
-    this.ok = the(false)
     this.capability = capability
     this.delegation = delegation
     this.proofs = proofs
@@ -132,16 +234,16 @@ export class NoEvidence extends Failure {
   /**
    * @param {C} capability
    * @param {API.Delegation} delegation
-   * @param {API.InvalidCapability[]} errors
-   * @param {API.ProofError<C>[]} proofs
+   * @param {API.DelegationError[]} errors
+   * @param {API.Capability[]} unknown
    */
-  constructor(capability, delegation, errors, proofs = []) {
+  constructor(capability, delegation, errors, unknown) {
     super()
     this.name = the("InvalidClaim")
     this.capability = capability
     this.delegation = delegation
     this.errors = errors
-    this.proofs = proofs
+    this.unknown = unknown
   }
   describe() {
     const capability = format(this.capability)
@@ -172,7 +274,7 @@ export class InvalidEvidence extends Failure {
   }
   describe() {
     return [
-      `Claimed capability requires delegated capabilites:`,
+      `Claimed capability requires delegated capabilities:`,
       ...this.evidence.capabilities.map($ => li(format($))),
       `Which could not be satifised because:`,
       ...this.proofs.map($ => li($.message)),
@@ -224,7 +326,7 @@ export class UnavailableProof extends Failure {
  */
 export class InvalidAudience extends Failure {
   /**
-   * @param {API.UCAN.Audience} audience
+   * @param {API.UCAN.Identity} audience
    * @param {API.Delegation} delegation
    */
   constructor(audience, delegation) {
@@ -244,18 +346,20 @@ export class InvalidAudience extends Failure {
 export class MalformedCapability extends Failure {
   /**
    * @param {API.Capability} capability
-   * @param {Failure[]} problems
+   * @param {API.Problem} cause
    */
-  constructor(capability, problems = []) {
+  constructor(capability, cause) {
     super()
     this.name = the("MalformedCapability")
     this.capability = capability
-    this.problems = problems
+    this.cause = cause
   }
   describe() {
     return [
-      `Encountered malformed capability: ${format(this.capability)}`,
-      ...this.problems.map($ => li($.message)),
+      `Encountered malformed '${this.capability.can}' capability: ${format(
+        this.capability
+      )}`,
+      li(this.cause.message),
     ].join("\n")
   }
 }
@@ -270,7 +374,7 @@ export class UnknownCapability extends Failure {
     this.capability = capability
   }
   describe() {
-    return `Encountered unkown capability: ${format(this.capability)}`
+    return `Encountered unknown capability: ${format(this.capability)}`
   }
 }
 
@@ -354,10 +458,10 @@ const format = (capability, space) =>
 /**
  * @param {string} message
  */
-const indent = (message, indent = "  ") =>
+export const indent = (message, indent = "  ") =>
   `${indent}${message.split("\n").join(`\n${indent}`)}`
 
 /**
  * @param {string} message
  */
-const li = message => indent(`- ${message}`)
+export const li = message => indent(`- ${message}`)

@@ -1,16 +1,9 @@
-import test from "ava"
 import { capability, URI } from "./lib.js"
 import * as API from "./api.js"
 import { Failure } from "../error.js"
 import { the } from "../util.js"
 import { CID } from "multiformats"
-
-/**
- * @param {unknown} value
- * @returns {any}
- */
-const like = value =>
-  Array.isArray(value) ? { ...value, length: value.length } : value
+import { test, assert } from "../../test/test.js"
 
 /**
  *
@@ -26,7 +19,7 @@ const delegate = (capabilities, delegation = {}) =>
     index,
   }))
 
-test("capability selects matches", assert => {
+test("capability selects matches", () => {
   const read = capability({
     can: "file/read",
     with: URI({ protocol: "file:" }),
@@ -50,8 +43,8 @@ test("capability selects matches", assert => {
 
   const v1 = read.select(d1)
 
-  assert.like(v1, {
-    matches: like([
+  assert.containSubset(v1, {
+    matches: [
       {
         source: [d1[2]],
         value: {
@@ -59,15 +52,15 @@ test("capability selects matches", assert => {
           uri: { href: "file:///home/zAlice/photos" },
         },
       },
-    ]),
-    errors: like([
+    ],
+    errors: [
       {
         name: "InvalidClaim",
         context: {
           can: "file/read",
           value: undefined,
         },
-        causes: like([
+        causes: [
           {
             name: "MalformedCapability",
             capability: { can: "file/read", with: "space://zAlice" },
@@ -75,16 +68,16 @@ test("capability selects matches", assert => {
               message: "Expected file: URI instead got space://zAlice",
             },
           },
-        ]),
+        ],
       },
-    ]),
-    unknown: like([
+    ],
+    unknown: [
       { can: "file/write", with: "file:///home/zAlice/" },
       {
         can: "file/read+write",
         with: "file:///home/zAlice",
       },
-    ]),
+    ],
   })
 
   const [match] = v1.matches
@@ -96,8 +89,8 @@ test("capability selects matches", assert => {
   ])
   const v2 = match.select(d2)
 
-  assert.like(v2, {
-    matches: like([
+  assert.containSubset(v2, {
+    matches: [
       {
         source: [d2[1]],
         value: {
@@ -105,14 +98,14 @@ test("capability selects matches", assert => {
           uri: { href: "file:///home/zAlice/" },
         },
       },
-    ]),
-    unknown: like([
+    ],
+    unknown: [
       {
         can: "file/read+write",
         with: "file:///home/zAlice",
       },
-    ]),
-    errors: like([
+    ],
+    errors: [
       {
         name: "InvalidClaim",
         context: {
@@ -122,7 +115,7 @@ test("capability selects matches", assert => {
             caveats: {},
           },
         },
-        causes: like([
+        causes: [
           {
             name: "EscalatedCapability",
             claimed: {
@@ -137,7 +130,7 @@ test("capability selects matches", assert => {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zAlice/photos/public'`,
             },
           },
-        ]),
+        ],
       },
       {
         name: "InvalidClaim",
@@ -148,7 +141,7 @@ test("capability selects matches", assert => {
             caveats: {},
           },
         },
-        causes: like([
+        causes: [
           {
             name: "EscalatedCapability",
             claimed: {
@@ -163,13 +156,13 @@ test("capability selects matches", assert => {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zBob'`,
             },
           },
-        ]),
+        ],
       },
-    ]),
+    ],
   })
 })
 
-test("derived capability chain", assert => {
+test("derived capability chain", () => {
   const verify = capability({
     can: "account/verify",
     with: URI({ protocol: "mailto:" }),
@@ -222,10 +215,10 @@ test("derived capability chain", assert => {
 
   const regs = register.select(d1)
 
-  assert.like(
+  assert.containSubset(
     regs,
     {
-      matches: like([
+      matches: [
         {
           source: [d1[0]],
           value: {
@@ -235,7 +228,7 @@ test("derived capability chain", assert => {
             },
           },
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
@@ -249,15 +242,15 @@ test("derived capability chain", assert => {
     },
   ])
 
-  assert.like(register.select(d2), {
-    matches: like([]),
-    errors: like([
+  assert.containSubset(register.select(d2), {
+    matches: [],
+    errors: [
       {
         name: "InvalidClaim",
         context: {
           can: "account/register",
         },
-        causes: like([
+        causes: [
           {
             name: "MalformedCapability",
             capability: {
@@ -268,10 +261,10 @@ test("derived capability chain", assert => {
               message: `Expected mailto: URI instead got did:key:zAlice`,
             },
           },
-        ]),
+        ],
       },
-    ]),
-    unknown: like([]),
+    ],
+    unknown: [],
   })
 
   const [reg] = regs.matches
@@ -283,10 +276,10 @@ test("derived capability chain", assert => {
     },
   ])
 
-  assert.like(
+  assert.containSubset(
     reg.select(d3),
     {
-      matches: like([
+      matches: [
         {
           source: [d3[0]],
           value: {
@@ -296,7 +289,7 @@ test("derived capability chain", assert => {
             },
           },
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
@@ -310,12 +303,12 @@ test("derived capability chain", assert => {
     },
   ])
 
-  assert.like(
+  assert.containSubset(
     reg.select(d4),
     {
       matches: [],
       unknown: [],
-      errors: like([
+      errors: [
         {
           name: "InvalidClaim",
           context: {
@@ -324,7 +317,7 @@ test("derived capability chain", assert => {
               uri: { href: "mailto:zAlice@web.mail" },
             },
           },
-          causes: like([
+          causes: [
             {
               name: "EscalatedCapability",
               claimed: {
@@ -339,9 +332,9 @@ test("derived capability chain", assert => {
                 message: `'mailto:zAlice@web.mail' != 'mailto:bob@web.mail'`,
               },
             },
-          ]),
+          ],
         },
-      ]),
+      ],
     },
     "does not match on different email"
   )
@@ -353,17 +346,17 @@ test("derived capability chain", assert => {
     },
   ])
 
-  assert.like(
+  assert.containSubset(
     reg.select(d5),
     {
-      matches: like([
+      matches: [
         {
           value: {
             can: "account/register",
             uri: { href: "mailto:zAlice@web.mail" },
           },
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
@@ -380,7 +373,7 @@ test("derived capability chain", assert => {
   }
 
   const d6 = delegate([verification])
-  assert.like(
+  assert.containSubset(
     register
       .select(delegate([registration]))
       .matches[0].select(delegate([registration]))
@@ -389,7 +382,7 @@ test("derived capability chain", assert => {
       .matches[0].select(delegate([verification]))
       .matches[0].select(d6),
     {
-      matches: like([
+      matches: [
         {
           source: [d6[0]],
           value: {
@@ -397,14 +390,14 @@ test("derived capability chain", assert => {
             uri: { href: "mailto:zAlice@web.mail" },
           },
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
     "derived capability is recursive"
   )
 
-  assert.like(
+  assert.containSubset(
     register
       .select(delegate([registration]))
       .matches[0].select(delegate([verification]))
@@ -418,7 +411,7 @@ test("derived capability chain", assert => {
   )
 })
 
-test("capability amplification", assert => {
+test("capability amplification", () => {
   const read = capability({
     can: "file/read",
     with: URI({ protocol: "file:" }),
@@ -469,7 +462,7 @@ test("capability amplification", assert => {
     { can: "file/write", with: "file:///home/zAlice/" },
   ])
 
-  assert.like(
+  assert.containSubset(
     readwrite.select(d1),
     {
       matches: [],
@@ -489,10 +482,10 @@ test("capability amplification", assert => {
 
   const selected = readwrite.select(d2)
 
-  assert.like(
+  assert.containSubset(
     selected,
     {
-      matches: like([
+      matches: [
         {
           source: [d2[0]],
           value: {
@@ -500,7 +493,7 @@ test("capability amplification", assert => {
             uri: { href: "file:///home/zAlice/public" },
           },
         },
-      ]),
+      ],
       errors: [],
       unknown: [{ can: "file/write", with: "file:///home/zAlice/" }],
     },
@@ -513,10 +506,10 @@ test("capability amplification", assert => {
     { can: "file/read+write", with: "file:///home/zAlice/public" },
   ])
 
-  assert.like(
+  assert.containSubset(
     rw.select(d3),
     {
-      matches: like([
+      matches: [
         {
           source: [d3[0]],
           value: {
@@ -524,7 +517,7 @@ test("capability amplification", assert => {
             uri: { href: "file:///home/zAlice/public" },
           },
         },
-      ]),
+      ],
       errors: [],
       unknown: [],
     },
@@ -535,40 +528,39 @@ test("capability amplification", assert => {
     { can: "file/read+write", with: "file:///home/zAlice/public/photos" },
   ])
 
-  assert.like(
+  assert.containSubset(
     rw.select(d4),
     {
       matches: [],
       unknown: [],
-      errors: like([
+      errors: [
         {
-          error: {
-            name: "InvalidClaim",
-            context: {
-              value: {
+          error: true,
+          name: "InvalidClaim",
+          context: {
+            value: {
+              can: "file/read+write",
+              uri: { href: "file:///home/zAlice/public" },
+            },
+          },
+          causes: [
+            {
+              name: "EscalatedCapability",
+              claimed: {
                 can: "file/read+write",
                 uri: { href: "file:///home/zAlice/public" },
               },
-            },
-            causes: like([
-              {
-                name: "EscalatedCapability",
-                claimed: {
-                  can: "file/read+write",
-                  uri: { href: "file:///home/zAlice/public" },
-                },
-                delegated: {
-                  can: "file/read+write",
-                  uri: { href: "file:///home/zAlice/public/photos" },
-                },
-                cause: {
-                  message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
-                },
+              delegated: {
+                can: "file/read+write",
+                uri: { href: "file:///home/zAlice/public/photos" },
               },
-            ]),
-          },
+              cause: {
+                message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
+              },
+            },
+          ],
         },
-      ]),
+      ],
     },
     "can not derive from escalated path"
   )
@@ -577,10 +569,10 @@ test("capability amplification", assert => {
     { can: "file/read+write", with: "file:///home/zAlice/" },
   ])
 
-  assert.like(
+  assert.containSubset(
     rw.select(d5),
     {
-      matches: like([
+      matches: [
         {
           source: [d5[0]],
           value: {
@@ -588,7 +580,7 @@ test("capability amplification", assert => {
             uri: { href: "file:///home/zAlice/" },
           },
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
@@ -602,13 +594,13 @@ test("capability amplification", assert => {
 
   const rnw = rw.select(d6)
 
-  assert.like(
+  assert.containSubset(
     rnw,
     {
-      matches: like([
+      matches: [
         {
           source: [d6[0], d6[1]],
-          value: like([
+          value: [
             {
               can: "file/read",
               uri: { href: "file:///home/zAlice/" },
@@ -617,9 +609,9 @@ test("capability amplification", assert => {
               can: "file/write",
               uri: { href: "file:///home/zAlice/public" },
             },
-          ]),
+          ],
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
@@ -633,13 +625,13 @@ test("capability amplification", assert => {
     { can: "file/write", with: "file:///home/zAlice/" },
   ])
 
-  assert.like(
+  assert.containSubset(
     reandnwrite.select(d7),
     {
-      matches: like([
+      matches: [
         {
           source: [d7[0], d7[1]],
-          value: like([
+          value: [
             {
               can: "file/read",
               uri: { href: "file:///home/zAlice/" },
@@ -648,9 +640,9 @@ test("capability amplification", assert => {
               can: "file/write",
               uri: { href: "file:///home/zAlice/" },
             },
-          ]),
+          ],
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
@@ -662,12 +654,12 @@ test("capability amplification", assert => {
     { can: "file/write", with: "file:///home/zAlice/public" },
   ])
 
-  assert.like(
+  assert.containSubset(
     rw.select(d8),
     {
       matches: [],
       unknown: [],
-      errors: like([
+      errors: [
         {
           name: "InvalidClaim",
           context: {
@@ -676,14 +668,14 @@ test("capability amplification", assert => {
               uri: { href: "file:///home/zAlice/public" },
             },
           },
-          causes: like([
+          causes: [
             {
               name: "EscalatedCapability",
               claimed: {
                 can: "file/read+write",
                 uri: { href: "file:///home/zAlice/public" },
               },
-              delegated: like([
+              delegated: [
                 {
                   can: "file/read",
                   uri: { href: "file:///home/zAlice/public/photos/" },
@@ -692,14 +684,14 @@ test("capability amplification", assert => {
                   can: "file/write",
                   uri: { href: "file:///home/zAlice/public" },
                 },
-              ]),
+              ],
               cause: {
                 message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos/'`,
               },
             },
-          ]),
+          ],
         },
-      ]),
+      ],
     },
     "can derive amplification"
   )
@@ -711,13 +703,13 @@ test("capability amplification", assert => {
 
   const [r2] = delegate([{ can: "file/read", with: "file:///home/" }])
 
-  assert.like(
+  assert.containSubset(
     reandnwrite.select([r1, w1, r2]),
     {
-      matches: like([
+      matches: [
         {
           source: [r1, w1],
-          value: like([
+          value: [
             {
               can: "file/read",
               uri: { href: "file:///home/zAlice/" },
@@ -726,11 +718,11 @@ test("capability amplification", assert => {
               can: "file/write",
               uri: { href: "file:///home/zAlice/" },
             },
-          ]),
+          ],
         },
         {
           source: [r2, w1],
-          value: like([
+          value: [
             {
               can: "file/read",
               uri: { href: "file:///home/" },
@@ -739,9 +731,9 @@ test("capability amplification", assert => {
               can: "file/write",
               uri: { href: "file:///home/zAlice/" },
             },
-          ]),
+          ],
         },
-      ]),
+      ],
       unknown: [],
       errors: [],
     },
@@ -749,7 +741,7 @@ test("capability amplification", assert => {
   )
 })
 
-test("capability or combinator", assert => {
+test("capability or combinator", () => {
   const read = capability({
     can: "file/read",
     with: URI({ protocol: "file:" }),
@@ -779,10 +771,10 @@ test("capability or combinator", assert => {
 
   const selection = readwrite.select([r, w])
 
-  assert.like(
+  assert.containSubset(
     selection,
     {
-      matches: like([
+      matches: [
         {
           source: [r],
           value: {
@@ -797,7 +789,7 @@ test("capability or combinator", assert => {
             uri: { href: "file:///home/zAlice/" },
           },
         },
-      ]),
+      ],
       errors: [],
       unknown: [],
     },
@@ -805,7 +797,7 @@ test("capability or combinator", assert => {
   )
 })
 
-test("parse with caveats", assert => {
+test("parse with caveats", () => {
   const storeAdd = capability({
     can: "store/add",
     with: URI({ protocol: "did:" }),
@@ -847,16 +839,16 @@ test("parse with caveats", assert => {
     delegate([{ can: "store/add", with: "did:key:zAlice", link: 5 }])
   )
 
-  assert.like(v1, {
+  assert.containSubset(v1, {
     matches: [],
     unknown: [],
-    errors: like([
+    errors: [
       {
         name: "InvalidClaim",
         context: {
           can: "store/add",
         },
-        causes: like([
+        causes: [
           {
             name: "MalformedCapability",
             capability: { can: "store/add", with: "did:key:zAlice", link: 5 },
@@ -864,19 +856,19 @@ test("parse with caveats", assert => {
               message: "Expected 'link' to be a CID instead of 5",
             },
           },
-        ]),
+        ],
       },
-    ]),
+    ],
   })
 
   const v2 = storeAdd.select(
     delegate([{ can: "store/add", with: "did:key:zAlice" }])
   )
 
-  assert.like(v2, {
+  assert.containSubset(v2, {
     unknown: [],
     errors: [],
-    matches: like([
+    matches: [
       {
         value: {
           can: "store/add",
@@ -884,7 +876,7 @@ test("parse with caveats", assert => {
           caveats: {},
         },
       },
-    ]),
+    ],
   })
 
   const [match] = v2.matches
@@ -901,8 +893,8 @@ test("parse with caveats", assert => {
     ])
   )
 
-  assert.like(v3, {
-    errors: like([
+  assert.containSubset(v3, {
+    errors: [
       {
         name: "InvalidClaim",
         context: {
@@ -912,7 +904,7 @@ test("parse with caveats", assert => {
             caveats: {},
           },
         },
-        causes: like([
+        causes: [
           {
             name: "EscalatedCapability",
             claimed: {
@@ -933,9 +925,9 @@ test("parse with caveats", assert => {
               message: `Link violates imposed bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4 constraint`,
             },
           },
-        ]),
+        ],
       },
-    ]),
+    ],
     unknown: [],
     matches: [],
   })
@@ -965,10 +957,10 @@ test("parse with caveats", assert => {
     ])
   )
 
-  assert.like(v5, {
+  assert.containSubset(v5, {
     unknown: [],
     errors: [],
-    matches: like([
+    matches: [
       {
         value: {
           can: "store/add",
@@ -980,7 +972,7 @@ test("parse with caveats", assert => {
           },
         },
       },
-    ]),
+    ],
   })
 
   const v6 = match2.select(
@@ -995,8 +987,8 @@ test("parse with caveats", assert => {
     ])
   )
 
-  assert.like(v6, {
-    errors: like([
+  assert.containSubset(v6, {
+    errors: [
       {
         name: "InvalidClaim",
         context: {
@@ -1010,7 +1002,7 @@ test("parse with caveats", assert => {
             },
           },
         },
-        causes: like([
+        causes: [
           {
             name: "EscalatedCapability",
             claimed: {
@@ -1035,9 +1027,9 @@ test("parse with caveats", assert => {
               message: `Link bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4 violates imposed bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny constraint`,
             },
           },
-        ]),
+        ],
       },
-    ]),
+    ],
     unknown: [],
     matches: [],
   })

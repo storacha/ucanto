@@ -9,4 +9,4 @@ export interface Write
 export interface ReadWrite
   extends API.Capability<"file/read+write", `file://${string}`> {}
 
-export type Capability = Read | Write | ReadWrite
+export type Any = Read | Write | ReadWrite

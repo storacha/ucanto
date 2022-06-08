@@ -43,19 +43,15 @@ export const check = (claim, capabilities) => {
  * @param {API.Read|API.Write} claim
  * @param {API.Capability[]} capabilities
  */
-export const checkDelegated = (claim, capabilities) =>
-  solve(claim, capabilities, {
-    match: (claim, capability) => {
-      return claim.can === capability.can
-    },
-    check: (claim, capability) => {
-      const violations = []
-      if (!matches(claim, capability)) {
-        violations.push("with")
-      }
-      return violations
-    },
-  })
+export const checkDelegated = (claim, capabilities) => {
+  const result = []
+  for (const capabality of capabilities) {
+    if (claim.can === capabality.can && matches(claim, capabality)) {
+      result.push([capabality])
+    }
+  }
+  return result
+}
 
 /**
  * @param {API.ReadWrite} claim

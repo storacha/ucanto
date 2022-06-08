@@ -1,16 +1,5 @@
-export const ok =
-  /** @type {<Args extends []|[unknown]>(...args:Args) => Args extends [infer T] ? {ok:true, value:T} : {ok:true, value:null}}} */ (
-    value => (value == undefined ? Ok : { ok: true, value })
-  )
-
-const Ok = { ok: true, value: null }
-
 /**
- * @template T
- * @typedef {[]|[T]|[T,T]|[T,T,T]|[T,T,T,T]|[T,T,T,T,T]|[T,T,T,T,T,T]|[T,T,T,T,T,T]} Tuple
- */
-/**
- * @template {string|boolean|number|Tuple<unknown>} T
+ * @template {string|boolean|number|[unknown, ...unknown[]]} T
  * @param {T} value
  * @returns {T}
  */

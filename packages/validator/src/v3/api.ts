@@ -5,6 +5,8 @@ import type {
   Capability as SourceCapability,
   InvalidCapability,
   CanIssue,
+  Tuple,
+  Delegation,
 } from "../api.js"
 export type {
   Capability as SourceCapability,
@@ -29,6 +31,40 @@ export interface Match<T = unknown, M extends Match = UnknownMatch>
 
   prune: (config: API.CanIssue) => null | Match
 }
+
+export interface MatchedCapability<T extends API.ParsedCapability> {
+  capability: T
+  delegation: API.Delegation
+  index: number
+}
+
+export interface MatchedDerivedCapability<
+  T extends API.ParsedCapability,
+  M extends Matched | Match
+> {
+  capability: T
+  delegation: API.Delegation
+  index: number
+
+  requires: M
+}
+
+export interface MatchedCapabilityGroup<
+  T extends [API.ParsedCapability, ...API.ParsedCapability[]]
+> {
+  capabilities: T
+  requires: InferRequires<T>
+}
+
+type Matched<T extends ParsedCapability = ParsedCapability> =
+  | MatchedCapability<T>
+  | MatchedDerivedCapability<T, Matched>
+
+type InferRequires<T extends [unknown, ...unknown[]]> = T extends [infer U, []]
+  ? [Matched<U & ParsedCapability>]
+  : T extends [infer U, infer E, ...infer R]
+  ? [Matched<U & ParsedCapability>, InferRequires<[E, ...R]>]
+  : never
 
 export interface UnknownMatch extends Match {}
 
@@ -55,11 +91,7 @@ export interface MatchSelector<M extends Match>
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
-export interface WithParser<I, O, X extends { error: Error }> {
-  (input: I): API.Result<O, X>
-}
-
-export interface Parser<I, O, X extends { error: Error }> {
+export interface Parser<I, O, X extends API.Problem> {
   (input: I): API.Result<O, X>
 }
 
@@ -75,7 +107,7 @@ export interface Caveats
 
 export type MatchError = API.InvalidCapability | API.DelegationError
 
-export type MatchResult<M extends Match> = API.Result<M, MatchError>
+export type MatchResult<M extends Match> = API.Result<M, API.InvalidCapability>
 
 export interface DerivedMatch<T, M extends Match>
   extends Match<T, M | DerivedMatch<T, M>> {}
@@ -227,7 +259,9 @@ export type InferMatch<Members extends unknown[]> = Members extends []
 export interface ParsedCapability<
   Can extends API.Ability = API.Ability,
   C extends object = {}
-> extends API.Capability<Can> {
+> {
+  can: Can
+  with: API.Resource
   uri: URL
   caveats: C
 }

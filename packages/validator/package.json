@@ -1,6 +1,6 @@
 {
   "name": "@ucanto/validator",
-  "description": "ed25519 identity",
+  "description": "UCAN RPC validators",
   "version": "0.0.1-dev",
   "keywords": [
     "UCAN",
@@ -21,7 +21,7 @@
   "scripts": {
     "prepare": "tsc --build",
     "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
-    "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 ava test/**/*.spec.js",
+    "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
     "test": "npm run test:node",
     "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080",
     "typecheck": "tsc --build"
@@ -34,21 +34,16 @@
     "@ucanto/client": "^0.0.1-dev"
   },
   "devDependencies": {
-    "ava": "^4.2.0",
-    "subprogram": "^1.2.0",
     "@types/mocha": "^9.1.0",
     "@types/chai": "^4.3.0",
-    "dotenv": "^16.0.0",
+    "@types/chai-subset": "^1.3.3",
     "mocha": "^9.2.2",
     "chai": "^4.3.6",
+    "chai-subset": "^1.6.0",
     "playwright-test": "^7.3.0",
-    "conf": "^10.1.1",
-    "ora": "^6.1.0",
-    "@web-std/fetch": "^4.1.0",
-    "@web-std/file": "^3.0.2",
     "c8": "^7.11.0",
     "nyc": "^15.1.0",
-    "typescript": "^4.6.3",
+    "typescript": "^4.7.2",
     "@ucanto/authority": "0.0.1-dev"
   },
   "type": "module",
@@ -68,22 +63,6 @@
     ".": {
       "types": "./dist/src/lib.d.ts",
       "import": "./src/lib.js"
-    },
-    "./src/lib.js": {
-      "types": "./dist/src/lib.d.ts",
-      "import": "./src/lib.js"
-    },
-    "./src/client.js": {
-      "types": "./dist/src/client.d.ts",
-      "import": "./src/client.js"
-    },
-    "./src/server.js": {
-      "types": "./dist/src/server.d.ts",
-      "import": "./src/server.js"
-    },
-    "./src/transport.js": {
-      "types": "./dist/src/transport.d.ts",
-      "import": "./src/transport.js"
     }
   },
   "c8": {

@@ -1,4 +1,4 @@
-import { ok, the } from "../../../src/util.js"
+import { the } from "../../../src/util.js"
 import { CID } from "multiformats/cid"
 import * as API from "../../../src/api.js"
 import { solve as checkWith } from "../../../src/solver.js"

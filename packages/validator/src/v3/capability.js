@@ -153,15 +153,7 @@ class Or extends Unit {
     if (left.error) {
       const right = this.right.match(capability)
       if (right.error) {
-        switch (right.name) {
-          case "UnknownCapability":
-            return left
-          case "MalformedCapability":
-            return left.name === "UnknownCapability" ? right : right
-          case "InvalidClaim":
-          default:
-            return left.name === "UnknownCapability" ? right : right
-        }
+        return right.name === "MalformedCapability" ? right : left
       } else {
         return right
       }
@@ -303,26 +295,6 @@ class Match {
   }
 
   /**
-   * @param {API.Source} capability
-   * @returns {API.MatchResult<API.CapabilityMatch<A, C>>}
-   */
-  match(capability) {
-    const result = parse(this, capability)
-    if (result.error) {
-      return result.error
-    } else {
-      const claim = this.descriptor.derives(this.value, result)
-      if (claim.error) {
-        return new MatchError(
-          [new EscalatedCapability(this.value, result, claim)],
-          this
-        )
-      } else {
-        return new Match(capability, result, this.descriptor)
-      }
-    }
-  }
-  /**
    * @param {API.Source[]} capabilities
    * @returns {API.Select<API.CapabilityMatch<A, C>>}
    */
@@ -331,21 +303,27 @@ class Match {
     const errors = []
     const matches = []
     for (const capability of capabilities) {
-      const result = this.match(capability)
+      const result = parse(this, capability)
       if (!result.error) {
-        matches.push(result)
+        const claim = this.descriptor.derives(this.value, result)
+        if (claim.error) {
+          errors.push(
+            new MatchError(
+              [new EscalatedCapability(this.value, result, claim)],
+              this
+            )
+          )
+        } else {
+          matches.push(new Match(capability, result, this.descriptor))
+        }
       } else {
         switch (result.name) {
           case "UnknownCapability":
             unknown.push(result.capability)
             break
           case "MalformedCapability":
-            errors.push(new MatchError([result], this))
-            break
-          case "InvalidClaim":
           default:
-            errors.push(result)
-            break
+            errors.push(new MatchError([result], this))
         }
       }
     }
@@ -356,7 +334,6 @@ class Match {
     return JSON.stringify({
       can: this.descriptor.can,
       with: this.value.uri.href,
-      uri: this.value.uri,
       caveats:
         Object.keys(this.value.caveats).length > 0
           ? this.value.caveats
@@ -539,7 +516,7 @@ class AndMatch {
  * @returns {API.Result<API.ParsedCapability<A, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
-const parse = (self, { capability }) => {
+const parse = (self, { capability, delegation, index }) => {
   const { can, with: parseWith, caveats: parsers } = self.descriptor
   if (capability.can !== can) {
     return new UnknownCapability(capability)
@@ -547,7 +524,7 @@ const parse = (self, { capability }) => {
 
   const uri = parseWith(capability.with)
   if (uri.error) {
-    return new MalformedCapability(capability, uri.error)
+    return new MalformedCapability(capability, uri)
   }
 
   const caveats = /** @type {T['caveats']} */ ({})
@@ -564,12 +541,29 @@ const parse = (self, { capability }) => {
     }
   }
 
-  return /** @type {API.ParsedCapability<A, API.InferCaveats<C>>} */ ({
-    can,
-    uri,
-    with: capability.with,
-    caveats,
-  })
+  return new CapabilityView(can, capability.with, uri, caveats, delegation)
+}
+
+/**
+ * @template {API.Ability} A
+ * @template C
+ * @implements {API.ParsedCapability<A, API.InferCaveats<C>>}
+ */
+class CapabilityView {
+  /**
+   * @param {A} can
+   * @param {API.Resource} with_
+   * @param {URL} uri
+   * @param {API.InferCaveats<C>} caveats
+   * @param {API.Delegation} delegation
+   */
+  constructor(can, with_, uri, caveats, delegation) {
+    this.can = can
+    this.with = with_
+    this.uri = uri
+    this.delegation = delegation
+    this.caveats = caveats
+  }
 }
 
 /**
@@ -590,12 +584,8 @@ const select = (matcher, capabilities) => {
           unknown.push(result.capability)
           break
         case "MalformedCapability":
-          errors.push(new MatchError([result], result.capability))
-          break
-        case "InvalidClaim":
         default:
-          errors.push(result)
-          break
+          errors.push(new MatchError([result], result.capability))
       }
     } else {
       matches.push(result)

@@ -8,21 +8,21 @@ import * as API from "./api.js"
  * @returns {API.UCANView<V>}
  */
 export const parse = (ucan, parser) => {
-  const unkownCapabilities = []
+  const unknownCapabilities = []
   const capabilities = []
   for (const capability of ucan.capabilities) {
     const known = parser.parse(capability)
     if (known) {
       capabilities.push(known)
     } else {
-      unkownCapabilities.push(capability)
+      unknownCapabilities.push(capability)
     }
   }
 
   const view = {
     ucan,
     capabilityParser: parser,
-    unkownCapabilities: unkownCapabilities.values(),
+    unknownCapabilities: unknownCapabilities.values(),
     capabilities,
   }
 
