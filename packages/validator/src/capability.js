@@ -20,8 +20,8 @@ export const capability = descriptor => new Capability(descriptor)
 /**
  * @template {API.Match} M
  * @template {API.Match} W
- * @param {API.MatchSelector<M>} left
- * @param {API.MatchSelector<W>} right
+ * @param {API.Matcher<M>} left
+ * @param {API.Matcher<W>} right
  * @returns {API.Capability<M|W>}
  */
 export const or = (left, right) => new Or(left, right)
@@ -29,7 +29,7 @@ export const or = (left, right) => new Or(left, right)
 /**
  * @template {API.MatchSelector<API.Match>[]} Selectors
  * @param {Selectors} selectors
- * @returns {API.CapabilityGroup<API.InferMembers<Selectors>>}
+ * @returns {API.Capabilities<API.InferMembers<Selectors>>}
  */
 export const and = (...selectors) => new And(selectors)
 
@@ -109,7 +109,7 @@ class Unit extends View {
   /**
    * @template {API.Match} W
    * @param {API.Capability<W>} other
-   * @returns {API.CapabilityGroup<[M, W]>}
+   * @returns {API.Capabilities<[M, W]>}
    */
   and(other) {
     return and(/** @type {API.Capability<M>} */ (this), other)
@@ -156,8 +156,8 @@ class Capability extends Unit {
  */
 class Or extends Unit {
   /**
-   * @param {API.MatchSelector<M>} left
-   * @param {API.MatchSelector<W>} right
+   * @param {API.Matcher<M>} left
+   * @param {API.Matcher<W>} right
    */
   constructor(left, right) {
     super()
@@ -190,7 +190,7 @@ class Or extends Unit {
 
 /**
  * @template {API.MatchSelector<API.Match>[]} Selectors
- * @implements {API.CapabilityGroup<API.InferMembers<Selectors>>}
+ * @implements {API.Capabilities<API.InferMembers<Selectors>>}
  * @extends {View<API.Amplify<API.InferMembers<Selectors>>>}
  */
 class And extends View {
@@ -229,7 +229,7 @@ class And extends View {
    * @template E
    * @template {API.Match} X
    * @param {API.MatchSelector<API.Match<E, X>>} other
-   * @returns {API.CapabilityGroup<[...API.InferMembers<Selectors>, API.Match<E, X>]>}
+   * @returns {API.Capabilities<[...API.InferMembers<Selectors>, API.Match<E, X>]>}
    */
   and(other) {
     return new And([...this.selectors, other])

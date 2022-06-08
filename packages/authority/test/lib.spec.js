@@ -81,6 +81,15 @@ describe("signing authority", () => {
     )
   })
 
+  it("SigningAuthority decode encode roundtrip", async () => {
+    const signer = await Lib.generate()
+
+    assert.deepEqual(
+      SigningAuthority.decode(SigningAuthority.encode(signer)),
+      signer
+    )
+  })
+
   it("SigningAuthority.format", async () => {
     const signer = await Lib.generate()
 
@@ -88,6 +97,12 @@ describe("signing authority", () => {
       SigningAuthority.parse(SigningAuthority.format(signer)),
       signer
     )
+  })
+
+  it("SigningAuthority.did", async () => {
+    const signer = await Lib.generate()
+
+    assert.equal(signer.did().startsWith("did:key:"), true)
   })
 })
 

@@ -32,40 +32,6 @@ export interface Match<T = unknown, M extends Match = UnknownMatch>
   prune: (config: API.CanIssue) => null | Match
 }
 
-export interface MatchedCapability<T extends API.ParsedCapability> {
-  capability: T
-  delegation: API.Delegation
-  index: number
-}
-
-export interface MatchedDerivedCapability<
-  T extends API.ParsedCapability,
-  M extends Matched | Match
-> {
-  capability: T
-  delegation: API.Delegation
-  index: number
-
-  requires: M
-}
-
-export interface MatchedCapabilityGroup<
-  T extends [API.ParsedCapability, ...API.ParsedCapability[]]
-> {
-  capabilities: T
-  requires: InferRequires<T>
-}
-
-type Matched<T extends ParsedCapability = ParsedCapability> =
-  | MatchedCapability<T>
-  | MatchedDerivedCapability<T, Matched>
-
-type InferRequires<T extends [unknown, ...unknown[]]> = T extends [infer U, []]
-  ? [Matched<U & ParsedCapability>]
-  : T extends [infer U, infer E, ...infer R]
-  ? [Matched<U & ParsedCapability>, InferRequires<[E, ...R]>]
-  : never
-
 export interface UnknownMatch extends Match {}
 
 export interface Matcher<M extends Match> {
@@ -104,8 +70,6 @@ export interface Caveats
       API.Problem
     >
   > {}
-
-export type MatchError = API.InvalidCapability | API.DelegationError
 
 export type MatchResult<M extends Match> = API.Result<M, API.InvalidCapability>
 
@@ -212,25 +176,18 @@ export interface Capability<M extends Match = Match> extends View<M> {
    * })
    *```
    */
-  and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[M, W]>
+  and<W extends Match>(other: MatchSelector<W>): Capabilities<[M, W]>
 }
 
-export interface CapabilityGroup<M extends Match[] = Match[]>
+export interface Capabilities<M extends Match[] = Match[]>
   extends View<Amplify<M>> {
   /**
    * Creates new capability group containing capabilities from this group and
    * provedid `other` capability. This method complements `and` method on
    * `Capability` to allow chaining e.g. `read.and(write).and(modify)`.
    */
-  and<W extends Match>(other: MatchSelector<W>): CapabilityGroup<[...M, W]>
+  and<W extends Match>(other: MatchSelector<W>): Capabilities<[...M, W]>
 }
-
-export type Derive<M extends Match, W extends Match> = W extends Match<
-  infer T,
-  infer N
->
-  ? MatchSelector<Match<T, N | M>>
-  : never
 
 export interface Amplify<Members extends Match[]>
   extends Match<InferValue<Members>, Amplify<InferMatch<Members>>> {}
@@ -270,10 +227,6 @@ export type InferCaveats<C> = {
   [Key in keyof C]: C[Key] extends () => infer T
     ? Exclude<T, API.Problem>
     : never
-}
-
-export type InferCaveatsDescriptor<C> = {
-  [Key in keyof C]: Parser<unknown, C[Key], API.Problem>
 }
 
 export interface Descriptor<A extends API.Ability, C extends Caveats> {

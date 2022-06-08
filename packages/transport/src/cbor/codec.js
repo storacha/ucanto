@@ -53,7 +53,9 @@ const prepare = (data, seen) => {
     /** @type {Record<string, unknown>} */
     const object = {}
     for (const [key, value] of Object.entries(data)) {
-      object[key] = prepare(value, seen)
+      if (value !== undefined && typeof value !== "symbol") {
+        object[key] = prepare(value, seen)
+      }
     }
     return object
   }

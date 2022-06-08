@@ -14,7 +14,6 @@ import type {
   Match,
   Selector,
   Source,
-  MatchError,
   ParsedCapability,
   Capability as CapabilityParser,
 } from "./capability/api.js"

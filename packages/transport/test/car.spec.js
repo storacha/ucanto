@@ -1,6 +1,7 @@
 import { test, assert } from "./test.js"
 import * as CAR from "../src/car.js"
 import * as UCAN from "@ipld/dag-ucan"
+import * as CBOR from "../src/cbor.js"
 import { delegate, Delegation } from "@ucanto/core"
 import * as UTF8 from "../src/utf8.js"
 import { alice, bob, mallory, service } from "./fixtures.js"
@@ -230,4 +231,29 @@ test("omit proof", async () => {
   ])
 
   assert.deepEqual(incoming[0].proofs, [proof.cid])
+})
+
+test("codec", async () => {
+  const root = await CBOR.codec.write({ hello: "world " })
+  const bytes = CAR.codec.encode({
+    roots: [root],
+  })
+  const { blocks, roots } = await CAR.codec.decode(bytes)
+  assert.equal(blocks.size, 0)
+  assert.deepEqual(roots, [root])
+
+  const car = await CAR.codec.write({ roots: [root] })
+  assert.deepEqual(car.bytes, bytes)
+  assert.equal(CID.asCID(car.cid), car.cid)
+})
+
+test("car writer", async () => {
+  const hello = await CBOR.codec.write({ hello: "world " })
+  const writer = CAR.codec.createWriter()
+  writer.write(hello)
+  const bytes = writer.flush()
+
+  const car = await CAR.codec.decode(bytes)
+  assert.deepEqual(car.roots, [])
+  assert.deepEqual([...car.blocks], [[hello.cid.toString(), hello]])
 })

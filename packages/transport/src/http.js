@@ -11,13 +11,13 @@ import * as API from "@ucanto/interface"
  * statusText?: string
  * url?: string
  * }} FetchResponse
- * @typedef {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} Fetch
+ * @typedef {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} Fetcher
  */
 /**
  * @template T
  * @param {object} options
- * @param {Fetch} [options.fetch]
  * @param {URL} options.url
+ * @param {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} [options.fetch]
  * @param {string} [options.method]
  * @returns {API.Channel<T>}
  */
@@ -33,7 +33,7 @@ class Channel {
   /**
    * @param {object} options
    * @param {URL} options.url
-   * @param {Fetch} options.fetch
+   * @param {Fetcher} options.fetch
    * @param {string} [options.method]
    */
   constructor({ url, fetch, method }) {
