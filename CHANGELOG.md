@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.0-beta](https://github.com/web3-storage/ucanto/compare/v0.0.3-beta...v0.1.0-beta) (2022-05-03)
+
+
+### Features
+
+* improve http transport configuration ([#10](https://github.com/web3-storage/ucanto/issues/10)) ([c99be08](https://github.com/web3-storage/ucanto/commit/c99be08fdcef6c0775d83f5cea1331848ec660ff))
+
+### [0.0.3-beta](https://github.com/web3-storage/ucanto/compare/v0.0.2-beta...v0.0.3-beta) (2022-05-02)
+
+
+### Bug Fixes
+
+* exports ([#8](https://github.com/web3-storage/ucanto/issues/8)) ([d135627](https://github.com/web3-storage/ucanto/commit/d1356274225c9dfe38c305c12f4a80a822619430))
+
+### [0.0.2-beta](https://github.com/web3-storage/ucanto/compare/v0.0.1-beta...v0.0.2-beta) (2022-04-24)
+
+
+### Bug Fixes
+
+* types ([73dbf0e](https://github.com/web3-storage/ucanto/commit/73dbf0ec1bbaac6477a22425e40e7db0d77df02e))
+
 ### 0.0.1-beta (2022-04-24)
 
 
