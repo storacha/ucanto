@@ -125,7 +125,7 @@ class AccessService {
       return this.accounts.register(
         ucan.issuer.did(),
         capability.with,
-        /** @type {any} */ (ucan).link
+        /** @type {any} */ (ucan).cid
       )
     } else {
       return this.accounts.link(
