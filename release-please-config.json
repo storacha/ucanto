@@ -8,6 +8,14 @@
     "packages/authority": {},
     "packages/transport": {},
     "packages/client": {},
-    "packages/server": {}
+    "packages/server": {},
+    ".": {
+      "draft": false,
+      "prerelease": false,
+      "bumpMinorPreMajor": false,
+      "bumpPatchForMinorPreMajor": false,
+      "changelogPath": "CHANGELOG.md",
+      "versioning": "default"
+    }
   }
 }
