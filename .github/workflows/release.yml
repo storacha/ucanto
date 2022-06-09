@@ -11,12 +11,12 @@ jobs:
       matrix:
         package:
           - interface
-          - core
-          - authority
-          - transport
-          - validator
-          - client
-          - server
+#           - core
+#           - authority
+#           - transport
+#           - validator
+#           - client
+#           - server
     steps:
       - uses: google-github-actions/release-please-action@v2
         id: release-please
