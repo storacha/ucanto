@@ -1,5 +1,7 @@
 {
-  "plugins": ["node-workspace"],
+  "plugins": [
+    "node-workspace"
+  ],
   "packages": {
     "packages/interface": {},
     "packages/core": {},
