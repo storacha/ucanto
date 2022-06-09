@@ -1,0 +1,77 @@
+name: client
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/interface/**"
+      - "packages/core/**"
+      - "packages/transport/**
+      - "packages/client/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/interface/**"
+      - "packages/core/**"
+      - "packages/transport/**
+      - "packages/client/**"
+      - ".github/workflows/client.yml"
+jobs:
+  check:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version:
+          - 16
+        project:
+          - client
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup node ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+
+      - name: Typecheck
+        uses: gozala/typescript-error-reporter-action@v1.0.8
+        with:
+          project: packages/${{matrix.project}}/tsconfig.json
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        node-version:
+          - 14
+          - 16
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        project:
+          - client
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+
+      - name: Test (Node)
+        run: yarn --cwd packages/${{matrix.project}} test:node
+
+      - name: Test (Web)
+        run: yarn --cwd packages/${{matrix.project}} test:web
