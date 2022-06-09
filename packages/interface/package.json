@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/interface",
   "description": "interface definitions for ucanto",
-  "version": "0.0.1-dev",
+  "version": "0.0.1-beta",
   "types": "./dist/src/lib.d.ts",
   "main": "./src/lib.js",
   "keywords": [

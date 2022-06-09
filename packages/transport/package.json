@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/transport",
   "description": "ucanto transport",
-  "version": "0.0.1-dev",
+  "version": "0.0.1-beta",
   "keywords": [
     "UCAN",
     "RPC",
@@ -33,8 +33,8 @@
     "@ipld/dag-cbor": "^7.0.1",
     "multiformats": "^9.6.4",
     "@ipld/dag-ucan": "^1.5.0-beta",
-    "@ucanto/interface": "0.0.1-dev",
-    "@ucanto/core": "0.0.1-dev"
+    "@ucanto/interface": "^0.0.1-beta",
+    "@ucanto/core": "^0.0.1-beta"
   },
   "devDependencies": {
     "@types/mocha": "^9.1.0",
@@ -50,7 +50,7 @@
     "nyc": "^15.1.0",
     "typescript": "^4.7.2",
     "ucan-storage": "^1.1.3",
-    "@ucanto/authority": "0.0.1-dev"
+    "@ucanto/authority": "^0.0.1-beta"
   },
   "type": "module",
   "typesVersions": {
