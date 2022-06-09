@@ -1,0 +1,11 @@
+{
+  "plugins": ["node-workspace"],
+  "packages": {
+    "packages/interface": {},
+    "packages/core": {},
+    "packages/authority": {},
+    "packages/transport": {},
+    "packages/client": {},
+    "packages/server": {}
+  }
+}
