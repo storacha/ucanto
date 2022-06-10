@@ -1,13 +1,6 @@
 export * from "../api.js"
 import * as API from "../api.js"
 
-import type {
-  Capability as SourceCapability,
-  InvalidCapability,
-  CanIssue,
-  Tuple,
-  Delegation,
-} from "../api.js"
 export type {
   Capability as SourceCapability,
   Ability,

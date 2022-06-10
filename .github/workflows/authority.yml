@@ -1,6 +1,7 @@
 name: authority
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -12,7 +13,7 @@ on:
       - main
     paths:
       - "packages/interface/**"
-      - ".github/workflows/interface.yml"
+      - ".github/workflows/authority.yml"
 jobs:
   check:
     name: Typecheck
@@ -32,7 +33,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: true
 
       - name: Typecheck
         uses: gozala/typescript-error-reporter-action@v1.0.8
@@ -63,10 +68,14 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: true
 
       - name: Test (Node)
-        run: yarn --cwd packages/${{matrix.project}} test:node
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
 
       - name: Test (Web)
-        run: yarn --cwd packages/${{matrix.project}} test:web
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:web
