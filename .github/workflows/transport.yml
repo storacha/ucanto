@@ -1,115 +1,115 @@
-# name: transport
+name: transport
 
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths:
-#       - "packages/core/**"
-#       - "packages/interface/**"
-#       - "packages/transport/**"
-#   pull_request:
-#     branches:
-#       - main
-#     paths:
-#       - "packages/core/**"
-#       - "packages/interface/**"
-#       - "packages/transport/**"
-#       - ".github/workflows/transport.yml"
-# jobs:
-#   check:
-#     name: Typecheck
-#     runs-on: ubuntu-latest
-#     strategy:
-#       matrix:
-#         node-version:
-#           - 16
-#         project:
-#           - transport
-#     steps:
-#       - uses: actions/checkout@v2
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/core/**"
+      - "packages/interface/**"
+      - "packages/transport/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/core/**"
+      - "packages/interface/**"
+      - "packages/transport/**"
+      - ".github/workflows/transport.yml"
+jobs:
+  check:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version:
+          - 16
+        project:
+          - transport
+    steps:
+      - uses: actions/checkout@v2
 
-#       - name: Setup node ${{ matrix.node-version }}
-#         uses: actions/setup-node@v2
-#         with:
-#           node-version: ${{ matrix.node-version }}
+      - name: Setup node ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
 
-#       - name: Install pnpm
-#         uses: pnpm/action-setup@v2.0.1
-#         id: pnpm-install
-#         with:
-#           version: 7
-#           run_install: false
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: false
 
-#       - name: Get pnpm store directory
-#         id: pnpm-cache
-#         run: |
-#           echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
 
-#       - name: Setup pnpm cache
-#         uses: actions/cache@v3
-#         with:
-#           path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-#           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-#           restore-keys: |
-#             ${{ runner.os }}-pnpm-store-
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-#       - name: Install dependencies
-#         run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
-#       - name: Typecheck
-#         uses: gozala/typescript-error-reporter-action@v1.0.8
-#         with:
-#           project: packages/${{matrix.project}}/tsconfig.json
-#   test:
-#     name: Test
-#     runs-on: ${{ matrix.os }}
+      - name: Typecheck
+        uses: gozala/typescript-error-reporter-action@v1.0.8
+        with:
+          project: packages/${{matrix.project}}/tsconfig.json
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
 
-#     strategy:
-#       matrix:
-#         node-version:
-#           - 14
-#           - 16
-#         os:
-#           - ubuntu-latest
-#           - windows-latest
-#           - macos-latest
-#         project:
-#           - transport
+    strategy:
+      matrix:
+        node-version:
+          - 14
+          - 16
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        project:
+          - transport
 
-#     steps:
-#       - uses: actions/checkout@v2
+    steps:
+      - uses: actions/checkout@v2
 
-#       - name: Setup Node
-#         uses: actions/setup-node@v2
-#         with:
-#           node-version: ${{ matrix.node-version }}
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
 
-#       - uses: pnpm/action-setup@v2.0.1
-#         name: Install pnpm
-#         id: pnpm-install
-#         with:
-#           version: 7
-#           run_install: false
+      - uses: pnpm/action-setup@v2.0.1
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: false
 
-#       - name: Get pnpm store directory
-#         id: pnpm-cache
-#         run: |
-#           echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
 
-#       - uses: actions/cache@v3
-#         name: Setup pnpm cache
-#         with:
-#           path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-#           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-#           restore-keys: |
-#             ${{ runner.os }}-pnpm-store-
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-#       - name: Install dependencies
-#         run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
-#       - name: Test (Node)
-#         run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
+      - name: Test (Node)
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
 
-#       - name: Test (Web)
-#         run: pnpm run --if-present --dir packages/${{matrix.project}} test:web
+      - name: Test (Web)
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:web

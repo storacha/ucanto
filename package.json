@@ -13,6 +13,8 @@
   ],
   "scripts": {
     "test": "pnpm run -r test",
+    "test:node": "pnpm run -r test:node",
+    "test:web": "pnpm run -r test:web",
     "typecheck": "pnpm run -r typecheck"
   },
   "devDependencies": {
