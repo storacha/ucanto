@@ -109,7 +109,7 @@
 #         run: pnpm install
 
 #       - name: Test (Node)
-#         run: nnpm run --if-present --dir packages/${{matrix.project}} test:node
+#         run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
 
 #       - name: Test (Web)
-#         run: nnpm run --if-present --dir packages/${{matrix.project}} test:web
+#         run: pnpm run --if-present --dir packages/${{matrix.project}} test:web
