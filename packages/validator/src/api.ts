@@ -26,7 +26,10 @@ export type {
   Matcher,
   Match,
   Selector,
+  Delegation,
+  Authority,
   ParsedCapability,
+  Result,
 }
 export * from "@ucanto/interface"
 
