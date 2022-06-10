@@ -15,6 +15,7 @@ import type {
   Identity,
   Audience,
   MultihashHasher,
+  DID,
   ByteView,
 } from "@ipld/dag-ucan"
 

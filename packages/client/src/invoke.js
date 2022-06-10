@@ -1,9 +1,8 @@
 import * as API from "@ucanto/interface"
-import * as UCAN from "@ipld/dag-ucan"
 import { execute } from "./connection.js"
 
 /**
- * @template {UCAN.Capability} Capability
+ * @template {API.Capability} Capability
  * @param {API.InvocationOptions<Capability>} invocation
  * @return {API.IssuedInvocationView<Capability>}
  */
