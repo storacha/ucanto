@@ -1,3 +1,9 @@
 {
-  "packages/inteface": "0.0.1-dev"
+  "packages/inteface": "0.0.1-dev",
+  "packages/authority": "1.0.0",
+  "packages/client": "1.0.0",
+  "packages/interface": "1.0.0",
+  "packages/server": "1.0.0",
+  "packages/transport": "1.0.0",
+  "packages/core": "0.0.2-dev"
 }
