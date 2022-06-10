@@ -1,9 +1,9 @@
 {
-  "packages/authority": "0.1.0",
-  "packages/client": "0.1.0",
-  "packages/core": "0.1.0",
-  "packages/interface": "0.1.0",
-  "packages/server": "0.1.0",
-  "packages/transport": "0.1.0",
-  "packages/validator": "0.1.0"
+  "packages/authority": "0.2.0",
+  "packages/client": "0.2.0",
+  "packages/core": "0.0.2-dev",
+  "packages/interface": "0.2.0",
+  "packages/server": "0.2.0",
+  "packages/transport": "0.2.0",
+  "packages/validator": "0.2.0"
 }
