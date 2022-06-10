@@ -14,5 +14,8 @@
   "scripts": {
     "test": "pnpm run -r test",
     "typecheck": "pnpm run -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "4.7.3"
   }
 }
