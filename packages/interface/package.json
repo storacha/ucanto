@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/interface",
   "description": "interface definitions for ucanto",
-  "version": "0.0.1-dev",
+  "version": "0.0.1",
   "types": "./dist/src/lib.d.ts",
   "main": "./src/lib.js",
   "keywords": [
@@ -23,7 +23,8 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^1.5.0-beta"
+    "@ipld/dag-ucan": "^1.5.0-beta",
+    "multiformats": "^9.6.4"
   },
   "devDependencies": {
     "typescript": "^4.7.2"

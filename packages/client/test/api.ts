@@ -1,8 +1,7 @@
 export * from "@ucanto/interface"
 import * as API from "@ucanto/interface"
-import type { DID, Link, Await } from "@ipld/dag-ucan"
 
-import type { Result as SyncResult } from "@ucanto/interface"
+import type { DID, Link, Await, Result as SyncResult } from "@ucanto/interface"
 export type { DID, Link, SyncResult }
 type Result<
   T extends unknown = unknown,
