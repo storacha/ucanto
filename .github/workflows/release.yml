@@ -7,16 +7,6 @@ name: release
 jobs:
   release:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package:
-          - interface
-#           - core
-#           - authority
-#           - transport
-#           - validator
-#           - client
-#           - server
     steps:
       - uses: google-github-actions/release-please-action@v2
         id: release-please
@@ -37,12 +27,11 @@ jobs:
           registry-url: https://registry.npmjs.org/
         if: ${{ steps.release.outputs.release_created }}
       - name: Install
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.2.2
         if: ${{ steps.release.outputs.release_created }}
       - name: Publish
         if: ${{ steps.release.outputs.release_created }}
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
         run: |
-          cd packages/${{ matrix.package }}
-          npm publish --access=public
+          pnpm -r publish --access=public

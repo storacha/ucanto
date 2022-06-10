@@ -39,7 +39,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.2.2
 
       - name: Typecheck
         uses: gozala/typescript-error-reporter-action@v1.0.8
@@ -70,7 +70,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.2.2
 
       - name: Test (Node)
-        run: yarn --cwd packages/${{matrix.project}} test:node
+        run: nnpm run --if-present --dir packages/${{matrix.project}} test:node
+
+      - name: Test (Web)
+        run: nnpm run --if-present --dir packages/${{matrix.project}} test:web
