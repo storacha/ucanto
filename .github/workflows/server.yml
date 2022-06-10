@@ -1,13 +1,14 @@
 name: server
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
     paths:
       - "packages/interface/**"
       - "packages/core/**"
-      - "packages/transport/**
+      - "packages/transport/**"
       - "packages/client/**"
       - "packages/server/**"
   pull_request:
@@ -16,7 +17,7 @@ on:
     paths:
       - "packages/interface/**"
       - "packages/core/**"
-      - "packages/transport/**
+      - "packages/transport/**"
       - "packages/client/**"
       - "packages/server/**"
       - ".github/workflows/server.yml"
@@ -39,7 +40,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: true
 
       - name: Typecheck
         uses: gozala/typescript-error-reporter-action@v1.0.8
@@ -70,7 +75,14 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: true
 
       - name: Test (Node)
-        run: yarn --cwd packages/${{matrix.project}} test:node
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
+
+      - name: Test (Web)
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:web

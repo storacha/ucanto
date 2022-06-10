@@ -1,4 +1,3 @@
-import * as UCAN from "@ipld/dag-ucan"
 import * as API from "./api.js"
 import * as Storage from "./services/storage.js"
 import * as Accounts from "./services/account.js"
@@ -7,27 +6,27 @@ import { the } from "./services/util.js"
 /**
  * @typedef {{
  * can: "store/add"
- * with: UCAN.DID
- * link: UCAN.Link
+ * with: API.DID
+ * link: API.Link
  * }} Add
  *
  * @typedef {{
  * status: "done"
- * with: UCAN.DID
- * link: UCAN.Link
+ * with: API.DID
+ * link: API.Link
  * }} Added
  *
  * @typedef {{
  * status: "upload"
- * with: UCAN.DID
- * link: UCAN.Link
+ * with: API.DID
+ * link: API.Link
  * url: string
  * }} Upload
  *
  * @typedef {{
  * can: "store/remove"
- * with: UCAN.DID
- * link: UCAN.Link
+ * with: API.DID
+ * link: API.Link
  * }} Remove
  */
 
@@ -112,7 +111,7 @@ class AccessService {
   /**
    * @typedef {{
    * can: "access/identify"
-   * with: UCAN.DID
+   * with: API.DID
    * }} Identify
    * @param {API.Invocation<Identify>} ucan
    * @returns {Promise<API.Result<null, API.UnknownDIDError>>}

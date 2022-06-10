@@ -1,6 +1,7 @@
 name: interface
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -11,7 +12,7 @@ on:
       - main
     paths:
       - "packages/interface/**"
-      - ".github/workflows/core.yml"
+      - ".github/workflows/interface.yml"
 jobs:
   check:
     name: Typecheck
@@ -31,9 +32,49 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: true
 
       - name: Typecheck
         uses: gozala/typescript-error-reporter-action@v1.0.8
         with:
           project: packages/${{matrix.project}}/tsconfig.json
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        node-version:
+          - 14
+          - 16
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        project:
+          - core
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: true
+
+      - name: Test (Node)
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
+
+      - name: Test (Web)
+        run: pnpm run --if-present --dir packages/${{matrix.project}} test:web

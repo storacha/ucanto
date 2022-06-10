@@ -1,0 +1,15 @@
+{
+  "plugins": [
+    "node-workspace"
+  ],
+  "bootstrap-sha": "1f995064ec6e5953118c2dd1065ee6be959f25b9",
+  "packages": {
+    "packages/authority": {},
+    "packages/client": {},
+    "packages/core": {},
+    "packages/interface": {},
+    "packages/server": {},
+    "packages/transport": {},
+    "packages/validator": {}
+  }
+}
