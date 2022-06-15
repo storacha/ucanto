@@ -1,7 +1,6 @@
 import { test, assert } from "./test.js"
 import * as JWT from "../src/jwt.js"
-import * as UCAN from "@ipld/dag-ucan"
-import { delegate, Delegation } from "@ucanto/core"
+import { delegate, Delegation, UCAN } from "@ucanto/core"
 import * as UTF8 from "../src/utf8.js"
 import { alice, bob, mallory, service } from "./fixtures.js"
 import * as API from "@ucanto/interface"

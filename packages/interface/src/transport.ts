@@ -4,6 +4,7 @@ import type {
   ServiceInvocation,
   InferServiceInvocations,
   InferInvocations,
+  Capability,
 } from "./lib.js"
 
 /**
@@ -56,10 +57,7 @@ export interface HTTPResponse<T = unknown> extends Phantom<T> {
 }
 
 export interface Block<
-  C extends [UCAN.Capability, ...UCAN.Capability[]] = [
-    UCAN.Capability,
-    ...UCAN.Capability[]
-  ],
+  C extends [Capability, ...Capability[]] = [Capability, ...Capability[]],
   A extends number = number
 > {
   readonly cid: UCAN.Proof<C[number], A>

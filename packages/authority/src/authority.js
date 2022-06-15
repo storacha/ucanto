@@ -2,7 +2,6 @@ import * as DID from "@ipld/dag-ucan/src/did.js"
 import * as ED25519 from "@noble/ed25519"
 import { varint } from "multiformats"
 import * as API from "@ucanto/interface"
-import * as UCAN from "@ipld/dag-ucan"
 export const code = 0xed
 
 export const name = "Ed25519"
@@ -11,7 +10,7 @@ const SIZE = 32 + PUBLIC_TAG_SIZE
 
 /**
  * Parses `did:key:` string as an Audience.
- * @param {UCAN.DID} did
+ * @param {API.DID} did
  * @returns {API.Authority<typeof code>}
  */
 export const parse = did => decode(DID.parse(did))

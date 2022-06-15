@@ -1,6 +1,5 @@
 import * as ED25519 from "@noble/ed25519"
 import { varint } from "multiformats"
-import * as UCAN from "@ipld/dag-ucan"
 import * as API from "@ucanto/interface"
 import * as Authority from "./authority.js"
 import { base64pad } from "multiformats/bases/base64"
@@ -98,7 +97,7 @@ export const parse = (signingAuthority, decoder) =>
 
 /**
  * @param {API.SigningAuthority<typeof Authority.code>} signingAuthority
- * @returns {UCAN.DID}
+ * @returns {API.DID}
  */
 export const did = ({ authority }) => authority.did()
 
@@ -145,7 +144,7 @@ class SigningAuthority {
   /**
    * DID of the authority in `did:key` format.
    *
-   * @returns {UCAN.DID}
+   * @returns {API.DID}
    */
   did() {
     return did(this)

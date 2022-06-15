@@ -1,7 +1,6 @@
 import * as API from "@ucanto/interface"
-import * as UCAN from "@ipld/dag-ucan"
 import * as UTF8 from "./utf8.js"
-import { Delegation } from "@ucanto/core"
+import { Delegation, UCAN } from "@ucanto/core"
 
 const HEADER_PREFIX = "x-auth-"
 

@@ -5,6 +5,60 @@ import * as CBOR from "@ucanto/transport/cbor"
 import { alice, bob, mallory, service as w3 } from "./fixtures.js"
 import * as Service from "../../client/test/service.js"
 import { test, assert } from "./test.js"
+import { CID } from "multiformats"
+
+const storeAdd = Server.capability({
+  can: "store/add",
+  with: Server.URI.match({ protocol: "did:" }),
+  caveats: {
+    link: Server.Link.optional(),
+  },
+  derives: (claimed, delegated) => {
+    if (claimed.uri.href !== delegated.uri.href) {
+      return new Server.Failure(
+        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+      )
+    } else if (
+      delegated.caveats.link &&
+      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+    ) {
+      return new Server.Failure(
+        `Link ${
+          claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+        }violates imposed ${delegated.caveats.link} constraint`
+      )
+    } else {
+      return true
+    }
+  },
+})
+const storeRemove = Server.capability({
+  can: "store/remove",
+  with: Server.URI.match({ protocol: "did:" }),
+  caveats: {
+    link: Server.Link.optional(),
+  },
+  derives: (claimed, delegated) => {
+    if (claimed.uri.href !== delegated.uri.href) {
+      return new Server.Failure(
+        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+      )
+    } else if (
+      delegated.caveats.link &&
+      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+    ) {
+      return new Server.Failure(
+        `Link ${
+          claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+        }violates imposed ${delegated.caveats.link} constraint`
+      )
+    } else {
+      return true
+    }
+  },
+})
+
+const store = storeAdd.or(storeRemove)
 
 test("encode delegated invocation", async () => {
   const car = await CAR.codec.write({
@@ -15,6 +69,7 @@ test("encode delegated invocation", async () => {
     service: Service.create(),
     decoder: CAR,
     encoder: CBOR,
+    id: w3,
   })
 
   const connection = Client.connect({
@@ -60,6 +115,7 @@ test("encode delegated invocation", async () => {
   assert.deepEqual(result, [
     {
       error: true,
+
       name: "UnknownDIDError",
       did: alice.did(),
       message: `DID ${alice.did()} has no account`,
@@ -104,6 +160,7 @@ test("encode delegated invocation", async () => {
 
 test("unknown handler", async () => {
   const server = Server.create({
+    id: w3,
     service: Service.create(),
     decoder: CAR,
     encoder: CBOR,
@@ -164,15 +221,16 @@ test("execution error", async () => {
     service: {
       test: {
         /**
-         * @param {Server.Invocation<{can: "test/boom", with:"about:me"}>} _
+         * @param {Server.Invocation<{can: "test/boom", with:string}>} _
          */
         boom(_) {
-          throw new Error("Boom")
+          throw new Server.Failure("Boom")
         },
       },
     },
     decoder: CAR,
     encoder: CBOR,
+    id: w3,
   })
 
   const connection = Client.connect({
@@ -186,7 +244,7 @@ test("execution error", async () => {
     audience: w3,
     capability: {
       can: "test/boom",
-      with: "about:me",
+      with: alice.did(),
     },
   })
 
@@ -198,7 +256,7 @@ test("execution error", async () => {
     message: `service handler {can: "test/boom"} error: Boom`,
     capability: {
       can: "test/boom",
-      with: "about:me",
+      with: alice.did(),
     },
     cause: {
       message: "Boom",

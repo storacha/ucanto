@@ -1,5 +1,5 @@
-import { capability, derive, URI } from "../src/capability.js"
-import * as API from "../src/capability/api.js"
+import { capability, URI, Link } from "../src/lib.js"
+import * as API from "@ucanto/interface"
 import { Failure } from "../src/error.js"
 import { the } from "../src/util.js"
 import { CID } from "multiformats"
@@ -7,8 +7,8 @@ import { test, assert } from "./test.js"
 import { alice, bob, mallory } from "./fixtures.js"
 
 /**
- *
- * @param {API.SourceCapability[]} capabilities
+ * @template {API.Capability[]} C
+ * @param {C} capabilities
  * @param {object} delegation
  * @returns {API.Source[]}
  */
@@ -23,7 +23,7 @@ const delegate = (capabilities, delegation = {}) =>
 test("capability selects matches", () => {
   const read = capability({
     can: "file/read",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) => {
       if (claimed.uri.pathname.startsWith(delegated.uri.pathname)) {
         return true
@@ -166,7 +166,7 @@ test("capability selects matches", () => {
 test("derived capability chain", () => {
   const verify = capability({
     can: "account/verify",
-    with: URI({ protocol: "mailto:" }),
+    with: URI.match({ protocol: "mailto:" }),
     derives: (claimed, delegated) => {
       if (claimed.uri.href.startsWith(delegated.uri.href)) {
         return true
@@ -181,7 +181,7 @@ test("derived capability chain", () => {
   const register = verify.derive({
     to: capability({
       can: "account/register",
-      with: URI({ protocol: "mailto:" }),
+      with: URI.match({ protocol: "mailto:" }),
       derives: (claimed, delegated) => {
         /** @type {"account/register"} */
         const c1 = claimed.can
@@ -415,7 +415,7 @@ test("derived capability chain", () => {
 test("capability amplification", () => {
   const read = capability({
     can: "file/read",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -425,7 +425,7 @@ test("capability amplification", () => {
 
   const write = capability({
     can: "file/write",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -436,7 +436,7 @@ test("capability amplification", () => {
   const readwrite = read.and(write).derive({
     to: capability({
       can: "file/read+write",
-      with: URI({ protocol: "file:" }),
+      with: URI.match({ protocol: "file:" }),
       derives: (claimed, delegated) =>
         claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
         new Failure(
@@ -745,7 +745,7 @@ test("capability amplification", () => {
 test("capability or combinator", () => {
   const read = capability({
     can: "file/read",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -755,7 +755,7 @@ test("capability or combinator", () => {
 
   const write = capability({
     can: "file/write",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -801,20 +801,9 @@ test("capability or combinator", () => {
 test("parse with caveats", () => {
   const storeAdd = capability({
     can: "store/add",
-    with: URI({ protocol: "did:" }),
+    with: URI.match({ protocol: "did:" }),
     caveats: {
-      link: cid => {
-        if (cid == null) {
-          return undefined
-        } else {
-          const result = CID.asCID(cid)
-          if (result) {
-            return result
-          } else {
-            return new Failure(`Expected 'link' to be a CID instead of ${cid}`)
-          }
-        }
-      },
+      link: Link.optional(),
     },
     derives: (claimed, delegated) => {
       if (claimed.uri.href !== delegated.uri.href) {
@@ -854,7 +843,7 @@ test("parse with caveats", () => {
             name: "MalformedCapability",
             capability: { can: "store/add", with: "did:key:zAlice", link: 5 },
             cause: {
-              message: "Expected 'link' to be a CID instead of 5",
+              message: "Expected link to be a CID instead of 5",
             },
           },
         ],
@@ -1039,7 +1028,7 @@ test("parse with caveats", () => {
 test("and prune", () => {
   const read = capability({
     can: "file/read",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1049,7 +1038,7 @@ test("and prune", () => {
 
   const write = capability({
     can: "file/write",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1110,7 +1099,7 @@ test("and prune", () => {
 test("toString methods", () => {
   const read = capability({
     can: "file/read",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1120,7 +1109,7 @@ test("toString methods", () => {
 
   const write = capability({
     can: "file/write",
-    with: URI({ protocol: "file:" }),
+    with: URI.match({ protocol: "file:" }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1180,7 +1169,7 @@ test("toString methods", () => {
   const rw = readwrite.derive({
     to: capability({
       can: "file/read+write",
-      with: URI({ protocol: "file:" }),
+      with: URI.match({ protocol: "file:" }),
       derives: (claimed, delegated) =>
         claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
         new Failure(

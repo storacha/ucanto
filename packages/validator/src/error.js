@@ -1,10 +1,10 @@
-import * as API from "./api.js"
+import * as API from "@ucanto/interface"
 import { the } from "./util.js"
 import { CID } from "multiformats"
 import * as Digest from "multiformats/hashes/digest"
 
 /**
- * @implements {API.Problem}
+ * @implements {API.Failure}
  */
 export class Failure extends Error {
   /** @type {true} */
@@ -17,13 +17,18 @@ export class Failure extends Error {
   get message() {
     return this.describe()
   }
+
+  toJSON() {
+    const { error, name, message } = this
+    return { error, name, message }
+  }
 }
 
 export class EscalatedCapability extends Failure {
   /**
-   * @param {import('./capability/api').ParsedCapability} claimed
+   * @param {API.ParsedCapability} claimed
    * @param {object} delegated
-   * @param {API.Problem} cause
+   * @param {API.Failure} cause
    */
   constructor(claimed, delegated, cause) {
     super()
@@ -137,6 +142,16 @@ export class InvalidAudience extends Failure {
   describe() {
     return `Delegates to '${this.delegation.audience.did()}' instead of '${this.audience.did()}'`
   }
+  toJSON() {
+    const { error, name, audience, message } = this
+    return {
+      error,
+      name,
+      audience: audience.did(),
+      delegation: { audience: this.delegation.audience.did() },
+      message,
+    }
+  }
 }
 
 /**
@@ -145,7 +160,7 @@ export class InvalidAudience extends Failure {
 export class MalformedCapability extends Failure {
   /**
    * @param {API.Capability} capability
-   * @param {API.Problem} cause
+   * @param {API.Failure} cause
    */
   constructor(capability, cause) {
     super()

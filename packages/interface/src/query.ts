@@ -2,7 +2,6 @@ import type {
   InvocationOptions,
   IssuedInvocation,
   IssuedInvocationView,
-  IssuedBatchInvocationView,
   Invocation,
   Proof,
   UCAN,
@@ -105,10 +104,6 @@ export declare function invoke<Capability extends UCAN.Capability>(
   input: InvocationOptions<Capability>
 ): IssuedInvocationView<Capability>
 
-export declare function batch<In extends IssuedInvocation[]>(
-  ...input: In
-): IssuedBatchInvocationView<In>
-
 export declare function connection<T>(): Connection<T>
 
 export declare function query<In extends QueryInput>(query: In): Query<In>
@@ -192,7 +187,6 @@ const demo = async () => {
 
   const a = add.execute(channel)
   const b = remove.execute(channel)
-  const c = batch(add, remove).execute(channel)
 
   const result = await add.execute(channel)
   if (!result.error) {
