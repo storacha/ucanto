@@ -6,7 +6,7 @@ import { CID } from "multiformats"
 {
   /** @type {[string, object][]} */
   const dataset = [
-    ["", { message: "Invalid URL" }],
+    ["", { message: "Invalid URI" }],
     ["did:key:zAlice", { href: "did:key:zAlice" }],
     ["mailto:alice@mail.net", { href: "mailto:alice@mail.net" }],
   ]
@@ -21,7 +21,7 @@ import { CID } from "multiformats"
 {
   /** @type {[string, `${string}:`, object][]} */
   const dataset = [
-    ["", "did:", { message: "Invalid URL" }],
+    ["", "did:", { message: "Invalid URI" }],
     ["did:key:zAlice", "did:", { href: "did:key:zAlice" }],
     [
       "did:key:zAlice",

@@ -14,8 +14,8 @@ export const decode = (input, { protocol } = {}) => {
     } else {
       return /** @type {URL & {protocol:Protocol}} */ (url)
     }
-  } catch (error) {
-    return new Failure(/** @type {Error} */ (error).message)
+  } catch (_) {
+    return new Failure(`Invalid URI`)
   }
 }
 
