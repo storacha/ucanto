@@ -1,5 +1,21 @@
 import * as UCAN from "@ipld/dag-ucan"
 import * as API from "@ucanto/interface"
+import * as Link from "./link.js"
+
+/**
+ * @deprecated
+ * Import `isLink` from module directly
+ */
+export const isLink =
+  /** @type {(value:API.Proof) => value is API.LinkedProof} */
+  (Link.isLink)
+
+/**
+ *
+ * @param {API.Proof} proof
+ * @return {proof is API.Delegation}
+ */
+export const isDelegation = proof => !Link.isLink(proof)
 
 /**
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of
@@ -124,15 +140,6 @@ const decode = ({ bytes }) => {
 }
 
 /**
- * Type predicate returns true if value is the link.
- *
- * @param {unknown} value
- * @returns {value is UCAN.Proof}
- */
-export const isLink = value =>
-  value != null && /** @type {{asCID: unknown}} */ (value).asCID === value
-
-/**
  * Creates a new signed token with a given `options.issuer`. If expiration is
  * not set it defaults to 30 seconds from now. Returns UCAN in primary - IPLD
  * representation.
@@ -151,10 +158,9 @@ export const delegate = async (
   const links = []
   const blocks = new Map()
   for (const proof of proofs) {
-    if (isLink(proof)) {
+    if (!isDelegation(proof)) {
       links.push(proof)
     } else {
-      proof
       links.push(proof.cid)
       for (const block of proof.export()) {
         blocks.set(block.cid.toString(), block)

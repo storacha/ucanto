@@ -29,7 +29,7 @@
   "dependencies": {
     "@ucanto/interface": "^0.2.0",
     "@noble/ed25519": "^1.6.0",
-    "@ipld/dag-ucan": "^1.6.0-beta",
+    "@ipld/dag-ucan": "^1.7.0-beta",
     "multiformats": "^9.6.4"
   },
   "devDependencies": {

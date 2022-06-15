@@ -1,5 +1,5 @@
 import { assert, test } from "./test.js"
-import { Delegation, UCAN } from "../src/lib.js"
+import { Delegation, UCAN, isDelegation } from "../src/lib.js"
 import { alice, bob, mallory, service } from "./fixtures.js"
 
 test("create delegation", async () => {
@@ -271,7 +271,7 @@ test("create delegation chain", async () => {
       "references proof via link"
     )
 
-    if (Delegation.isLink(actual)) {
+    if (!isDelegation(actual)) {
       return assert.fail("expect not to be a link")
     }
 
@@ -310,7 +310,7 @@ test("create delegation chain", async () => {
       bytes: delegation.bytes,
     })
 
-    if (Delegation.isLink(actual)) {
+    if (!isDelegation(actual)) {
       return assert.fail("expect not to be a link")
     }
 
@@ -400,7 +400,7 @@ test("issue chained delegation", async () => {
 
   const [delegation] = invocation.proofs || []
 
-  if (Delegation.isLink(delegation)) {
+  if (!isDelegation(delegation)) {
     return assert.fail("must be a delegation")
   }
 

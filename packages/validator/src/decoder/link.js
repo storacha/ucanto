@@ -1,24 +1,9 @@
 import * as API from "@ucanto/interface"
 import { Failure } from "../error.js"
-import { CID, digest } from "multiformats"
+import { create, createV0, isLink, asLink, parse } from "@ucanto/core/link"
 import { sha256 } from "multiformats/hashes/sha2"
 
-/**
- * @template {number} Code
- * @template {number} Alg
- * @param {Code} code
- * @param {import('multiformats/hashes/interface').MultihashDigest<Alg>} digest
- * @return {API.Link<unknown, Code, Alg, 1> & CID}
- */
-export const create = (code, digest) =>
-  /** @type {any} */ (CID.createV1(code, digest))
-
-/**
- * @template {number} Alg
- * @param {import('multiformats/hashes/interface').MultihashDigest<Alg>} digest
- * @return {API.Link<unknown, 0x70, Alg, 0>}
- */
-export const createV0 = digest => /** @type {any} */ (CID.createV0(digest))
+export { create, createV0, isLink, asLink, parse }
 
 /**
  * @template {number} Code
@@ -26,13 +11,13 @@ export const createV0 = digest => /** @type {any} */ (CID.createV0(digest))
  * @template {1|0} Version
  * @param {unknown} input
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} [options]
- * @returns {API.Result<API.Link<unknown, Version, Code, Alg>, API.Failure>}
+ * @returns {API.Result<API.Link<unknown, Code, Alg, Version>, API.Failure>}
  */
 export const decode = (input, options = {}) => {
   if (input == null) {
     return new Failure(`Expected link but got ${input} instead`)
   } else {
-    const cid = CID.asCID(input)
+    const cid = asLink(input)
     if (cid == null) {
       return new Failure(`Expected link to be a CID instead of ${input}`)
     } else {
@@ -58,7 +43,7 @@ export const decode = (input, options = {}) => {
         )
       }
 
-      /** @type {API.Link<unknown, Version, Code, Alg>} */
+      /** @type {API.Link<unknown, Code, Alg, Version>} */
       const link = /** @type {any} */ (cid)
 
       return link
@@ -71,7 +56,7 @@ export const decode = (input, options = {}) => {
  * @template {number} Alg
  * @template {1|0} Version
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} options
- * @returns {API.Decoder<unknown,  API.Link<unknown, Version, Code, Alg>, API.Failure>}
+ * @returns {API.Decoder<unknown,  API.Link<unknown, Code, Alg, Version>, API.Failure>}
  */
 
 export const match = options => ({
@@ -83,7 +68,7 @@ export const match = options => ({
  * @template {number} Alg
  * @template {1|0} Version
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} [options]
- * @returns {API.Decoder<unknown, undefined|API.Link<unknown, Version, Code, Alg>, API.Failure>}
+ * @returns {API.Decoder<unknown, undefined|API.Link<unknown, Code, Alg, Version>, API.Failure>}
  */
 export const optional = options => ({
   decode: input => {

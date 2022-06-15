@@ -1,5 +1,5 @@
 import * as API from "@ucanto/interface"
-import { isLink, UCAN } from "@ucanto/core"
+import { isDelegation, UCAN } from "@ucanto/core"
 import {
   UnavailableProof,
   InvalidAudience,
@@ -61,7 +61,7 @@ const resolveProofs = async (delegation, config) => {
   const proofs = []
   const promises = []
   for (const [index, proof] of delegation.proofs.entries()) {
-    if (isLink(proof)) {
+    if (!isDelegation(proof)) {
       promises.push(
         new Promise(async resolve => {
           try {

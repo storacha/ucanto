@@ -1,7 +1,5 @@
 import * as API from "@ucanto/interface"
 import { the } from "./util.js"
-import { CID } from "multiformats"
-import * as Digest from "multiformats/hashes/digest"
 
 /**
  * @implements {API.Failure}
@@ -235,17 +233,8 @@ const format = (capability, space) =>
   JSON.stringify(
     capability,
     (key, value) => {
-      if (
-        value &&
-        value.hash instanceof Uint8Array &&
-        typeof value.code === "number" &&
-        typeof value.version === "number"
-      ) {
-        return CID.create(
-          value.version,
-          value.code,
-          Digest.decode(value.hash)
-        ).toString()
+      if (value && value.asCID === value) {
+        return value.toString()
       } else {
         return value
       }
