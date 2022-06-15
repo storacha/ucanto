@@ -54,6 +54,10 @@
     ".": {
       "types": "./dist/src/lib.d.ts",
       "import": "./src/lib.js"
+    },
+    "./server": {
+      "types": "./dist/src/server.d.ts",
+      "import": "./src/server.js"
     }
   },
   "type": "module",

@@ -5,7 +5,6 @@ import * as CBOR from "@ucanto/transport/cbor"
 import { alice, bob, mallory, service as w3 } from "./fixtures.js"
 import * as Service from "../../client/test/service.js"
 import { test, assert } from "./test.js"
-import { CID } from "multiformats"
 
 const storeAdd = Server.capability({
   can: "store/add",

@@ -1,16 +1,15 @@
 import { test, assert } from "./test.js"
 import * as CAR from "../src/car.js"
 import * as CBOR from "../src/cbor.js"
-import { delegate, Delegation, UCAN } from "@ucanto/core"
+import { delegate, Delegation, UCAN, parseLink, asLink } from "@ucanto/core"
 import * as UTF8 from "../src/utf8.js"
 import { alice, bob, mallory, service } from "./fixtures.js"
 import { CarReader } from "@ipld/car/reader"
 import * as API from "@ucanto/interface"
-import { CID } from "multiformats"
 import { collect } from "./util.js"
 
 test("encode / decode", async () => {
-  const cid = CID.parse(
+  const cid = parseLink(
     "bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i"
   )
   const expiration = 1654298135
@@ -243,7 +242,7 @@ test("codec", async () => {
 
   const car = await CAR.codec.write({ roots: [root] })
   assert.deepEqual(car.bytes, bytes)
-  assert.equal(CID.asCID(car.cid), car.cid)
+  assert.ok(asLink(car.cid) === car.cid)
 })
 
 test("car writer", async () => {

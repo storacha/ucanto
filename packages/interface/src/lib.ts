@@ -14,6 +14,7 @@ import type {
   Identity,
   Audience,
   MultihashHasher,
+  MultihashDigest,
   ByteView,
   Ability,
   Resource,
@@ -31,6 +32,8 @@ export type {
 } from "multiformats/bases/interface"
 
 export type {
+  MultihashDigest,
+  MultihashHasher,
   Transport,
   Encoded,
   Link,

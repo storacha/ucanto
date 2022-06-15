@@ -1,7 +1,8 @@
 import * as CBOR from "@ipld/dag-cbor"
-import { CID } from "multiformats/cid"
 export { code, decode } from "@ipld/dag-cbor"
 import { sha256 } from "multiformats/hashes/sha2"
+import { asLink, createLink } from "@ucanto/core"
+
 /**
  * @param {unknown} data
  * @param {Set<unknown>} seen
@@ -24,7 +25,7 @@ const prepare = (data, seen) => {
     return null
   }
 
-  const cid = CID.asCID(data)
+  const cid = asLink(data)
   if (cid) {
     return cid
   }
@@ -78,6 +79,7 @@ export const encode = data => CBOR.encode(prepare(data, new Set()))
 export const write = async (data, { hasher = sha256 } = {}) => {
   const bytes = encode(data)
   const digest = await hasher.digest(bytes)
-  const cid = CID.createV1(CBOR.code, digest)
+
+  const cid = createLink(CBOR.code, digest)
   return { cid, bytes }
 }

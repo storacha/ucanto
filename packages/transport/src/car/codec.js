@@ -1,20 +1,14 @@
 import * as API from "@ucanto/interface"
 import * as CARWriter from "@ipld/car/buffer-writer"
 import { CarReader } from "@ipld/car/reader"
-import { CID } from "multiformats/cid"
 import { base32 } from "multiformats/bases/base32"
-import { UCAN } from "@ucanto/core"
+import { UCAN, createLink } from "@ucanto/core"
 import { sha256 } from "multiformats/hashes/sha2"
-
-export { CID }
 
 export const code = 0x0202
 
 /**
- * @typedef {{
- * cid: API.Link
- * bytes: Uint8Array
- * }} Block
+ * @typedef {API.UCAN.Block<unknown, number, number, 0|1>} Block
  * @typedef {{
  * roots: Block[]
  * blocks: Map<string, Block>
@@ -81,10 +75,6 @@ class Writer {
 export const createWriter = () => new Writer()
 
 /**
- 
- */
-
-/**
  * @param {Partial<Model>} input
  */
 export const encode = ({ roots = [], blocks }) => {
@@ -120,11 +110,14 @@ export const decode = async bytes => {
 
 /**
  * @param {Partial<Model>} data
- * @param {{hasher?: import('multiformats/hashes/interface').MultihashHasher }} [options]
+ * @param {{hasher?: API.MultihashHasher }} [options]
  */
 export const write = async (data, { hasher = sha256 } = {}) => {
   const bytes = encode(data)
   const digest = await hasher.digest(bytes)
-  const cid = CID.createV1(code, digest)
+
+  const cid =
+    /** @type {UCAN.Link<Model, typeof code, number> & import('multiformats').CID}*/
+    (createLink(code, digest))
   return { bytes, cid }
 }
