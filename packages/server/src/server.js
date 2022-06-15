@@ -1,5 +1,8 @@
 import * as API from "@ucanto/interface"
 export * from "@ucanto/interface"
+import { InvalidAudience, UnavailableProof } from "@ucanto/validator"
+import { Authority } from "@ucanto/authority"
+export { capability, URI, Link, Failure } from "@ucanto/validator"
 
 /**
  * Creates a connection to a service.
@@ -18,12 +21,25 @@ class Server {
   /**
    * @param {API.Server<Service>} options
    */
-  constructor(options) {
-    this.options = options
-    this.decoder = options.decoder
-    this.encoder = options.encoder
-    this.service = options.service
+  constructor({
+    id,
+    service,
+    encoder,
+    decoder,
+    authority = Authority,
+    canIssue = (capability, issuer) =>
+      capability.with === issuer || issuer === id.did(),
+    ...context
+  }) {
+    this.context = { id, authority, canIssue, ...context }
+    this.service = service
+    this.encoder = encoder
+    this.decoder = decoder
   }
+  get id() {
+    return this.context.id
+  }
+
   /**
    * @template {API.Capability} C
    * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
@@ -54,17 +70,17 @@ export const handle = async (handler, request) => {
  * @template {API.Capability} C
  * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
  * @param {API.InferInvocations<I>} invocations
- * @param {API.ServerView<Service>} handler
+ * @param {API.ServerView<Service>} server
  * @returns {Promise<API.InferServiceInvocations<I, Service>>}
  */
-export const execute = async (invocations, { service }) => {
+export const execute = async (invocations, server) => {
   const results = []
   const input =
     /** @type {API.InferInvocation<API.ServiceInvocation<C, Service>>[]} */ (
       invocations
     )
   for (const invocation of input) {
-    results.push(await invoke(invocation, service))
+    results.push(await invoke(invocation, server))
   }
 
   return /** @type {API.InferServiceInvocations<I, Service>} */ (results)
@@ -74,21 +90,27 @@ export const execute = async (invocations, { service }) => {
  * @template Service
  * @template {API.Capability} C
  * @param {API.InferInvocation<API.ServiceInvocation<C, Service>>} invocation
- * @param {Service} service
+ * @param {API.ServerView<Service>} server
  * @returns {Promise<API.InferServiceInvocationReturn<C, Service>>}
  */
-export const invoke = async (invocation, service) => {
+export const invoke = async (invocation, server) => {
+  // If invocation is not for our server respond with error
+  if (invocation.audience.did() !== server.id.did()) {
+    return /** @type {any} */ (new InvalidAudience(server.id, invocation))
+  }
+
   const [capability] = invocation.capabilities
+
   const path = capability.can.split("/")
   const method = /** @type {string} */ (path.pop())
-  const handler = resolve(service, path)
+  const handler = resolve(server.service, path)
   if (handler == null || typeof handler[method] !== "function") {
     return /** @type {API.Result<any, API.HandlerNotFound>} */ (
       new HandlerNotFound(capability)
     )
   } else {
     try {
-      return await handler[method](invocation)
+      return await handler[method](invocation, server.context)
     } catch (error) {
       return /** @type {API.Result<any, API.HandlerExecutionError>} */ (
         new HandlerExecutionError(
@@ -104,7 +126,7 @@ export const invoke = async (invocation, service) => {
 /**
  * @implements {API.HandlerNotFound}
  */
-class HandlerNotFound extends RangeError {
+export class HandlerNotFound extends RangeError {
   /**
    * @param {API.Capability} capability
    */
@@ -137,7 +159,7 @@ class HandlerNotFound extends RangeError {
 
 class HandlerExecutionError extends Error {
   /**
-   * @param {API.Capability} capability
+   * @param {API.ParsedCapability} capability
    * @param {Error} cause
    */
   constructor(capability, cause) {

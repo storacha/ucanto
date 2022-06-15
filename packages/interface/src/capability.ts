@@ -1,17 +1,21 @@
-export * from "../api.js"
-import * as API from "../api.js"
-
-export type {
-  Capability as SourceCapability,
-  Ability,
+import {
+  Delegation,
+  Result,
+  Failure,
+  AuthorityParser,
+  Identity,
   Resource,
-  Problem,
-  CanIssue,
-} from "../api.js"
+  Ability,
+  Capability,
+  DID,
+  LinkedProof,
+  Await,
+  API,
+} from "./lib.js"
 
 export interface Source {
-  capability: API.Capability
-  delegation: API.Delegation
+  capability: Capability
+  delegation: Delegation
   index: number
 }
 
@@ -20,9 +24,9 @@ export interface Match<T = unknown, M extends Match = UnknownMatch>
   source: Source[]
   value: T
 
-  proofs: API.Delegation[]
+  proofs: Delegation[]
 
-  prune: (config: API.CanIssue) => null | Match
+  prune: (config: CanIssue) => null | Match
 }
 
 export interface UnknownMatch extends Match {}
@@ -37,8 +41,8 @@ export interface Selector<M extends Match> {
 
 export interface Select<M extends Match> {
   matches: M[]
-  errors: API.DelegationError[]
-  unknown: API.Capability[]
+  errors: DelegationError[]
+  unknown: Capability[]
 }
 
 export interface GroupSelector<M extends Match[] = Match[]>
@@ -50,21 +54,29 @@ export interface MatchSelector<M extends Match>
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
-export interface Parser<I, O, X extends API.Problem> {
-  (input: I): API.Result<O, X>
+export type Parser<
+  I extends unknown,
+  O extends unknown,
+  X extends { error: true } = Failure
+> = (input: I) => Result<O, X>
+
+export interface Decoder<
+  I extends unknown,
+  O extends unknown,
+  X extends { error: true } = Failure
+> {
+  decode: Parser<I, O, X> //(input: I): Result<O, X>
 }
 
 export interface Caveats
-  extends Record<
-    string,
-    Parser<
-      unknown,
-      string | number | object | boolean | undefined | null,
-      API.Problem
-    >
-  > {}
+  extends Record<string, Decoder<unknown, unknown, Failure>> {}
 
-export type MatchResult<M extends Match> = API.Result<M, API.InvalidCapability>
+export type MatchResult<M extends Match> = Result<M, InvalidCapability>
+
+/**
+ * Error produced when parsing capabilities
+ */
+export type InvalidCapability = UnknownCapability | MalformedCapability
 
 export interface DerivedMatch<T, M extends Match>
   extends Match<T, M | DerivedMatch<T, M>> {}
@@ -75,7 +87,7 @@ export interface DeriveSelector<M extends Match, T> {
 }
 
 export interface Derives<T, U> {
-  (self: T, from: U): API.Result<true, API.Problem>
+  (self: T, from: U): Result<true, Failure>
 }
 
 export interface View<M extends Match> extends Matcher<M>, Selector<M> {
@@ -113,10 +125,18 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
    */
   derive<T extends ParsedCapability>(
     options: DeriveSelector<M, T>
-  ): Capability<DerivedMatch<T, M>>
+  ): CapabilityParser<DerivedMatch<T, M>>
 }
 
-export interface Capability<M extends Match = Match> extends View<M> {
+export interface TheCapabilityParser<
+  A extends Ability = Ability,
+  C extends Caveats = Caveats,
+  M extends CapabilityMatch<A, C> = CapabilityMatch<A, C>
+> extends CapabilityParser<M> {
+  can: A
+}
+
+export interface CapabilityParser<M extends Match = Match> extends View<M> {
   /**
    * Defines capability that is either `this` or the the given `other`. This
    * allows you to compose multiple capabilities into one so that you could
@@ -125,7 +145,7 @@ export interface Capability<M extends Match = Match> extends View<M> {
    * capability chains when you might derive capability from either one or the
    * other.
    */
-  or<W extends Match>(other: MatchSelector<W>): Capability<M | W>
+  or<W extends Match>(other: MatchSelector<W>): CapabilityParser<M | W>
 
   /**
    * Combines this capability and the other into a capability group. This allows
@@ -169,17 +189,17 @@ export interface Capability<M extends Match = Match> extends View<M> {
    * })
    *```
    */
-  and<W extends Match>(other: MatchSelector<W>): Capabilities<[M, W]>
+  and<W extends Match>(other: MatchSelector<W>): CapabilitiesParser<[M, W]>
 }
 
-export interface Capabilities<M extends Match[] = Match[]>
+export interface CapabilitiesParser<M extends Match[] = Match[]>
   extends View<Amplify<M>> {
   /**
    * Creates new capability group containing capabilities from this group and
    * provedid `other` capability. This method complements `and` method on
    * `Capability` to allow chaining e.g. `read.and(write).and(modify)`.
    */
-  and<W extends Match>(other: MatchSelector<W>): Capabilities<[...M, W]>
+  and<W extends Match>(other: MatchSelector<W>): CapabilitiesParser<[...M, W]>
 }
 
 export interface Amplify<Members extends Match[]>
@@ -207,24 +227,28 @@ export type InferMatch<Members extends unknown[]> = Members extends []
   : never
 
 export interface ParsedCapability<
-  Can extends API.Ability = API.Ability,
+  Can extends Ability = Ability,
   C extends object = {}
 > {
   can: Can
-  with: API.Resource
+  with: Resource
   uri: URL
   caveats: C
 }
 
 export type InferCaveats<C> = {
-  [Key in keyof C]: C[Key] extends () => infer T
-    ? Exclude<T, API.Problem>
-    : never
+  [Key in keyof C]: C[Key] extends Decoder<unknown, infer T, infer _>
+    ? T
+    : C[Key] extends Parser<unknown, infer T, infer _X>
+    ? T
+    : // : C[Key] extends (input: unknown) => infer T
+      // ? Exclude<T, Failure>
+      never
 }
 
-export interface Descriptor<A extends API.Ability, C extends Caveats> {
+export interface Descriptor<A extends Ability, C extends Caveats> {
   can: A
-  with: Parser<API.Resource, URL, API.Problem>
+  with: Decoder<Resource, URL, Failure>
   caveats?: C
 
   derives: Derives<
@@ -233,5 +257,112 @@ export interface Descriptor<A extends API.Ability, C extends Caveats> {
   >
 }
 
-export interface CapabilityMatch<A extends API.Ability, C extends Caveats>
+export interface CapabilityMatch<A extends Ability, C extends Caveats>
   extends DirectMatch<ParsedCapability<A, InferCaveats<C>>> {}
+
+export interface CanIssue {
+  /**
+   * Informs validator whether given capability can be issued by a given
+   * DID or whether it needs to be delegated to the issuer.
+   */
+  canIssue(capability: ParsedCapability, issuer: DID): boolean
+}
+
+export interface ValidationOptions<
+  C extends ParsedCapability = ParsedCapability
+> extends CanIssue {
+  /**
+   * You can provide default set of capabilities per did, which is used to
+   * validate whether claim is satisfied by `{ with: my:*, can: "*" }`. If
+   * not provided resolves to `[]`.
+   */
+
+  my?: (issuer: DID) => Capability[]
+
+  /**
+   * You can provide a proof resolver that validator will call when UCAN
+   * links to external proof. If resolver is not provided validator may not
+   * be able to explore correesponding path within a proof chain.
+   */
+  resolve?: (proof: LinkedProof) => Await<Result<Delegation, UnavailableProof>>
+
+  authority: AuthorityParser
+  capability: CapabilityParser<Match<C>>
+}
+
+export interface DelegationError extends Failure {
+  name: "InvalidClaim"
+  causes: (InvalidCapability | EscalatedDelegation | DelegationError)[]
+
+  cause: InvalidCapability | EscalatedDelegation | DelegationError
+}
+
+export interface EscalatedDelegation extends Failure {
+  name: "EscalatedCapability"
+  claimed: ParsedCapability
+  delegated: object
+  cause: Failure
+}
+
+export interface UnknownCapability extends Failure {
+  name: "UnknownCapability"
+  capability: Capability
+}
+
+export interface MalformedCapability extends Failure {
+  name: "MalformedCapability"
+  capability: Capability
+}
+
+export interface InvalidAudience extends Failure {
+  readonly name: "InvalidAudience"
+  readonly audience: Identity
+  readonly delegation: Delegation
+}
+
+export interface UnavailableProof extends Failure {
+  readonly name: "UnavailableProof"
+  readonly link: LinkedProof
+}
+
+export interface Expired extends Failure {
+  readonly name: "Expired"
+  readonly delegation: Delegation
+  readonly expiredAt: number
+}
+
+export interface NotValidBefore extends Failure {
+  readonly name: "NotValidBefore"
+  readonly delegation: Delegation
+  readonly validAt: number
+}
+
+export interface InvalidSignature extends Failure {
+  readonly name: "InvalidSignature"
+  readonly issuer: Identity
+  readonly audience: Identity
+  readonly delegation: Delegation
+}
+
+/**
+ * Error produces by invalid proof
+ */
+export type InvalidProof =
+  | Expired
+  | NotValidBefore
+  | InvalidSignature
+  | InvalidAudience
+
+export interface Unauthorized extends Failure {
+  name: "Unauthorized"
+  cause: InvalidCapability | InvalidProof | InvalidClaim
+}
+
+export interface InvalidClaim extends Failure {
+  issuer: Identity
+  name: "InvalidClaim"
+  capability: ParsedCapability
+  delegation: Delegation
+
+  message: string
+}

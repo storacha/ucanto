@@ -1,6 +1,5 @@
 import { assert, test } from "./test.js"
-import { Delegation } from "../src/lib.js"
-import * as UCAN from "@ipld/dag-ucan"
+import { Delegation, UCAN } from "../src/lib.js"
 import { alice, bob, mallory, service } from "./fixtures.js"
 
 test("create delegation", async () => {

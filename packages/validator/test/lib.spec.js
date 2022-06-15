@@ -1,31 +1,19 @@
 import { test, assert } from "./test.js"
 import { access } from "../src/lib.js"
-import { capability, URI } from "../src/capability.js"
+import { capability, URI, Link } from "../src/lib.js"
 import { Failure } from "../src/error.js"
 import { Authority } from "@ucanto/authority"
 import * as Client from "@ucanto/client"
 import * as API from "@ucanto/interface"
 import { alice, bob, mallory, service as w3 } from "./fixtures.js"
-import * as UCAN from "@ipld/dag-ucan"
+import { UCAN } from "@ucanto/core"
 import { UnavailableProof } from "../src/error.js"
-import { CID } from "multiformats"
 
 const storeAdd = capability({
   can: "store/add",
-  with: URI({ protocol: "did:" }),
+  with: URI.match({ protocol: "did:" }),
   caveats: {
-    link: cid => {
-      if (cid == null) {
-        return undefined
-      } else {
-        const result = CID.asCID(cid)
-        if (result) {
-          return result
-        } else {
-          return new Failure(`Expected 'link' to be a CID instead of ${cid}`)
-        }
-      }
-    },
+    link: Link.optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.uri.href !== delegated.uri.href) {
@@ -102,9 +90,12 @@ test("expired invocation", async () => {
 
   assert.containSubset(result, {
     error: true,
-    name: "Expired",
-    expiredAt: expiration,
-    message: `Expired on ${new Date(expiration * 1000)}`,
+    name: "Unauthorized",
+    cause: {
+      name: "Expired",
+      expiredAt: expiration,
+      message: `Expired on ${new Date(expiration * 1000)}`,
+    },
   })
 })
 
@@ -132,9 +123,12 @@ test("not vaid before invocation", async () => {
 
   assert.containSubset(result, {
     error: true,
-    name: "NotValidBefore",
-    validAt: notBefore,
-    message: `Not valid before ${new Date(notBefore * 1000)}`,
+    name: "Unauthorized",
+    cause: {
+      name: "NotValidBefore",
+      validAt: notBefore,
+      message: `Not valid before ${new Date(notBefore * 1000)}`,
+    },
   })
 })
 
@@ -162,8 +156,11 @@ test("invalid signature", async () => {
 
   assert.containSubset(result, {
     error: true,
-    name: "InvalidSignature",
-    message: `Signature is invalid`,
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidSignature",
+      message: `Signature is invalid`,
+    },
   })
 })
 
@@ -189,8 +186,12 @@ test("unknown capability", async () => {
   })
 
   assert.containSubset(result, {
-    name: "UnknownCapability",
-    message: `Encountered unknown capability: {"can":"store/write","with":"${alice.did()}"}`,
+    name: "Unauthorized",
+    error: true,
+    cause: {
+      name: "UnknownCapability",
+      message: `Encountered unknown capability: {"can":"store/write","with":"${alice.did()}"}`,
+    },
   })
 })
 
@@ -270,14 +271,17 @@ test("invalid claim / no proofs", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${bob.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${bob.did()}"} is invalid
   - Capability can not be (self) issued by '${alice.did()}'
   - Delegated capability not found`,
-    capability: {
-      can: "store/add",
-      with: bob.did(),
-      caveats: {},
+      capability: {
+        can: "store/add",
+        with: bob.did(),
+        caveats: {},
+      },
     },
   })
 })
@@ -312,17 +316,20 @@ test("invalid claim / expired", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Expired on ${new Date(expiration * 1000)}`,
-    capability: {
-      can: "store/add",
-      with: alice.did(),
-      caveats: {},
+      capability: {
+        can: "store/add",
+        with: alice.did(),
+        caveats: {},
+      },
+      delegation: invocation,
     },
-    delegation: invocation,
   })
 })
 
@@ -356,17 +363,20 @@ test("invalid claim / not valid before", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${proof.cid} because:
     - Not valid before ${new Date(notBefore * 1000)}`,
-    capability: {
-      can: "store/add",
-      with: alice.did(),
-      caveats: {},
+      capability: {
+        can: "store/add",
+        with: alice.did(),
+        caveats: {},
+      },
+      delegation: invocation,
     },
-    delegation: invocation,
   })
 })
 
@@ -400,17 +410,20 @@ test("invalid claim / invalid signature", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${proof.cid} because:
     - Signature is invalid`,
-    capability: {
-      can: "store/add",
-      with: alice.did(),
-      caveats: {},
+      capability: {
+        can: "store/add",
+        with: alice.did(),
+        caveats: {},
+      },
+      delegation: invocation,
     },
-    delegation: invocation,
   })
 })
 
@@ -447,12 +460,15 @@ test("invalid claim / unknown capability", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Delegated capability not found
   - Encountered unknown capabilities
     - {"can":"store/pin","with":"${alice.did()}"}`,
+    },
   })
 })
 
@@ -490,12 +506,15 @@ test("invalid claim / malformed capability", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive {"can":"store/add","with":"${alice.did()}"} from delegated capabilities:
     - Encountered malformed 'store/add' capability: {"can":"store/add","with":"${badDID}"}
       - Expected did: URI instead got ${badDID}`,
+    },
   })
 })
 
@@ -532,11 +551,14 @@ test("invalid claim / unavailable proof", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Linked proof '${delegation.cid}' is not included nor could be resolved`,
+    },
   })
 })
 
@@ -576,12 +598,15 @@ test("invalid claim / failed to resolve", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Linked proof '${delegation.cid}' is not included nor could be resolved
       - Provided resolve failed: Boom!`,
+    },
   })
 })
 
@@ -618,11 +643,14 @@ test("invalid claim / invalid audience", async () => {
   })
 
   assert.containSubset(result, {
-    name: "InvalidClaim",
-    message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+    name: "Unauthorized",
+    cause: {
+      name: "InvalidClaim",
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
   - Capability can not be (self) issued by '${mallory.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Delegates to '${bob.did()}' instead of '${mallory.did()}'`,
+    },
   })
 })
 

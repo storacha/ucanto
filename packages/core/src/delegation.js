@@ -5,7 +5,7 @@ import * as API from "@ucanto/interface"
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of
  * this as UCAN interface of the CAR.
  *
- * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @template {[API.Capability, ...API.Capability[]]} C
  * @implements {API.Delegation<C>}
  * @extends {DelegationView<C>}
  */
@@ -100,7 +100,7 @@ export class Delegation {
   }
 
   /**
-   * @returns {UCAN.Fact[]}
+   * @returns {API.Fact[]}
    */
   get facts() {
     return this.data.facts
@@ -109,7 +109,7 @@ export class Delegation {
 
 const decodeCache = new WeakMap()
 /**
- * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @template {[API.Capability, ...API.Capability[]]} C
  * @param {API.Block<C>} block
  * @returns {UCAN.View<C[number]>}
  */
@@ -138,7 +138,7 @@ export const isLink = value =>
  * representation.
  *
  * @template {number} A
- * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @template {[API.Capability, ...API.Capability[]]} C
  * @param {API.DelegationOptions<C, A>} data
  * @param {API.EncodeOptions} [options]
  * @returns {Promise<API.Delegation<C>>}
@@ -179,7 +179,7 @@ export const delegate = async (
 }
 
 /**
- * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @template {[API.Capability, ...API.Capability[]]} C
  * @param {API.Block<C>} root
  * @param {Map<string, API.Block>} blocks
  * @returns {IterableIterator<API.Block>}
@@ -198,7 +198,7 @@ const exportDAG = function* (root, blocks) {
 }
 
 /**
- * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @template {[API.Capability, ...API.Capability[]]} C
  * @param {Iterable<API.Block & { data?: UCAN.UCAN }>} dag
  * @returns {API.Delegation<C>}
  */
@@ -220,7 +220,7 @@ export const importDAG = dag => {
 }
 
 /**
- * @template {[UCAN.Capability, ...UCAN.Capability[]]} C
+ * @template {[API.Capability, ...API.Capability[]]} C
  * @param {object} dag
  * @param {API.Block<C>} dag.root
  * @param {Map<string, API.Block>} [dag.blocks]

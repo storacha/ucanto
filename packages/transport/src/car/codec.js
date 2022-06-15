@@ -3,7 +3,7 @@ import * as CARWriter from "@ipld/car/buffer-writer"
 import { CarReader } from "@ipld/car/reader"
 import { CID } from "multiformats/cid"
 import { base32 } from "multiformats/bases/base32"
-import * as UCAN from "@ipld/dag-ucan"
+import { UCAN } from "@ucanto/core"
 import { sha256 } from "multiformats/hashes/sha2"
 
 export { CID }

@@ -1,6 +1,6 @@
-import * as UCAN from "@ipld/dag-ucan"
 import type * as Transport from "./transport.js"
 import type { Tuple } from "./transport.js"
+export * as UCAN from "@ipld/dag-ucan"
 import type {
   Authority,
   SigningAuthority,
@@ -11,12 +11,18 @@ import type {
   Encoded,
   Link,
   Issuer,
-  Capability,
   Identity,
   Audience,
   MultihashHasher,
-  DID,
   ByteView,
+  Ability,
+  Resource,
+  DID,
+  Fact,
+  Proof as LinkedProof,
+  View as UCANView,
+  UCAN as UCANData,
+  Capability,
 } from "@ipld/dag-ucan"
 
 export type {
@@ -25,20 +31,45 @@ export type {
 } from "multiformats/bases/interface"
 
 export type {
-  UCAN,
   Transport,
   Encoded,
   Link,
   Issuer,
   Audience,
-  Capability,
+  Authority,
+  SigningAuthority,
   Identity,
   ByteView,
   Phantom,
+  Ability,
+  Resource,
+  DID,
+  Fact,
+  Tuple,
+  LinkedProof,
+  Capability,
 }
+
+import {
+  CapabilityParser,
+  ParsedCapability,
+  InvalidAudience,
+  Unauthorized,
+  CanIssue,
+  UnavailableProof,
+} from "./capability.js"
 
 export * from "./transport.js"
 export * from "./authority.js"
+export * from "./capability.js"
+
+/**
+ * Represents an {@link Ability} that a UCAN holder `Can` perform `With` some {@link Resource}.
+ *
+ * @template Can - the {@link Ability} (action/verb) the UCAN holder can perform
+ * @template With - the {@link Resource} (thing/noun) the UCAN holder can perform their `Ability` on / with
+ *
+ */
 
 /**
  * Proof can either be a link to a delegated UCAN or a materialized `Delegation`
@@ -46,7 +77,7 @@ export * from "./authority.js"
  */
 export type Proof<
   C extends [Capability, ...Capability[]] = [Capability, ...Capability[]]
-> = UCAN.Proof<C[number]> | Delegation<C>
+> = LinkedProof<C[number]> | Delegation<C>
 
 export interface DelegationOptions<
   C extends [Capability, ...Capability[]],
@@ -61,7 +92,7 @@ export interface DelegationOptions<
 
   nonce?: string
 
-  facts?: UCAN.Fact[]
+  facts?: Fact[]
   proofs?: Proof[]
 }
 
@@ -71,11 +102,11 @@ export interface Delegation<
   readonly root: Transport.Block<C>
   readonly blocks: Map<string, Transport.Block>
 
-  readonly cid: UCAN.Proof<C[number]>
-  readonly bytes: UCAN.ByteView<UCAN.UCAN<C[number]>>
-  readonly data: UCAN.View<C[number]>
+  readonly cid: LinkedProof<C[number]>
+  readonly bytes: ByteView<UCANData<C[number]>>
+  readonly data: UCANView<C[number]>
 
-  asCID: UCAN.Proof<Capability>
+  asCID: LinkedProof<Capability>
 
   export(): IterableIterator<Transport.Block>
 
@@ -87,29 +118,25 @@ export interface Delegation<
 
   nonce?: string
 
-  facts: UCAN.Fact[]
+  facts: Fact[]
   proofs: Proof[]
 }
 
-export interface Invocation<
-  Capability extends UCAN.Capability = UCAN.Capability
-> extends Delegation<[Capability]> {}
+export interface Invocation<C extends Capability = Capability>
+  extends Delegation<[C]> {}
 
-export interface InvocationOptions<
-  Capability extends UCAN.Capability = UCAN.Capability
-> {
+export interface InvocationOptions<C extends Capability = Capability> {
   issuer: SigningAuthority
   audience: Audience
-  capability: Capability
+  capability: C
   proofs?: Proof[]
 }
 
-export interface IssuedInvocation<
-  Capability extends UCAN.Capability = UCAN.Capability
-> extends DelegationOptions<[Capability]> {
+export interface IssuedInvocation<C extends Capability = Capability>
+  extends DelegationOptions<[C]> {
   readonly issuer: SigningAuthority
   readonly audience: Identity
-  readonly capabilities: [Capability]
+  readonly capabilities: [C]
 
   readonly proofs: Proof[]
 }
@@ -131,11 +158,25 @@ export type InferInvocations<T> = T extends []
   : never
 
 export interface ServiceMethod<
-  C extends Capability,
-  T,
+  I extends Capability,
+  O,
   X extends { error: true }
 > {
-  (input: Invocation<C>): Await<Result<T, X>>
+  (input: Invocation<I>, context: InvocationContext): Await<Result<O, X>>
+}
+
+export type InvocationError =
+  | HandlerNotFound
+  | HandlerExecutionError
+  | InvalidAudience
+  | Unauthorized
+
+export interface InvocationContext extends CanIssue {
+  id: Identity
+  my?: (issuer: DID) => Capability[]
+  resolve?: (proof: LinkedProof) => Await<Result<Delegation, UnavailableProof>>
+
+  authority: AuthorityParser
 }
 
 export type ResolveServiceMethod<
@@ -166,7 +207,14 @@ export type InferServiceInvocationReturn<
   infer T,
   infer X
 >
-  ? Result<T, X | HandlerNotFound | HandlerExecutionError>
+  ? Result<
+      T,
+      | X
+      | HandlerNotFound
+      | HandlerExecutionError
+      | InvalidAudience
+      | Unauthorized
+    >
   : never
 
 export type InferServiceInvocations<I extends unknown[], T> = I extends []
@@ -175,45 +223,12 @@ export type InferServiceInvocations<I extends unknown[], T> = I extends []
   ? [InferServiceInvocationReturn<C, T>, ...InferServiceInvocations<Rest, T>]
   : never
 
-export interface IssuedInvocationView<
-  Capability extends UCAN.Capability = UCAN.Capability
-> extends IssuedInvocation<Capability> {
-  execute<T extends InvocationService<Capability>>(
+export interface IssuedInvocationView<C extends Capability = Capability>
+  extends IssuedInvocation<C> {
+  execute<T extends InvocationService<C>>(
     service: Connection<T>
-  ): Await<InferServiceInvocationReturn<Capability, T>>
+  ): Await<InferServiceInvocationReturn<C, T>>
 }
-
-export interface Batch<In extends unknown[]> {
-  invocations: In
-}
-
-export interface BatchView<In extends [unknown, ...unknown[]]>
-  extends Batch<In> {
-  execute<T>(connection: Connection<T>): Await<ExecuteBatchInvocation<In, T>>
-}
-
-export interface IssuedBatchInvocationView<In extends IssuedInvocation[]> {
-  invocations: In
-  delegations: UCAN.View[]
-  execute<T extends BatchInvocationService<In>>(
-    service: Connection<T>
-  ): ExecuteBatchInvocation<In, T>
-}
-
-export type BatchInvocationService<In> = In extends [Invocation<infer C>, ...[]]
-  ? InvocationService<C>
-  : In extends [Invocation<infer C>, ...infer Rest]
-  ? InvocationService<C> & BatchInvocationService<Rest>
-  : {}
-
-export type ExecuteBatchInvocation<In, T> = In extends [
-  Invocation<infer C> | IssuedInvocation<infer C>,
-  ...[]
-]
-  ? [Awaited<ExecuteInvocation<C, T>>]
-  : In extends [Invocation<infer C> | IssuedInvocation<infer C>, ...infer Rest]
-  ? [Awaited<ExecuteInvocation<C, T>>, ...ExecuteBatchInvocation<Rest, T>]
-  : never
 
 export type ServiceInvocations<T> = IssuedInvocation<any> &
   {
@@ -227,21 +242,21 @@ type SubServiceInvocations<T, Path extends string> = {
 }[keyof T]
 
 export type InvocationService<
-  Capability extends UCAN.Capability,
-  Ability extends string = Capability["can"]
-> = Ability extends `${infer Base}/${infer Path}`
-  ? { [Key in Base]: InvocationService<Capability, Path> }
+  C extends Capability,
+  A extends string = C["can"]
+> = A extends `${infer Base}/${infer Path}`
+  ? { [Key in Base]: InvocationService<C, Path> }
   : {
-      [Key in Ability]: ServiceMethod<Capability, any, any>
+      [Key in A]: ServiceMethod<C, any, any>
     }
 
 export type ExecuteInvocation<
-  Capability extends UCAN.Capability,
+  C extends Capability,
   T extends Record<string, any>,
-  Ability extends string = Capability["can"]
+  Ability extends string = C["can"]
 > = Ability extends `${infer Base}/${infer Path}`
-  ? ExecuteInvocation<Capability, T[Base], Path>
-  : T[Ability] extends (input: Invocation<Capability>) => infer Out
+  ? ExecuteInvocation<C, T[Base], Path>
+  : T[Ability] extends (input: Invocation<C>) => infer Out
   ? Out
   : never
 
@@ -274,7 +289,7 @@ export interface ConnectionOptions<T> extends Transport.EncodeOptions {
   readonly channel: Transport.Channel<T>
 }
 
-export interface Connection<T> extends UCAN.Phantom<T> {
+export interface Connection<T> extends Phantom<T> {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
   readonly channel: Transport.Channel<T>
@@ -291,7 +306,7 @@ export interface ConnectionView<T> extends Connection<T> {
   ): Await<InferServiceInvocations<I, T>>
 }
 
-export interface Server<T> extends UCAN.Phantom<T> {
+export interface Server<T> {
   /**
    * Request decoder which is will be used by a server to decode HTTP Request
    * into an invocation `Batch` that will be executed using a `service`.
@@ -308,15 +323,27 @@ export interface Server<T> extends UCAN.Phantom<T> {
    * Takes authority parser that can be used to turn an `UCAN.Identity`
    * into `Ucanto.Authority`.
    */
-  readonly authorizer?: AuthorityParser
+  readonly authority?: AuthorityParser
+
+  /**
+   * Service DID which will be used to verify that received invocation
+   * audience matches it.
+   */
+  readonly id: Identity
 
   /**
    * Actual service providing capability handlers.
    */
   readonly service: T
+
+  readonly canIssue?: CanIssue["canIssue"]
+  readonly my?: InvocationContext["my"]
+  readonly resolve?: InvocationContext["resolve"]
 }
 
-export interface ServerView<T> extends Server<T>, Transport.Channel<T> {}
+export interface ServerView<T> extends Server<T>, Transport.Channel<T> {
+  context: InvocationContext
+}
 
 export type Service = Record<
   string,

@@ -1,19 +1,17 @@
-import * as API from "./capability/api.js"
-import { entries, combine, intersection } from "./capability/util.js"
+import * as API from "@ucanto/interface"
+import { entries, combine, intersection } from "./util.js"
 import {
   EscalatedCapability,
   MalformedCapability,
   UnknownCapability,
   DelegationError as MatchError,
-  Failure,
 } from "./error.js"
-export * from "./capability/api.js"
 
 /**
  * @template {API.Ability} A
  * @template {API.Caveats} C
  * @param {API.Descriptor<A, C>} descriptor
- * @returns {API.Capability<API.CapabilityMatch<A, C>>}
+ * @returns {API.TheCapabilityParser<A, C, API.CapabilityMatch<A, C>>}
  */
 export const capability = descriptor => new Capability(descriptor)
 
@@ -22,14 +20,14 @@ export const capability = descriptor => new Capability(descriptor)
  * @template {API.Match} W
  * @param {API.Matcher<M>} left
  * @param {API.Matcher<W>} right
- * @returns {API.Capability<M|W>}
+ * @returns {API.CapabilityParser<M|W>}
  */
 export const or = (left, right) => new Or(left, right)
 
 /**
  * @template {API.MatchSelector<API.Match>[]} Selectors
  * @param {Selectors} selectors
- * @returns {API.Capabilities<API.InferMembers<Selectors>>}
+ * @returns {API.CapabilitiesParser<API.InferMembers<Selectors>>}
  */
 export const and = (...selectors) => new And(selectors)
 
@@ -37,29 +35,9 @@ export const and = (...selectors) => new And(selectors)
  * @template {API.Match} M
  * @template {API.ParsedCapability} T
  * @param {API.DeriveSelector<M, T> & { from: API.MatchSelector<M> }} options
- * @returns {API.Capability<API.DerivedMatch<T, M>>}
+ * @returns {API.CapabilityParser<API.DerivedMatch<T, M>>}
  */
 export const derive = ({ from, to, derives }) => new Derive(from, to, derives)
-
-/**
- * @template {`${string}:`} Protocol
- * @param {{protocol?:Protocol}} options
- * @return {(url:string) => API.Result<URL & {protocol:Protocol}, API.Problem>}
- */
-export const URI =
-  ({ protocol }) =>
-  href => {
-    try {
-      const url = new URL(href)
-      if (protocol != null && url.protocol !== protocol) {
-        return new Failure(`Expected ${protocol} URI instead got ${url.href}`)
-      } else {
-        return /** @type {URL & {protocol:Protocol}} */ (url)
-      }
-    } catch (error) {
-      return new Failure(/** @type {Error} */ (error).message)
-    }
-  }
 
 /**
  * @template {API.Match} M
@@ -84,7 +62,7 @@ class View {
   /**
    * @template {API.ParsedCapability} U
    * @param {API.DeriveSelector<M, U>} options
-   * @returns {API.Capability<API.DerivedMatch<U, M>>}
+   * @returns {API.CapabilityParser<API.DerivedMatch<U, M>>}
    */
   derive({ derives, to }) {
     return derive({ derives, to, from: this })
@@ -93,14 +71,14 @@ class View {
 
 /**
  * @template {API.Match} M
- * @implements {API.Capability<M>}
+ * @implements {API.CapabilityParser<M>}
  * @extends {View<M>}
  */
 class Unit extends View {
   /**
    * @template {API.Match} W
    * @param {API.MatchSelector<W>} other
-   * @returns {API.Capability<M | W>}
+   * @returns {API.CapabilityParser<M | W>}
    */
   or(other) {
     return or(this, other)
@@ -108,18 +86,18 @@ class Unit extends View {
 
   /**
    * @template {API.Match} W
-   * @param {API.Capability<W>} other
-   * @returns {API.Capabilities<[M, W]>}
+   * @param {API.CapabilityParser<W>} other
+   * @returns {API.CapabilitiesParser<[M, W]>}
    */
   and(other) {
-    return and(/** @type {API.Capability<M>} */ (this), other)
+    return and(/** @type {API.CapabilityParser<M>} */ (this), other)
   }
 }
 
 /**
  * @template {API.Ability} A
  * @template {API.Caveats} C
- * @implements {API.Capability<API.CapabilityMatch<A, C>>}
+ * @implements {API.TheCapabilityParser<A, C, API.CapabilityMatch<A, C>>}
  * @extends {Unit<API.CapabilityMatch<A, C>>}
  */
 class Capability extends Unit {
@@ -151,7 +129,7 @@ class Capability extends Unit {
 /**
  * @template {API.Match} M
  * @template {API.Match} W
- * @implements {API.Capability<M|W>}
+ * @implements {API.CapabilityParser<M|W>}
  * @extends {Unit<M|W>}
  */
 class Or extends Unit {
@@ -190,7 +168,7 @@ class Or extends Unit {
 
 /**
  * @template {API.MatchSelector<API.Match>[]} Selectors
- * @implements {API.Capabilities<API.InferMembers<Selectors>>}
+ * @implements {API.CapabilitiesParser<API.InferMembers<Selectors>>}
  * @extends {View<API.Amplify<API.InferMembers<Selectors>>>}
  */
 class And extends View {
@@ -229,7 +207,7 @@ class And extends View {
    * @template E
    * @template {API.Match} X
    * @param {API.MatchSelector<API.Match<E, X>>} other
-   * @returns {API.Capabilities<[...API.InferMembers<Selectors>, API.Match<E, X>]>}
+   * @returns {API.CapabilitiesParser<[...API.InferMembers<Selectors>, API.Match<E, X>]>}
    */
   and(other) {
     return new And([...this.selectors, other])
@@ -242,7 +220,7 @@ class And extends View {
 /**
  * @template {API.ParsedCapability} T
  * @template {API.Match} M
- * @implements {API.Capability<API.DerivedMatch<T, M>>}
+ * @implements {API.CapabilityParser<API.DerivedMatch<T, M>>}
  * @extends {Unit<API.DerivedMatch<T, M>>}
  */
 
@@ -537,23 +515,28 @@ class AndMatch {
  * @returns {API.Result<API.ParsedCapability<A, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
-const parse = (self, { capability, delegation, index }) => {
-  const { can, with: parseWith, caveats: parsers } = self.descriptor
+const parse = (self, source) => {
+  const { can, with: withDecoder, caveats: decoders } = self.descriptor
+  const { delegation, index } = source
+  const capability = /** @type {API.Capability & Record<string, unknown>} */ (
+    source.capability
+  )
+
   if (capability.can !== can) {
     return new UnknownCapability(capability)
   }
 
-  const uri = parseWith(capability.with)
+  const uri = withDecoder.decode(capability.with)
   if (uri.error) {
     return new MalformedCapability(capability, uri)
   }
 
   const caveats = /** @type {T['caveats']} */ ({})
 
-  if (parsers) {
-    for (const [name, parse] of entries(parsers)) {
+  if (decoders) {
+    for (const [name, decoder] of entries(decoders)) {
       const value = capability[/** @type {string} */ (name)]
-      const result = parse(value)
+      const result = decoder.decode(value)
       if (result?.error) {
         return new MalformedCapability(capability, result)
       } else if (result != null) {

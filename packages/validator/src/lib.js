@@ -1,6 +1,5 @@
-import * as API from "./api.js"
-import * as UCAN from "@ipld/dag-ucan"
-import { isLink } from "@ucanto/core"
+import * as API from "@ucanto/interface"
+import { isLink, UCAN } from "@ucanto/core"
 import {
   UnavailableProof,
   InvalidAudience,
@@ -11,6 +10,13 @@ import {
   Failure,
   li,
 } from "./error.js"
+
+export { Failure, UnavailableProof }
+
+export { capability } from "./capability.js"
+
+export * as URI from "./decoder/uri.js"
+export * as Link from "./decoder/link.js"
 
 const empty = () => []
 
@@ -129,28 +135,28 @@ const resolveSources = async ({ delegation }, config) => {
 
 /**
  * @template {API.ParsedCapability} C
- * @param {API.Invocation} delegation
+ * @param {API.Invocation} invocation
  * @param {API.ValidationOptions<C>} config
- * @returns {Promise<API.Result<Authorization<C>, API.InvalidCapability|API.InvalidProof|FailedProof>>}
+ * @returns {Promise<API.Result<Authorization<C>, API.Unauthorized>>}
  */
 export const access = async (
-  delegation,
+  invocation,
   { canIssue, authority, my = empty, resolve = unavailable, capability }
 ) => {
   const config = { canIssue, my, resolve, authority, capability }
 
   const claim = capability.match({
-    capability: delegation.capabilities[0],
-    delegation,
+    capability: invocation.capabilities[0],
+    delegation: invocation,
     index: 0,
   })
 
   if (claim.error) {
-    return claim
+    return new Unauthorized(claim)
   }
-  const check = await validate(delegation, config)
+  const check = await validate(invocation, config)
   if (check.error) {
-    return check
+    return new Unauthorized(check)
   }
 
   const match = claim.prune(config)
@@ -159,7 +165,7 @@ export const access = async (
   } else {
     const result = await authorize(match, config)
     if (result.error) {
-      return result
+      return new Unauthorized(result)
     } else {
       return new Authorization(claim, [result])
     }
@@ -198,7 +204,7 @@ class Authorization {
  * @template {API.Match} Match
  * @param {Match} match
  * @param {Required<API.ValidationOptions<C>>} config
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability>, FailedProof>>}
+ * @returns {Promise<API.Result<Authorization<API.ParsedCapability>, API.InvalidClaim>>}
  */
 
 export const authorize = async (match, config) => {
@@ -227,7 +233,7 @@ export const authorize = async (match, config) => {
     }
   }
 
-  return new FailedProof({
+  return new InvalidClaim({
     match,
     delegationErrors,
     unknownCapaibilities,
@@ -240,7 +246,7 @@ class ProofError extends Failure {
   /**
    * @param {API.Link} proof
    * @param {number} index
-   * @param {API.Problem} cause
+   * @param {API.Failure} cause
    */
   constructor(proof, index, cause) {
     super()
@@ -257,19 +263,23 @@ class ProofError extends Failure {
   }
 }
 
-class FailedProof extends Failure {
+/**
+ * @implements {API.InvalidClaim}
+ */
+class InvalidClaim extends Failure {
   /**
    * @param {{
    * match: API.Match
    * delegationErrors: API.DelegationError[]
    * unknownCapaibilities: API.Capability[]
    * invalidProofs: ProofError[]
-   * failedProofs: FailedProof[]
+   * failedProofs: API.InvalidClaim[]
    * }} info
    */
   constructor(info) {
     super()
     this.info = info
+    /** @type {"InvalidClaim"} */
     this.name = "InvalidClaim"
   }
   get issuer() {
@@ -303,6 +313,27 @@ class FailedProof extends Failure {
   }
 }
 
+/**
+ * @implements {API.Unauthorized}
+ */
+class Unauthorized extends Failure {
+  /**
+   * @param {API.InvalidCapability | API.InvalidProof | API.InvalidClaim} cause
+   */
+  constructor(cause) {
+    super()
+    /** @type {"Unauthorized"} */
+    this.name = "Unauthorized"
+    this.cause = cause
+  }
+  get message() {
+    return this.cause.message
+  }
+  toJSON() {
+    const { error, name, message, cause } = this
+    return { error, name, message, cause }
+  }
+}
 const ALL = "*"
 
 /**
@@ -390,3 +421,5 @@ const verifySignature = async (delegation, { authority }) => {
 
   return valid ? delegation : new InvalidSignature(delegation)
 }
+
+export { InvalidAudience }
