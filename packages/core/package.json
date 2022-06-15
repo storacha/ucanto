@@ -54,7 +54,7 @@
   "typesVersions": {
     "*": {
       "*": [
-        "dist/*"
+        "dist/src/*"
       ],
       "dist/src/lib.d.ts": [
         "dist/src/lib.d.ts"
