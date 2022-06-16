@@ -10,6 +10,19 @@ importers:
       mocha: 9.2.2
       typescript: 4.7.3
 
+  apps/w3-upload-service:
+    specifiers:
+      '@ucanto/client': ^0.2.2
+      '@ucanto/interface': ^0.3.0
+      '@ucanto/server': ^0.3.0
+      typescript: ^4.7.2
+    dependencies:
+      '@ucanto/client': link:../../packages/client
+      '@ucanto/interface': link:../../packages/interface
+      '@ucanto/server': link:../../packages/server
+    devDependencies:
+      typescript: 4.7.3
+
   packages/authority:
     specifiers:
       '@ipld/dag-ucan': ^1.7.0-beta

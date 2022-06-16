@@ -9,7 +9,8 @@
     "packages/server",
     "packages/transport",
     "packages/authority",
-    "packages/validator"
+    "packages/validator",
+    "apps/w3-upload-service"
   ],
   "scripts": {
     "test": "pnpm run -r test",

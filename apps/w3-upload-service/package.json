@@ -1,0 +1,39 @@
+{
+  "name": "w3-upload-service",
+  "description": "web3.storage upload service",
+  "version": "0.0.1",
+  "types": "./dist/src/lib.d.ts",
+  "main": "./src/lib.js",
+  "keywords": [
+    "web3.storage"
+  ],
+  "files": [
+    "src",
+    "dist/src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/web3-storage/ucanto.git"
+  },
+  "homepage": "https://github.com/web3-storage/ucanto/tree/demo/upload-v2",
+  "scripts": {
+    "prepare": "tsc --build",
+    "typecheck": "tsc --build"
+  },
+  "dependencies": {
+    "@ucanto/server": "^0.3.0",
+    "@ucanto/client": "^0.2.2",
+    "@ucanto/interface": "^0.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.7.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/lib.d.ts",
+      "import": "./src/lib.js"
+    }
+  },
+  "type": "module",
+  "license": "(Apache-2.0 AND MIT)"
+}
