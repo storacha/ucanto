@@ -8,10 +8,11 @@ import {
   InvalidSignature,
   DelegationError,
   Failure,
+  MalformedCapability,
   li,
 } from "./error.js"
 
-export { Failure, UnavailableProof }
+export { Failure, UnavailableProof, MalformedCapability }
 
 export { capability } from "./capability.js"
 
