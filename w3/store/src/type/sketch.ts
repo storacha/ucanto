@@ -23,7 +23,7 @@ import type {
 } from "@ucanto/interface"
 import { ProviderContext } from "@ucanto/server"
 
-import * as Store from "../lib.js"
+import * as Store from "../store/capability.js"
 
 interface Method<
   I extends Capability = Capability,
@@ -141,7 +141,7 @@ declare function service(): Service<{}>
 
 const s = service()
   .provide(
-    Store.Add,
+    Store.add,
     (capability, invocation, context: { secret: Uint8Array }) => {
       return {
         status: "done",
@@ -151,7 +151,7 @@ const s = service()
     }
   )
   .provide(
-    Store.Remove,
+    Store.remove,
     (capability, invocation, context: { name: string }) => {
       return null
     }

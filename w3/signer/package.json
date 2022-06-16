@@ -2,7 +2,7 @@
   "name": "w3-signer",
   "version": "0.0.2-dev",
   "main": "src/index.js",
-  "types": "dist/src/index.d.ts",
+  "types": "./dist/src/index.d.ts",
   "typedocMain": "dist/src/index.js",
   "type": "module",
   "license": "MIT",
@@ -11,7 +11,10 @@
     "directory": "packages/signer"
   },
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./types/dist/src/index.js",
+      "import": "./src/index.js"
+    }
   },
   "scripts": {
     "lint": "tsc && eslint '**/*.{js,ts}' && prettier --check '**/*.{js,ts,md,yml,json}' --ignore-path ../../.gitignore",

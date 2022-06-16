@@ -38,8 +38,9 @@ export interface Link extends Capability<"identity/link", ID> {}
 
 export interface Identify extends Capability<"identity/identify", ID> {}
 
-export interface NotRegistered extends ServiceError<"NotRegistered"> {
-  did: DID[]
+export interface NotRegistered
+  extends ServiceError<"NotRegistered", NotRegistered> {
+  ids: [ID, ...ID[]]
 }
 
 export type Error = NotRegistered

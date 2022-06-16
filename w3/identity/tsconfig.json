@@ -106,18 +106,6 @@
     { "path": "../../packages/server" },
     {
       "path": "../../packages/interface"
-    },
-    {
-      "path": "../../packages/client"
-    },
-    {
-      "path": "../../packages/transport"
-    },
-    {
-      "path": "../../packages/authority"
-    },
-    {
-      "path": "../signer"
     }
   ]
 }

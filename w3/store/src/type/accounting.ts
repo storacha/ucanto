@@ -1,9 +1,17 @@
-import { DID, Link, LinkedProof, Result, Await } from "@ucanto/interface"
+import { DID, LinkedProof, Result, Await } from "@ucanto/interface"
+import * as API from "@ucanto/interface"
 import { ServiceError } from "./error"
 export type Error = QuotaViolationError
 
 export interface QuotaViolationError
-  extends ServiceError<"QuotaViolationError"> {}
+  extends ServiceError<"QuotaViolationError", QuotaViolationError> {}
+
+export interface Link<
+  T extends unknown = unknown,
+  C extends number = number,
+  A extends number = number,
+  V extends 0 | 1 = 0 | 1
+> extends API.Link<T, C, A, V> {}
 
 export interface Provider {
   /**
@@ -17,20 +25,13 @@ export interface Provider {
    */
   add(
     group: DID,
-    link: Link<unknown, number, number, 0 | 1>,
+    link: Link,
     proof: LinkedProof
   ): Await<Result<LinkState, Error>>
 
-  remove(
-    group: DID,
-    link: Link<unknown, number, number, 0 | 1>,
-    proof: LinkedProof
-  ): Await<Result<null, never>>
+  remove(group: DID, link: Link, proof: LinkedProof): Await<Result<null, never>>
 
-  list(
-    gorup: DID,
-    proof: LinkedProof
-  ): Await<Result<Link<unknown, number, number, 0 | 1>[], never>>
+  list(gorup: DID, proof: LinkedProof): Await<Result<Link[], never>>
 }
 
 interface LinkState {

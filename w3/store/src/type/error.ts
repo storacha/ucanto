@@ -1,10 +1,14 @@
-export interface ServiceError<Name extends string> {
+export interface ServiceError<
+  Name extends string,
+  JSON extends { name: Name; error: true; message: string }
+> {
   readonly name: Name
+  readonly message: string
   readonly error: true
-  toJSON(): ToJSON<Omit<this, "toJSON">>
+  toJSON(): JSONObject<JSON>
 }
 
-type ToJSON<T> = T extends undefined
+export type ToJSON<T> = T extends undefined
   ? never
   : T extends number | null | string | boolean
   ? T
@@ -17,3 +21,7 @@ type ToJSON<T> = T extends undefined
   : T extends object
   ? { [K in keyof T]: ToJSON<T[K]> }
   : never
+
+export type JSONObject<T extends object> = {
+  [K in keyof T as ToJSON<T[K]> extends never ? never : K]: ToJSON<T[K]>
+}
