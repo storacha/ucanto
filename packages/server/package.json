@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/web3-storage/ucanto",
   "scripts": {
-    "prepare": "tsc --build",
     "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
     "test": "npm run test:node",
