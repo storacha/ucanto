@@ -9,7 +9,7 @@ import {
 
 /**
  * @template {API.Ability} A
- * @template {API.Caveats} C
+ * @template {API.Caveats} [C={}]
  * @param {API.Descriptor<A, C>} descriptor
  * @returns {API.TheCapabilityParser<API.CapabilityMatch<A, C>>}
  */
@@ -62,7 +62,7 @@ class View {
   /**
    * @template {API.ParsedCapability} U
    * @param {API.DeriveSelector<M, U>} options
-   * @returns {API.CapabilityParser<API.DerivedMatch<U, M>>}
+   * @returns {API.TheCapabilityParser<API.DerivedMatch<U, M>>}
    */
   derive({ derives, to }) {
     return derive({ derives, to, from: this })

@@ -17,7 +17,7 @@ const registerCapability = Server.capability({
 
 const linkCapability = Server.capability({
   can: "identity/link",
-  with: Server.URI.match({ protocol: "mailto:" }),
+  with: Server.URI,
   derives: (claimed, delegated) =>
     claimed.uri.href === delegated.uri.href ||
     new Server.Failure(
@@ -96,7 +96,7 @@ const associate = (accounts, from, to, proof, create) => {
   // account and link all them together.
   if (!fromAccount && !toAccount) {
     if (create) {
-      const account = /** @type {API.DID} */ (`did:cid:${proof}`)
+      const account = /** @type {API.DID} */ (`did:ipld:${proof}`)
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
@@ -107,7 +107,7 @@ const associate = (accounts, from, to, proof, create) => {
   } else if (fromAccount) {
     accounts.set(to, { account: fromAccount, proof })
   } else if (fromAccount !== toAccount) {
-    const account = /** @type {API.DID} */ (`did:cid:${proof}`)
+    const account = /** @type {API.DID} */ (`did:ipld:${proof}`)
     accounts.set(toAccount, { account, proof })
     accounts.set(fromAccount, { account, proof })
   }

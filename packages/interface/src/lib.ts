@@ -165,7 +165,9 @@ export interface ServiceMethod<
   O,
   X extends { error: true }
 > {
-  (input: Invocation<I>, context: InvocationContext): Await<Result<O, X>>
+  (input: Invocation<I>, context: InvocationContext): Await<
+    Result<O, X | InvocationError>
+  >
 }
 
 export type InvocationError =
