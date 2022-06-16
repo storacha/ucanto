@@ -17,9 +17,9 @@ import * as Signer from "./signer"
 export type { Link }
 
 export interface StoreService {
-  start(options: Options): Server.ServerView<Store>
+  start(options: ServiceOptions): Server.ServerView<Store>
 }
-export interface Options {
+export interface ServiceOptions {
   self: SigningAuthority
   identity: ConnectionView<{ identity: Identity.Identity }> & { id: Audience }
 
@@ -27,6 +27,11 @@ export interface Options {
 
   signer: Signer.Signer
 }
+
+export interface Options
+  extends Server.TranpsortOptions,
+    Server.ValidatorOptions,
+    ServiceOptions {}
 
 export interface Store {
   add: ServiceMethod<
