@@ -1,9 +1,17 @@
 import { Link, Await } from "@ucanto/interface"
 
 export interface SignOptions {
-  link: Link<unknown, number, number, 0 | 1>
+  accessKeyId: string
+  secretAccessKey: string
+  region: string
+  cache?: Map<string, ArrayBuffer>
+  bucket: string
   expires?: number
 }
+
 export interface Signer {
-  sign(options: SignOptions): Await<URL>
+  sign(
+    link: Link<unknown, number, number, 0 | 1>,
+    options: SignOptions
+  ): Await<URL>
 }

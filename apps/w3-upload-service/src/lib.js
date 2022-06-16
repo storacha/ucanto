@@ -28,7 +28,7 @@ const derives = (claimed, delegated) => {
   }
 }
 
-const Add = capability({
+export const Add = capability({
   can: "store/add",
   with: URI.match({ protocol: "did:" }),
   caveats: {
@@ -37,7 +37,7 @@ const Add = capability({
   derives,
 })
 
-const Remove = capability({
+export const Remove = capability({
   can: "store/remove",
   with: URI.match({ protocol: "did:" }),
   caveats: {
@@ -46,7 +46,7 @@ const Remove = capability({
   derives,
 })
 
-const List = capability({
+export const List = capability({
   can: "store/list",
   with: URI.match({ protocol: "did:" }),
   derives: (claimed, delegated) => {

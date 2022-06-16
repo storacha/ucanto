@@ -17,7 +17,6 @@
   },
   "homepage": "https://github.com/web3-storage/ucanto/tree/demo/upload-v2",
   "scripts": {
-    "prepare": "tsc --build",
     "typecheck": "tsc --build"
   },
   "dependencies": {
