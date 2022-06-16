@@ -6,7 +6,7 @@ import { access } from "@ucanto/validator"
  * @template {API.Caveats} C
  * @template {API.Resource} R
  * @template {unknown} U
- * @param {API.TheCapabilityParser<A, C>} capability
+ * @param {API.TheCapabilityParser<API.CapabilityMatch<A, C>>} capability
  * @param {(input:API.ProviderContext<A, R, C>) => API.Await<U>} handler
  * @returns {API.ServiceMethod<API.Capability<A, R>, Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>|API.InvocationError>}
  */

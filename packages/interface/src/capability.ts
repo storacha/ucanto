@@ -81,8 +81,8 @@ export type InvalidCapability = UnknownCapability | MalformedCapability
 export interface DerivedMatch<T, M extends Match>
   extends Match<T, M | DerivedMatch<T, M>> {}
 
-export interface DeriveSelector<M extends Match, T> {
-  to: MatchSelector<DirectMatch<T>>
+export interface DeriveSelector<M extends Match, T extends ParsedCapability> {
+  to: TheCapabilityParser<DirectMatch<T>>
   derives: Derives<T, M["value"]>
 }
 
@@ -128,12 +128,9 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
   ): CapabilityParser<DerivedMatch<T, M>>
 }
 
-export interface TheCapabilityParser<
-  A extends Ability = Ability,
-  C extends Caveats = Caveats,
-  M extends CapabilityMatch<A, C> = CapabilityMatch<A, C>
-> extends CapabilityParser<M> {
-  can: A
+export interface TheCapabilityParser<M extends Match<ParsedCapability>>
+  extends CapabilityParser<M> {
+  readonly can: M["value"]["can"]
 }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
