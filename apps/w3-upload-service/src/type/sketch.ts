@@ -13,6 +13,7 @@ import type {
   Caveats,
   Result,
   Resource,
+  CapabilityMatch,
   TheCapabilityParser,
   Await,
   API,
@@ -40,7 +41,7 @@ interface Route<
   O extends unknown = unknown,
   CTX extends {} = {}
 > {
-  capability: TheCapabilityParser<A, C>
+  capability: TheCapabilityParser<CapabilityMatch<A, C>>
   handler: CapabilityHandler<A, R, C, O, CTX>
 }
 
@@ -68,7 +69,7 @@ interface Service<T extends { [Can in string]: Route }> {
     O extends unknown,
     CTX extends {}
   >(
-    capability: TheCapabilityParser<A, C>,
+    capability: TheCapabilityParser<CapabilityMatch<A, C>>,
     handler: CapabilityHandler<A, R, C, O, CTX>
   ): Service<T & { [Can in A]: Route<A, R, C, O, CTX> }>
 
@@ -110,7 +111,7 @@ interface Server<T extends { [key in string]: Method }> {
     R extends Resource,
     U extends unknown
   >(
-    capability: TheCapabilityParser<A, C>,
+    capability: TheCapabilityParser<CapabilityMatch<A, C>>,
     handler: (input: ProviderContext<A, R, C>) => Await<U>
   ) => Server<
     T & {

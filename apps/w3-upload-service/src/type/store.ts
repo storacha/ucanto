@@ -26,6 +26,7 @@ export interface ServiceOptions {
   accounting: Accounting.Provider
 
   signer: Signer.Signer
+  signerConfig: Signer.SignOptions
 }
 
 export interface Options

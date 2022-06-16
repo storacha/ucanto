@@ -63,7 +63,13 @@ export const List = capability({
  * @param {API.Store.ServiceOptions} options
  * @returns {API.Store.Store}
  */
-export const service = ({ self, identity, accounting, signer }) => {
+export const service = ({
+  self,
+  identity,
+  accounting,
+  signer,
+  signerConfig,
+}) => {
   return {
     add: provide(Add, async ({ capability, invocation }) => {
       const link = /** @type {API.Store.CARLink|undefined} */ (
@@ -101,7 +107,7 @@ export const service = ({ self, identity, accounting, signer }) => {
       }
 
       if (result.status === "not-in-s3") {
-        const url = await signer.sign({ link })
+        const url = await signer.sign(link, signerConfig)
         return {
           status: "upload",
           with: id,
@@ -140,7 +146,14 @@ export const service = ({ self, identity, accounting, signer }) => {
  *
  * @param {API.Store.Options} options
  */
-export const server = ({ self, identity, accounting, signer, ...options }) =>
+export const server = ({
+  self,
+  identity,
+  accounting,
+  signer,
+  signerConfig,
+  ...options
+}) =>
   Server.create({
     ...options,
     id: self.authority,
@@ -150,6 +163,7 @@ export const server = ({ self, identity, accounting, signer, ...options }) =>
         identity,
         accounting,
         signer,
+        signerConfig,
       }),
     },
   })
