@@ -8,13 +8,13 @@ import { access } from "@ucanto/validator"
  * @template {unknown} U
  * @param {API.TheCapabilityParser<API.CapabilityMatch<A, C>>} capability
  * @param {(input:API.ProviderContext<A, R, C>) => API.Await<U>} handler
- * @returns {API.ServiceMethod<API.Capability<A, R>, Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>|API.InvocationError>}
+ * @returns {API.ServiceMethod<API.Capability<A, R> & API.InferCaveats<C>, Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>>}
  */
 
 export const provide =
   (capability, handler) =>
   /**
-   * @param {API.Invocation<API.Capability<A, R>>} invocation
+   * @param {API.Invocation<API.Capability<A, R> & API.InferCaveats<C>>} invocation
    * @param {API.InvocationContext} options
    * @return {Promise<API.Result<Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>|API.InvocationError>>}
    */

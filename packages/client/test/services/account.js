@@ -94,7 +94,7 @@ const associate = (accounts, from, to, proof, create) => {
   // account and link all them together.
   if (!fromAccount && !toAccount) {
     if (create) {
-      const account = the(`did:cid:${proof}`)
+      const account = the(`did:ipld:${proof}`)
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
@@ -105,7 +105,7 @@ const associate = (accounts, from, to, proof, create) => {
   } else if (fromAccount) {
     accounts.set(to, { account: fromAccount, proof })
   } else if (fromAccount !== toAccount) {
-    const account = the(`did:cid:${proof}`)
+    const account = the(`did:ipld:${proof}`)
     accounts.set(toAccount, { account, proof })
     accounts.set(fromAccount, { account, proof })
   }

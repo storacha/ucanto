@@ -125,7 +125,7 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
    */
   derive<T extends ParsedCapability>(
     options: DeriveSelector<M, T>
-  ): CapabilityParser<DerivedMatch<T, M>>
+  ): TheCapabilityParser<DerivedMatch<T, M>>
 }
 
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
@@ -233,14 +233,20 @@ export interface ParsedCapability<
   caveats: C
 }
 
-export type InferCaveats<C> = {
-  [Key in keyof C]: C[Key] extends Decoder<unknown, infer T, infer _>
+export type InferCaveats<C> = InferRequiredCaveats<C> & InferOptionalCaveats<C>
+
+export type InferOptionalCaveats<C> = {
+  [Key in keyof C as C[Key] extends Decoder<any, infer _ | undefined, any>
+    ? Key
+    : never]?: C[Key] extends Decoder<unknown, infer T | undefined, infer _>
     ? T
-    : C[Key] extends Parser<unknown, infer T, infer _X>
-    ? T
-    : // : C[Key] extends (input: unknown) => infer T
-      // ? Exclude<T, Failure>
-      never
+    : never
+}
+
+export type InferRequiredCaveats<C> = {
+  [Key in keyof C as C[Key] extends Decoder<any, infer _ | undefined, any>
+    ? never
+    : Key]: C[Key] extends Decoder<unknown, infer T, infer _> ? T : never
 }
 
 export interface Descriptor<A extends Ability, C extends Caveats> {
