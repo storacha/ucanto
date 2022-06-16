@@ -10,7 +10,9 @@
     "packages/transport",
     "packages/authority",
     "packages/validator",
-    "apps/w3-upload-service"
+    "w3/store",
+    "w3/signer",
+    "w3/sigv4"
   ],
   "scripts": {
     "test": "pnpm run -r test",

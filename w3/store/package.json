@@ -1,5 +1,5 @@
 {
-  "name": "w3-upload-service",
+  "name": "w3-store",
   "description": "web3.storage upload service",
   "version": "0.0.1",
   "types": "./dist/src/lib.d.ts",
