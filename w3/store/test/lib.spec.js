@@ -1,6 +1,5 @@
 import { test, assert } from "./test.js"
 import * as Client from "@ucanto/client"
-import * as Server from "@ucanto/server"
 import * as CAR from "@ucanto/transport/car"
 import * as CBOR from "@ucanto/transport/cbor"
 import { SigningAuthority } from "@ucanto/authority"
@@ -9,7 +8,6 @@ import * as Accounting from "./accounting.js"
 import * as Store from "../src/lib.js"
 import * as Signer from "w3-signer"
 import { alice, bob, mallory, service as validator } from "./fixtures.js"
-import { Link } from "@ucanto/server"
 
 test("main", async () => {
   const w3store = await SigningAuthority.generate()
