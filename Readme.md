@@ -150,20 +150,20 @@ import * as Client from "@ucanto/client"
 import { SigningAuthority, Authority } from "@ucanto/authority"
 import { CID } from "multiformats"
 
-
 // Service will have a well known DID
 const service = Authority.parse(process.env.SERVICE_ID)
 // Client keypair
 const issuer = SigningAuthority.parse(process.env.MY_KEPAIR)
 
-
-const demo1 = async (connection) => {
+const demo1 = async connection => {
   const me = await Client.invoke({
     issuer: alice,
-    audience: service
-    can: "file/link",
-    with: `file://${issuer.did()}/me/about`,
-    link: CID.parse(process.env.ME_CID)
+    audience: service,
+    capability: {
+      can: "file/link",
+      with: `file://${issuer.did()}/me/about`,
+      link: CID.parse(process.env.ME_CID),
+    },
   })
 
   const result = await me.execute(connection)
