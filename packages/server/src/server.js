@@ -1,8 +1,14 @@
 import * as API from "@ucanto/interface"
 export * from "@ucanto/interface"
-import { InvalidAudience, UnavailableProof } from "@ucanto/validator"
+import { InvalidAudience } from "@ucanto/validator"
 import { Authority } from "@ucanto/authority"
-export { capability, URI, Link, Failure } from "@ucanto/validator"
+export {
+  capability,
+  URI,
+  Link,
+  Failure,
+  MalformedCapability,
+} from "@ucanto/validator"
 
 /**
  * Creates a connection to a service.

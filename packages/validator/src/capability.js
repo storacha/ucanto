@@ -9,9 +9,9 @@ import {
 
 /**
  * @template {API.Ability} A
- * @template {API.Caveats} C
+ * @template {API.Caveats} [C={}]
  * @param {API.Descriptor<A, C>} descriptor
- * @returns {API.TheCapabilityParser<A, C, API.CapabilityMatch<A, C>>}
+ * @returns {API.TheCapabilityParser<API.CapabilityMatch<A, C>>}
  */
 export const capability = descriptor => new Capability(descriptor)
 
@@ -35,7 +35,7 @@ export const and = (...selectors) => new And(selectors)
  * @template {API.Match} M
  * @template {API.ParsedCapability} T
  * @param {API.DeriveSelector<M, T> & { from: API.MatchSelector<M> }} options
- * @returns {API.CapabilityParser<API.DerivedMatch<T, M>>}
+ * @returns {API.TheCapabilityParser<API.DerivedMatch<T, M>>}
  */
 export const derive = ({ from, to, derives }) => new Derive(from, to, derives)
 
@@ -62,7 +62,7 @@ class View {
   /**
    * @template {API.ParsedCapability} U
    * @param {API.DeriveSelector<M, U>} options
-   * @returns {API.CapabilityParser<API.DerivedMatch<U, M>>}
+   * @returns {API.TheCapabilityParser<API.DerivedMatch<U, M>>}
    */
   derive({ derives, to }) {
     return derive({ derives, to, from: this })
@@ -97,7 +97,7 @@ class Unit extends View {
 /**
  * @template {API.Ability} A
  * @template {API.Caveats} C
- * @implements {API.TheCapabilityParser<A, C, API.CapabilityMatch<A, C>>}
+ * @implements {API.TheCapabilityParser<API.CapabilityMatch<A, C>>}
  * @extends {Unit<API.CapabilityMatch<A, C>>}
  */
 class Capability extends Unit {
@@ -220,14 +220,14 @@ class And extends View {
 /**
  * @template {API.ParsedCapability} T
  * @template {API.Match} M
- * @implements {API.CapabilityParser<API.DerivedMatch<T, M>>}
+ * @implements {API.TheCapabilityParser<API.DerivedMatch<T, M>>}
  * @extends {Unit<API.DerivedMatch<T, M>>}
  */
 
 class Derive extends Unit {
   /**
    * @param {API.MatchSelector<M>} from
-   * @param {API.MatchSelector<API.DirectMatch<T>>} to
+   * @param {API.TheCapabilityParser<API.DirectMatch<T>>} to
    * @param {API.Derives<T, M['value']>} derives
    */
   constructor(from, to, derives) {
@@ -235,6 +235,9 @@ class Derive extends Unit {
     this.from = from
     this.to = to
     this.derives = derives
+  }
+  get can() {
+    return this.to.can
   }
   /**
    * @param {API.Source} capability

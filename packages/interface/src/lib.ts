@@ -165,7 +165,9 @@ export interface ServiceMethod<
   O,
   X extends { error: true }
 > {
-  (input: Invocation<I>, context: InvocationContext): Await<Result<O, X>>
+  (input: Invocation<I>, context: InvocationContext): Await<
+    Result<O, X | InvocationError>
+  >
 }
 
 export type InvocationError =
@@ -309,7 +311,7 @@ export interface ConnectionView<T> extends Connection<T> {
   ): Await<InferServiceInvocations<I, T>>
 }
 
-export interface Server<T> {
+export interface TranpsortOptions {
   /**
    * Request decoder which is will be used by a server to decode HTTP Request
    * into an invocation `Batch` that will be executed using a `service`.
@@ -321,27 +323,33 @@ export interface Server<T> {
    * request.
    */
   readonly encoder: Transport.ResponseEncoder
+}
 
+export interface ValidatorOptions {
   /**
    * Takes authority parser that can be used to turn an `UCAN.Identity`
    * into `Ucanto.Authority`.
    */
   readonly authority?: AuthorityParser
 
+  readonly canIssue?: CanIssue["canIssue"]
+  readonly my?: InvocationContext["my"]
+  readonly resolve?: InvocationContext["resolve"]
+}
+
+export interface ServerOptions extends TranpsortOptions, ValidatorOptions {
   /**
    * Service DID which will be used to verify that received invocation
    * audience matches it.
    */
   readonly id: Identity
+}
 
+export interface Server<T> extends ServerOptions {
   /**
    * Actual service providing capability handlers.
    */
   readonly service: T
-
-  readonly canIssue?: CanIssue["canIssue"]
-  readonly my?: InvocationContext["my"]
-  readonly resolve?: InvocationContext["resolve"]
 }
 
 export interface ServerView<T> extends Server<T>, Transport.Channel<T> {

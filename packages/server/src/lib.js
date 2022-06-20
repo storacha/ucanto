@@ -1,5 +1,4 @@
 export * from "./server.js"
-export * from "./handler.js"
+// @ts-ignore
 export * from "./api.js"
-
-export { InvocationError } from "./server.js"
+export * from "./handler.js"
