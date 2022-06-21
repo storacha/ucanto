@@ -1,8 +1,8 @@
-import * as API from "@ucanto/interface"
-import * as CBOR from "./cbor/codec.js"
+import * as API from '@ucanto/interface'
+import * as CBOR from './cbor/codec.js'
 
 const HEADERS = Object.freeze({
-  "content-type": "application/cbor",
+  'content-type': 'application/cbor',
 })
 
 export const codec = CBOR
@@ -14,7 +14,7 @@ export const codec = CBOR
  * @param {I} result
  * @returns {API.HTTPResponse<I>}
  */
-export const encode = result => {
+export const encode = (result) => {
   return {
     headers: HEADERS,
     body: CBOR.encode(result),
@@ -29,8 +29,8 @@ export const encode = result => {
  * @returns {Promise<I>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers["content-type"] || headers["Content-Type"]
-  if (contentType !== "application/cbor") {
+  const contentType = headers['content-type'] || headers['Content-Type']
+  if (contentType !== 'application/cbor') {
     throw TypeError(
       `Only 'content-type: application/cbor' is supported, intsead got '${contentType}'`
     )

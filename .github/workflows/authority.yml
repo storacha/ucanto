@@ -6,14 +6,14 @@ on:
     branches:
       - main
     paths:
-      - "packages/interface/**"
-      - "packages/authority/**"
+      - 'packages/interface/**'
+      - 'packages/authority/**'
   pull_request:
     branches:
       - main
     paths:
-      - "packages/interface/**"
-      - ".github/workflows/authority.yml"
+      - 'packages/interface/**'
+      - '.github/workflows/authority.yml'
 jobs:
   check:
     name: Typecheck

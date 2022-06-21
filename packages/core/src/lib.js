@@ -1,5 +1,5 @@
-export * as Delegation from "./delegation.js"
-export { delegate, isDelegation } from "./delegation.js"
+export * as Delegation from './delegation.js'
+export { delegate, isDelegation } from './delegation.js'
 export {
   create as createLink,
   createV0 as createLegacyLink,
@@ -7,5 +7,5 @@ export {
   asLink,
   parse as parseLink,
   decode as decodeLink,
-} from "./link.js"
-export * as UCAN from "@ipld/dag-ucan"
+} from './link.js'
+export * as UCAN from '@ipld/dag-ucan'

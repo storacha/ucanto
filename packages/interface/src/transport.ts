@@ -1,11 +1,11 @@
-import type { Phantom, Await } from "@ipld/dag-ucan"
-import * as UCAN from "@ipld/dag-ucan"
+import type { Phantom, Await } from '@ipld/dag-ucan'
+import * as UCAN from '@ipld/dag-ucan'
 import type {
   ServiceInvocation,
   InferServiceInvocations,
   InferInvocations,
   Capability,
-} from "./lib.js"
+} from './lib.js'
 
 /**
  * This utility type can be used in place of `T[]` where you

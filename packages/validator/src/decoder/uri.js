@@ -1,5 +1,5 @@
-import * as API from "@ucanto/interface"
-import { Failure } from "../error.js"
+import * as API from '@ucanto/interface'
+import { Failure } from '../error.js'
 
 /**
  * @template {`${string}:`} Protocol
@@ -24,6 +24,6 @@ export const decode = (input, { protocol } = {}) => {
  * @param {{protocol: Protocol}} options
  * @returns {API.Decoder<string, URL & { protocol: Protocol }, API.Failure>}
  */
-export const match = options => ({
-  decode: input => decode(input, options),
+export const match = (options) => ({
+  decode: (input) => decode(input, options),
 })

@@ -1,5 +1,5 @@
-import * as API from "@ucanto/interface"
-import { sha256 } from "multiformats/hashes/sha2"
+import * as API from '@ucanto/interface'
+import { sha256 } from 'multiformats/hashes/sha2'
 
 /**
  * Creates a connection to a service.
@@ -8,7 +8,7 @@ import { sha256 } from "multiformats/hashes/sha2"
  * @param {API.ConnectionOptions<T>} options
  * @returns {API.ConnectionView<T>}
  */
-export const connect = options => new Connection(options)
+export const connect = (options) => new Connection(options)
 
 /**
  * @template T

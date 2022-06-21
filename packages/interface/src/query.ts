@@ -11,7 +11,7 @@ import type {
   Authority,
   SigningAuthority,
   Failure,
-} from "./lib.js"
+} from './lib.js'
 
 export type QueryInput = {
   [K in string]: Select | QueryInput
@@ -117,15 +117,15 @@ type Match<In extends Invocation, T extends Service> = {
 }[keyof T]
 
 type StoreAdd = (
-  input: Invocation<{ can: "store/add"; with: UCAN.DID; link: UCAN.Link }>
+  input: Invocation<{ can: 'store/add'; with: UCAN.DID; link: UCAN.Link }>
 ) => Result<
-  | { status: "done"; with: UCAN.DID; link: UCAN.Link }
-  | { status: "pending"; with: UCAN.DID; link: UCAN.Link; url: string },
+  | { status: 'done'; with: UCAN.DID; link: UCAN.Link }
+  | { status: 'pending'; with: UCAN.DID; link: UCAN.Link; url: string },
   Failure
 >
 
 type StoreRemove = (
-  input: Invocation<{ can: "store/remove"; with: UCAN.DID; link: UCAN.Link }>
+  input: Invocation<{ can: 'store/remove'; with: UCAN.DID; link: UCAN.Link }>
 ) => Result<boolean, Failure>
 
 type Store = {
@@ -142,9 +142,9 @@ type ToPath<T extends string> = T extends `${infer Base}/${infer Path}`
   ? [Base, ...ToPath<Path>]
   : [T]
 
-type A = ToPath<"">
-type B = ToPath<"foo">
-type C = ToPath<"foo/bar">
+type A = ToPath<''>
+type B = ToPath<'foo'>
+type C = ToPath<'foo/bar'>
 
 type Unpack<T> = T extends infer A & infer B ? [A, B] : []
 
@@ -169,7 +169,7 @@ const demo = async () => {
     issuer: alice,
     audience: bob,
     capability: {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
       link: car,
     },
@@ -179,7 +179,7 @@ const demo = async () => {
     issuer: alice,
     audience: bob,
     capability: {
-      can: "store/remove",
+      can: 'store/remove',
       with: alice.did(),
       link: car,
     },

@@ -1,4 +1,4 @@
-import * as API from "@ucanto/interface"
+import * as API from '@ucanto/interface'
 
 /**
  * @typedef {{
@@ -21,8 +21,8 @@ import * as API from "@ucanto/interface"
  * @param {string} [options.method]
  * @returns {API.Channel<T>}
  */
-export const open = ({ url, method = "POST", fetch = globalThis.fetch }) => {
-  if (typeof fetch === "undefined") {
+export const open = ({ url, method = 'POST', fetch = globalThis.fetch }) => {
+  if (typeof fetch === 'undefined') {
     throw new TypeError(
       `ucanto HTTP transport got undefined \`fetch\`. Try passing in a \`fetch\` implementation explicitly.`
     )
@@ -54,7 +54,7 @@ class Channel {
 
     const buffer = response.ok
       ? await response.arrayBuffer()
-      : HTTPError.throw("HTTP Request failed", response)
+      : HTTPError.throw('HTTP Request failed', response)
 
     return {
       headers: Object.fromEntries(response.headers.entries()),
@@ -83,10 +83,10 @@ class HTTPError extends Error {
    * @param {string} message
    * @param {Options} options
    */
-  constructor(message, { url, status = 500, statusText = "Server error" }) {
+  constructor(message, { url, status = 500, statusText = 'Server error' }) {
     super(message)
     /** @type {'HTTPError'} */
-    this.name = "HTTPError"
+    this.name = 'HTTPError'
     this.url = url
     this.status = status
     this.statusText = statusText

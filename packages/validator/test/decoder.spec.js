@@ -1,13 +1,13 @@
-import { URI, Link } from "../src/lib.js"
-import { test, assert } from "./test.js"
-import { CID } from "multiformats"
+import { URI, Link } from '../src/lib.js'
+import { test, assert } from './test.js'
+import { CID } from 'multiformats'
 
 {
   /** @type {[string, object][]} */
   const dataset = [
-    ["", { message: "Invalid URI" }],
-    ["did:key:zAlice", { href: "did:key:zAlice" }],
-    ["mailto:alice@mail.net", { href: "mailto:alice@mail.net" }],
+    ['', { message: 'Invalid URI' }],
+    ['did:key:zAlice', { href: 'did:key:zAlice' }],
+    ['mailto:alice@mail.net', { href: 'mailto:alice@mail.net' }],
   ]
 
   for (const [input, expect] of dataset) {
@@ -20,18 +20,18 @@ import { CID } from "multiformats"
 {
   /** @type {[string, `${string}:`, object][]} */
   const dataset = [
-    ["", "did:", { message: "Invalid URI" }],
-    ["did:key:zAlice", "did:", { href: "did:key:zAlice" }],
+    ['', 'did:', { message: 'Invalid URI' }],
+    ['did:key:zAlice', 'did:', { href: 'did:key:zAlice' }],
     [
-      "did:key:zAlice",
-      "mailto:",
-      { message: "Expected mailto: URI instead got did:key:zAlice" },
+      'did:key:zAlice',
+      'mailto:',
+      { message: 'Expected mailto: URI instead got did:key:zAlice' },
     ],
-    ["mailto:alice@mail.net", "mailto:", { href: "mailto:alice@mail.net" }],
+    ['mailto:alice@mail.net', 'mailto:', { href: 'mailto:alice@mail.net' }],
     [
-      "mailto:alice@mail.net",
-      "did:",
-      { message: "Expected did: URI instead got mailto:alice@mail.net" },
+      'mailto:alice@mail.net',
+      'did:',
+      { message: 'Expected did: URI instead got mailto:alice@mail.net' },
     ],
   ]
 
@@ -48,23 +48,23 @@ import { CID } from "multiformats"
   /** @type {unknown[][]} */
   const dataset = [
     [
-      CID.parse("bafkqaaa"),
+      CID.parse('bafkqaaa'),
       null,
-      { message: "Expected link to be CID with 0x70 codec" },
-      { message: "Expected link to be CID with 0x12 hashing algorithm" },
+      { message: 'Expected link to be CID with 0x70 codec' },
+      { message: 'Expected link to be CID with 0x12 hashing algorithm' },
       null,
       null,
     ],
     [
-      CID.parse("QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB"),
+      CID.parse('QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB'),
       null,
       null,
       null,
-      { message: "Expected link to be CID version 1 instead of 0" },
+      { message: 'Expected link to be CID version 1 instead of 0' },
       null,
     ],
     [
-      CID.parse("bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny"),
+      CID.parse('bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'),
       null,
       null,
       null,
@@ -74,24 +74,24 @@ import { CID } from "multiformats"
     [
       {},
       ...Array(5).fill({
-        message: "Expected link to be a CID instead of [object Object]",
+        message: 'Expected link to be a CID instead of [object Object]',
       }),
     ],
     [
-      "QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB",
+      'QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB',
       ...Array(5).fill({
         message:
-          "Expected link to be a CID instead of QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB",
+          'Expected link to be a CID instead of QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB',
       }),
     ],
     [
       null,
-      ...Array(5).fill({ message: "Expected link but got null instead" }),
+      ...Array(5).fill({ message: 'Expected link but got null instead' }),
       undefined,
     ],
     [
       undefined,
-      ...Array(4).fill({ message: "Expected link but got undefined instead" }),
+      ...Array(4).fill({ message: 'Expected link but got undefined instead' }),
       undefined,
     ],
   ]

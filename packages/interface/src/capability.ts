@@ -11,7 +11,7 @@ import {
   LinkedProof,
   Await,
   API,
-} from "./lib.js"
+} from './lib.js'
 
 export interface Source {
   capability: Capability
@@ -83,7 +83,7 @@ export interface DerivedMatch<T, M extends Match>
 
 export interface DeriveSelector<M extends Match, T extends ParsedCapability> {
   to: TheCapabilityParser<DirectMatch<T>>
-  derives: Derives<T, M["value"]>
+  derives: Derives<T, M['value']>
 }
 
 export interface Derives<T, U> {
@@ -130,7 +130,7 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
 
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   extends CapabilityParser<M> {
-  readonly can: M["value"]["can"]
+  readonly can: M['value']['can']
 }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
@@ -294,54 +294,54 @@ export interface ValidationOptions<
 }
 
 export interface DelegationError extends Failure {
-  name: "InvalidClaim"
+  name: 'InvalidClaim'
   causes: (InvalidCapability | EscalatedDelegation | DelegationError)[]
 
   cause: InvalidCapability | EscalatedDelegation | DelegationError
 }
 
 export interface EscalatedDelegation extends Failure {
-  name: "EscalatedCapability"
+  name: 'EscalatedCapability'
   claimed: ParsedCapability
   delegated: object
   cause: Failure
 }
 
 export interface UnknownCapability extends Failure {
-  name: "UnknownCapability"
+  name: 'UnknownCapability'
   capability: Capability
 }
 
 export interface MalformedCapability extends Failure {
-  name: "MalformedCapability"
+  name: 'MalformedCapability'
   capability: Capability
 }
 
 export interface InvalidAudience extends Failure {
-  readonly name: "InvalidAudience"
+  readonly name: 'InvalidAudience'
   readonly audience: Identity
   readonly delegation: Delegation
 }
 
 export interface UnavailableProof extends Failure {
-  readonly name: "UnavailableProof"
+  readonly name: 'UnavailableProof'
   readonly link: LinkedProof
 }
 
 export interface Expired extends Failure {
-  readonly name: "Expired"
+  readonly name: 'Expired'
   readonly delegation: Delegation
   readonly expiredAt: number
 }
 
 export interface NotValidBefore extends Failure {
-  readonly name: "NotValidBefore"
+  readonly name: 'NotValidBefore'
   readonly delegation: Delegation
   readonly validAt: number
 }
 
 export interface InvalidSignature extends Failure {
-  readonly name: "InvalidSignature"
+  readonly name: 'InvalidSignature'
   readonly issuer: Identity
   readonly audience: Identity
   readonly delegation: Delegation
@@ -357,13 +357,13 @@ export type InvalidProof =
   | InvalidAudience
 
 export interface Unauthorized extends Failure {
-  name: "Unauthorized"
+  name: 'Unauthorized'
   cause: InvalidCapability | InvalidProof | InvalidClaim
 }
 
 export interface InvalidClaim extends Failure {
   issuer: Identity
-  name: "InvalidClaim"
+  name: 'InvalidClaim'
   capability: ParsedCapability
   delegation: Delegation
 

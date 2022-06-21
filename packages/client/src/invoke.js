@@ -1,5 +1,5 @@
-import * as API from "@ucanto/interface"
-import { execute } from "./connection.js"
+import * as API from '@ucanto/interface'
+import { execute } from './connection.js'
 
 /**
  * @template {API.Capability} Capability

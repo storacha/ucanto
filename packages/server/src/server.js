@@ -1,14 +1,14 @@
-import * as API from "@ucanto/interface"
-export * from "@ucanto/interface"
-import { InvalidAudience } from "@ucanto/validator"
-import { Authority } from "@ucanto/authority"
+import * as API from '@ucanto/interface'
+export * from '@ucanto/interface'
+import { InvalidAudience } from '@ucanto/validator'
+import { Authority } from '@ucanto/authority'
 export {
   capability,
   URI,
   Link,
   Failure,
   MalformedCapability,
-} from "@ucanto/validator"
+} from '@ucanto/validator'
 
 /**
  * Creates a connection to a service.
@@ -17,7 +17,7 @@ export {
  * @param {API.Server<Service>} options
  * @returns {API.ServerView<Service>}
  */
-export const create = options => new Server(options)
+export const create = (options) => new Server(options)
 
 /**
  * @template Service
@@ -107,10 +107,10 @@ export const invoke = async (invocation, server) => {
 
   const [capability] = invocation.capabilities
 
-  const path = capability.can.split("/")
+  const path = capability.can.split('/')
   const method = /** @type {string} */ (path.pop())
   const handler = resolve(server.service, path)
-  if (handler == null || typeof handler[method] !== "function") {
+  if (handler == null || typeof handler[method] !== 'function') {
     return /** @type {API.Result<any, API.HandlerNotFound>} */ (
       new HandlerNotFound(capability)
     )
@@ -144,7 +144,7 @@ export class HandlerNotFound extends RangeError {
   }
   /** @type {'HandlerNotFound'} */
   get name() {
-    return "HandlerNotFound"
+    return 'HandlerNotFound'
   }
   get message() {
     return `service does not implement {can: "${this.capability.can}"} handler`
@@ -175,7 +175,7 @@ class HandlerExecutionError extends Error {
     this.error = true
   }
   get name() {
-    return "HandlerExecutionError"
+    return 'HandlerExecutionError'
   }
   get message() {
     return `service handler {can: "${this.capability.can}"} error: ${this.cause.message}`

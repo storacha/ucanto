@@ -1,5 +1,5 @@
-import { CID } from "multiformats"
-import * as API from "@ucanto/interface"
+import { CID } from 'multiformats'
+import * as API from '@ucanto/interface'
 
 /**
  * @template {number} Code
@@ -16,7 +16,7 @@ export const create = (code, digest) =>
  * @param {API.MultihashDigest<Alg>} digest
  * @return {API.Link<unknown, 0x70, Alg, 0> & CID}
  */
-export const createV0 = digest => /** @type {any} */ (CID.createV0(digest))
+export const createV0 = (digest) => /** @type {any} */ (CID.createV0(digest))
 
 /**
  * Type predicate returns true if value is the link.
@@ -25,7 +25,7 @@ export const createV0 = digest => /** @type {any} */ (CID.createV0(digest))
  * @param {unknown} value
  * @returns {value is (L & CID)}
  */
-export const isLink = value =>
+export const isLink = (value) =>
   value != null && /** @type {{asCID: unknown}} */ (value).asCID === value
 
 export const asLink =

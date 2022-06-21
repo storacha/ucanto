@@ -1,6 +1,6 @@
-import * as UCAN from "@ipld/dag-ucan"
-import * as API from "@ucanto/interface"
-import * as Link from "./link.js"
+import * as UCAN from '@ipld/dag-ucan'
+import * as API from '@ucanto/interface'
+import * as Link from './link.js'
 
 /**
  * @deprecated
@@ -15,7 +15,7 @@ export const isLink =
  * @param {API.Proof} proof
  * @return {proof is API.Delegation}
  */
-export const isDelegation = proof => !Link.isLink(proof)
+export const isDelegation = (proof) => !Link.isLink(proof)
 
 /**
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of
@@ -208,7 +208,7 @@ const exportDAG = function* (root, blocks) {
  * @param {Iterable<API.Block & { data?: UCAN.UCAN }>} dag
  * @returns {API.Delegation<C>}
  */
-export const importDAG = dag => {
+export const importDAG = (dag) => {
   /** @type {Array<[string, API.Block]>} */
   let entries = []
   for (const block of dag) {
@@ -217,7 +217,7 @@ export const importDAG = dag => {
 
   const last = entries.pop()
   if (!last) {
-    throw new RangeError("Empty DAG can not be turned into a dalagetion")
+    throw new RangeError('Empty DAG can not be turned into a dalagetion')
   } else {
     const [, root] = last
 
@@ -237,7 +237,7 @@ export const create = ({ root, blocks }) => new Delegation(root, blocks)
 /**
  * @param {API.Delegation} delegation
  */
-const proofs = delegation => {
+const proofs = (delegation) => {
   /** @type {API.Proof[]} */
   const proofs = []
   const { root, blocks } = delegation
@@ -251,7 +251,7 @@ const proofs = delegation => {
 
   // we cache result of this computation as this property may get accessed
   // more than once.
-  Object.defineProperty(delegation, "proofs", { value: proofs })
+  Object.defineProperty(delegation, 'proofs', { value: proofs })
   return proofs
 }
 

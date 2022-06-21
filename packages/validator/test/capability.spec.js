@@ -1,10 +1,10 @@
-import { capability, URI, Link } from "../src/lib.js"
-import * as API from "@ucanto/interface"
-import { Failure } from "../src/error.js"
-import { the } from "../src/util.js"
-import { CID } from "multiformats"
-import { test, assert } from "./test.js"
-import { alice, bob, mallory } from "./fixtures.js"
+import { capability, URI, Link } from '../src/lib.js'
+import * as API from '@ucanto/interface'
+import { Failure } from '../src/error.js'
+import { the } from '../src/util.js'
+import { CID } from 'multiformats'
+import { test, assert } from './test.js'
+import { alice, bob, mallory } from './fixtures.js'
 
 /**
  * @template {API.Capability[]} C
@@ -20,10 +20,10 @@ const delegate = (capabilities, delegation = {}) =>
     index,
   }))
 
-test("capability selects matches", () => {
+test('capability selects matches', () => {
   const read = capability({
-    can: "file/read",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/read',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) => {
       if (claimed.uri.pathname.startsWith(delegated.uri.pathname)) {
         return true
@@ -36,10 +36,10 @@ test("capability selects matches", () => {
   })
 
   const d1 = delegate([
-    { can: "file/read", with: "space://zAlice" },
-    { can: "file/write", with: "file:///home/zAlice/" },
-    { can: "file/read", with: "file:///home/zAlice/photos" },
-    { can: "file/read+write", with: "file:///home/zAlice" },
+    { can: 'file/read', with: 'space://zAlice' },
+    { can: 'file/write', with: 'file:///home/zAlice/' },
+    { can: 'file/read', with: 'file:///home/zAlice/photos' },
+    { can: 'file/read+write', with: 'file:///home/zAlice' },
   ])
 
   const v1 = read.select(d1)
@@ -49,44 +49,44 @@ test("capability selects matches", () => {
       {
         source: [d1[2]],
         value: {
-          can: "file/read",
-          uri: { href: "file:///home/zAlice/photos" },
+          can: 'file/read',
+          uri: { href: 'file:///home/zAlice/photos' },
         },
       },
     ],
     errors: [
       {
-        name: "InvalidClaim",
+        name: 'InvalidClaim',
         context: {
-          can: "file/read",
+          can: 'file/read',
           value: undefined,
         },
         causes: [
           {
-            name: "MalformedCapability",
-            capability: { can: "file/read", with: "space://zAlice" },
+            name: 'MalformedCapability',
+            capability: { can: 'file/read', with: 'space://zAlice' },
             cause: {
-              message: "Expected file: URI instead got space://zAlice",
+              message: 'Expected file: URI instead got space://zAlice',
             },
           },
         ],
       },
     ],
     unknown: [
-      { can: "file/write", with: "file:///home/zAlice/" },
+      { can: 'file/write', with: 'file:///home/zAlice/' },
       {
-        can: "file/read+write",
-        with: "file:///home/zAlice",
+        can: 'file/read+write',
+        with: 'file:///home/zAlice',
       },
     ],
   })
 
   const [match] = v1.matches
   const d2 = delegate([
-    { can: "file/read+write", with: "file:///home/zAlice" },
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/read", with: "file:///home/zAlice/photos/public" },
-    { can: "file/read", with: "file:///home/zBob" },
+    { can: 'file/read+write', with: 'file:///home/zAlice' },
+    { can: 'file/read', with: 'file:///home/zAlice/' },
+    { can: 'file/read', with: 'file:///home/zAlice/photos/public' },
+    { can: 'file/read', with: 'file:///home/zBob' },
   ])
   const v2 = match.select(d2)
 
@@ -95,37 +95,37 @@ test("capability selects matches", () => {
       {
         source: [d2[1]],
         value: {
-          can: "file/read",
-          uri: { href: "file:///home/zAlice/" },
+          can: 'file/read',
+          uri: { href: 'file:///home/zAlice/' },
         },
       },
     ],
     unknown: [
       {
-        can: "file/read+write",
-        with: "file:///home/zAlice",
+        can: 'file/read+write',
+        with: 'file:///home/zAlice',
       },
     ],
     errors: [
       {
-        name: "InvalidClaim",
+        name: 'InvalidClaim',
         context: {
           value: {
-            can: "file/read",
-            uri: { href: "file:///home/zAlice/photos" },
+            can: 'file/read',
+            uri: { href: 'file:///home/zAlice/photos' },
             caveats: {},
           },
         },
         causes: [
           {
-            name: "EscalatedCapability",
+            name: 'EscalatedCapability',
             claimed: {
-              can: "file/read",
-              uri: { href: "file:///home/zAlice/photos" },
+              can: 'file/read',
+              uri: { href: 'file:///home/zAlice/photos' },
             },
             delegated: {
-              can: "file/read",
-              uri: { href: "file:///home/zAlice/photos/public" },
+              can: 'file/read',
+              uri: { href: 'file:///home/zAlice/photos/public' },
             },
             cause: {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zAlice/photos/public'`,
@@ -134,24 +134,24 @@ test("capability selects matches", () => {
         ],
       },
       {
-        name: "InvalidClaim",
+        name: 'InvalidClaim',
         context: {
           value: {
-            can: "file/read",
-            uri: { href: "file:///home/zAlice/photos" },
+            can: 'file/read',
+            uri: { href: 'file:///home/zAlice/photos' },
             caveats: {},
           },
         },
         causes: [
           {
-            name: "EscalatedCapability",
+            name: 'EscalatedCapability',
             claimed: {
-              can: "file/read",
-              uri: { href: "file:///home/zAlice/photos" },
+              can: 'file/read',
+              uri: { href: 'file:///home/zAlice/photos' },
             },
             delegated: {
-              can: "file/read",
-              uri: { href: "file:///home/zBob" },
+              can: 'file/read',
+              uri: { href: 'file:///home/zBob' },
             },
             cause: {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zBob'`,
@@ -163,10 +163,10 @@ test("capability selects matches", () => {
   })
 })
 
-test("derived capability chain", () => {
+test('derived capability chain', () => {
   const verify = capability({
-    can: "account/verify",
-    with: URI.match({ protocol: "mailto:" }),
+    can: 'account/verify',
+    with: URI.match({ protocol: 'mailto:' }),
     derives: (claimed, delegated) => {
       if (claimed.uri.href.startsWith(delegated.uri.href)) {
         return true
@@ -180,8 +180,8 @@ test("derived capability chain", () => {
 
   const register = verify.derive({
     to: capability({
-      can: "account/register",
-      with: URI.match({ protocol: "mailto:" }),
+      can: 'account/register',
+      with: URI.match({ protocol: 'mailto:' }),
       derives: (claimed, delegated) => {
         /** @type {"account/register"} */
         const c1 = claimed.can
@@ -209,8 +209,8 @@ test("derived capability chain", () => {
 
   const d1 = delegate([
     {
-      can: "account/register",
-      with: "mailto:zAlice@web.mail",
+      can: 'account/register',
+      with: 'mailto:zAlice@web.mail',
     },
   ])
 
@@ -223,9 +223,9 @@ test("derived capability chain", () => {
         {
           source: [d1[0]],
           value: {
-            can: "account/register",
+            can: 'account/register',
             uri: {
-              href: "mailto:zAlice@web.mail",
+              href: 'mailto:zAlice@web.mail',
             },
           },
         },
@@ -233,13 +233,13 @@ test("derived capability chain", () => {
       unknown: [],
       errors: [],
     },
-    "selects registration capability"
+    'selects registration capability'
   )
 
   const d2 = delegate([
     {
-      can: "account/register",
-      with: "did:key:zAlice",
+      can: 'account/register',
+      with: 'did:key:zAlice',
     },
   ])
 
@@ -247,16 +247,16 @@ test("derived capability chain", () => {
     matches: [],
     errors: [
       {
-        name: "InvalidClaim",
+        name: 'InvalidClaim',
         context: {
-          can: "account/register",
+          can: 'account/register',
         },
         causes: [
           {
-            name: "MalformedCapability",
+            name: 'MalformedCapability',
             capability: {
-              can: "account/register",
-              with: "did:key:zAlice",
+              can: 'account/register',
+              with: 'did:key:zAlice',
             },
             cause: {
               message: `Expected mailto: URI instead got did:key:zAlice`,
@@ -272,8 +272,8 @@ test("derived capability chain", () => {
 
   const d3 = delegate([
     {
-      can: "account/verify",
-      with: "mailto:zAlice@web.mail",
+      can: 'account/verify',
+      with: 'mailto:zAlice@web.mail',
     },
   ])
 
@@ -284,9 +284,9 @@ test("derived capability chain", () => {
         {
           source: [d3[0]],
           value: {
-            can: "account/verify",
+            can: 'account/verify',
             uri: {
-              href: "mailto:zAlice@web.mail",
+              href: 'mailto:zAlice@web.mail',
             },
           },
         },
@@ -294,13 +294,13 @@ test("derived capability chain", () => {
       unknown: [],
       errors: [],
     },
-    "matches verification"
+    'matches verification'
   )
 
   const d4 = delegate([
     {
-      can: "account/verify",
-      with: "mailto:bob@web.mail",
+      can: 'account/verify',
+      with: 'mailto:bob@web.mail',
     },
   ])
 
@@ -311,23 +311,23 @@ test("derived capability chain", () => {
       unknown: [],
       errors: [
         {
-          name: "InvalidClaim",
+          name: 'InvalidClaim',
           context: {
             value: {
-              can: "account/register",
-              uri: { href: "mailto:zAlice@web.mail" },
+              can: 'account/register',
+              uri: { href: 'mailto:zAlice@web.mail' },
             },
           },
           causes: [
             {
-              name: "EscalatedCapability",
+              name: 'EscalatedCapability',
               claimed: {
-                can: "account/register",
-                uri: { href: "mailto:zAlice@web.mail" },
+                can: 'account/register',
+                uri: { href: 'mailto:zAlice@web.mail' },
               },
               delegated: {
-                can: "account/verify",
-                uri: { href: "mailto:bob@web.mail" },
+                can: 'account/verify',
+                uri: { href: 'mailto:bob@web.mail' },
               },
               cause: {
                 message: `'mailto:zAlice@web.mail' != 'mailto:bob@web.mail'`,
@@ -337,13 +337,13 @@ test("derived capability chain", () => {
         },
       ],
     },
-    "does not match on different email"
+    'does not match on different email'
   )
 
   const d5 = delegate([
     {
-      can: "account/register",
-      with: "mailto:zAlice@web.mail",
+      can: 'account/register',
+      with: 'mailto:zAlice@web.mail',
     },
   ])
 
@@ -353,24 +353,24 @@ test("derived capability chain", () => {
       matches: [
         {
           value: {
-            can: "account/register",
-            uri: { href: "mailto:zAlice@web.mail" },
+            can: 'account/register',
+            uri: { href: 'mailto:zAlice@web.mail' },
           },
         },
       ],
       unknown: [],
       errors: [],
     },
-    "normal delegation also works"
+    'normal delegation also works'
   )
 
   const registration = {
-    can: the("account/register"),
-    with: the("mailto:zAlice@web.mail"),
+    can: the('account/register'),
+    with: the('mailto:zAlice@web.mail'),
   }
   const verification = {
-    can: the("account/verify"),
-    with: the("mailto:zAlice@web.mail"),
+    can: the('account/verify'),
+    with: the('mailto:zAlice@web.mail'),
   }
 
   const d6 = delegate([verification])
@@ -387,15 +387,15 @@ test("derived capability chain", () => {
         {
           source: [d6[0]],
           value: {
-            can: "account/verify",
-            uri: { href: "mailto:zAlice@web.mail" },
+            can: 'account/verify',
+            uri: { href: 'mailto:zAlice@web.mail' },
           },
         },
       ],
       unknown: [],
       errors: [],
     },
-    "derived capability is recursive"
+    'derived capability is recursive'
   )
 
   assert.containSubset(
@@ -408,14 +408,14 @@ test("derived capability chain", () => {
       unknown: [registration],
       errors: [],
     },
-    "deriviation is works one way"
+    'deriviation is works one way'
   )
 })
 
-test("capability amplification", () => {
+test('capability amplification', () => {
   const read = capability({
-    can: "file/read",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/read',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -424,8 +424,8 @@ test("capability amplification", () => {
   })
 
   const write = capability({
-    can: "file/write",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/write',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -435,8 +435,8 @@ test("capability amplification", () => {
 
   const readwrite = read.and(write).derive({
     to: capability({
-      can: "file/read+write",
-      with: URI.match({ protocol: "file:" }),
+      can: 'file/read+write',
+      with: URI.match({ protocol: 'file:' }),
       derives: (claimed, delegated) =>
         claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
         new Failure(
@@ -459,8 +459,8 @@ test("capability amplification", () => {
   })
 
   const d1 = delegate([
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/write", with: "file:///home/zAlice/" },
+    { can: 'file/read', with: 'file:///home/zAlice/' },
+    { can: 'file/write', with: 'file:///home/zAlice/' },
   ])
 
   assert.containSubset(
@@ -469,16 +469,16 @@ test("capability amplification", () => {
       matches: [],
       errors: [],
       unknown: [
-        { can: "file/read", with: "file:///home/zAlice/" },
-        { can: "file/write", with: "file:///home/zAlice/" },
+        { can: 'file/read', with: 'file:///home/zAlice/' },
+        { can: 'file/write', with: 'file:///home/zAlice/' },
       ],
     },
-    "expects derived capability read+write"
+    'expects derived capability read+write'
   )
 
   const d2 = delegate([
-    { can: "file/read+write", with: "file:///home/zAlice/public" },
-    { can: "file/write", with: "file:///home/zAlice/" },
+    { can: 'file/read+write', with: 'file:///home/zAlice/public' },
+    { can: 'file/write', with: 'file:///home/zAlice/' },
   ])
 
   const selected = readwrite.select(d2)
@@ -490,21 +490,21 @@ test("capability amplification", () => {
         {
           source: [d2[0]],
           value: {
-            can: "file/read+write",
-            uri: { href: "file:///home/zAlice/public" },
+            can: 'file/read+write',
+            uri: { href: 'file:///home/zAlice/public' },
           },
         },
       ],
       errors: [],
-      unknown: [{ can: "file/write", with: "file:///home/zAlice/" }],
+      unknown: [{ can: 'file/write', with: 'file:///home/zAlice/' }],
     },
-    "only selected matched"
+    'only selected matched'
   )
 
   const [rw] = selected.matches
 
   const d3 = delegate([
-    { can: "file/read+write", with: "file:///home/zAlice/public" },
+    { can: 'file/read+write', with: 'file:///home/zAlice/public' },
   ])
 
   assert.containSubset(
@@ -514,19 +514,19 @@ test("capability amplification", () => {
         {
           source: [d3[0]],
           value: {
-            can: "file/read+write",
-            uri: { href: "file:///home/zAlice/public" },
+            can: 'file/read+write',
+            uri: { href: 'file:///home/zAlice/public' },
           },
         },
       ],
       errors: [],
       unknown: [],
     },
-    "can derive from matching"
+    'can derive from matching'
   )
 
   const d4 = delegate([
-    { can: "file/read+write", with: "file:///home/zAlice/public/photos" },
+    { can: 'file/read+write', with: 'file:///home/zAlice/public/photos' },
   ])
 
   assert.containSubset(
@@ -537,23 +537,23 @@ test("capability amplification", () => {
       errors: [
         {
           error: true,
-          name: "InvalidClaim",
+          name: 'InvalidClaim',
           context: {
             value: {
-              can: "file/read+write",
-              uri: { href: "file:///home/zAlice/public" },
+              can: 'file/read+write',
+              uri: { href: 'file:///home/zAlice/public' },
             },
           },
           causes: [
             {
-              name: "EscalatedCapability",
+              name: 'EscalatedCapability',
               claimed: {
-                can: "file/read+write",
-                uri: { href: "file:///home/zAlice/public" },
+                can: 'file/read+write',
+                uri: { href: 'file:///home/zAlice/public' },
               },
               delegated: {
-                can: "file/read+write",
-                uri: { href: "file:///home/zAlice/public/photos" },
+                can: 'file/read+write',
+                uri: { href: 'file:///home/zAlice/public/photos' },
               },
               cause: {
                 message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
@@ -563,11 +563,11 @@ test("capability amplification", () => {
         },
       ],
     },
-    "can not derive from escalated path"
+    'can not derive from escalated path'
   )
 
   const d5 = delegate([
-    { can: "file/read+write", with: "file:///home/zAlice/" },
+    { can: 'file/read+write', with: 'file:///home/zAlice/' },
   ])
 
   assert.containSubset(
@@ -577,20 +577,20 @@ test("capability amplification", () => {
         {
           source: [d5[0]],
           value: {
-            can: "file/read+write",
-            uri: { href: "file:///home/zAlice/" },
+            can: 'file/read+write',
+            uri: { href: 'file:///home/zAlice/' },
           },
         },
       ],
       unknown: [],
       errors: [],
     },
-    "can derive from greater capabilities"
+    'can derive from greater capabilities'
   )
 
   const d6 = delegate([
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/write", with: "file:///home/zAlice/public" },
+    { can: 'file/read', with: 'file:///home/zAlice/' },
+    { can: 'file/write', with: 'file:///home/zAlice/public' },
   ])
 
   const rnw = rw.select(d6)
@@ -603,12 +603,12 @@ test("capability amplification", () => {
           source: [d6[0], d6[1]],
           value: [
             {
-              can: "file/read",
-              uri: { href: "file:///home/zAlice/" },
+              can: 'file/read',
+              uri: { href: 'file:///home/zAlice/' },
             },
             {
-              can: "file/write",
-              uri: { href: "file:///home/zAlice/public" },
+              can: 'file/write',
+              uri: { href: 'file:///home/zAlice/public' },
             },
           ],
         },
@@ -616,14 +616,14 @@ test("capability amplification", () => {
       unknown: [],
       errors: [],
     },
-    "can derive amplification"
+    'can derive amplification'
   )
 
   const [reandnwrite] = rnw.matches
 
   const d7 = delegate([
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/write", with: "file:///home/zAlice/" },
+    { can: 'file/read', with: 'file:///home/zAlice/' },
+    { can: 'file/write', with: 'file:///home/zAlice/' },
   ])
 
   assert.containSubset(
@@ -634,12 +634,12 @@ test("capability amplification", () => {
           source: [d7[0], d7[1]],
           value: [
             {
-              can: "file/read",
-              uri: { href: "file:///home/zAlice/" },
+              can: 'file/read',
+              uri: { href: 'file:///home/zAlice/' },
             },
             {
-              can: "file/write",
-              uri: { href: "file:///home/zAlice/" },
+              can: 'file/write',
+              uri: { href: 'file:///home/zAlice/' },
             },
           ],
         },
@@ -647,12 +647,12 @@ test("capability amplification", () => {
       unknown: [],
       errors: [],
     },
-    "can derive amplification"
+    'can derive amplification'
   )
 
   const d8 = delegate([
-    { can: "file/read", with: "file:///home/zAlice/public/photos/" },
-    { can: "file/write", with: "file:///home/zAlice/public" },
+    { can: 'file/read', with: 'file:///home/zAlice/public/photos/' },
+    { can: 'file/write', with: 'file:///home/zAlice/public' },
   ])
 
   assert.containSubset(
@@ -662,28 +662,28 @@ test("capability amplification", () => {
       unknown: [],
       errors: [
         {
-          name: "InvalidClaim",
+          name: 'InvalidClaim',
           context: {
             value: {
-              can: "file/read+write",
-              uri: { href: "file:///home/zAlice/public" },
+              can: 'file/read+write',
+              uri: { href: 'file:///home/zAlice/public' },
             },
           },
           causes: [
             {
-              name: "EscalatedCapability",
+              name: 'EscalatedCapability',
               claimed: {
-                can: "file/read+write",
-                uri: { href: "file:///home/zAlice/public" },
+                can: 'file/read+write',
+                uri: { href: 'file:///home/zAlice/public' },
               },
               delegated: [
                 {
-                  can: "file/read",
-                  uri: { href: "file:///home/zAlice/public/photos/" },
+                  can: 'file/read',
+                  uri: { href: 'file:///home/zAlice/public/photos/' },
                 },
                 {
-                  can: "file/write",
-                  uri: { href: "file:///home/zAlice/public" },
+                  can: 'file/write',
+                  uri: { href: 'file:///home/zAlice/public' },
                 },
               ],
               cause: {
@@ -694,15 +694,15 @@ test("capability amplification", () => {
         },
       ],
     },
-    "can derive amplification"
+    'can derive amplification'
   )
 
   const [r1, w1] = delegate([
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/write", with: "file:///home/zAlice/" },
+    { can: 'file/read', with: 'file:///home/zAlice/' },
+    { can: 'file/write', with: 'file:///home/zAlice/' },
   ])
 
-  const [r2] = delegate([{ can: "file/read", with: "file:///home/" }])
+  const [r2] = delegate([{ can: 'file/read', with: 'file:///home/' }])
 
   assert.containSubset(
     reandnwrite.select([r1, w1, r2]),
@@ -712,12 +712,12 @@ test("capability amplification", () => {
           source: [r1, w1],
           value: [
             {
-              can: "file/read",
-              uri: { href: "file:///home/zAlice/" },
+              can: 'file/read',
+              uri: { href: 'file:///home/zAlice/' },
             },
             {
-              can: "file/write",
-              uri: { href: "file:///home/zAlice/" },
+              can: 'file/write',
+              uri: { href: 'file:///home/zAlice/' },
             },
           ],
         },
@@ -725,12 +725,12 @@ test("capability amplification", () => {
           source: [r2, w1],
           value: [
             {
-              can: "file/read",
-              uri: { href: "file:///home/" },
+              can: 'file/read',
+              uri: { href: 'file:///home/' },
             },
             {
-              can: "file/write",
-              uri: { href: "file:///home/zAlice/" },
+              can: 'file/write',
+              uri: { href: 'file:///home/zAlice/' },
             },
           ],
         },
@@ -738,14 +738,14 @@ test("capability amplification", () => {
       unknown: [],
       errors: [],
     },
-    "selects all combinations"
+    'selects all combinations'
   )
 })
 
-test("capability or combinator", () => {
+test('capability or combinator', () => {
   const read = capability({
-    can: "file/read",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/read',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -754,8 +754,8 @@ test("capability or combinator", () => {
   })
 
   const write = capability({
-    can: "file/write",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/write',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -766,8 +766,8 @@ test("capability or combinator", () => {
   const readwrite = read.or(write)
 
   const [r, w] = delegate([
-    { can: "file/read", with: "file:///home/zAlice/" },
-    { can: "file/write", with: "file:///home/zAlice/" },
+    { can: 'file/read', with: 'file:///home/zAlice/' },
+    { can: 'file/write', with: 'file:///home/zAlice/' },
   ])
 
   const selection = readwrite.select([r, w])
@@ -779,29 +779,29 @@ test("capability or combinator", () => {
         {
           source: [r],
           value: {
-            can: "file/read",
-            uri: { href: "file:///home/zAlice/" },
+            can: 'file/read',
+            uri: { href: 'file:///home/zAlice/' },
           },
         },
         {
           source: [w],
           value: {
-            can: "file/write",
-            uri: { href: "file:///home/zAlice/" },
+            can: 'file/write',
+            uri: { href: 'file:///home/zAlice/' },
           },
         },
       ],
       errors: [],
       unknown: [],
     },
-    "matches both capabilities"
+    'matches both capabilities'
   )
 })
 
-test("parse with caveats", () => {
+test('parse with caveats', () => {
   const storeAdd = capability({
-    can: "store/add",
-    with: URI.match({ protocol: "did:" }),
+    can: 'store/add',
+    with: URI.match({ protocol: 'did:' }),
     caveats: {
       link: Link.optional(),
     },
@@ -816,7 +816,7 @@ test("parse with caveats", () => {
       ) {
         return new Failure(
           `Link ${
-            claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+            claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
           }violates imposed ${delegated.caveats.link} constraint`
         )
       } else {
@@ -826,7 +826,7 @@ test("parse with caveats", () => {
   })
 
   const v1 = storeAdd.select(
-    delegate([{ can: "store/add", with: "did:key:zAlice", link: 5 }])
+    delegate([{ can: 'store/add', with: 'did:key:zAlice', link: 5 }])
   )
 
   assert.containSubset(v1, {
@@ -834,16 +834,16 @@ test("parse with caveats", () => {
     unknown: [],
     errors: [
       {
-        name: "InvalidClaim",
+        name: 'InvalidClaim',
         context: {
-          can: "store/add",
+          can: 'store/add',
         },
         causes: [
           {
-            name: "MalformedCapability",
-            capability: { can: "store/add", with: "did:key:zAlice", link: 5 },
+            name: 'MalformedCapability',
+            capability: { can: 'store/add', with: 'did:key:zAlice', link: 5 },
             cause: {
-              message: "Expected link to be a CID instead of 5",
+              message: 'Expected link to be a CID instead of 5',
             },
           },
         ],
@@ -852,7 +852,7 @@ test("parse with caveats", () => {
   })
 
   const v2 = storeAdd.select(
-    delegate([{ can: "store/add", with: "did:key:zAlice" }])
+    delegate([{ can: 'store/add', with: 'did:key:zAlice' }])
   )
 
   assert.containSubset(v2, {
@@ -861,8 +861,8 @@ test("parse with caveats", () => {
     matches: [
       {
         value: {
-          can: "store/add",
-          uri: { href: "did:key:zAlice" },
+          can: 'store/add',
+          uri: { href: 'did:key:zAlice' },
           caveats: {},
         },
       },
@@ -874,10 +874,10 @@ test("parse with caveats", () => {
   const v3 = match.select(
     delegate([
       {
-        can: "store/add",
-        with: "did:key:zAlice",
+        can: 'store/add',
+        with: 'did:key:zAlice',
         link: CID.parse(
-          "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+          'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
         ),
       },
     ])
@@ -886,28 +886,28 @@ test("parse with caveats", () => {
   assert.containSubset(v3, {
     errors: [
       {
-        name: "InvalidClaim",
+        name: 'InvalidClaim',
         context: {
           value: {
-            can: "store/add",
-            uri: { href: "did:key:zAlice" },
+            can: 'store/add',
+            uri: { href: 'did:key:zAlice' },
             caveats: {},
           },
         },
         causes: [
           {
-            name: "EscalatedCapability",
+            name: 'EscalatedCapability',
             claimed: {
-              can: "store/add",
-              uri: { href: "did:key:zAlice" },
+              can: 'store/add',
+              uri: { href: 'did:key:zAlice' },
               caveats: {},
             },
             delegated: {
-              can: "store/add",
-              uri: { href: "did:key:zAlice" },
+              can: 'store/add',
+              uri: { href: 'did:key:zAlice' },
               caveats: {
                 link: CID.parse(
-                  "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+                  'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
                 ),
               },
             },
@@ -925,10 +925,10 @@ test("parse with caveats", () => {
   const v4 = storeAdd.select(
     delegate([
       {
-        can: "store/add",
-        with: "did:key:zAlice",
+        can: 'store/add',
+        with: 'did:key:zAlice',
         link: CID.parse(
-          "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+          'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
         ),
       },
     ])
@@ -938,10 +938,10 @@ test("parse with caveats", () => {
   const v5 = match2.select(
     delegate([
       {
-        can: "store/add",
-        with: "did:key:zAlice",
+        can: 'store/add',
+        with: 'did:key:zAlice',
         link: CID.parse(
-          "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+          'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
         ),
       },
     ])
@@ -953,11 +953,11 @@ test("parse with caveats", () => {
     matches: [
       {
         value: {
-          can: "store/add",
-          uri: { href: "did:key:zAlice" },
+          can: 'store/add',
+          uri: { href: 'did:key:zAlice' },
           caveats: {
             link: CID.parse(
-              "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+              'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
             ),
           },
         },
@@ -968,10 +968,10 @@ test("parse with caveats", () => {
   const v6 = match2.select(
     delegate([
       {
-        can: "store/add",
-        with: "did:key:zAlice",
+        can: 'store/add',
+        with: 'did:key:zAlice',
         link: CID.parse(
-          "bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny"
+          'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
         ),
       },
     ])
@@ -980,36 +980,36 @@ test("parse with caveats", () => {
   assert.containSubset(v6, {
     errors: [
       {
-        name: "InvalidClaim",
+        name: 'InvalidClaim',
         context: {
           value: {
-            can: "store/add",
-            uri: { href: "did:key:zAlice" },
+            can: 'store/add',
+            uri: { href: 'did:key:zAlice' },
             caveats: {
               link: CID.parse(
-                "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+                'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
               ),
             },
           },
         },
         causes: [
           {
-            name: "EscalatedCapability",
+            name: 'EscalatedCapability',
             claimed: {
-              can: "store/add",
-              uri: { href: "did:key:zAlice" },
+              can: 'store/add',
+              uri: { href: 'did:key:zAlice' },
               caveats: {
                 link: CID.parse(
-                  "bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4"
+                  'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
                 ),
               },
             },
             delegated: {
-              can: "store/add",
-              uri: { href: "did:key:zAlice" },
+              can: 'store/add',
+              uri: { href: 'did:key:zAlice' },
               caveats: {
                 link: CID.parse(
-                  "bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny"
+                  'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
                 ),
               },
             },
@@ -1025,10 +1025,10 @@ test("parse with caveats", () => {
   })
 })
 
-test("and prune", () => {
+test('and prune', () => {
   const read = capability({
-    can: "file/read",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/read',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1037,8 +1037,8 @@ test("and prune", () => {
   })
 
   const write = capability({
-    can: "file/write",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/write',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1050,8 +1050,8 @@ test("and prune", () => {
   const v1 = readwrite.select(
     delegate(
       [
-        { can: "file/read", with: `file:///${alice.did()}/public` },
-        { can: "file/write", with: `file:///${bob.did()}/@alice` },
+        { can: 'file/read', with: `file:///${alice.did()}/public` },
+        { can: 'file/write', with: `file:///${bob.did()}/@alice` },
       ],
       { issuer: alice.authority }
     )
@@ -1061,8 +1061,8 @@ test("and prune", () => {
     matches: [
       {
         value: [
-          { can: "file/read", with: `file:///${alice.did()}/public` },
-          { can: "file/write", with: `file:///${bob.did()}/@alice` },
+          { can: 'file/read', with: `file:///${alice.did()}/public` },
+          { can: 'file/write', with: `file:///${bob.did()}/@alice` },
         ],
       },
     ],
@@ -1075,7 +1075,7 @@ test("and prune", () => {
   })
 
   const v2 = matchwrite?.select(
-    delegate([{ can: "file/write", with: `file:///${bob.did()}/@alice` }], {
+    delegate([{ can: 'file/write', with: `file:///${bob.did()}/@alice` }], {
       issuer: bob.authority,
     })
   )
@@ -1083,7 +1083,7 @@ test("and prune", () => {
   assert.containSubset(v2, {
     matches: [
       {
-        value: [{ can: "file/write", with: `file:///${bob.did()}/@alice` }],
+        value: [{ can: 'file/write', with: `file:///${bob.did()}/@alice` }],
       },
     ],
   })
@@ -1096,10 +1096,10 @@ test("and prune", () => {
   assert.equal(none, null)
 })
 
-test("toString methods", () => {
+test('toString methods', () => {
   const read = capability({
-    can: "file/read",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/read',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1108,8 +1108,8 @@ test("toString methods", () => {
   })
 
   const write = capability({
-    can: "file/write",
-    with: URI.match({ protocol: "file:" }),
+    can: 'file/write',
+    with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
       claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
       new Failure(
@@ -1123,7 +1123,7 @@ test("toString methods", () => {
     // @ts-expect-error it needs more props but we can ignore that
     const match = read.match({
       capability: {
-        can: "file/read",
+        can: 'file/read',
         with: `file:///home/alice`,
       },
     })
@@ -1144,11 +1144,11 @@ test("toString methods", () => {
     } = readwrite.select(
       delegate([
         {
-          can: "file/read",
+          can: 'file/read',
           with: `file:///home/alice`,
         },
         {
-          can: "file/write",
+          can: 'file/write',
           with: `file:///home/alice`,
         },
       ])
@@ -1168,8 +1168,8 @@ test("toString methods", () => {
 
   const rw = readwrite.derive({
     to: capability({
-      can: "file/read+write",
-      with: URI.match({ protocol: "file:" }),
+      can: 'file/read+write',
+      with: URI.match({ protocol: 'file:' }),
       derives: (claimed, delegated) =>
         claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
         new Failure(
@@ -1196,7 +1196,7 @@ test("toString methods", () => {
     // @ts-expect-error it needs more props but we can ignore that
     const match = rw.match({
       capability: {
-        can: "file/read+write",
+        can: 'file/read+write',
         with: `file:///home/alice`,
       },
     })

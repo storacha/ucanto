@@ -1,1 +1,1 @@
-import * as Server from "../src/server.js"
+import * as Server from '../src/server.js'

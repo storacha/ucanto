@@ -1,40 +1,40 @@
-import * as Lib from "../src/lib.js"
-import { assert } from "chai"
-import { sha256 } from "multiformats/hashes/sha2"
-import { varint } from "multiformats"
+import * as Lib from '../src/lib.js'
+import { assert } from 'chai'
+import { sha256 } from 'multiformats/hashes/sha2'
+import { varint } from 'multiformats'
 
-describe("signing authority", () => {
+describe('signing authority', () => {
   const { SigningAuthority } = Lib
-  it("exports", () => {
-    assert.equal(Lib.name, "Ed25519")
+  it('exports', () => {
+    assert.equal(Lib.name, 'Ed25519')
     assert.equal(Lib.code, 0x1300)
-    assert.equal(typeof Lib.derive, "function")
-    assert.equal(typeof Lib.generate, "function")
+    assert.equal(typeof Lib.derive, 'function')
+    assert.equal(typeof Lib.generate, 'function')
 
-    assert.equal(typeof Lib.Authority, "object")
-    assert.equal(typeof Lib.SigningAuthority, "object")
+    assert.equal(typeof Lib.Authority, 'object')
+    assert.equal(typeof Lib.SigningAuthority, 'object')
   })
 
-  it("generate", async () => {
+  it('generate', async () => {
     const signer = await Lib.generate()
-    assert.ok(signer.did().startsWith("did:key"))
+    assert.ok(signer.did().startsWith('did:key'))
     assert.equal(signer.did(), signer.authority.did())
     assert.ok(signer.bytes instanceof Uint8Array)
     assert.ok(signer.buffer instanceof ArrayBuffer)
 
-    const payload = await sha256.encode(new TextEncoder().encode("hello world"))
+    const payload = await sha256.encode(new TextEncoder().encode('hello world'))
     const signature = await signer.sign(payload)
     assert.ok(
       await signer.verify(payload, signature),
-      "signer can verify signature"
+      'signer can verify signature'
     )
     assert.ok(
       await signer.authority.verify(payload, signature),
-      "authority can verify signature"
+      'authority can verify signature'
     )
   })
 
-  it("derive", async () => {
+  it('derive', async () => {
     const original = await Lib.generate()
     // @ts-expect-error - secret is not defined by interface
     const derived = await Lib.derive(original.secret)
@@ -44,18 +44,18 @@ describe("signing authority", () => {
     assert.equal(original.did(), derived.did())
   })
 
-  it("derive throws on bad input", async () => {
+  it('derive throws on bad input', async () => {
     // @ts-expect-error - secret is not defined by interface
     const { secret } = await Lib.generate()
     try {
       await Lib.derive(secret.subarray(1))
-      assert.fail("Expected to throw")
+      assert.fail('Expected to throw')
     } catch (error) {
       assert.match(String(error), /Expected Uint8Array with byteLength of 32/)
     }
   })
 
-  it("SigningAuthority.decode", async () => {
+  it('SigningAuthority.decode', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(SigningAuthority.decode(signer.bytes), signer)
@@ -81,7 +81,7 @@ describe("signing authority", () => {
     )
   })
 
-  it("SigningAuthority decode encode roundtrip", async () => {
+  it('SigningAuthority decode encode roundtrip', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(
@@ -90,7 +90,7 @@ describe("signing authority", () => {
     )
   })
 
-  it("SigningAuthority.format", async () => {
+  it('SigningAuthority.format', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(
@@ -99,23 +99,23 @@ describe("signing authority", () => {
     )
   })
 
-  it("SigningAuthority.did", async () => {
+  it('SigningAuthority.did', async () => {
     const signer = await Lib.generate()
 
-    assert.equal(signer.did().startsWith("did:key:"), true)
+    assert.equal(signer.did().startsWith('did:key:'), true)
   })
 })
 
-describe("authority", () => {
+describe('authority', () => {
   const { Authority } = Lib
 
-  it("exports", async () => {
-    assert.equal(Authority, await import("../src/authority.js"))
+  it('exports', async () => {
+    assert.equal(Authority, await import('../src/authority.js'))
     assert.equal(Authority.code, 0xed)
-    assert.equal(Authority.name, "Ed25519")
+    assert.equal(Authority.name, 'Ed25519')
   })
 
-  it("Athority.parse", async () => {
+  it('Athority.parse', async () => {
     const signer = await Lib.generate()
     const authority = Authority.parse(signer.did())
 
@@ -123,7 +123,7 @@ describe("authority", () => {
     assert.equal(authority.did(), signer.did())
   })
 
-  it("Athority.decode", async () => {
+  it('Athority.decode', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(Authority.decode(signer.authority.bytes), signer.authority)
@@ -138,13 +138,13 @@ describe("authority", () => {
     )
   })
 
-  it("Authority.format", async () => {
+  it('Authority.format', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(Authority.format(signer.authority), signer.did())
   })
 
-  it("Authority.encode", async () => {
+  it('Authority.encode', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(
