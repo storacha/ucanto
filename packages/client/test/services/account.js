@@ -1,5 +1,5 @@
-import * as API from "../api.js"
-import { ok, the } from "./util.js"
+import * as API from '../api.js'
+import { ok, the } from './util.js'
 
 /**
  * @returns {API.AccessProvider}
@@ -71,7 +71,7 @@ const unlink = (model, member, group, proof) => {
     }
     return null
   } else {
-    return new UnknownDIDError("Unknown DID", group)
+    return new UnknownDIDError('Unknown DID', group)
   }
 }
 
@@ -98,7 +98,7 @@ const associate = (accounts, from, to, proof, create) => {
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
-      return new UnknownDIDError("Unknown did", to)
+      return new UnknownDIDError('Unknown did', to)
     }
   } else if (toAccount) {
     accounts.set(from, { account: toAccount, proof })
@@ -151,7 +151,7 @@ export class UnknownDIDError extends RangeError {
     return /** @type {true} */ (true)
   }
   get name() {
-    return the("UnknownDIDError")
+    return the('UnknownDIDError')
   }
 
   toJSON() {

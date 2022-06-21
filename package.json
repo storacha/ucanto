@@ -12,6 +12,8 @@
     "packages/validator"
   ],
   "scripts": {
+    "format": "prettier --write '**/*.{js,ts,yml,json}' --ignore-path .gitignore",
+    "format:check": "prettier --check '**/*.{js,ts,yml,json}' --ignore-path .gitignore",
     "test": "pnpm run -r test",
     "test:node": "pnpm run -r test:node",
     "test:web": "pnpm run -r test:web",
@@ -19,6 +21,13 @@
   },
   "devDependencies": {
     "typescript": "4.7.3",
-    "mocha": "^9.2.2"
+    "mocha": "^9.2.2",
+    "prettier": "2.7.1"
+  },
+  "prettier": {
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "semi": false,
+    "singleQuote": true
   }
 }

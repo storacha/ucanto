@@ -1,13 +1,13 @@
-import * as Server from "../../src/server.js"
-import { provide } from "../../src/handler.js"
-import * as API from "./api.js"
-import { Authority, SigningAuthority } from "@ucanto/authority"
-import { service as w3 } from "../fixtures.js"
+import * as Server from '../../src/server.js'
+import { provide } from '../../src/handler.js'
+import * as API from './api.js'
+import { Authority, SigningAuthority } from '@ucanto/authority'
+import { service as w3 } from '../fixtures.js'
 export const id = w3
 
 const registerCapability = Server.capability({
-  can: "identity/register",
-  with: Server.URI.match({ protocol: "mailto:" }),
+  can: 'identity/register',
+  with: Server.URI.match({ protocol: 'mailto:' }),
   derives: (claimed, delegated) =>
     claimed.uri.href === delegated.uri.href ||
     new Server.Failure(
@@ -16,7 +16,7 @@ const registerCapability = Server.capability({
 })
 
 const linkCapability = Server.capability({
-  can: "identity/link",
+  can: 'identity/link',
   with: Server.URI,
   derives: (claimed, delegated) =>
     claimed.uri.href === delegated.uri.href ||
@@ -26,11 +26,11 @@ const linkCapability = Server.capability({
 })
 
 const identifyCapability = Server.capability({
-  can: "identity/identify",
+  can: 'identity/identify',
   with: Server.URI,
   derives: (claimed, delegated) =>
     claimed.uri.href === delegated.uri.href ||
-    delegated.uri.href === "ucan:*" ||
+    delegated.uri.href === 'ucan:*' ||
     new Server.Failure(
       `Can not derive ${claimed.uri.href} from ${claimed.uri.href}`
     ),
@@ -100,7 +100,7 @@ const associate = (accounts, from, to, proof, create) => {
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
-      return new UnknownDIDError("Unknown did", to)
+      return new UnknownDIDError('Unknown did', to)
     }
   } else if (toAccount) {
     accounts.set(from, { account: toAccount, proof })
@@ -154,7 +154,7 @@ export class UnknownDIDError extends RangeError {
   }
   /** @type {"UnknownDIDError"} */
   get name() {
-    return "UnknownDIDError"
+    return 'UnknownDIDError'
   }
 
   toJSON() {

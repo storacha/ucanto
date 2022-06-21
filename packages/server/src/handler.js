@@ -1,5 +1,5 @@
-import * as API from "./api.js"
-import { access } from "@ucanto/validator"
+import * as API from './api.js'
+import { access } from '@ucanto/validator'
 
 /**
  * @template {API.Ability} A

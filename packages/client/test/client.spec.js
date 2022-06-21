@@ -1,29 +1,29 @@
-import { test, assert } from "./test.js"
-import * as Client from "../src/lib.js"
-import * as HTTP from "@ucanto/transport/http"
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
-import * as Service from "./service.js"
-import { alice, bob, mallory, service as web3Storage } from "./fixtures.js"
-import fetch from "@web-std/fetch"
+import { test, assert } from './test.js'
+import * as Client from '../src/lib.js'
+import * as HTTP from '@ucanto/transport/http'
+import * as CAR from '@ucanto/transport/car'
+import * as CBOR from '@ucanto/transport/cbor'
+import * as Service from './service.js'
+import { alice, bob, mallory, service as web3Storage } from './fixtures.js'
+import fetch from '@web-std/fetch'
 
-test("encode inovocation", async () => {
+test('encode inovocation', async () => {
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    channel: HTTP.open({ url: new URL("about:blank"), fetch }),
+    channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
   })
 
   const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: "world " })],
+    roots: [await CBOR.codec.write({ hello: 'world ' })],
   })
 
   const add = Client.invoke({
     issuer: alice,
     audience: web3Storage,
     capability: {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
       link: car.cid,
     },
@@ -33,7 +33,7 @@ test("encode inovocation", async () => {
   const payload = await connection.encoder.encode([add])
 
   assert.deepEqual(payload.headers, {
-    "content-type": "application/car",
+    'content-type': 'application/car',
   })
   assert.ok(payload.body instanceof Uint8Array)
 
@@ -46,7 +46,7 @@ test("encode inovocation", async () => {
   assert.deepEqual(invocation.proofs, [])
   assert.deepEqual(invocation.capabilities, [
     {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
       // @ts-ignore
       link: car.cid,
@@ -54,14 +54,14 @@ test("encode inovocation", async () => {
   ])
 })
 
-test("encode delegated invocation", async () => {
+test('encode delegated invocation', async () => {
   const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: "world " })],
+    roots: [await CBOR.codec.write({ hello: 'world ' })],
   })
 
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    channel: HTTP.open({ url: new URL("about:blank"), fetch }),
+    channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
   })
@@ -71,7 +71,7 @@ test("encode delegated invocation", async () => {
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -81,7 +81,7 @@ test("encode delegated invocation", async () => {
     issuer: bob,
     audience: web3Storage,
     capability: {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
       link: car.cid,
     },
@@ -92,7 +92,7 @@ test("encode delegated invocation", async () => {
     issuer: alice,
     audience: web3Storage,
     capability: {
-      can: "store/remove",
+      can: 'store/remove',
       with: alice.did(),
       link: car.cid,
     },
@@ -108,7 +108,7 @@ test("encode delegated invocation", async () => {
     assert.equal(add.audience.did(), web3Storage.did())
     assert.deepEqual(add.capabilities, [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
         link: car.cid,
       },
@@ -127,7 +127,7 @@ test("encode delegated invocation", async () => {
     assert.deepEqual(remove.proofs, [])
     assert.deepEqual(remove.capabilities, [
       {
-        can: "store/remove",
+        can: 'store/remove',
         with: alice.did(),
         link: car.cid,
       },
@@ -139,18 +139,18 @@ const service = Service.create()
 /** @type {Client.ConnectionView<Service.Service>} */
 const connection = Client.connect({
   channel: HTTP.open({
-    url: new URL("about:blank"),
+    url: new URL('about:blank'),
     fetch: async (url, input) => {
       const invocations = await CAR.decode(input)
-      const promises = invocations.map(invocation => {
+      const promises = invocations.map((invocation) => {
         const [capabality] = invocation.capabilities
         switch (capabality.can) {
-          case "store/add": {
+          case 'store/add': {
             return service.store.add(
               /** @type {Client.Invocation<any>} */ (invocation)
             )
           }
-          case "store/remove": {
+          case 'store/remove': {
             return service.store.remove(
               /** @type {Client.Invocation<any>} */ (invocation)
             )
@@ -173,16 +173,16 @@ const connection = Client.connect({
   decoder: CBOR,
 })
 
-test("execute", async () => {
+test('execute', async () => {
   const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: "world " })],
+    roots: [await CBOR.codec.write({ hello: 'world ' })],
   })
 
   const add = Client.invoke({
     issuer: alice,
     audience: web3Storage,
     capability: {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
       link: car.cid,
     },
@@ -193,7 +193,7 @@ test("execute", async () => {
     issuer: alice,
     audience: web3Storage,
     capability: {
-      can: "store/remove",
+      can: 'store/remove',
       with: alice.did(),
       link: car.cid,
     },
@@ -203,7 +203,7 @@ test("execute", async () => {
 
   assert.deepEqual(e1, {
     error: true,
-    name: "UnknownDIDError",
+    name: 'UnknownDIDError',
     message: `DID ${alice.did()} has no account`,
     did: alice.did(),
   })
@@ -211,7 +211,7 @@ test("execute", async () => {
   // fake register alice
   service.access.accounts.register(
     alice.did(),
-    "did:email:alice@web.mail",
+    'did:email:alice@web.mail',
     car.cid
   )
 
@@ -219,7 +219,7 @@ test("execute", async () => {
   assert.deepEqual(r1, {
     with: alice.did(),
     link: car.cid,
-    status: "upload",
-    url: "http://localhost:9090/",
+    status: 'upload',
+    url: 'http://localhost:9090/',
   })
 })

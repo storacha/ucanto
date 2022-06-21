@@ -1,11 +1,11 @@
-import * as API from "@ucanto/interface"
-import { entries, combine, intersection } from "./util.js"
+import * as API from '@ucanto/interface'
+import { entries, combine, intersection } from './util.js'
 import {
   EscalatedCapability,
   MalformedCapability,
   UnknownCapability,
   DelegationError as MatchError,
-} from "./error.js"
+} from './error.js'
 
 /**
  * @template {API.Ability} A
@@ -13,7 +13,7 @@ import {
  * @param {API.Descriptor<A, C>} descriptor
  * @returns {API.TheCapabilityParser<API.CapabilityMatch<A, C>>}
  */
-export const capability = descriptor => new Capability(descriptor)
+export const capability = (descriptor) => new Capability(descriptor)
 
 /**
  * @template {API.Match} M
@@ -152,7 +152,7 @@ class Or extends Unit {
     if (left.error) {
       const right = this.right.match(capability)
       if (right.error) {
-        return right.name === "MalformedCapability" ? right : left
+        return right.name === 'MalformedCapability' ? right : left
       } else {
         return right
       }
@@ -213,7 +213,7 @@ class And extends View {
     return new And([...this.selectors, other])
   }
   toString() {
-    return `[${this.selectors.map(String).join(", ")}]`
+    return `[${this.selectors.map(String).join(', ')}]`
   }
 }
 
@@ -320,10 +320,10 @@ class Match {
         }
       } else {
         switch (result.name) {
-          case "UnknownCapability":
+          case 'UnknownCapability':
             unknown.push(result.capability)
             break
-          case "MalformedCapability":
+          case 'MalformedCapability':
           default:
             errors.push(new MatchError([result], this))
         }
@@ -421,10 +421,12 @@ class DerivedMatch {
       errors: [
         ...errors,
         ...direct.errors,
-        ...derived.errors.map(error => new MatchError([error], this)),
+        ...derived.errors.map((error) => new MatchError([error], this)),
       ],
       matches: [
-        ...direct.matches.map(match => new DerivedMatch(match, from, derives)),
+        ...direct.matches.map(
+          (match) => new DerivedMatch(match, from, derives)
+        ),
         ...matches,
       ],
     }
@@ -505,7 +507,7 @@ class AndMatch {
     return selectGroup(this, capabilities)
   }
   toString() {
-    return `[${this.matches.map(match => match.toString()).join(", ")}]`
+    return `[${this.matches.map((match) => match.toString()).join(', ')}]`
   }
 }
 
@@ -587,10 +589,10 @@ const select = (matcher, capabilities) => {
     const result = matcher.match(capability)
     if (result.error) {
       switch (result.name) {
-        case "UnknownCapability":
+        case 'UnknownCapability':
           unknown.push(result.capability)
           break
-        case "MalformedCapability":
+        case 'MalformedCapability':
         default:
           errors.push(new MatchError([result], result.capability))
       }
@@ -625,7 +627,7 @@ const selectGroup = (self, capabilities) => {
     data.push(selected.matches)
   }
 
-  const matches = combine(data).map(group => new AndMatch(group))
+  const matches = combine(data).map((group) => new AndMatch(group))
 
   return {
     unknown: unknown || [],

@@ -1,10 +1,10 @@
-import * as DID from "@ipld/dag-ucan/src/did.js"
-import * as ED25519 from "@noble/ed25519"
-import { varint } from "multiformats"
-import * as API from "@ucanto/interface"
+import * as DID from '@ipld/dag-ucan/src/did.js'
+import * as ED25519 from '@noble/ed25519'
+import { varint } from 'multiformats'
+import * as API from '@ucanto/interface'
 export const code = 0xed
 
-export const name = "Ed25519"
+export const name = 'Ed25519'
 const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 32 + PUBLIC_TAG_SIZE
 
@@ -13,7 +13,7 @@ const SIZE = 32 + PUBLIC_TAG_SIZE
  * @param {API.DID} did
  * @returns {API.Authority<typeof code>}
  */
-export const parse = did => decode(DID.parse(did))
+export const parse = (did) => decode(DID.parse(did))
 
 /**
  * Takes ed25519 public key tagged with `0xed` multiformat code and creates a
@@ -22,7 +22,7 @@ export const parse = did => decode(DID.parse(did))
  * @param {Uint8Array} bytes
  * @returns {API.Authority<typeof code>}
  */
-export const decode = bytes => {
+export const decode = (bytes) => {
   const [algorithm] = varint.decode(bytes)
   if (algorithm !== code) {
     throw new RangeError(
@@ -42,7 +42,7 @@ export const decode = bytes => {
  *
  * @param {API.Authority<typeof code>} authority
  */
-export const format = authority => DID.format(authority.bytes)
+export const format = (authority) => DID.format(authority.bytes)
 
 /**
  * Encodes given authority by tagging it's ed25519 public key with `0xed`
@@ -50,7 +50,7 @@ export const format = authority => DID.format(authority.bytes)
  *
  * @param {API.Authority<typeof code>} authority
  */
-export const encode = authority => authority.bytes
+export const encode = (authority) => authority.bytes
 
 /**
  * @implements {API.Authority<typeof code>}

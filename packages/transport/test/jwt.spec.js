@@ -1,20 +1,20 @@
-import { test, assert } from "./test.js"
-import * as JWT from "../src/jwt.js"
-import { delegate, Delegation, UCAN } from "@ucanto/core"
-import * as UTF8 from "../src/utf8.js"
-import { alice, bob, mallory, service } from "./fixtures.js"
-import * as API from "@ucanto/interface"
+import { test, assert } from './test.js'
+import * as JWT from '../src/jwt.js'
+import { delegate, Delegation, UCAN } from '@ucanto/core'
+import * as UTF8 from '../src/utf8.js'
+import { alice, bob, mallory, service } from './fixtures.js'
+import * as API from '@ucanto/interface'
 
 const NOW = 1654298135
 
 const fixtures = {
   basic: {
-    cid: "bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i",
-    jwt: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOC4xIn0.eyJhdHQiOlt7ImNhbiI6InN0b3JlL2FkZCIsIndpdGgiOiJkaWQ6a2V5Ono2TWtrODliQzNKclZxS2llNzFZRWNjNU0xU01WeHVDZ054NnpMWjhTWUpzeEFMaSJ9XSwiYXVkIjoiZGlkOmtleTp6Nk1rZmZEWkNrQ1RXcmVnODg2OGZHMUZHRm9nY0pqNVg2UFk5M3BQY1dEbjlib2IiLCJleHAiOjE2NTQyOTgxMzUsImlzcyI6ImRpZDprZXk6ejZNa2s4OWJDM0pyVnFLaWU3MVlFY2M1TTFTTVZ4dUNnTng2ekxaOFNZSnN4QUxpIiwicHJmIjpbXX0.xl_SgW5QrxffsbHslb1vSX7ZAV1JbjxF1rNIAEplNPHLreHtyC3OKqneOouWjO3mqqXAcrWAsnodrBgL50VWCA",
+    cid: 'bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i',
+    jwt: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOC4xIn0.eyJhdHQiOlt7ImNhbiI6InN0b3JlL2FkZCIsIndpdGgiOiJkaWQ6a2V5Ono2TWtrODliQzNKclZxS2llNzFZRWNjNU0xU01WeHVDZ054NnpMWjhTWUpzeEFMaSJ9XSwiYXVkIjoiZGlkOmtleTp6Nk1rZmZEWkNrQ1RXcmVnODg2OGZHMUZHRm9nY0pqNVg2UFk5M3BQY1dEbjlib2IiLCJleHAiOjE2NTQyOTgxMzUsImlzcyI6ImRpZDprZXk6ejZNa2s4OWJDM0pyVnFLaWU3MVlFY2M1TTFTTVZ4dUNnTng2ekxaOFNZSnN4QUxpIiwicHJmIjpbXX0.xl_SgW5QrxffsbHslb1vSX7ZAV1JbjxF1rNIAEplNPHLreHtyC3OKqneOouWjO3mqqXAcrWAsnodrBgL50VWCA',
   },
 }
 
-test("encode / decode", async () => {
+test('encode / decode', async () => {
   const { cid, jwt } = fixtures.basic
 
   const request = await JWT.encode([
@@ -23,7 +23,7 @@ test("encode / decode", async () => {
       audience: bob.authority,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -35,7 +35,7 @@ test("encode / decode", async () => {
   const expect = {
     body: UTF8.encode(JSON.stringify([cid])),
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
       [`x-auth-${cid}`]: jwt,
     },
   }
@@ -49,7 +49,7 @@ test("encode / decode", async () => {
         audience: bob.authority,
         capabilities: [
           {
-            can: "store/add",
+            can: 'store/add',
             with: alice.did(),
           },
         ],
@@ -57,11 +57,11 @@ test("encode / decode", async () => {
         proofs: [],
       }),
     ],
-    "roundtrips"
+    'roundtrips'
   )
 })
 
-test("decode requires application/json contet type", async () => {
+test('decode requires application/json contet type', async () => {
   const { cid, jwt } = fixtures.basic
 
   try {
@@ -71,19 +71,19 @@ test("decode requires application/json contet type", async () => {
         [`x-auth-${cid}`]: jwt,
       },
     })
-    assert.fail("expected to fail")
+    assert.fail('expected to fail')
   } catch (error) {
     assert.match(String(error), /content-type: application\/json/)
   }
 })
 
-test("delegated proofs", async () => {
+test('delegated proofs', async () => {
   const proof = await delegate({
     issuer: alice,
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -97,7 +97,7 @@ test("delegated proofs", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -116,7 +116,7 @@ test("delegated proofs", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -128,13 +128,13 @@ test("delegated proofs", async () => {
   assert.deepEqual(incoming[0].proofs, [proof])
 })
 
-test("omit proof", async () => {
+test('omit proof', async () => {
   const proof = await delegate({
     issuer: alice,
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -148,7 +148,7 @@ test("omit proof", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -167,7 +167,7 @@ test("omit proof", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -179,13 +179,13 @@ test("omit proof", async () => {
   assert.deepEqual(incoming[0].proofs, [proof.cid])
 })
 
-test("thorws on invalid heard", async () => {
+test('thorws on invalid heard', async () => {
   const proof = await delegate({
     issuer: alice,
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -199,7 +199,7 @@ test("thorws on invalid heard", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -219,19 +219,19 @@ test("thorws on invalid heard", async () => {
           request.headers[`x-auth-${proof.cid}`],
       },
     })
-    assert.fail("expected to fail")
+    assert.fail('expected to fail')
   } catch (error) {
     assert.match(String(error), /has mismatching cid/)
   }
 })
 
-test("leaving out root throws", async () => {
+test('leaving out root throws', async () => {
   const proof = await delegate({
     issuer: alice,
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -245,7 +245,7 @@ test("leaving out root throws", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -259,7 +259,7 @@ test("leaving out root throws", async () => {
     audience: service,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -274,7 +274,7 @@ test("leaving out root throws", async () => {
       ...request,
       headers,
     })
-    assert.fail("expected to fail")
+    assert.fail('expected to fail')
   } catch (error) {
     assert.match(String(error), /invocation .* is not provided/)
   }

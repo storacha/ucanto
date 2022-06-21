@@ -1,7 +1,7 @@
-export * from "@ucanto/interface"
-import * as API from "@ucanto/interface"
+export * from '@ucanto/interface'
+import * as API from '@ucanto/interface'
 
-import type { DID, Link, Await, Result as SyncResult } from "@ucanto/interface"
+import type { DID, Link, Await, Result as SyncResult } from '@ucanto/interface'
 export type { DID, Link, SyncResult }
 type Result<
   T extends unknown = unknown,
@@ -81,7 +81,7 @@ export interface TokenEntry {
 }
 
 export interface Found {
-  status: "ok"
+  status: 'ok'
   error?: false
 
   ttl: number
@@ -90,7 +90,7 @@ export interface Found {
 }
 
 export interface NotFoundError extends Error {
-  status: "not-found"
+  status: 'not-found'
   cid: Link
 
   error: true
@@ -100,7 +100,7 @@ export interface NotFoundError extends Error {
  * UCAN with given cid has been revoked
  */
 export interface RevokedError extends Error {
-  status: "revoked"
+  status: 'revoked'
 
   // revocation CID
   proof: Link
@@ -119,7 +119,7 @@ export interface RevokedError extends Error {
  * UCAN has expired.
  */
 export interface ExpiredError extends Error {
-  status: "expired"
+  status: 'expired'
   cid: Link
 
   // when did token expire
@@ -158,18 +158,18 @@ export interface AddStatus {
    * Should be `ok` if we already have car and we don't need to perform upload.
    * Otherwise should be `pending`.
    */
-  status: "in-s3" | "not-in-s3"
+  status: 'in-s3' | 'not-in-s3'
 }
 
 export interface ProofNotFoundError extends Error {
-  readonly name: "ProofNotFoundError"
+  readonly name: 'ProofNotFoundError'
   cid: Link
 
   error: true
 }
 
 export interface QuotaViolationError extends Error {
-  readonly name: "QuotaViolationError"
+  readonly name: 'QuotaViolationError'
   group: DID
   link: Link
 
@@ -177,20 +177,20 @@ export interface QuotaViolationError extends Error {
 }
 
 export interface DoesNotHasError extends RangeError {
-  readonly name: "DoesNotHasError"
+  readonly name: 'DoesNotHasError'
 
   error: true
 }
 
 export interface UnknownDIDError extends RangeError {
-  readonly name: "UnknownDIDError"
+  readonly name: 'UnknownDIDError'
   did: DID | null
 
   error: true
 }
 
 export interface InvalidInvocation extends Error {
-  readonly name: "InvalidInvocation"
+  readonly name: 'InvalidInvocation'
   link: Link
 
   error: true

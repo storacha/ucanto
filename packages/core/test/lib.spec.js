@@ -1,14 +1,14 @@
-import { assert, test } from "./test.js"
-import { Delegation, UCAN, isDelegation } from "../src/lib.js"
-import { alice, bob, mallory, service } from "./fixtures.js"
+import { assert, test } from './test.js'
+import { Delegation, UCAN, isDelegation } from '../src/lib.js'
+import { alice, bob, mallory, service } from './fixtures.js'
 
-test("create delegation", async () => {
+test('create delegation', async () => {
   const data = await UCAN.issue({
     issuer: alice,
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -34,7 +34,7 @@ test("create delegation", async () => {
     capabilities: {
       ...[
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -59,13 +59,13 @@ test("create delegation", async () => {
   ])
 })
 
-test("create delegation (with just cid and bytes)", async () => {
+test('create delegation (with just cid and bytes)', async () => {
   const data = await UCAN.issue({
     issuer: alice,
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -91,7 +91,7 @@ test("create delegation (with just cid and bytes)", async () => {
     capabilities: {
       ...[
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -116,7 +116,7 @@ test("create delegation (with just cid and bytes)", async () => {
   ])
 })
 
-test("create delegation with attached proof", async () => {
+test('create delegation with attached proof', async () => {
   let proof
   {
     const data = await UCAN.issue({
@@ -124,7 +124,7 @@ test("create delegation with attached proof", async () => {
       audience: bob,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -139,7 +139,7 @@ test("create delegation with attached proof", async () => {
     audience: mallory,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -162,7 +162,7 @@ test("create delegation with attached proof", async () => {
 
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -180,7 +180,7 @@ test("create delegation with attached proof", async () => {
   assert.deepEqual(
     [...delegation.export()],
     [proof.root, root],
-    "exports proof and a root"
+    'exports proof and a root'
   )
 
   const { proofs } = delegation
@@ -189,7 +189,7 @@ test("create delegation with attached proof", async () => {
   assert.deepEqual(actual, proof)
 })
 
-test("create delegation chain", async () => {
+test('create delegation chain', async () => {
   let proof
   {
     const data = await UCAN.issue({
@@ -197,7 +197,7 @@ test("create delegation chain", async () => {
       audience: bob,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -214,7 +214,7 @@ test("create delegation chain", async () => {
       audience: mallory,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -233,7 +233,7 @@ test("create delegation chain", async () => {
     audience: service,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -255,7 +255,7 @@ test("create delegation chain", async () => {
     assert.deepEqual(
       [...invocation.export()],
       [delegation.root, root],
-      "excludes proof that was not included"
+      'excludes proof that was not included'
     )
 
     const { proofs } = invocation
@@ -268,17 +268,17 @@ test("create delegation chain", async () => {
         bytes: delegation.bytes,
         proofs: [proof.cid],
       },
-      "references proof via link"
+      'references proof via link'
     )
 
     if (!isDelegation(actual)) {
-      return assert.fail("expect not to be a link")
+      return assert.fail('expect not to be a link')
     }
 
     assert.deepEqual(
       [...actual.export()],
       [delegation.root],
-      "exports only root block"
+      'exports only root block'
     )
   }
 
@@ -299,7 +299,7 @@ test("create delegation chain", async () => {
     assert.deepEqual(
       dag,
       [proof.root, delegation.root, root],
-      "contains all the proof blocks"
+      'contains all the proof blocks'
     )
 
     const { proofs } = invocation
@@ -311,13 +311,13 @@ test("create delegation chain", async () => {
     })
 
     if (!isDelegation(actual)) {
-      return assert.fail("expect not to be a link")
+      return assert.fail('expect not to be a link')
     }
 
     assert.deepEqual(
       [...actual.export()],
       [proof.root, delegation.root],
-      "exports linked proof"
+      'exports linked proof'
     )
 
     assert.equal(actual.proofs.length, 1)
@@ -328,18 +328,18 @@ test("create delegation chain", async () => {
         bytes: proof.bytes,
         proofs: [],
       },
-      "contains no proofs"
+      'contains no proofs'
     )
   }
 })
 
-test("import delegation", async () => {
+test('import delegation', async () => {
   const original = await Delegation.delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -352,26 +352,26 @@ test("import delegation", async () => {
   assert.equal(replica.audience.did(), bob.did())
   assert.deepEqual(replica.capabilities, [
     {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
     },
   ])
 })
 
-test("import empty delegation", async () => {
+test('import empty delegation', async () => {
   assert.throws(
     () => Delegation.import([]),
     /Empty DAG can not be turned into a dalagetion/
   )
 })
 
-test("issue chained delegation", async () => {
+test('issue chained delegation', async () => {
   const proof = await Delegation.delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -382,7 +382,7 @@ test("issue chained delegation", async () => {
     audience: mallory,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -393,7 +393,7 @@ test("issue chained delegation", async () => {
   assert.deepEqual(invocation.audience.did(), mallory.did())
   assert.deepEqual(invocation.capabilities, [
     {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
     },
   ])
@@ -401,7 +401,7 @@ test("issue chained delegation", async () => {
   const [delegation] = invocation.proofs || []
 
   if (!isDelegation(delegation)) {
-    return assert.fail("must be a delegation")
+    return assert.fail('must be a delegation')
   }
 
   assert.deepEqual(proof.bytes, delegation.bytes)
@@ -414,13 +414,13 @@ test("issue chained delegation", async () => {
   assert.deepEqual(Delegation.import(invocation.export()), invocation)
 })
 
-test("delegation with with nested proofs", async () => {
+test('delegation with with nested proofs', async () => {
   const proof = await Delegation.delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -431,7 +431,7 @@ test("delegation with with nested proofs", async () => {
     audience: mallory,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -443,7 +443,7 @@ test("delegation with with nested proofs", async () => {
     audience: service,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -453,19 +453,19 @@ test("delegation with with nested proofs", async () => {
   assert.deepEqual(
     [...invocation.export()],
     [proof.root, delegation.root, invocation.root],
-    "exports all the blocks"
+    'exports all the blocks'
   )
 
   assert.deepEqual(Delegation.import(invocation.export()), invocation)
 })
 
-test("delegation with external proof", async () => {
+test('delegation with external proof', async () => {
   const proof = await Delegation.delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -476,7 +476,7 @@ test("delegation with external proof", async () => {
     audience: service,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -488,19 +488,19 @@ test("delegation with external proof", async () => {
   assert.deepEqual(
     [...invocation.export()],
     [invocation.root],
-    "exports all the blocks"
+    'exports all the blocks'
   )
 
   assert.deepEqual(Delegation.import(invocation.export()), invocation)
 })
 
-test("delegation with several proofs", async () => {
+test('delegation with several proofs', async () => {
   const proof1 = await Delegation.delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -511,8 +511,8 @@ test("delegation with several proofs", async () => {
     audience: mallory,
     capabilities: [
       {
-        can: "identity/prove",
-        with: "mailto:mallory@mail.com",
+        can: 'identity/prove',
+        with: 'mailto:mallory@mail.com',
       },
     ],
   })
@@ -522,7 +522,7 @@ test("delegation with several proofs", async () => {
     audience: mallory,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -534,12 +534,12 @@ test("delegation with several proofs", async () => {
     audience: service,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
       {
-        can: "identity/prove",
-        with: "mailto:mallory@mail.com",
+        can: 'identity/prove',
+        with: 'mailto:mallory@mail.com',
       },
     ],
     proofs: [delegation, proof2],
@@ -548,7 +548,7 @@ test("delegation with several proofs", async () => {
   assert.deepEqual(
     [...invocation.export()],
     [proof1.root, delegation.root, proof2.root, invocation.root],
-    "exports all the blocks"
+    'exports all the blocks'
   )
 
   assert.deepEqual(Delegation.import(invocation.export()), invocation)

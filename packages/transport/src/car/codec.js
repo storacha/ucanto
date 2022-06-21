@@ -1,9 +1,9 @@
-import * as API from "@ucanto/interface"
-import * as CARWriter from "@ipld/car/buffer-writer"
-import { CarReader } from "@ipld/car/reader"
-import { base32 } from "multiformats/bases/base32"
-import { UCAN, createLink } from "@ucanto/core"
-import { sha256 } from "multiformats/hashes/sha2"
+import * as API from '@ucanto/interface'
+import * as CARWriter from '@ipld/car/buffer-writer'
+import { CarReader } from '@ipld/car/reader'
+import { base32 } from 'multiformats/bases/base32'
+import { UCAN, createLink } from '@ucanto/core'
+import { sha256 } from 'multiformats/hashes/sha2'
 
 export const code = 0x0202
 
@@ -89,13 +89,13 @@ export const encode = ({ roots = [], blocks }) => {
  * @param {Uint8Array} bytes
  * @returns {Promise<Model>}
  */
-export const decode = async bytes => {
+export const decode = async (bytes) => {
   const reader = await /** @type {any} */ (CarReader.fromBytes(bytes))
   /** @type {{_header: { roots: CARWriter.CID[] }, _keys: string[], _blocks: UCAN.Block[] }} */
   const { _header, _blocks, _keys } = reader
   const roots = []
   const blocks = new Map()
-  const index = _header.roots.map(cid => _keys.indexOf(String(cid)))
+  const index = _header.roots.map((cid) => _keys.indexOf(String(cid)))
 
   for (const [n, block] of _blocks.entries()) {
     if (index.includes(n)) {

@@ -1,18 +1,18 @@
-import { test, assert } from "./test.js"
-import { CID } from "multiformats"
-import * as Link from "../src/link.js"
+import { test, assert } from './test.js'
+import { CID } from 'multiformats'
+import * as Link from '../src/link.js'
 
 {
   const dataset = [
     [
-      "QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB",
-      "bafybeihgb7yguzxak7m4yu6pmxn3fdarzqbkshw6ovq7bxzbpilu4wl63a",
-      "QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB",
+      'QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB',
+      'bafybeihgb7yguzxak7m4yu6pmxn3fdarzqbkshw6ovq7bxzbpilu4wl63a',
+      'QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB',
     ],
     [
-      "bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny",
-      "bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny",
-      "QmXxyUQDxCpSuF8QrWHxsqmeCzMnHCukaBU3hnkgnYLYHj",
+      'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny',
+      'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny',
+      'QmXxyUQDxCpSuF8QrWHxsqmeCzMnHCukaBU3hnkgnYLYHj',
     ],
   ]
 

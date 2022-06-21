@@ -1,7 +1,7 @@
-import * as API from "@ucanto/interface"
-import { InferCaveats, CanIssue } from "@ucanto/interface"
+import * as API from '@ucanto/interface'
+import { InferCaveats, CanIssue } from '@ucanto/interface'
 
-export * from "@ucanto/interface"
+export * from '@ucanto/interface'
 
 export type InvocationError =
   | API.HandlerNotFound

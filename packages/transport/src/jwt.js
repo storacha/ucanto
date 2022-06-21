@@ -1,11 +1,11 @@
-import * as API from "@ucanto/interface"
-import * as UTF8 from "./utf8.js"
-import { Delegation, isLink, UCAN } from "@ucanto/core"
+import * as API from '@ucanto/interface'
+import * as UTF8 from './utf8.js'
+import { Delegation, isLink, UCAN } from '@ucanto/core'
 
-const HEADER_PREFIX = "x-auth-"
+const HEADER_PREFIX = 'x-auth-'
 
 const HEADERS = Object.freeze({
-  "content-type": "application/json",
+  'content-type': 'application/json',
 })
 
 /**
@@ -15,7 +15,7 @@ const HEADERS = Object.freeze({
  * @param {I} batch
  * @returns {Promise<API.HTTPRequest<I>>}
  */
-export const encode = async batch => {
+export const encode = async (batch) => {
   /** @type {Record<string, string>} */
   const headers = { ...HEADERS }
   /** @type {string[]} */
@@ -57,8 +57,8 @@ const iterate = function* (delegation) {
  * @returns {Promise<API.InferInvocations<I>>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers["content-type"] || headers["Content-Type"]
-  if (contentType !== "application/json") {
+  const contentType = headers['content-type'] || headers['Content-Type']
+  if (contentType !== 'application/json') {
     throw TypeError(
       `Only 'content-type: application/json' is supported, intsead got '${contentType}'`
     )

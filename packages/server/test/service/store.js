@@ -1,14 +1,14 @@
-import * as Server from "../../src/server.js"
-import * as Client from "@ucanto/client"
-import { provide } from "../../src/handler.js"
-import { Authority } from "@ucanto/authority"
-import * as API from "./api.js"
-import * as Access from "./access.js"
-import { service as issuer } from "../fixtures.js"
+import * as Server from '../../src/server.js'
+import * as Client from '@ucanto/client'
+import { provide } from '../../src/handler.js'
+import { Authority } from '@ucanto/authority'
+import * as API from './api.js'
+import * as Access from './access.js'
+import { service as issuer } from '../fixtures.js'
 
 const addCapability = Server.capability({
-  can: "store/add",
-  with: Server.URI.match({ protocol: "did:" }),
+  can: 'store/add',
+  with: Server.URI.match({ protocol: 'did:' }),
   caveats: {
     link: Server.Link.optional(),
   },
@@ -23,7 +23,7 @@ const addCapability = Server.capability({
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
         }violates imposed ${delegated.caveats.link} constraint`
       )
     } else {
@@ -33,8 +33,8 @@ const addCapability = Server.capability({
 })
 
 const removeCapability = Server.capability({
-  can: "store/remove",
-  with: Server.URI.match({ protocol: "did:" }),
+  can: 'store/remove',
+  with: Server.URI.match({ protocol: 'did:' }),
   caveats: {
     link: Server.Link.optional(),
   },
@@ -49,7 +49,7 @@ const removeCapability = Server.capability({
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
         }violates imposed ${delegated.caveats.link} constraint`
       )
     } else {
@@ -69,7 +69,7 @@ export const add = provide(addCapability, async ({ capability, context }) => {
     audience: Access.id,
     capabilities: [
       {
-        can: "identity/identify",
+        can: 'identity/identify',
         with: /** @type {API.Resource} */ (capability.uri.href),
       },
     ],
