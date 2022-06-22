@@ -1,6 +1,7 @@
 import { test, assert } from './test.js'
 import * as CBOR from '../src/cbor.js'
 import { decode, encode } from '@ipld/dag-cbor'
+import * as UTF8 from '../src/utf8.js'
 test('encode / decode', async () => {
   // @ts-ignore
   const response = CBOR.encode([{ ok: true, value: 1 }])
@@ -69,6 +70,11 @@ test('content-type case', async () => {
       assert.deepEqual(actual, expect)
     })
   }
+
+  test(`encode / decode bytes`, async () => {
+    const actual = transcode({ bytes: UTF8.encode('hello') })
+    assert.deepEqual(actual, { bytes: UTF8.encode('hello') })
+  })
 
   test('circular objects throw', () => {
     const circular = { a: 1, circle: {} }

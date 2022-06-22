@@ -20,11 +20,11 @@ export interface ProviderOptions extends CanIssue {
 
 export interface ProviderContext<
   A extends API.Ability = API.Ability,
-  R extends API.Resource = API.Resource,
+  R extends API.URI = API.URI,
   C extends API.Caveats = API.Caveats
 > {
-  capability: API.ParsedCapability<A, API.InferCaveats<C>>
-  invocation: API.Invocation<API.Capability<A, R> & API.InferCaveats<C>>
+  capability: API.ParsedCapability<A, R, API.InferCaveats<C>>
+  invocation: API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>
 
   context: API.InvocationContext
 }

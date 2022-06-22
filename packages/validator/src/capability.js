@@ -9,9 +9,10 @@ import {
 
 /**
  * @template {API.Ability} A
+ * @template {API.URI} R
  * @template {API.Caveats} [C={}]
- * @param {API.Descriptor<A, C>} descriptor
- * @returns {API.TheCapabilityParser<API.CapabilityMatch<A, C>>}
+ * @param {API.Descriptor<A, R, C>} descriptor
+ * @returns {API.TheCapabilityParser<API.CapabilityMatch<A, R, C>>}
  */
 export const capability = (descriptor) => new Capability(descriptor)
 
@@ -96,17 +97,41 @@ class Unit extends View {
 
 /**
  * @template {API.Ability} A
+ * @template {API.URI} R
  * @template {API.Caveats} C
- * @implements {API.TheCapabilityParser<API.CapabilityMatch<A, C>>}
- * @extends {Unit<API.CapabilityMatch<A, C>>}
+ * @implements {API.TheCapabilityParser<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
+ * @extends {Unit<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
  */
 class Capability extends Unit {
   /**
-   * @param {API.Descriptor<A, C>} descriptor
+   * @param {API.Descriptor<A, R, C>} descriptor
    */
   constructor(descriptor) {
     super()
     this.descriptor = descriptor
+  }
+
+  /**
+   * @param {R['href']} resource
+   * @param {API.InferCaveatParams<API.InferCaveats<C>>} data
+   * @return {API.Capability<A, R['href']> & API.InferCaveats<C>}
+   */
+  create(resource, data) {
+    const { descriptor, can } = this
+    const decoders = descriptor.caveats
+
+    const caveats = /** @type {API.InferCaveats<C>} */ ({})
+    for (const [name, decoder] of Object.entries(decoders || {})) {
+      const key = /** @type {keyof caveats} */ (name)
+      const value = decoder.decode(data[key])
+      if (value?.error) {
+        throw value
+      } else {
+        caveats[key] = /** @type {typeof caveats[key]} */ (value)
+      }
+    }
+
+    return { ...caveats, can, with: resource }
   }
 
   get can() {
@@ -115,7 +140,7 @@ class Capability extends Unit {
 
   /**
    * @param {API.Source} source
-   * @returns {API.MatchResult<API.CapabilityMatch<A, C>>}
+   * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
   match(source) {
     const result = parse(this, source)
@@ -236,6 +261,13 @@ class Derive extends Unit {
     this.to = to
     this.derives = derives
   }
+
+  /**
+   * @type {typeof this.to['create']}
+   */
+  create(resource, caveats) {
+    return this.to.create(resource, caveats)
+  }
   get can() {
     return this.to.can
   }
@@ -258,14 +290,15 @@ class Derive extends Unit {
 
 /**
  * @template {API.Ability} A
+ * @template {API.URI} R
  * @template {API.Caveats} C
- * @implements {API.CapabilityMatch<A, C>}
+ * @implements {API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>}
  */
 class Match {
   /**
    * @param {API.Source} source
-   * @param {API.ParsedCapability<A, API.InferCaveats<C>>} value
-   * @param {API.Descriptor<A, C>} descriptor
+   * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} value
+   * @param {API.Descriptor<A, R, C>} descriptor
    */
   constructor(source, value, descriptor) {
     this.source = [source]
@@ -286,7 +319,7 @@ class Match {
 
   /**
    * @param {API.CanIssue} context
-   * @returns {API.CapabilityMatch<A, C>|null}
+   * @returns {API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>|null}
    */
   prune(context) {
     if (context.canIssue(this.value, this.source[0].delegation.issuer.did())) {
@@ -298,7 +331,7 @@ class Match {
 
   /**
    * @param {API.Source[]} capabilities
-   * @returns {API.Select<API.CapabilityMatch<A, C>>}
+   * @returns {API.Select<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
   select(capabilities) {
     const unknown = []
@@ -513,11 +546,11 @@ class AndMatch {
 
 /**
  * @template {API.Ability} A
+ * @template {API.URI} R
  * @template {API.Caveats} C
- * @template {API.ParsedCapability} T
- * @param {{descriptor: API.Descriptor<A, C>}} self
+ * @param {{descriptor: API.Descriptor<A, R, C>}} self
  * @param {API.Source} source
- * @returns {API.Result<API.ParsedCapability<A, API.InferCaveats<C>>, API.InvalidCapability>}
+ * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
 const parse = (self, source) => {
@@ -536,33 +569,41 @@ const parse = (self, source) => {
     return new MalformedCapability(capability, uri)
   }
 
-  const caveats = /** @type {T['caveats']} */ ({})
+  const caveats = /** @type {API.InferCaveats<C>} */ ({})
 
   if (decoders) {
     for (const [name, decoder] of entries(decoders)) {
-      const value = capability[/** @type {string} */ (name)]
+      const key = /** @type {keyof capability & keyof caveats} */ (name)
+      const value = capability[key]
       const result = decoder.decode(value)
       if (result?.error) {
         return new MalformedCapability(capability, result)
       } else if (result != null) {
-        caveats[name] = result
+        caveats[key] = /** @type {any} */ (result)
       }
     }
   }
 
-  return new CapabilityView(can, capability.with, uri, caveats, delegation)
+  return new CapabilityView(
+    can,
+    /** @type {R['href']} */ (capability.with),
+    uri,
+    caveats,
+    delegation
+  )
 }
 
 /**
  * @template {API.Ability} A
+ * @template {API.URI} R
  * @template C
- * @implements {API.ParsedCapability<A, API.InferCaveats<C>>}
+ * @implements {API.ParsedCapability<A, R, API.InferCaveats<C>>}
  */
 class CapabilityView {
   /**
    * @param {A} can
-   * @param {API.Resource} with_
-   * @param {URL} uri
+   * @param {R['href']} with_
+   * @param {R} uri
    * @param {API.InferCaveats<C>} caveats
    * @param {API.Delegation} delegation
    */

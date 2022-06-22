@@ -1,5 +1,5 @@
 import * as Client from '@ucanto/client'
-import * as Server from '../src/server.js'
+import * as Server from '../src/lib.js'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'

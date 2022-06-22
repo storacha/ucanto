@@ -178,6 +178,7 @@ test('unknown capability', async () => {
   })
 
   const result = await access(invocation, {
+    // @ts-expect-error
     capability: storeAdd,
     authority: Authority,
     canIssue: (claim, issuer) => {
