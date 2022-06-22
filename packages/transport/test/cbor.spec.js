@@ -1,6 +1,7 @@
 import { test, assert } from './test.js'
 import * as CBOR from '../src/cbor.js'
 import { decode, encode } from '@ipld/dag-cbor'
+import * as UTF8 from '../src/utf8.js'
 test('encode / decode', async () => {
   // @ts-ignore
   const response = CBOR.encode([{ ok: true, value: 1 }])
@@ -60,6 +61,7 @@ test('content-type case', async () => {
         return [1, 2]
       },
     },
+    { bytes: UTF8.encode('hello') },
   ]
 
   for (const data of dataset) {
