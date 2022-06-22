@@ -6,6 +6,7 @@ import {
   Identity,
   Resource,
   Ability,
+  URI,
   Capability,
   DID,
   LinkedProof,
@@ -54,18 +55,12 @@ export interface MatchSelector<M extends Match>
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
-export type Parser<
-  I extends unknown,
-  O extends unknown,
-  X extends { error: true } = Failure
-> = (input: I) => Result<O, X>
-
 export interface Decoder<
   I extends unknown,
   O extends unknown,
   X extends { error: true } = Failure
 > {
-  decode: Parser<I, O, X> //(input: I): Result<O, X>
+  decode: (input: I) => Result<O, X>
 }
 
 export interface Caveats
@@ -128,9 +123,19 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
   ): TheCapabilityParser<DerivedMatch<T, M>>
 }
 
+type InferCaveatParams<T> = {
+  [K in keyof T]: T[K] extends { toJSON(): infer U } ? U : T[K]
+}
+
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   extends CapabilityParser<M> {
   readonly can: M["value"]["can"]
+
+  create: (
+    resource: M["value"]["uri"]["href"],
+    caveats: InferCaveatParams<M["value"]["caveats"]>
+  ) => Capability<M["value"]["can"], M["value"]["uri"]["href"]> &
+    M["value"]["caveats"]
 }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
@@ -225,43 +230,53 @@ export type InferMatch<Members extends unknown[]> = Members extends []
 
 export interface ParsedCapability<
   Can extends Ability = Ability,
+  Resource extends URI = URI,
   C extends object = {}
 > {
   can: Can
-  with: Resource
-  uri: URL
+  with: Resource["href"]
+  uri: Resource
   caveats: C
 }
 
-export type InferCaveats<C> = InferRequiredCaveats<C> & InferOptionalCaveats<C>
+export type InferCaveats<C> = InferRequiredCaveats<C>
 
 export type InferOptionalCaveats<C> = {
-  [Key in keyof C as C[Key] extends Decoder<any, infer _ | undefined, any>
-    ? Key
-    : never]?: C[Key] extends Decoder<unknown, infer T | undefined, infer _>
-    ? T
-    : never
+  [K in keyof C as C[K] extends Decoder<unknown, infer T, infer _>
+    ? T extends Exclude<T, undefined>
+      ? never
+      : K
+    : never]?: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
 }
 
 export type InferRequiredCaveats<C> = {
-  [Key in keyof C as C[Key] extends Decoder<any, infer _ | undefined, any>
-    ? never
-    : Key]: C[Key] extends Decoder<unknown, infer T, infer _> ? T : never
+  [K in keyof C as C[K] extends Decoder<unknown, infer T, infer _>
+    ? T extends Exclude<T, undefined>
+      ? K
+      : never
+    : never]: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
 }
 
-export interface Descriptor<A extends Ability, C extends Caveats> {
+export interface Descriptor<
+  A extends Ability,
+  R extends URI,
+  C extends Caveats
+> {
   can: A
-  with: Decoder<Resource, URL, Failure>
+  with: Decoder<Resource, R, Failure>
   caveats?: C
 
   derives: Derives<
-    ParsedCapability<A, InferCaveats<C>>,
-    ParsedCapability<A, InferCaveats<C>>
+    ParsedCapability<A, R, InferCaveats<C>>,
+    ParsedCapability<A, R, InferCaveats<C>>
   >
 }
 
-export interface CapabilityMatch<A extends Ability, C extends Caveats>
-  extends DirectMatch<ParsedCapability<A, InferCaveats<C>>> {}
+export interface CapabilityMatch<
+  A extends Ability,
+  R extends URI,
+  C extends Caveats
+> extends DirectMatch<ParsedCapability<A, R, InferCaveats<C>>> {}
 
 export interface CanIssue {
   /**
@@ -271,9 +286,11 @@ export interface CanIssue {
   canIssue(capability: ParsedCapability, issuer: DID): boolean
 }
 
-export interface ValidationOptions<
-  C extends ParsedCapability = ParsedCapability
-> extends CanIssue {
+export interface AuthorityOptions {
+  authority: AuthorityParser
+}
+
+export interface IssuingOptions {
   /**
    * You can provide default set of capabilities per did, which is used to
    * validate whether claim is satisfied by `{ with: my:*, can: "*" }`. If
@@ -281,16 +298,23 @@ export interface ValidationOptions<
    */
 
   my?: (issuer: DID) => Capability[]
+}
 
+export interface ProofResolver extends AuthorityOptions, IssuingOptions {
   /**
    * You can provide a proof resolver that validator will call when UCAN
    * links to external proof. If resolver is not provided validator may not
    * be able to explore correesponding path within a proof chain.
    */
   resolve?: (proof: LinkedProof) => Await<Result<Delegation, UnavailableProof>>
+}
 
-  authority: AuthorityParser
-  capability: CapabilityParser<Match<C>>
+export interface ValidationOptions<C extends ParsedCapability>
+  extends CanIssue,
+    IssuingOptions,
+    AuthorityOptions,
+    ProofResolver {
+  capability: CapabilityParser<Match<C, any>>
 }
 
 export interface DelegationError extends Failure {

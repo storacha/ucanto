@@ -27,8 +27,7 @@ const empty = () => []
 const unavailable = proof => new UnavailableProof(proof)
 
 /**
- * @template {API.ParsedCapability} C
- * @param {Required<API.ValidationOptions<C>>} config
+ * @param {Required<API.ProofResolver>} config
  * @param {API.Match<unknown, API.Match>} match
  */
 
@@ -53,9 +52,8 @@ const resolveMatch = async (match, config) => {
 }
 
 /**
- * @template {API.ParsedCapability} C
  * @param {API.Delegation} delegation
- * @param {Required<API.ValidationOptions<C>>} config
+ * @param {Required<API.ProofResolver>} config
  */
 const resolveProofs = async (delegation, config) => {
   /** @type {API.Result<API.Delegation, API.UnavailableProof>[]} */
@@ -86,9 +84,8 @@ const resolveProofs = async (delegation, config) => {
 }
 
 /**
- * @template {API.ParsedCapability} C
  * @param {API.Source} from
- * @param {Required<API.ValidationOptions<C>>} config
+ * @param {Required<API.ProofResolver>} config
  * @return {Promise<{sources:API.Source[], errors:ProofError[]}>}
  */
 const resolveSources = async ({ delegation }, config) => {
@@ -135,10 +132,12 @@ const resolveSources = async ({ delegation }, config) => {
 }
 
 /**
- * @template {API.ParsedCapability} C
- * @param {API.Invocation} invocation
- * @param {API.ValidationOptions<C>} config
- * @returns {Promise<API.Result<Authorization<C>, API.Unauthorized>>}
+ * @template {API.Ability} A
+ * @template {API.Caveats} C
+ * @template {API.URI} R
+ * @param {API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>} invocation
+ * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} config
+ * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
  */
 export const access = async (
   invocation,
@@ -340,7 +339,7 @@ const ALL = "*"
 /**
  * @template {API.ParsedCapability} C
  * @param {API.Delegation} delegation
- * @param {Required<API.ValidationOptions<C>>} options
+ * @param {Required<API.IssuingOptions>} options
  */
 function* iterateCapabilities({ issuer, capabilities }, { my }) {
   const did = issuer.did()
@@ -391,9 +390,10 @@ const parseMyURI = (uri, did) => {
 }
 
 /**
- * @param {API.Delegation} delegation
- * @param {API.ValidationOptions} config
- * @returns {Promise<API.Result<API.Delegation, API.InvalidProof>>}
+ * @template {API.Delegation} T
+ * @param {T} delegation
+ * @param {API.AuthorityOptions} config
+ * @returns {Promise<API.Result<T, API.InvalidProof>>}
  */
 const validate = async (delegation, config) => {
   if (UCAN.isExpired(delegation.data)) {
@@ -412,9 +412,10 @@ const validate = async (delegation, config) => {
 }
 
 /**
- * @param {API.Delegation} delegation
- * @param {API.ValidationOptions} config
- * @returns {Promise<API.Result<API.Delegation, API.InvalidSignature>>}
+ * @template {API.Delegation} T
+ * @param {T} delegation
+ * @param {API.AuthorityOptions} config
+ * @returns {Promise<API.Result<T, API.InvalidSignature>>}
  */
 const verifySignature = async (delegation, { authority }) => {
   const issuer = authority.parse(delegation.issuer.did())
