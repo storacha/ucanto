@@ -61,7 +61,6 @@ test('content-type case', async () => {
         return [1, 2]
       },
     },
-    { bytes: UTF8.encode('hello') },
   ]
 
   for (const data of dataset) {
@@ -71,6 +70,11 @@ test('content-type case', async () => {
       assert.deepEqual(actual, expect)
     })
   }
+
+  test(`encode / decode bytes`, async () => {
+    const actual = transcode({ bytes: UTF8.encode('hello') })
+    assert.deepEqual(actual, { bytes: UTF8.encode('hello') })
+  })
 
   test('circular objects throw', () => {
     const circular = { a: 1, circle: {} }
