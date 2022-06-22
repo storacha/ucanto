@@ -30,6 +30,10 @@ const prepare = (data, seen) => {
     return cid
   }
 
+  if (ArrayBuffer.isView(data)) {
+    return data
+  }
+
   if (Array.isArray(data)) {
     seen.add(data)
     const items = []
