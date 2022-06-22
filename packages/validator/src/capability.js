@@ -99,8 +99,8 @@ class Unit extends View {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @implements {API.TheCapabilityParser<API.CapabilityMatch<A, R, C>>}
- * @extends {Unit<API.CapabilityMatch<A, R, C>>}
+ * @implements {API.TheCapabilityParser<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
+ * @extends {Unit<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
  */
 class Capability extends Unit {
   /**
@@ -113,29 +113,25 @@ class Capability extends Unit {
 
   /**
    * @param {R['href']} resource
-   * @param {API.InferCaveats<C>} caveats
-   * @return {API.Capability<A, API.Resource> & API.InferCaveats<C>}
+   * @param {API.InferCaveatParams<API.InferCaveats<C>>} data
+   * @return {API.Capability<A, R['href']> & API.InferCaveats<C>}
    */
-  create(resource, caveats) {
-    const { descriptor } = this
+  create(resource, data) {
+    const { descriptor, can } = this
     const decoders = descriptor.caveats
 
-    const constraints = /** @type {typeof caveats} */ ({})
+    const caveats = /** @type {API.InferCaveats<C>} */ ({})
     for (const [name, decoder] of Object.entries(decoders || {})) {
       const key = /** @type {keyof caveats} */ (name)
-      const value = decoder.decode(caveats[key])
+      const value = decoder.decode(data[key])
       if (value?.error) {
         throw value
       } else {
-        constraints[key] = /** @type {typeof caveats[key]} */ (value)
+        caveats[key] = /** @type {typeof caveats[key]} */ (value)
       }
     }
 
-    return {
-      ...constraints,
-      can: descriptor.can,
-      with: resource,
-    }
+    return { ...caveats, can, with: resource }
   }
 
   get can() {
@@ -144,7 +140,7 @@ class Capability extends Unit {
 
   /**
    * @param {API.Source} source
-   * @returns {API.MatchResult<API.CapabilityMatch<A, R, C>>}
+   * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
   match(source) {
     const result = parse(this, source)
@@ -296,7 +292,7 @@ class Derive extends Unit {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @implements {API.CapabilityMatch<A, R, C>}
+ * @implements {API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>}
  */
 class Match {
   /**
@@ -323,7 +319,7 @@ class Match {
 
   /**
    * @param {API.CanIssue} context
-   * @returns {API.CapabilityMatch<A, R, C>|null}
+   * @returns {API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>|null}
    */
   prune(context) {
     if (context.canIssue(this.value, this.source[0].delegation.issuer.did())) {
@@ -335,7 +331,7 @@ class Match {
 
   /**
    * @param {API.Source[]} capabilities
-   * @returns {API.Select<API.CapabilityMatch<A, R, C>>}
+   * @returns {API.Select<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
   select(capabilities) {
     const unknown = []
@@ -552,7 +548,6 @@ class AndMatch {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @template {API.ParsedCapability} T
  * @param {{descriptor: API.Descriptor<A, R, C>}} self
  * @param {API.Source} source
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
@@ -574,16 +569,17 @@ const parse = (self, source) => {
     return new MalformedCapability(capability, uri)
   }
 
-  const caveats = /** @type {T['caveats']} */ ({})
+  const caveats = /** @type {API.InferCaveats<C>} */ ({})
 
   if (decoders) {
     for (const [name, decoder] of entries(decoders)) {
-      const value = capability[/** @type {string} */ (name)]
+      const key = /** @type {keyof capability & keyof caveats} */ (name)
+      const value = capability[key]
       const result = decoder.decode(value)
       if (result?.error) {
         return new MalformedCapability(capability, result)
       } else if (result != null) {
-        caveats[name] = result
+        caveats[key] = /** @type {any} */ (result)
       }
     }
   }
