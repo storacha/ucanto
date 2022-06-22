@@ -369,6 +369,6 @@ export interface URI<P extends Protocol = Protocol> extends URL {
   href: `${P}${string}`
 }
 
-export type URIString<P extends URI> = `${URI["protocol"]}${string}` & {
+export type URIString<P extends URI> = `${URI['protocol']}${string}` & {
   protocol?: Protocol
 }

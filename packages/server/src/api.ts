@@ -24,7 +24,7 @@ export interface ProviderContext<
   C extends API.Caveats = API.Caveats
 > {
   capability: API.ParsedCapability<A, R, API.InferCaveats<C>>
-  invocation: API.Invocation<API.Capability<A, R["href"]> & API.InferCaveats<C>>
+  invocation: API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>
 
   context: API.InvocationContext
 }

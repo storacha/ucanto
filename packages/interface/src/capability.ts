@@ -129,13 +129,13 @@ type InferCaveatParams<T> = {
 
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   extends CapabilityParser<M> {
-  readonly can: M["value"]["can"]
+  readonly can: M['value']['can']
 
   create: (
-    resource: M["value"]["uri"]["href"],
-    caveats: InferCaveatParams<M["value"]["caveats"]>
-  ) => Capability<M["value"]["can"], M["value"]["uri"]["href"]> &
-    M["value"]["caveats"]
+    resource: M['value']['uri']['href'],
+    caveats: InferCaveatParams<M['value']['caveats']>
+  ) => Capability<M['value']['can'], M['value']['uri']['href']> &
+    M['value']['caveats']
 }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
@@ -234,7 +234,7 @@ export interface ParsedCapability<
   C extends object = {}
 > {
   can: Can
-  with: Resource["href"]
+  with: Resource['href']
   uri: Resource
   caveats: C
 }

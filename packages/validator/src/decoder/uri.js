@@ -39,8 +39,8 @@ export const match = (options) => ({
  * @param {{protocol?: API.Protocol<Schema>}} [options]
  * @returns {API.Decoder<unknown, `${Schema}:${string}`, API.Failure>}
  */
-export const string = options => ({
-  decode: input => {
+export const string = (options) => ({
+  decode: (input) => {
     const result = decode(input, options)
     return result.error ? result : result.href
   },

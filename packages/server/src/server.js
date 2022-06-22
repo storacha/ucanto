@@ -1,6 +1,6 @@
-import * as API from "@ucanto/interface"
-import { InvalidAudience } from "@ucanto/validator"
-import { Authority } from "@ucanto/authority"
+import * as API from '@ucanto/interface'
+import { InvalidAudience } from '@ucanto/validator'
+import { Authority } from '@ucanto/authority'
 export {
   capability,
   URI,
