@@ -118,11 +118,10 @@ export const server = (context { store = new Map() } : { store: Map<string, stri
 In nodejs we could expose our service as follows:
 
 ```ts
-
 export const listen = ({ port = 8080, context = new Map() }) => {
   const fileServer = server(context)
 
-  HTTP.createServer(async (request, response), => {
+  HTTP.createServer(async (request, response) => {
     const chunks = []
     for await (const chunk of request) {
       chunks.push(chunk)
@@ -130,7 +129,7 @@ export const listen = ({ port = 8080, context = new Map() }) => {
 
     const { headers, body } = await fileServer.request({
       headers: request.headers,
-      body: Buffer.concat(chunks)
+      body: Buffer.concat(chunks),
     })
 
     response.writeHead(200, headers)
