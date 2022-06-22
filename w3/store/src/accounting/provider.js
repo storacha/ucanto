@@ -1,7 +1,7 @@
-import * as API from "../src/type.js"
+import * as API from "../type.js"
 
 /**
- * @typedef {import("./identity").KVStore<API.DID, Map<string, API.Accounting.Link|null>>} DB
+ * @typedef {import("../identity/provider").KVStore<API.DID, Map<string, API.Accounting.Link|null>>} DB
  * @typedef {{has(id:string): API.Await<boolean>}} Bucket
  * @param {{db:DB, cars:Bucket}} context
  * @returns {API.Accounting.Provider}
@@ -46,7 +46,7 @@ export const service = ({ db, cars }) => ({
   async list(group, proof) {
     const members = await db.get(group)
     const links = []
-    for (const member of members?.entries() || []) {
+    for (const member of members?.values() || []) {
       if (member) {
         links.push(member)
       }

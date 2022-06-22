@@ -31,7 +31,7 @@ export interface Provider {
 
   remove(group: DID, link: Link, proof: LinkedProof): Await<Result<null, never>>
 
-  list(gorup: DID, proof: LinkedProof): Await<Result<Link[], never>>
+  list(group: DID, proof: LinkedProof): Await<Result<Link[], never>>
 }
 
 interface LinkState {

@@ -1,8 +1,13 @@
-import * as Capability from "../src/identity/capability.js"
+import * as Capability from "./capability.js"
 import * as Server from "@ucanto/server"
-import * as API from "../src/type.js"
+import { delegate } from "@ucanto/client"
+import * as API from "../type.js"
 
-export * from "../src/identity/invoke.js"
+export * from "./invoke.js"
+
+Capability.validate.create("did:key:zAlice", {
+  as: "mailto:alice@web.mail",
+})
 
 /**
  * @template K
@@ -18,18 +23,46 @@ export * from "../src/identity/invoke.js"
 /**
  * @typedef {{account:API.DID, proof:Server.LinkedProof}} AccountLink
  * @typedef {KVStore<API.Identity.ID, AccountLink>} DB
+ * @typedef {{
+ * id: API.SigningAuthority
+ * db: DB
+ * }} Context
  *
- * @param {{db: DB}} context
+ * @param {Context} context
  * @return {API.Identity.Identity}
  */
-export const service = ({ db }) => ({
+export const service = ({ id, db }) => ({
+  validate: Server.provide(
+    Capability.validate,
+    async ({ capability, invocation }) => {
+      const delegation = await delegate({
+        issuer: id,
+        audience: invocation.issuer,
+        capabilities: [
+          {
+            can: "identity/register",
+            with: capability.caveats.as,
+            as: capability.uri.href,
+          },
+        ],
+      })
+
+      console.log(
+        `Emailing registration token to ${
+          capability.caveats.as
+        }?subject=Verification&body=${Server.UCAN.format(delegation.data)}\n`
+      )
+
+      return null
+    }
+  ),
   register: Server.provide(
     Capability.register,
     async ({ capability, invocation }) => {
       const result = await associate(
         db,
-        invocation.issuer.did(),
-        /** @type {API.Identity.MailtoID} */ (capability.with),
+        capability.caveats.as,
+        capability.uri.href,
         invocation.cid,
         true
       )
@@ -41,7 +74,7 @@ export const service = ({ db }) => ({
     }
   ),
   link: Server.provide(Capability.link, async ({ capability, invocation }) => {
-    const id = /** @type {API.Identity.MailtoID} */ (capability.with)
+    const id = /** @type {API.Identity.ID} */ (capability.uri.href)
     if (
       await associate(db, invocation.issuer.did(), id, invocation.cid, false)
     ) {
@@ -50,18 +83,15 @@ export const service = ({ db }) => ({
       return new NotRegistered([invocation.issuer.did(), id])
     }
   }),
-  identify: Server.provide(
-    Capability.identify,
-    async ({ capability, invocation }) => {
-      const id = /** @type {API.Identity.ID} */ (capability.with)
-      const account = await resolve(db, id)
-      return account || new NotRegistered([id])
-    }
-  ),
+  identify: Server.provide(Capability.identify, async ({ capability }) => {
+    const id = /** @type {API.Identity.ID} */ (capability.uri.href)
+    const account = await resolve(db, id)
+    return account || new NotRegistered([id])
+  }),
 })
 
 /**
- * @param {API.ServerOptions & { context: { db: DB } }} options
+ * @param {API.ServerOptions & { context: Context }} options
  */
 export const server = ({ context, ...options }) =>
   Server.create({

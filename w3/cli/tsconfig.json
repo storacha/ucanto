@@ -101,9 +101,9 @@
   "include": [
     "src",
     "test"
-, "../identity/src/capability.js"  ],
+  ],
   "references": [
-    { "path": "../../packages/server" },
+    { "path": "../../packages/core" },
     {
       "path": "../../packages/interface"
     },
@@ -117,10 +117,10 @@
       "path": "../../packages/authority"
     },
     {
-      "path": "../signer"
+      "path": "../store"
     },
     {
-      "path": "../identity"
+      "path": "../signer"
     }
   ]
 }

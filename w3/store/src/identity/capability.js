@@ -1,5 +1,5 @@
 import * as Server from "@ucanto/server"
-import { capability, URI, Failure, provide } from "@ucanto/server"
+import { capability, URI, Failure, provide, Link } from "@ucanto/server"
 import * as API from "../type.js"
 import store from "../store/capability.js"
 
@@ -18,12 +18,46 @@ const equalWith = (claimed, delegated) =>
     `Can not derive ${claimed.can} with ${claimed.uri.href} from ${delegated.uri.href}`
   )
 
+/**
+ * @param {string} claimed
+ * @param {string} delegated
+ */
+const derivesURIPattern = (claimed, delegated) => {
+  if (delegated.endsWith("*")) {
+    if (claimed.startsWith(delegated.slice(0, -1))) {
+      return true
+    } else {
+      return new Failure(`${claimed} does not match ${delegated}`)
+    }
+  }
+
+  if (claimed === delegated) {
+    return true
+  } else {
+    return new Failure(`${claimed} is differnt from ${delegated}`)
+  }
+}
+
+export const validate = capability({
+  can: "identity/validate",
+  with: URI.match({ protocol: "did:" }),
+  caveats: {
+    as: URI.string({ protocol: "mailto:" }),
+  },
+  derives: (claimed, delegated) =>
+    derivesURIPattern(claimed.caveats.as, delegated.caveats.as) &&
+    equalWith(claimed, delegated),
+})
+
 export const register = capability({
   can: "identity/register",
   with: URI.match({ protocol: "mailto:" }),
-  derives: (claimed, delegated) => {
-    return delegated.uri.href === "mailto:*" || equalWith(claimed, delegated)
+  caveats: {
+    as: URI.string({ protocol: "did:" }),
   },
+  derives: (claimed, delegated) =>
+    derivesURIPattern(claimed.caveats.as, delegated.caveats.as) &&
+    equalWith(claimed, delegated),
 })
 
 export const link = capability({

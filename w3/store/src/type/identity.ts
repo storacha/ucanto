@@ -1,4 +1,11 @@
-import type { Capability, ServiceMethod, DID, Failure } from "@ucanto/server"
+import type {
+  Capability,
+  ServiceMethod,
+  DID,
+  Resource,
+  Failure,
+} from "@ucanto/server"
+import type { API, URI } from "@ucanto/interface"
 import type { ServiceError } from "./error"
 
 export interface Identity {
@@ -17,6 +24,7 @@ export interface Identity {
    */
   register: ServiceMethod<Register, null, never>
 
+  validate: ServiceMethod<Validate, null, never>
   /**
    * Resolves account DID associated with a given DID. Returns either account
    * did (which will have form of `did:ipld:bafy...hash`) or fails with
@@ -30,13 +38,19 @@ export interface Identity {
 }
 
 export type MailtoID = `mailto:${string}`
-export type ID = DID | MailtoID
+export type ID = `did:${string}` | MailtoID
 
-export interface Register extends Capability<"identity/register", MailtoID> {}
+export interface Register extends Capability<"identity/register", MailtoID> {
+  as: `did:${string}`
+}
+
+export interface Validate extends Capability<"identity/validate", DID> {
+  as: MailtoID
+}
 
 export interface Link extends Capability<"identity/link", ID> {}
 
-export interface Identify extends Capability<"identity/identify", ID> {}
+export interface Identify extends Capability<"identity/identify", Resource> {}
 
 export interface NotRegistered
   extends ServiceError<"NotRegistered", NotRegistered> {

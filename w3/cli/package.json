@@ -1,9 +1,9 @@
 {
-  "name": "w3-store",
+  "name": "w3-cli",
   "description": "web3.storage upload service",
   "version": "0.0.1",
-  "types": "./dist/src/lib.d.ts",
-  "main": "./src/lib.js",
+  "types": "./dist/src/main.d.ts",
+  "main": "./src/main.js",
   "keywords": [
     "web3.storage"
   ],
@@ -24,13 +24,22 @@
     "testw": "watch 'pnpm test' src test --interval 1"
   },
   "dependencies": {
-    "@ucanto/server": "workspace:*",
     "@ucanto/client": "workspace:*",
-    "@ucanto/interface": "workspace:*"
+    "@ucanto/core": "workspace:*",
+    "@ucanto/interface": "workspace:*",
+    "@ucanto/transport": "workspace:*",
+    "subprogram": "^1.2.0",
+    "soly": "^1.1.2",
+    "conf": "^10.1.2",
+    "ora": "^6.1.0",
+    "zod": "^3.17.3",
+    "inquirer": "^9.0.0",
+    "@web-std/fetch": "^4.1.0"
   },
   "devDependencies": {
+    "@types/inquirer": "^8.2.1",
+    "@ucanto/server": "workspace:*",
     "@ucanto/authority": "workspace:*",
-    "@ucanto/transport": "workspace:*",
     "w3-signer": "workspace:*",
     "typescript": "^4.7.2",
     "@types/mocha": "^9.1.0",
@@ -39,20 +48,13 @@
     "mocha": "^9.2.2",
     "chai": "^4.3.6",
     "chai-subset": "^1.6.0",
-    "playwright-test": "^7.3.0"
+    "playwright-test": "^7.3.0",
+    "w3-store": "workspace:*"
   },
   "exports": {
     ".": {
       "types": "./dist/src/lib.d.ts",
       "import": "./src/lib.js"
-    },
-    "./identity": {
-      "types": "./dist/src/identity/lib.d.ts",
-      "import": "./src/identity/lib.js"
-    },
-    "./accounting": {
-      "types": "./dist/src/accounting/lib.d.ts",
-      "import": "./src/accounting/lib.js"
     }
   },
   "type": "module",
