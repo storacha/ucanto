@@ -109,6 +109,7 @@ test('checks service id', async () => {
   })
 
   const client = Client.connect({
+    id: w3.authority,
     encoder: CAR,
     decoder: CBOR,
     channel: server,
