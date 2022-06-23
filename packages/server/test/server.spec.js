@@ -72,6 +72,7 @@ test('encode delegated invocation', async () => {
   })
 
   const connection = Client.connect({
+    id: w3.authority,
     encoder: CAR,
     decoder: CBOR,
     channel: server,
@@ -166,6 +167,7 @@ test('unknown handler', async () => {
   })
 
   const connection = Client.connect({
+    id: w3.authority,
     encoder: CAR,
     decoder: CBOR,
     channel: server,
@@ -233,6 +235,7 @@ test('execution error', async () => {
   })
 
   const connection = Client.connect({
+    id: w3.authority,
     encoder: CAR,
     decoder: CBOR,
     channel: server,

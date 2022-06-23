@@ -4,12 +4,13 @@ import * as HTTP from '@ucanto/transport/http'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
 import * as Service from './service.js'
-import { alice, bob, mallory, service as web3Storage } from './fixtures.js'
+import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import fetch from '@web-std/fetch'
 
 test('encode inovocation', async () => {
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
+    id: w3.authority,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -21,7 +22,7 @@ test('encode inovocation', async () => {
 
   const add = Client.invoke({
     issuer: alice,
-    audience: web3Storage,
+    audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),
@@ -42,7 +43,7 @@ test('encode inovocation', async () => {
   const [invocation] = request
   assert.equal(request.length, 1)
   assert.equal(invocation.issuer.did(), alice.did())
-  assert.equal(invocation.audience.did(), web3Storage.did())
+  assert.equal(invocation.audience.did(), w3.did())
   assert.deepEqual(invocation.proofs, [])
   assert.deepEqual(invocation.capabilities, [
     {
@@ -61,6 +62,7 @@ test('encode delegated invocation', async () => {
 
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
+    id: w3.authority,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -79,7 +81,7 @@ test('encode delegated invocation', async () => {
 
   const add = Client.invoke({
     issuer: bob,
-    audience: web3Storage,
+    audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),
@@ -90,7 +92,7 @@ test('encode delegated invocation', async () => {
 
   const remove = Client.invoke({
     issuer: alice,
-    audience: web3Storage,
+    audience: w3,
     capability: {
       can: 'store/remove',
       with: alice.did(),
@@ -105,7 +107,7 @@ test('encode delegated invocation', async () => {
     assert.equal(request.length, 2)
 
     assert.equal(add.issuer.did(), bob.did())
-    assert.equal(add.audience.did(), web3Storage.did())
+    assert.equal(add.audience.did(), w3.did())
     assert.deepEqual(add.capabilities, [
       {
         can: 'store/add',
@@ -123,7 +125,7 @@ test('encode delegated invocation', async () => {
     assert.deepEqual(delegation.capabilities, proof.capabilities)
 
     assert.equal(remove.issuer.did(), alice.did())
-    assert.equal(remove.audience.did(), web3Storage.did())
+    assert.equal(remove.audience.did(), w3.did())
     assert.deepEqual(remove.proofs, [])
     assert.deepEqual(remove.capabilities, [
       {
@@ -138,6 +140,7 @@ test('encode delegated invocation', async () => {
 const service = Service.create()
 /** @type {Client.ConnectionView<Service.Service>} */
 const connection = Client.connect({
+  id: w3.authority,
   channel: HTTP.open({
     url: new URL('about:blank'),
     fetch: async (url, input) => {
@@ -180,7 +183,7 @@ test('execute', async () => {
 
   const add = Client.invoke({
     issuer: alice,
-    audience: web3Storage,
+    audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),
@@ -191,7 +194,7 @@ test('execute', async () => {
 
   const remove = Client.invoke({
     issuer: alice,
-    audience: web3Storage,
+    audience: w3,
     capability: {
       can: 'store/remove',
       with: alice.did(),

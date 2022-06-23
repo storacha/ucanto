@@ -19,6 +19,7 @@ class Connection {
    * @param {API.ConnectionOptions<T>} options
    */
   constructor(options) {
+    this.id = options.id
     this.options = options
     this.encoder = options.encoder
     this.decoder = options.decoder
