@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://www.github.com/web3-storage/ucanto/compare/transport-v0.4.0...transport-v0.5.0) (2022-06-23)
+
+
+### Features
+
+* **ucanto:** URI protocol type retention & capability constructors ([e291544](https://www.github.com/web3-storage/ucanto/commit/e2915447254990d6e2384ff79a1da38120426ed5))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^0.4.0 to ^0.5.0
+    * @ucanto/core bumped from ^0.4.0 to ^0.5.0
+  * devDependencies
+    * @ucanto/authority bumped from ^0.4.0 to ^0.4.1
+
 ## [0.4.0](https://www.github.com/web3-storage/ucanto/compare/transport-v0.3.0...transport-v0.4.0) (2022-06-20)
 
 

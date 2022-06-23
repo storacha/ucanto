@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://www.github.com/web3-storage/ucanto/compare/core-v0.4.0...core-v0.5.0) (2022-06-23)
+
+
+### Features
+
+* **ucanto:** capability create / inovke methods ([#51](https://www.github.com/web3-storage/ucanto/issues/51)) ([ddf56b1](https://www.github.com/web3-storage/ucanto/commit/ddf56b1ec80ff6c0698255c531936d8eeab532fd))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^0.4.0 to ^0.5.0
+  * devDependencies
+    * @ucanto/authority bumped from ^0.4.0 to ^0.4.1
+
 ## [0.4.0](https://www.github.com/web3-storage/ucanto/compare/core-v0.3.0...core-v0.4.0) (2022-06-20)
 
 
