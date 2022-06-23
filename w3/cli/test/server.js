@@ -1,13 +1,11 @@
-import * as Client from "@ucanto/client"
-import * as Server from "@ucanto/server"
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
-import { SigningAuthority } from "@ucanto/authority"
-import * as Store from "w3-store"
-import { Identity, Accounting, server } from "w3-store"
-import * as Signer from "w3-signer"
-import * as HTTP from "node:http"
-import { script } from "subprogram"
+import * as Client from '@ucanto/client'
+import * as Server from '@ucanto/server'
+import * as CAR from '@ucanto/transport/car'
+import * as CBOR from '@ucanto/transport/cbor'
+import { SigningAuthority } from '@ucanto/authority'
+import { Identity, Accounting, Store } from 'w3-store'
+import * as HTTP from 'node:http'
+import { script } from 'subprogram'
 
 /**
  *
@@ -22,20 +20,19 @@ export const service = ({ w3id, w3store }) => {
   const metadata = new Map()
   const accounts = new Map()
 
-  const identity = Identity.service({ id: w3id, db: accounts })
+  const identity = Identity.create({ id: w3id, db: accounts })
 
   const store = Store.service({
     self: w3store,
-    accounting: Accounting.service({
+    accounting: Accounting.create({
       db: metadata,
       cars: s3,
     }),
-    signer: Signer,
     signerConfig: {
-      accessKeyId: "id",
-      secretAccessKey: "secret",
-      region: "us-east-2",
-      bucket: "my-test-bucket",
+      accessKeyId: process.env.S3_ACCESS_KEY_ID || 'id',
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'secret',
+      region: process.env.AWS_REGION || 'us-east-2',
+      bucket: process.env.S3_BUCKET || 'my-test-bucket',
     },
     identity: {
       id: w3id,
@@ -64,9 +61,9 @@ export const service = ({ w3id, w3store }) => {
  * @param {Partial<Config>} config
  */
 export const main = async ({
-  w3storeKepair = process.env.SERVICE_KEYPAIR || "",
-  w3idKepair = process.env.W3_ID_KEYPAIR || "",
-  port = parseInt(process.env.PORT || "8080"),
+  w3storeKepair = process.env.SERVICE_KEYPAIR || '',
+  w3idKepair = process.env.W3_ID_KEYPAIR || '',
+  port = parseInt(process.env.PORT || '8080'),
 } = {}) => {
   const w3store = SigningAuthority.parse(w3storeKepair)
   // const w3id = SigningAuthority.parse(w3idKepair)

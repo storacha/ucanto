@@ -26,12 +26,14 @@
   "dependencies": {
     "@ucanto/server": "workspace:*",
     "@ucanto/client": "workspace:*",
-    "@ucanto/interface": "workspace:*"
+    "@ucanto/interface": "workspace:*",
+    "multiformats": "^9.7.0",
+    "@web3-storage/sigv4": "workspace:*"
   },
   "devDependencies": {
     "@ucanto/authority": "workspace:*",
     "@ucanto/transport": "workspace:*",
-    "w3-signer": "workspace:*",
+    "@ucanto/core": "workspace:*",
     "typescript": "^4.7.2",
     "@types/mocha": "^9.1.0",
     "@types/chai": "^4.3.0",

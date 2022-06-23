@@ -1,4 +1,4 @@
-import * as Server from "@ucanto/server"
+import * as Server from '@ucanto/server'
 import type {
   ServerView,
   ConnectionView,
@@ -7,13 +7,13 @@ import type {
   MalformedCapability,
   InvocationError,
   UCAN,
-} from "@ucanto/interface"
-import type { Capability, ServiceMethod, DID, Failure } from "@ucanto/server"
-import * as Accounting from "./accounting"
-import * as Identity from "./identity"
-import * as Signer from "./signer"
-import * as API from "@ucanto/interface"
-import * as CAR from "@ucanto/transport/car"
+} from '@ucanto/interface'
+import type { Capability, ServiceMethod, DID, Failure } from '@ucanto/server'
+import * as Accounting from './accounting'
+import * as Identity from './identity'
+import * as Signer from '../signer/type'
+import * as API from '@ucanto/interface'
+import * as CAR from '@ucanto/transport/car'
 
 export interface Link<
   T extends unknown = unknown,
@@ -34,7 +34,6 @@ export interface ServiceOptions {
 
   accounting: Accounting.Provider
 
-  signer: Signer.Signer
   signerConfig: Signer.SignOptions
 }
 
@@ -62,13 +61,13 @@ export interface Store {
 export type AddState = AddDone | UploadRequired
 
 export interface AddDone {
-  status: "done"
+  status: 'done'
   with: DID
   link: Link
 }
 
 export interface UploadRequired {
-  status: "upload"
+  status: 'upload'
   with: DID
   link: Link
   url: string
@@ -76,14 +75,14 @@ export interface UploadRequired {
 
 export type CARLink = Link<CAR.codec.Model, typeof CAR.codec.code>
 
-export interface Add extends Capability<"store/add", DID> {
+export interface Add extends Capability<'store/add', DID> {
   link?: Link
 }
 
-export interface Remove extends Capability<"store/remove", DID> {
+export interface Remove extends Capability<'store/remove', DID> {
   link?: Link
 }
 
-export interface List extends Capability<"store/list", DID> {}
+export interface List extends Capability<'store/list', DID> {}
 
 export type Action = Add | Remove | List

@@ -1,4 +1,4 @@
-import * as API from "../type.js"
+import * as API from '../type.js'
 
 /**
  * @typedef {import("../identity/provider").KVStore<API.DID, Map<string, API.Accounting.Link|null>>} DB
@@ -6,7 +6,7 @@ import * as API from "../type.js"
  * @param {{db:DB, cars:Bucket}} context
  * @returns {API.Accounting.Provider}
  */
-export const service = ({ db, cars }) => ({
+export const create = ({ db, cars }) => ({
   /**
    * @param {API.DID} group
    * @param {API.Accounting.Link} link
@@ -25,7 +25,7 @@ export const service = ({ db, cars }) => ({
       db.set(group, new Map([[`${link}`, link]]))
     }
 
-    return have ? { status: "in-s3" } : { status: "not-in-s3" }
+    return have ? { status: 'in-s3' } : { status: 'not-in-s3' }
   },
   /**
    * @param {API.DID} group

@@ -1,10 +1,10 @@
-import { base64pad } from "multiformats/bases/base64"
-import { SigV4 } from "@web3-storage/sigv4"
+import { base64pad } from 'multiformats/bases/base64'
+import { SigV4 } from '@web3-storage/sigv4'
+import * as API from './type.js'
 
 /**
- *
- * @param {import('./types').Link} link
- * @param {import('./types').SignOptions} options
+ * @param {API.Link<unknown, number, number, 0 | 1>} link
+ * @param {API.SignOptions} options
  */
 export const sign = (link, { bucket, expires = 1000, ...options }) => {
   // sigv4

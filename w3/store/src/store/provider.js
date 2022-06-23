@@ -3,18 +3,13 @@ import { provide } from '@ucanto/server'
 import * as API from '../type.js'
 import * as Identity from '../identity/capability.js'
 import * as Capability from './capability.js'
+import * as Signer from '../signer/lib.js'
 
 /**
  * @param {API.Store.ServiceOptions} options
  * @returns {API.Store.Store}
  */
-export const service = ({
-  self,
-  identity,
-  accounting,
-  signer,
-  signerConfig,
-}) => {
+export const service = ({ self, identity, accounting, signerConfig }) => {
   return {
     add: provide(Capability.Add, async ({ capability, invocation }) => {
       const link = /** @type {API.Store.CARLink|undefined} */ (
@@ -48,7 +43,7 @@ export const service = ({
       }
 
       if (result.status === 'not-in-s3') {
-        const url = await signer.sign(link, signerConfig)
+        const url = await Signer.sign(link, signerConfig)
         return {
           status: 'upload',
           with: id,

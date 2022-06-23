@@ -4,7 +4,6 @@ import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
 import { SigningAuthority } from '@ucanto/authority'
 import { Store, Identity, Accounting } from '../src/lib.js'
-import * as Signer from 'w3-signer'
 import { alice, bob, mallory, service as validator } from './fixtures.js'
 
 test('main', async () => {
@@ -32,11 +31,10 @@ test('main', async () => {
     },
     context: {
       self: w3store,
-      accounting: Accounting.service({
+      accounting: Accounting.create({
         db: metadata,
         cars: s3,
       }),
-      signer: Signer,
       signerConfig: {
         accessKeyId: 'id',
         secretAccessKey: 'secret',

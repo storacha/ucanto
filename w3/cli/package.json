@@ -40,7 +40,6 @@
     "@types/inquirer": "^8.2.1",
     "@ucanto/server": "workspace:*",
     "@ucanto/authority": "workspace:*",
-    "w3-signer": "workspace:*",
     "typescript": "^4.7.2",
     "@types/mocha": "^9.1.0",
     "@types/chai": "^4.3.0",

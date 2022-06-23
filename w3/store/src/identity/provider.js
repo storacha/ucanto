@@ -25,7 +25,7 @@ import * as API from '../type.js'
  * @param {Context} context
  * @return {API.Identity.Identity}
  */
-export const service = ({ id, db }) => ({
+export const create = ({ id, db }) => ({
   validate: Server.provide(
     Capability.Validate,
     async ({ capability, invocation }) => {
@@ -90,7 +90,7 @@ export const service = ({ id, db }) => ({
 export const server = ({ context, ...options }) =>
   Server.create({
     ...options,
-    service: { identity: service(context) },
+    service: { identity: create(context) },
   })
 
 /**
