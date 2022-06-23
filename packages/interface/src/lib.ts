@@ -82,13 +82,8 @@ export type Proof<
   C extends [Capability, ...Capability[]] = [Capability, ...Capability[]]
 > = LinkedProof<C[number]> | Delegation<C>
 
-export interface DelegationOptions<
-  C extends [Capability, ...Capability[]],
-  A extends number = number
-> {
-  issuer: SigningAuthority<A>
+export interface UCANOptions {
   audience: Identity
-  capabilities: C
   lifetimeInSeconds?: number
   expiration?: number
   notBefore?: number
@@ -97,6 +92,15 @@ export interface DelegationOptions<
 
   facts?: Fact[]
   proofs?: Proof[]
+}
+
+export interface DelegationOptions<
+  C extends [Capability, ...Capability[]],
+  A extends number = number
+> extends UCANOptions {
+  issuer: SigningAuthority<A>
+  audience: Identity
+  capabilities: C
 }
 
 export interface Delegation<
@@ -128,11 +132,10 @@ export interface Delegation<
 export interface Invocation<C extends Capability = Capability>
   extends Delegation<[C]> {}
 
-export interface InvocationOptions<C extends Capability = Capability> {
+export interface InvocationOptions<C extends Capability = Capability>
+  extends UCANOptions {
   issuer: SigningAuthority
-  audience: Audience
   capability: C
-  proofs?: Proof[]
 }
 
 export interface IssuedInvocation<C extends Capability = Capability>
@@ -230,8 +233,9 @@ export type InferServiceInvocations<I extends unknown[], T> = I extends []
 
 export interface IssuedInvocationView<C extends Capability = Capability>
   extends IssuedInvocation<C> {
+  delegate(): Promise<Delegation<[C]>>
   execute<T extends InvocationService<C>>(
-    service: Connection<T>
+    service: ConnectionView<T>
   ): Await<InferServiceInvocationReturn<C, T>>
 }
 

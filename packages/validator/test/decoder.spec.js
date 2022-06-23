@@ -18,7 +18,7 @@ import { CID } from 'multiformats'
 }
 
 {
-  /** @type {[string, `${string}:`, object][]} */
+  /** @type {[string, `${string}:`, {href?:string, message?:string}][]} */
   const dataset = [
     ['', 'did:', { message: 'Invalid URI' }],
     ['did:key:zAlice', 'did:', { href: 'did:key:zAlice' }],
@@ -40,6 +40,10 @@ import { CID } from 'multiformats'
       protocol,
     })}).decode(${JSON.stringify(input)})}}`, () => {
       assert.containSubset(URI.match({ protocol }).decode(input), expect)
+      assert.containSubset(
+        URI.string({ protocol }).decode(input),
+        expect.href || expect
+      )
     })
   }
 }

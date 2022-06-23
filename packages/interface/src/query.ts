@@ -7,6 +7,7 @@ import type {
   UCAN,
   Result,
   Connection,
+  ConnectionView,
   Service,
   Authority,
   SigningAuthority,
@@ -133,7 +134,7 @@ type Store = {
   remove: StoreRemove
 }
 declare var store: Store
-declare var channel: Connection<{ store: Store }>
+declare var channel: ConnectionView<{ store: Store }>
 declare const alice: SigningAuthority
 declare const bob: Authority
 declare const car: UCAN.Link
@@ -162,7 +163,7 @@ type U = Unpack<StoreAdd & StoreRemove>
 //   ],
 // })
 
-declare var host: Connection<{ store: Store }>
+declare var host: ConnectionView<{ store: Store }>
 
 const demo = async () => {
   const add = invoke({

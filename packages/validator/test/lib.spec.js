@@ -91,12 +91,28 @@ test('expired invocation', async () => {
   assert.containSubset(result, {
     error: true,
     name: 'Unauthorized',
+    message: `Expired on ${new Date(expiration * 1000)}`,
     cause: {
       name: 'Expired',
       expiredAt: expiration,
       message: `Expired on ${new Date(expiration * 1000)}`,
     },
   })
+
+  assert.deepEqual(
+    JSON.stringify(result),
+    JSON.stringify({
+      error: true,
+      name: 'Unauthorized',
+      message: `Expired on ${new Date(expiration * 1000)}`,
+      cause: {
+        error: true,
+        name: 'Expired',
+        message: `Expired on ${new Date(expiration * 1000)}`,
+        expiredAt: expiration,
+      },
+    })
+  )
 })
 
 test('not vaid before invocation', async () => {
@@ -178,7 +194,7 @@ test('unknown capability', async () => {
   })
 
   const result = await access(invocation, {
-    // @ts-expect-error
+    // @ts-expect-error - invocation does not match capability
     capability: storeAdd,
     authority: Authority,
     canIssue: (claim, issuer) => {
@@ -655,6 +671,109 @@ test('invalid claim / invalid audience', async () => {
   })
 })
 
+test('invalid claim / invalid claim', async () => {
+  const delegation = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: mallory.did(),
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: bob,
+    audience: w3.authority,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
+    proofs: [delegation],
+  })
+
+  const result = await access(invocation, {
+    authority: Authority,
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    capability: storeAdd,
+  })
+
+  assert.containSubset(result, {
+    name: 'Unauthorized',
+    cause: {
+      name: 'InvalidClaim',
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+  - Capability can not be (self) issued by '${bob.did()}'
+  - Can not derive {"can":"store/add","with":"${alice.did()}"} from delegated capabilities:
+    - Constraint violation: Expected 'with: "${mallory.did()}"' instead got '${alice.did()}'`,
+    },
+  })
+})
+
+test('invalid claim / invalid sub delegation', async () => {
+  const proof = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: w3.did(),
+      },
+    ],
+  })
+
+  const delegation = await Client.delegate({
+    issuer: bob,
+    audience: mallory.authority,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: w3.did(),
+      },
+    ],
+    proofs: [proof],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: mallory,
+    audience: w3.authority,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: w3.did(),
+      },
+    ],
+    proofs: [delegation],
+  })
+
+  const result = await access(invocation, {
+    authority: Authority,
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    capability: storeAdd,
+  })
+
+  assert.containSubset(result, {
+    name: 'Unauthorized',
+    cause: {
+      name: 'InvalidClaim',
+      message: `Claimed capability {"can":"store/add","with":"${w3.did()}"} is invalid
+  - Capability can not be (self) issued by '${mallory.did()}'
+  - Claimed capability {"can":"store/add","with":"${w3.did()}"} is invalid
+    - Capability can not be (self) issued by '${bob.did()}'
+    - Claimed capability {"can":"store/add","with":"${w3.did()}"} is invalid
+      - Capability can not be (self) issued by '${alice.did()}'
+      - Delegated capability not found`,
+    },
+  })
+})
+
 test('delegate with my:*', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
@@ -663,6 +782,68 @@ test('delegate with my:*', async () => {
       {
         can: '*',
         with: 'my:*',
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: bob,
+    audience: w3.authority,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
+    proofs: [delegation],
+  })
+
+  const result = await access(invocation, {
+    authority: Authority,
+    canIssue: (claim, issuer) => {
+      return claim.with === issuer
+    },
+    my: (issuer) => {
+      return [
+        {
+          can: 'store/add',
+          with: issuer,
+        },
+      ]
+    },
+    capability: storeAdd,
+  })
+
+  assert.containSubset(result, {
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+    },
+    issuer: bob.authority.bytes,
+    audience: w3.authority.bytes,
+    proofs: [
+      {
+        delegation,
+        issuer: alice.authority.bytes,
+        audience: bob.authority.bytes,
+        capability: {
+          can: 'store/add',
+          with: alice.did(),
+        },
+        proofs: [],
+      },
+    ],
+  })
+})
+
+test('delegate with my:did', async () => {
+  const delegation = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: '*',
+        with: 'my:did',
       },
     ],
   })
@@ -791,6 +972,96 @@ test('delegate with as:*', async () => {
             capability: {
               can: 'store/add',
               with: alice.did(),
+            },
+          },
+        ],
+      },
+    ],
+  })
+})
+
+test('delegate with as:did', async () => {
+  const mailto = capability({
+    can: 'msg/send',
+    with: URI.match({ protocol: 'mailto:' }),
+  })
+
+  const my = await Client.delegate({
+    issuer: alice,
+    audience: bob.authority,
+    capabilities: [
+      {
+        can: '*',
+        with: 'my:*',
+      },
+    ],
+  })
+
+  const as = await Client.delegate({
+    issuer: bob,
+    audience: mallory.authority,
+    capabilities: [
+      {
+        can: 'msg/send',
+        with: /** @type {API.UCAN.Resource} */ (`as:${alice.did()}:mailto`),
+      },
+    ],
+    proofs: [my],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: mallory,
+    audience: w3.authority,
+    capabilities: [
+      {
+        can: 'msg/send',
+        with: 'mailto:alice@web.mail',
+      },
+    ],
+    proofs: [as],
+  })
+
+  const result = await access(invocation, {
+    authority: Authority,
+    canIssue: (claim, issuer) => {
+      return (
+        claim.with === issuer ||
+        (issuer === alice.did() && claim.can === 'msg/send')
+      )
+    },
+    my: (issuer) => {
+      return [
+        {
+          can: 'msg/send',
+          with: 'mailto:alice@web.mail',
+        },
+      ]
+    },
+    capability: mailto,
+  })
+
+  assert.containSubset(result, {
+    capability: {
+      can: 'msg/send',
+      with: 'mailto:alice@web.mail',
+    },
+    proofs: [
+      {
+        delegation: as,
+        issuer: bob.authority.bytes,
+        audience: mallory.authority.bytes,
+        capability: {
+          can: 'msg/send',
+          with: 'mailto:alice@web.mail',
+        },
+        proofs: [
+          {
+            delegation: my,
+            issuer: alice.authority.bytes,
+            audience: bob.authority.bytes,
+            capability: {
+              can: 'msg/send',
+              with: 'mailto:alice@web.mail',
             },
           },
         ],

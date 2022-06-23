@@ -5,7 +5,9 @@ import {
   MalformedCapability,
   UnknownCapability,
   DelegationError as MatchError,
+  Failure,
 } from './error.js'
+import { invoke, delegate } from '@ucanto/core'
 
 /**
  * @template {API.Ability} A
@@ -108,30 +110,50 @@ class Capability extends Unit {
    */
   constructor(descriptor) {
     super()
-    this.descriptor = descriptor
+    this.descriptor = { derives, ...descriptor }
   }
 
   /**
-   * @param {R['href']} resource
-   * @param {API.InferCaveatParams<API.InferCaveats<C>>} data
-   * @return {API.Capability<A, R['href']> & API.InferCaveats<C>}
+   * @param {API.InferCreateOptions<R['href'], API.InferCaveats<C>>} options
    */
-  create(resource, data) {
+  create(options) {
     const { descriptor, can } = this
     const decoders = descriptor.caveats
+    const data = options.caveats || {}
+
+    const resource = descriptor.with.decode(options.with)
+    if (resource.error) {
+      throw Object.assign(new Error(`Invalid 'with' - ${resource.message}`), {
+        cause: resource,
+      })
+    }
 
     const caveats = /** @type {API.InferCaveats<C>} */ ({})
     for (const [name, decoder] of Object.entries(decoders || {})) {
-      const key = /** @type {keyof caveats} */ (name)
+      const key = /** @type {keyof caveats & keyof data} */ (name)
       const value = decoder.decode(data[key])
       if (value?.error) {
-        throw value
+        throw Object.assign(
+          new Error(`Invalid 'caveats.${key}' - ${value.message}`),
+          { cause: value }
+        )
       } else {
+        const key = /** @type {keyof caveats} */ (name)
         caveats[key] = /** @type {typeof caveats[key]} */ (value)
       }
     }
 
-    return { ...caveats, can, with: resource }
+    return { ...caveats, can, with: resource.href }
+  }
+
+  /**
+   * @param {API.InvokeCapabilityOptions<R['href'], API.InferCaveats<C>>} data
+   */
+  invoke({ with: with_, caveats, ...options }) {
+    return invoke({
+      ...options,
+      capability: this.create({ with: with_, caveats }),
+    })
   }
 
   get can() {
@@ -265,8 +287,14 @@ class Derive extends Unit {
   /**
    * @type {typeof this.to['create']}
    */
-  create(resource, caveats) {
-    return this.to.create(resource, caveats)
+  create(options) {
+    return this.to.create(options)
+  }
+  /**
+   * @type {typeof this.to['invoke']}
+   */
+  invoke(options) {
+    return this.to.invoke(options)
   }
   get can() {
     return this.to.can
@@ -303,7 +331,7 @@ class Match {
   constructor(source, value, descriptor) {
     this.source = [source]
     this.value = value
-    this.descriptor = descriptor
+    this.descriptor = { derives, ...descriptor }
   }
   get can() {
     return this.value.can
@@ -675,4 +703,36 @@ const selectGroup = (self, capabilities) => {
     errors,
     matches,
   }
+}
+
+/**
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} claimed
+ * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} delegated
+ * @return {API.Result<true, API.Failure>}
+ */
+const derives = (claimed, delegated) => {
+  if (delegated.with.endsWith('*')) {
+    if (!claimed.with.startsWith(delegated.with.slice(0, -1))) {
+      return new Failure(
+        `Resource ${claimed.with} does not match delegated ${delegated.with} `
+      )
+    }
+  } else if (delegated.with !== claimed.with) {
+    return new Failure(
+      `Resource ${claimed.with} does not contain ${delegated.with}`
+    )
+  }
+
+  for (const [name, value] of entries(delegated.caveats)) {
+    if (claimed.caveats[name] != value) {
+      return new Failure(
+        `${String(name)}: ${claimed.caveats[name]} violates ${value}`
+      )
+    }
+  }
+
+  return true
 }
