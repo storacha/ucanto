@@ -7,7 +7,8 @@ import { access } from '@ucanto/validator'
  * @template {API.URI} R
  * @template {unknown} U
  * @template {API.Match} Z
- * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, API.InferCaveats<C>>, Z>>} capability
+ * @template {API.ParsedCapability<A, R, API.InferCaveats<C>>} T
+ * @param {API.CapabilityParser<API.Match<T, Z>>} capability
  * @param {(input:API.ProviderContext<A, R, C>) => API.Await<U>} handler
  * @returns {API.ServiceMethod<API.Capability<A, R['href']> & API.InferCaveats<C>, Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>>}
  */
@@ -15,7 +16,7 @@ import { access } from '@ucanto/validator'
 export const provide =
   (capability, handler) =>
   /**
-   * @param {API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>} invocation
+   * @param {API.Invocation<API.Capability<T['can'], T['with']> & T['caveats']>} invocation
    * @param {API.InvocationContext} options
    * @return {Promise<API.Result<Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>|API.InvocationError>>}
    */

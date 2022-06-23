@@ -205,6 +205,15 @@ export class Expired extends Failure {
   get expiredAt() {
     return this.delegation.expiration
   }
+  toJSON() {
+    const { error, name, expiredAt, message } = this
+    return {
+      error,
+      name,
+      message,
+      expiredAt,
+    }
+  }
 }
 
 export class NotValidBefore extends Failure {

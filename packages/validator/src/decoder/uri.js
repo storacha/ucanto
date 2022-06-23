@@ -8,6 +8,10 @@ import { Failure } from '../error.js'
  * @return {API.Result<API.URI<Protocol>, API.Failure>}
  */
 export const decode = (input, { protocol } = {}) => {
+  if (typeof input !== 'string' && !(input instanceof URL)) {
+    return new Failure(`Expected URI but got ${typeof input}`)
+  }
+
   try {
     const url = new URL(String(input))
     if (protocol != null && url.protocol !== protocol) {

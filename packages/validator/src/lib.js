@@ -133,11 +133,12 @@ const resolveSources = async ({ delegation }, config) => {
 
 /**
  * @template {API.Ability} A
- * @template {API.Caveats} C
  * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @template {API.ParsedCapability<A, R, API.InferCaveats<C>>} T
  * @param {API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>} invocation
- * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} config
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
+ * @param {API.ValidationOptions<T>} config
+ * @returns {Promise<API.Result<Authorization<T>, API.Unauthorized>>}
  */
 export const access = async (
   invocation,
@@ -337,7 +338,6 @@ class Unauthorized extends Failure {
 const ALL = '*'
 
 /**
- * @template {API.ParsedCapability} C
  * @param {API.Delegation} delegation
  * @param {Required<API.IssuingOptions>} options
  */

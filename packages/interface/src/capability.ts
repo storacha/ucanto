@@ -11,7 +11,11 @@ import {
   DID,
   LinkedProof,
   Await,
-  API,
+  Proof,
+  SigningAuthority,
+  IssuedInvocationView,
+  Fact,
+  UCANOptions,
 } from './lib.js'
 
 export interface Source {
@@ -81,7 +85,7 @@ export interface DeriveSelector<M extends Match, T extends ParsedCapability> {
   derives: Derives<T, M['value']>
 }
 
-export interface Derives<T, U> {
+export interface Derives<T, U = T> {
   (self: T, from: U): Result<true, Failure>
 }
 
@@ -123,20 +127,51 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
   ): TheCapabilityParser<DerivedMatch<T, M>>
 }
 
-export type InferCaveatParams<T> = {
-  [K in keyof T]: T[K] extends { toJSON(): infer U } ? U : T[K]
-}
+export type InferCaveatParams<T> = keyof T extends never
+  ? never | undefined
+  : {
+      [K in keyof T]: T[K] extends { toJSON(): infer U } ? U : T[K]
+    }
 
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   extends CapabilityParser<M> {
   readonly can: M['value']['can']
 
-  create: (
-    resource: M['value']['uri']['href'],
-    caveats: InferCaveatParams<M['value']['caveats']>
-  ) => Capability<M['value']['can'], M['value']['uri']['href']> &
+  create(
+    input: InferCreateOptions<M['value']['with'], M['value']['caveats']>
+  ): Capability<M['value']['can'], M['value']['uri']['href']> &
     M['value']['caveats']
+
+  invoke(
+    options: InvokeCapabilityOptions<M['value']['with'], M['value']['caveats']>
+  ): IssuedInvocationView<
+    Capability<M['value']['can'], M['value']['uri']['href']> &
+      M['value']['caveats']
+  >
 }
+
+export type InferCreateOptions<R extends Resource, C extends {}> = {
+  with: Resource
+  caveats?: {}
+} & Optionalize<{
+  with: R
+  caveats: InferCaveatParams<C>
+}>
+
+type Optionalize<T> = InferRequried<T> & InferOptional<T>
+
+type InferOptional<T> = {
+  [K in keyof T as T[K] | undefined extends T[K] ? K : never]?: T[K]
+}
+
+type InferRequried<T> = {
+  [K in keyof T as T[K] | undefined extends T[K] ? never : K]: T[K]
+}
+
+export type InvokeCapabilityOptions<R extends Resource, C> = UCANOptions &
+  InferCreateOptions<R, C> & {
+    issuer: SigningAuthority
+  }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
   /**
@@ -239,19 +274,9 @@ export interface ParsedCapability<
   caveats: C
 }
 
-export type InferCaveats<C> = InferRequiredCaveats<C> & InferOptionalCaveats<C>
-
-export type InferOptionalCaveats<C> = {
-  [K in keyof C as C[K] extends Decoder<unknown, infer _T | undefined, infer _>
-    ? K
-    : never]?: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
-}
-
-export type InferRequiredCaveats<C> = {
-  [K in keyof C as C[K] extends Decoder<unknown, infer _T | undefined, infer _>
-    ? never
-    : K]: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
-}
+export type InferCaveats<C> = Optionalize<{
+  [K in keyof C]: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
+}>
 
 export interface Descriptor<
   A extends Ability,
@@ -262,7 +287,7 @@ export interface Descriptor<
   with: Decoder<Resource, R, Failure>
   caveats?: C
 
-  derives: Derives<
+  derives?: Derives<
     ParsedCapability<A, R, InferCaveats<C>>,
     ParsedCapability<A, R, InferCaveats<C>>
   >

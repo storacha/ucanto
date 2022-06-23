@@ -1,18 +1,12 @@
 import * as API from '@ucanto/interface'
-import { execute } from './connection.js'
+import { delegate } from './delegation.js'
 
 /**
  * @template {API.Capability} Capability
- * @param {API.InvocationOptions<Capability>} invocation
+ * @param {API.InvocationOptions<Capability>} options
  * @return {API.IssuedInvocationView<Capability>}
  */
-export const invoke = ({ issuer, audience, proofs, capability }) =>
-  new IssuedInvocation({
-    issuer,
-    audience,
-    capabilities: [capability],
-    proofs,
-  })
+export const invoke = (options) => new IssuedInvocation(options)
 
 /**
  * @template {API.Capability} Capability
@@ -21,13 +15,19 @@ export const invoke = ({ issuer, audience, proofs, capability }) =>
  */
 class IssuedInvocation {
   /**
-   * @param {object} data
-   * @param {API.SigningAuthority} data.issuer
-   * @param {API.Identity} data.audience
-   * @param {[Capability]} data.capabilities
-   * @param {API.Proof[]} [data.proofs]
+   * @param {API.InvocationOptions<Capability>} data
    */
-  constructor({ issuer, audience, capabilities, proofs = [] }) {
+  constructor({
+    issuer,
+    audience,
+    capability,
+    proofs = [],
+    expiration,
+    lifetimeInSeconds,
+    notBefore,
+    nonce,
+    facts = [],
+  }) {
     /** @readonly */
     this.issuer = issuer
     /** @readonly */
@@ -35,13 +35,26 @@ class IssuedInvocation {
     /** @readonly */
     this.proofs = proofs
 
-    /** @readonly */
-    this.capabilities = capabilities
+    /**
+     * @readonly
+     * @type {[Capability]}
+     */
+    this.capabilities = [capability]
+
+    this.expiration = expiration
+    this.lifetimeInSeconds = lifetimeInSeconds
+    this.notBefore = notBefore
+    this.nonce = nonce
+    this.facts = facts
+  }
+
+  delegate() {
+    return delegate(this)
   }
 
   /**
    * @template {API.InvocationService<Capability>} Service
-   * @param {API.Connection<Service>} connection
+   * @param {API.ConnectionView<Service>} connection
    * @returns {Promise<API.InferServiceInvocationReturn<Capability, Service>>}
    */
   async execute(connection) {
@@ -50,7 +63,7 @@ class IssuedInvocation {
     // does not seem to be enough to convince TS that `this` is valid
     // `ServiceInvocations<Service>`.
     const invocation = this
-    const [result] = await execute([invocation], connection)
+    const [result] = await connection.execute(invocation)
     return result
   }
 }

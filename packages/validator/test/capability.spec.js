@@ -1,10 +1,11 @@
 import { capability, URI, Link } from '../src/lib.js'
+import { invoke } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
 import { CID } from 'multiformats'
 import { test, assert } from './test.js'
-import { alice, bob, mallory } from './fixtures.js'
+import { alice, bob, mallory, service as w3 } from './fixtures.js'
 
 /**
  * @template {API.Capability[]} C
@@ -1206,4 +1207,257 @@ test('toString methods', () => {
       `{"can":"file/read+write","with":"file:///home/alice"}`
     )
   }
+})
+
+test('capability create with caveats', () => {
+  const echo = capability({
+    can: 'test/echo',
+    with: URI.match({ protocol: 'did:' }),
+    caveats: {
+      message: URI.string({ protocol: 'data:' }),
+    },
+  })
+
+  assert.throws(() => {
+    echo.create({
+      // @ts-expect-error - not assignable to did:
+      with: 'file://gozala/path',
+      caveats: {
+        message: 'data:hello',
+      },
+    })
+  }, /Invalid 'with' - Expected did: URI/)
+
+  assert.throws(() => {
+    // @ts-expect-error
+    echo.create({
+      with: alice.did(),
+    })
+  }, /Invalid 'caveats.message' - Expected URI but got undefined/)
+
+  assert.throws(() => {
+    echo.create({
+      with: alice.did(),
+      caveats: {
+        // @ts-expect-error
+        message: 'echo:foo',
+      },
+    })
+  }, /Invalid 'caveats.message' - Expected data: URI instead got echo:foo/)
+
+  assert.deepEqual(
+    echo.create({ with: alice.did(), caveats: { message: 'data:hello' } }),
+    {
+      can: 'test/echo',
+      with: alice.did(),
+      message: 'data:hello',
+    }
+  )
+
+  assert.deepEqual(
+    echo.create({
+      // @ts-expect-error - must be a string
+      with: new URL(alice.did()),
+      caveats: { message: 'data:hello' },
+    }),
+    {
+      can: 'test/echo',
+      with: alice.did(),
+      message: 'data:hello',
+    }
+  )
+})
+
+test('capability create without caveats', () => {
+  const ping = capability({
+    can: 'test/ping',
+    with: URI.match({ protocol: 'did:' }),
+  })
+
+  assert.throws(() => {
+    ping.create({
+      // @ts-expect-error - not assignable to did:
+      with: 'file://gozala/path',
+    })
+  }, /Invalid 'with' - Expected did: URI/)
+
+  assert.deepEqual(
+    ping.create({
+      with: alice.did(),
+    }),
+    {
+      can: 'test/ping',
+      with: alice.did(),
+    }
+  )
+
+  assert.deepEqual(
+    ping.create({
+      with: alice.did(),
+      // @ts-expect-error - no caveats expected
+      caveats: { x: 1 },
+    }),
+    {
+      can: 'test/ping',
+      with: alice.did(),
+    }
+  )
+
+  assert.deepEqual(
+    ping.create({
+      with: alice.did(),
+      // @ts-expect-error - no caveats expected
+      caveats: {},
+    }),
+    {
+      can: 'test/ping',
+      with: alice.did(),
+    }
+  )
+})
+
+test('invoke capability (without caveats)', () => {
+  const ping = capability({
+    can: 'test/ping',
+    with: URI.match({ protocol: 'did:' }),
+  })
+
+  assert.throws(() => {
+    ping.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      // @ts-expect-error - not assignable to did:
+      with: 'file://gozala/path',
+    })
+  }, /Invalid 'with' - Expected did: URI/)
+
+  assert.deepEqual(
+    ping.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      with: alice.did(),
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3.authority,
+      capability: {
+        can: 'test/ping',
+        with: alice.did(),
+      },
+    })
+  )
+
+  assert.deepEqual(
+    ping.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      with: alice.did(),
+      // @ts-expect-error - no caveats expected
+      caveats: { x: 1 },
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3.authority,
+      capability: {
+        can: 'test/ping',
+        with: alice.did(),
+      },
+    })
+  )
+
+  assert.deepEqual(
+    ping.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      with: alice.did(),
+      // @ts-expect-error - no caveats expected
+      caveats: {},
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3.authority,
+      capability: {
+        can: 'test/ping',
+        with: alice.did(),
+      },
+    })
+  )
+})
+
+test('invoke capability (with caveats)', () => {
+  const echo = capability({
+    can: 'test/echo',
+    with: URI.match({ protocol: 'did:' }),
+    caveats: {
+      message: URI.string({ protocol: 'data:' }),
+    },
+  })
+
+  assert.throws(() => {
+    echo.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      // @ts-expect-error - not assignable to did:
+      with: 'file://gozala/path',
+      caveats: {
+        message: 'data:hello',
+      },
+    })
+  }, /Invalid 'with' - Expected did: URI/)
+
+  assert.throws(() => {
+    // @ts-expect-error
+    echo.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      with: alice.did(),
+    })
+  }, /Invalid 'caveats.message' - Expected URI but got undefined/)
+
+  assert.throws(() => {
+    echo.create({
+      with: alice.did(),
+      caveats: {
+        // @ts-expect-error
+        message: 'echo:foo',
+      },
+    })
+  }, /Invalid 'caveats.message' - Expected data: URI instead got echo:foo/)
+
+  assert.deepEqual(
+    echo.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      with: alice.did(),
+      caveats: { message: 'data:hello' },
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3.authority,
+      capability: {
+        can: 'test/echo',
+        with: alice.did(),
+        message: /** @type {'data:hello'} */ ('data:hello'),
+      },
+    })
+  )
+
+  assert.deepEqual(
+    echo.invoke({
+      issuer: alice,
+      audience: w3.authority,
+      // @ts-expect-error - must be a string
+      with: new URL(alice.did()),
+      caveats: { message: 'data:hello' },
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3.authority,
+      capability: {
+        can: 'test/echo',
+        with: alice.did(),
+        message: /** @type {'data:hello'} */ ('data:hello'),
+      },
+    })
+  )
 })
