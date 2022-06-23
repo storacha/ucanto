@@ -1,11 +1,11 @@
-import type * as Transport from "./transport.js"
-import type { Tuple } from "./transport.js"
-export * as UCAN from "@ipld/dag-ucan"
+import type * as Transport from './transport.js'
+import type { Tuple } from './transport.js'
+export * as UCAN from '@ipld/dag-ucan'
 import type {
   Authority,
   SigningAuthority,
   AuthorityParser,
-} from "./authority.js"
+} from './authority.js'
 import type {
   Phantom,
   Encoded,
@@ -24,12 +24,12 @@ import type {
   View as UCANView,
   UCAN as UCANData,
   Capability,
-} from "@ipld/dag-ucan"
+} from '@ipld/dag-ucan'
 
 export type {
   MultibaseEncoder,
   MultibaseDecoder,
-} from "multiformats/bases/interface"
+} from 'multiformats/bases/interface'
 
 export type {
   MultihashDigest,
@@ -60,11 +60,11 @@ import {
   Unauthorized,
   CanIssue,
   UnavailableProof,
-} from "./capability.js"
+} from './capability.js'
 
-export * from "./transport.js"
-export * from "./authority.js"
-export * from "./capability.js"
+export * from './transport.js'
+export * from './authority.js'
+export * from './capability.js'
 
 /**
  * Represents an {@link Ability} that a UCAN holder `Can` perform `With` some {@link Resource}.
@@ -82,13 +82,8 @@ export type Proof<
   C extends [Capability, ...Capability[]] = [Capability, ...Capability[]]
 > = LinkedProof<C[number]> | Delegation<C>
 
-export interface DelegationOptions<
-  C extends [Capability, ...Capability[]],
-  A extends number = number
-> {
-  issuer: SigningAuthority<A>
+export interface UCANOptions {
   audience: Identity
-  capabilities: C
   lifetimeInSeconds?: number
   expiration?: number
   notBefore?: number
@@ -97,6 +92,15 @@ export interface DelegationOptions<
 
   facts?: Fact[]
   proofs?: Proof[]
+}
+
+export interface DelegationOptions<
+  C extends [Capability, ...Capability[]],
+  A extends number = number
+> extends UCANOptions {
+  issuer: SigningAuthority<A>
+  audience: Identity
+  capabilities: C
 }
 
 export interface Delegation<
@@ -128,11 +132,10 @@ export interface Delegation<
 export interface Invocation<C extends Capability = Capability>
   extends Delegation<[C]> {}
 
-export interface InvocationOptions<C extends Capability = Capability> {
+export interface InvocationOptions<C extends Capability = Capability>
+  extends UCANOptions {
   issuer: SigningAuthority
-  audience: Audience
   capability: C
-  proofs?: Proof[]
 }
 
 export interface IssuedInvocation<C extends Capability = Capability>
@@ -196,7 +199,7 @@ export type ResolveServiceMethod<
 export type ResolveServiceInvocation<
   S extends Record<string, any>,
   C extends Capability
-> = ResolveServiceMethod<S, C["can"]> extends ServiceMethod<
+> = ResolveServiceMethod<S, C['can']> extends ServiceMethod<
   infer C,
   infer _T,
   infer _X
@@ -207,7 +210,7 @@ export type ResolveServiceInvocation<
 export type InferServiceInvocationReturn<
   C extends Capability,
   S
-> = ResolveServiceMethod<S, C["can"]> extends ServiceMethod<
+> = ResolveServiceMethod<S, C['can']> extends ServiceMethod<
   infer _,
   infer T,
   infer X
@@ -230,8 +233,9 @@ export type InferServiceInvocations<I extends unknown[], T> = I extends []
 
 export interface IssuedInvocationView<C extends Capability = Capability>
   extends IssuedInvocation<C> {
+  delegate(): Promise<Delegation<[C]>>
   execute<T extends InvocationService<C>>(
-    service: Connection<T>
+    service: ConnectionView<T>
   ): Await<InferServiceInvocationReturn<C, T>>
 }
 
@@ -248,7 +252,7 @@ type SubServiceInvocations<T, Path extends string> = {
 
 export type InvocationService<
   C extends Capability,
-  A extends string = C["can"]
+  A extends string = C['can']
 > = A extends `${infer Base}/${infer Path}`
   ? { [Key in Base]: InvocationService<C, Path> }
   : {
@@ -258,7 +262,7 @@ export type InvocationService<
 export type ExecuteInvocation<
   C extends Capability,
   T extends Record<string, any>,
-  Ability extends string = C["can"]
+  Ability extends string = C['can']
 > = Ability extends `${infer Base}/${infer Path}`
   ? ExecuteInvocation<C, T[Base], Path>
   : T[Ability] extends (input: Invocation<C>) => infer Out
@@ -277,13 +281,13 @@ export interface Failure extends Error {
 export interface HandlerNotFound extends RangeError {
   error: true
   capability: Capability
-  name: "HandlerNotFound"
+  name: 'HandlerNotFound'
 }
 
 export interface HandlerExecutionError extends Failure {
   capability: Capability
   cause: Error
-  name: "HandlerExecutionError"
+  name: 'HandlerExecutionError'
 }
 
 export type API<T> = T[keyof T]
@@ -332,9 +336,9 @@ export interface ValidatorOptions {
    */
   readonly authority?: AuthorityParser
 
-  readonly canIssue?: CanIssue["canIssue"]
-  readonly my?: InvocationContext["my"]
-  readonly resolve?: InvocationContext["resolve"]
+  readonly canIssue?: CanIssue['canIssue']
+  readonly my?: InvocationContext['my']
+  readonly resolve?: InvocationContext['resolve']
 }
 
 export interface ServerOptions extends TranpsortOptions, ValidatorOptions {
@@ -369,6 +373,6 @@ export interface URI<P extends Protocol = Protocol> extends URL {
   href: `${P}${string}`
 }
 
-export type URIString<P extends URI> = `${URI["protocol"]}${string}` & {
+export type URIString<P extends URI> = `${URI['protocol']}${string}` & {
   protocol?: Protocol
 }

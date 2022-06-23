@@ -1,14 +1,14 @@
-import * as Client from "@ucanto/client"
-import * as Server from "../src/server.js"
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
-import { alice, bob, mallory, service as w3 } from "./fixtures.js"
-import * as Service from "../../client/test/service.js"
-import { test, assert } from "./test.js"
+import * as Client from '@ucanto/client'
+import * as Server from '../src/lib.js'
+import * as CAR from '@ucanto/transport/car'
+import * as CBOR from '@ucanto/transport/cbor'
+import { alice, bob, mallory, service as w3 } from './fixtures.js'
+import * as Service from '../../client/test/service.js'
+import { test, assert } from './test.js'
 
 const storeAdd = Server.capability({
-  can: "store/add",
-  with: Server.URI.match({ protocol: "did:" }),
+  can: 'store/add',
+  with: Server.URI.match({ protocol: 'did:' }),
   caveats: {
     link: Server.Link.optional(),
   },
@@ -23,7 +23,7 @@ const storeAdd = Server.capability({
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
         }violates imposed ${delegated.caveats.link} constraint`
       )
     } else {
@@ -32,8 +32,8 @@ const storeAdd = Server.capability({
   },
 })
 const storeRemove = Server.capability({
-  can: "store/remove",
-  with: Server.URI.match({ protocol: "did:" }),
+  can: 'store/remove',
+  with: Server.URI.match({ protocol: 'did:' }),
   caveats: {
     link: Server.Link.optional(),
   },
@@ -48,7 +48,7 @@ const storeRemove = Server.capability({
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
         }violates imposed ${delegated.caveats.link} constraint`
       )
     } else {
@@ -59,9 +59,9 @@ const storeRemove = Server.capability({
 
 const store = storeAdd.or(storeRemove)
 
-test("encode delegated invocation", async () => {
+test('encode delegated invocation', async () => {
   const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: "world " })],
+    roots: [await CBOR.codec.write({ hello: 'world ' })],
   })
 
   const server = Server.create({
@@ -82,7 +82,7 @@ test("encode delegated invocation", async () => {
     audience: bob,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -92,7 +92,7 @@ test("encode delegated invocation", async () => {
     issuer: bob,
     audience: w3,
     capability: {
-      can: "store/add",
+      can: 'store/add',
       with: alice.did(),
       link: car.cid,
     },
@@ -103,7 +103,7 @@ test("encode delegated invocation", async () => {
     issuer: alice,
     audience: w3,
     capability: {
-      can: "store/remove",
+      can: 'store/remove',
       with: alice.did(),
       link: car.cid,
     },
@@ -115,13 +115,13 @@ test("encode delegated invocation", async () => {
     {
       error: true,
 
-      name: "UnknownDIDError",
+      name: 'UnknownDIDError',
       did: alice.did(),
       message: `DID ${alice.did()} has no account`,
     },
     {
       error: true,
-      name: "UnknownDIDError",
+      name: 'UnknownDIDError',
       did: alice.did(),
       message: `DID ${alice.did()} has no account`,
     },
@@ -131,8 +131,8 @@ test("encode delegated invocation", async () => {
     issuer: alice,
     audience: w3,
     capability: {
-      can: "access/identify",
-      with: "did:email:alice@mail.com",
+      can: 'access/identify',
+      with: 'did:email:alice@mail.com',
     },
   })
 
@@ -144,20 +144,20 @@ test("encode delegated invocation", async () => {
 
   assert.deepEqual(result2, [
     {
-      status: "upload",
+      status: 'upload',
       with: alice.did(),
       link: car.cid,
-      url: "http://localhost:9090/",
+      url: 'http://localhost:9090/',
     },
     {
-      can: "store/remove",
+      can: 'store/remove',
       with: alice.did(),
       link: car.cid,
     },
   ])
 })
 
-test("unknown handler", async () => {
+test('unknown handler', async () => {
   const server = Server.create({
     id: w3,
     service: Service.create(),
@@ -175,8 +175,8 @@ test("unknown handler", async () => {
     issuer: alice,
     audience: w3,
     capability: {
-      can: "access/register",
-      with: "did:email:alice@mail.com",
+      can: 'access/register',
+      with: 'did:email:alice@mail.com',
     },
   })
 
@@ -185,11 +185,11 @@ test("unknown handler", async () => {
 
   assert.containSubset(error, {
     error: true,
-    name: "HandlerNotFound",
+    name: 'HandlerNotFound',
     message: `service does not implement {can: "access/register"} handler`,
     capability: {
-      can: "access/register",
-      with: "did:email:alice@mail.com",
+      can: 'access/register',
+      with: 'did:email:alice@mail.com',
     },
   })
 
@@ -197,8 +197,8 @@ test("unknown handler", async () => {
     issuer: alice,
     audience: w3,
     capability: {
-      can: "test/boom",
-      with: "about:me",
+      can: 'test/boom',
+      with: 'about:me',
     },
   })
 
@@ -206,16 +206,16 @@ test("unknown handler", async () => {
   const error2 = await boom.execute(connection)
   assert.containSubset(error2, {
     error: true,
-    name: "HandlerNotFound",
+    name: 'HandlerNotFound',
     message: `service does not implement {can: "test/boom"} handler`,
     capability: {
-      can: "test/boom",
-      with: "about:me",
+      can: 'test/boom',
+      with: 'about:me',
     },
   })
 })
 
-test("execution error", async () => {
+test('execution error', async () => {
   const server = Server.create({
     service: {
       test: {
@@ -223,7 +223,7 @@ test("execution error", async () => {
          * @param {Server.Invocation<{can: "test/boom", with:string}>} _
          */
         boom(_) {
-          throw new Server.Failure("Boom")
+          throw new Server.Failure('Boom')
         },
       },
     },
@@ -242,7 +242,7 @@ test("execution error", async () => {
     issuer: alice,
     audience: w3,
     capability: {
-      can: "test/boom",
+      can: 'test/boom',
       with: alice.did(),
     },
   })
@@ -251,15 +251,15 @@ test("execution error", async () => {
 
   assert.containSubset(error, {
     error: true,
-    name: "HandlerExecutionError",
+    name: 'HandlerExecutionError',
     message: `service handler {can: "test/boom"} error: Boom`,
     capability: {
-      can: "test/boom",
+      can: 'test/boom',
       with: alice.did(),
     },
     cause: {
-      message: "Boom",
-      name: "Error",
+      message: 'Boom',
+      name: 'Error',
     },
   })
 })

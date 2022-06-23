@@ -6,13 +6,13 @@ on:
     branches:
       - main
     paths:
-      - "packages/interface/**"
+      - 'packages/interface/**'
   pull_request:
     branches:
       - main
     paths:
-      - "packages/interface/**"
-      - ".github/workflows/interface.yml"
+      - 'packages/interface/**'
+      - '.github/workflows/interface.yml'
 jobs:
   check:
     name: Typecheck

@@ -1,16 +1,16 @@
-import { test, assert } from "./test.js"
-import * as CAR from "../src/car.js"
-import * as CBOR from "../src/cbor.js"
-import { delegate, Delegation, UCAN, parseLink, asLink } from "@ucanto/core"
-import * as UTF8 from "../src/utf8.js"
-import { alice, bob, mallory, service } from "./fixtures.js"
-import { CarReader } from "@ipld/car/reader"
-import * as API from "@ucanto/interface"
-import { collect } from "./util.js"
+import { test, assert } from './test.js'
+import * as CAR from '../src/car.js'
+import * as CBOR from '../src/cbor.js'
+import { delegate, Delegation, UCAN, parseLink, asLink } from '@ucanto/core'
+import * as UTF8 from '../src/utf8.js'
+import { alice, bob, mallory, service } from './fixtures.js'
+import { CarReader } from '@ipld/car/reader'
+import * as API from '@ucanto/interface'
+import { collect } from './util.js'
 
-test("encode / decode", async () => {
+test('encode / decode', async () => {
   const cid = parseLink(
-    "bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i"
+    'bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i'
   )
   const expiration = 1654298135
 
@@ -20,7 +20,7 @@ test("encode / decode", async () => {
       audience: bob.authority,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -30,7 +30,7 @@ test("encode / decode", async () => {
   ])
 
   assert.deepEqual(request.headers, {
-    "content-type": "application/car",
+    'content-type': 'application/car',
   })
   const reader = await CarReader.fromBytes(request.body)
 
@@ -41,7 +41,7 @@ test("encode / decode", async () => {
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -51,18 +51,18 @@ test("encode / decode", async () => {
   const actual = assert.containSubset(
     [expect],
     await CAR.decode(request),
-    "roundtrips"
+    'roundtrips'
   )
 })
 
-test("decode requires application/car contet type", async () => {
+test('decode requires application/car contet type', async () => {
   const { body } = await CAR.encode([
     {
       issuer: alice,
       audience: bob.authority,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -74,16 +74,16 @@ test("decode requires application/car contet type", async () => {
     await CAR.decode({
       body,
       headers: {
-        "content-type": "application/octet-stream",
+        'content-type': 'application/octet-stream',
       },
     })
-    assert.fail("expected to fail")
+    assert.fail('expected to fail')
   } catch (error) {
     assert.match(String(error), /content-type: application\/car/)
   }
 })
 
-test("accepts Content-Type as well", async () => {
+test('accepts Content-Type as well', async () => {
   const expiration = UCAN.now() + 90
   const request = await CAR.encode([
     {
@@ -91,7 +91,7 @@ test("accepts Content-Type as well", async () => {
       audience: bob.authority,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -103,7 +103,7 @@ test("accepts Content-Type as well", async () => {
   const [invocation] = await CAR.decode({
     ...request,
     headers: {
-      "Content-Type": "application/car",
+      'Content-Type': 'application/car',
     },
   })
 
@@ -112,7 +112,7 @@ test("accepts Content-Type as well", async () => {
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -123,13 +123,13 @@ test("accepts Content-Type as well", async () => {
   assert.deepEqual(invocation.bytes, delegation.bytes)
 })
 
-test("delegated proofs", async () => {
+test('delegated proofs', async () => {
   const proof = await delegate({
     issuer: alice,
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -143,7 +143,7 @@ test("delegated proofs", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -166,7 +166,7 @@ test("delegated proofs", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -178,13 +178,13 @@ test("delegated proofs", async () => {
   assert.deepEqual(incoming[0].proofs, [proof])
 })
 
-test("omit proof", async () => {
+test('omit proof', async () => {
   const proof = await delegate({
     issuer: alice,
     audience: bob.authority,
     capabilities: [
       {
-        can: "store/add",
+        can: 'store/add',
         with: alice.did(),
       },
     ],
@@ -198,7 +198,7 @@ test("omit proof", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -219,7 +219,7 @@ test("omit proof", async () => {
       audience: service,
       capabilities: [
         {
-          can: "store/add",
+          can: 'store/add',
           with: alice.did(),
         },
       ],
@@ -231,8 +231,8 @@ test("omit proof", async () => {
   assert.deepEqual(incoming[0].proofs, [proof.cid])
 })
 
-test("codec", async () => {
-  const root = await CBOR.codec.write({ hello: "world " })
+test('codec', async () => {
+  const root = await CBOR.codec.write({ hello: 'world ' })
   const bytes = CAR.codec.encode({
     roots: [root],
   })
@@ -245,8 +245,8 @@ test("codec", async () => {
   assert.ok(asLink(car.cid) === car.cid)
 })
 
-test("car writer", async () => {
-  const hello = await CBOR.codec.write({ hello: "world " })
+test('car writer', async () => {
+  const hello = await CBOR.codec.write({ hello: 'world ' })
   const writer = CAR.codec.createWriter()
   writer.write(hello)
   const bytes = writer.flush()

@@ -1,5 +1,5 @@
-import * as API from "@ucanto/interface"
-import { isDelegation, UCAN } from "@ucanto/core"
+import * as API from '@ucanto/interface'
+import { isDelegation, UCAN } from '@ucanto/core'
 import {
   UnavailableProof,
   InvalidAudience,
@@ -10,21 +10,21 @@ import {
   Failure,
   MalformedCapability,
   li,
-} from "./error.js"
+} from './error.js'
 
 export { Failure, UnavailableProof, MalformedCapability }
 
-export { capability } from "./capability.js"
+export { capability } from './capability.js'
 
-export * as URI from "./decoder/uri.js"
-export * as Link from "./decoder/link.js"
+export * as URI from './decoder/uri.js'
+export * as Link from './decoder/link.js'
 
 const empty = () => []
 
 /**
  * @param {UCAN.Proof} proof
  */
-const unavailable = proof => new UnavailableProof(proof)
+const unavailable = (proof) => new UnavailableProof(proof)
 
 /**
  * @param {Required<API.ProofResolver>} config
@@ -62,7 +62,7 @@ const resolveProofs = async (delegation, config) => {
   for (const [index, proof] of delegation.proofs.entries()) {
     if (!isDelegation(proof)) {
       promises.push(
-        new Promise(async resolve => {
+        new Promise(async (resolve) => {
           try {
             proofs[index] = await config.resolve(proof)
           } catch (error) {
@@ -133,11 +133,12 @@ const resolveSources = async ({ delegation }, config) => {
 
 /**
  * @template {API.Ability} A
- * @template {API.Caveats} C
  * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @template {API.ParsedCapability<A, R, API.InferCaveats<C>>} T
  * @param {API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>} invocation
- * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} config
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
+ * @param {API.ValidationOptions<T>} config
+ * @returns {Promise<API.Result<Authorization<T>, API.Unauthorized>>}
  */
 export const access = async (
   invocation,
@@ -250,7 +251,7 @@ class ProofError extends Failure {
    */
   constructor(proof, index, cause) {
     super()
-    this.name = "ProofError"
+    this.name = 'ProofError'
     this.proof = proof
     this.index = index
     this.cause = cause
@@ -280,7 +281,7 @@ class InvalidClaim extends Failure {
     super()
     this.info = info
     /** @type {"InvalidClaim"} */
-    this.name = "InvalidClaim"
+    this.name = 'InvalidClaim'
   }
   get issuer() {
     return this.delegation.issuer
@@ -293,12 +294,12 @@ class InvalidClaim extends Failure {
   }
   describe() {
     const errors = [
-      ...this.info.failedProofs.map(error => li(error.message)),
-      ...this.info.delegationErrors.map(error => li(error.message)),
-      ...this.info.invalidProofs.map(error => li(error.message)),
+      ...this.info.failedProofs.map((error) => li(error.message)),
+      ...this.info.delegationErrors.map((error) => li(error.message)),
+      ...this.info.invalidProofs.map((error) => li(error.message)),
     ]
 
-    const unknown = this.info.unknownCapaibilities.map(c =>
+    const unknown = this.info.unknownCapaibilities.map((c) =>
       li(JSON.stringify(c))
     )
 
@@ -307,9 +308,9 @@ class InvalidClaim extends Failure {
       li(`Capability can not be (self) issued by '${this.issuer.did()}'`),
       ...(errors.length > 0 ? errors : [li(`Delegated capability not found`)]),
       ...(unknown.length > 0
-        ? [li(`Encountered unknown capabilities\n${unknown.join("\n")}`)]
+        ? [li(`Encountered unknown capabilities\n${unknown.join('\n')}`)]
         : []),
-    ].join("\n")
+    ].join('\n')
   }
 }
 
@@ -323,7 +324,7 @@ class Unauthorized extends Failure {
   constructor(cause) {
     super()
     /** @type {"Unauthorized"} */
-    this.name = "Unauthorized"
+    this.name = 'Unauthorized'
     this.cause = cause
   }
   get message() {
@@ -334,10 +335,9 @@ class Unauthorized extends Failure {
     return { error, name, message, cause }
   }
 }
-const ALL = "*"
+const ALL = '*'
 
 /**
- * @template {API.ParsedCapability} C
  * @param {API.Delegation} delegation
  * @param {Required<API.IssuingOptions>} options
  */
@@ -369,12 +369,12 @@ const MY = /my:(.*)/
  * @param {string} uri
  * @returns {{did:API.DID, protocol:string}|null}
  */
-const parseAsURI = uri => {
+const parseAsURI = (uri) => {
   const [, did, kind] = AS_PATTERN.exec(uri) || []
   return did != null && kind != null
     ? {
         did: /** @type {API.DID} */ (did),
-        protocol: kind === ALL ? "" : `${kind}:`,
+        protocol: kind === ALL ? '' : `${kind}:`,
       }
     : null
 }
@@ -386,7 +386,7 @@ const parseAsURI = uri => {
 
 const parseMyURI = (uri, did) => {
   const [, kind] = MY.exec(uri) || []
-  return kind != null ? { did, protocol: kind === ALL ? "" : `${kind}:` } : null
+  return kind != null ? { did, protocol: kind === ALL ? '' : `${kind}:` } : null
 }
 
 /**

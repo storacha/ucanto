@@ -11,8 +11,12 @@ import {
   DID,
   LinkedProof,
   Await,
-  API,
-} from "./lib.js"
+  Proof,
+  SigningAuthority,
+  IssuedInvocationView,
+  Fact,
+  UCANOptions,
+} from './lib.js'
 
 export interface Source {
   capability: Capability
@@ -78,10 +82,10 @@ export interface DerivedMatch<T, M extends Match>
 
 export interface DeriveSelector<M extends Match, T extends ParsedCapability> {
   to: TheCapabilityParser<DirectMatch<T>>
-  derives: Derives<T, M["value"]>
+  derives: Derives<T, M['value']>
 }
 
-export interface Derives<T, U> {
+export interface Derives<T, U = T> {
   (self: T, from: U): Result<true, Failure>
 }
 
@@ -123,20 +127,51 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
   ): TheCapabilityParser<DerivedMatch<T, M>>
 }
 
-type InferCaveatParams<T> = {
-  [K in keyof T]: T[K] extends { toJSON(): infer U } ? U : T[K]
-}
+export type InferCaveatParams<T> = keyof T extends never
+  ? never | undefined
+  : {
+      [K in keyof T]: T[K] extends { toJSON(): infer U } ? U : T[K]
+    }
 
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   extends CapabilityParser<M> {
-  readonly can: M["value"]["can"]
+  readonly can: M['value']['can']
 
-  create: (
-    resource: M["value"]["uri"]["href"],
-    caveats: InferCaveatParams<M["value"]["caveats"]>
-  ) => Capability<M["value"]["can"], M["value"]["uri"]["href"]> &
-    M["value"]["caveats"]
+  create(
+    input: InferCreateOptions<M['value']['with'], M['value']['caveats']>
+  ): Capability<M['value']['can'], M['value']['uri']['href']> &
+    M['value']['caveats']
+
+  invoke(
+    options: InvokeCapabilityOptions<M['value']['with'], M['value']['caveats']>
+  ): IssuedInvocationView<
+    Capability<M['value']['can'], M['value']['uri']['href']> &
+      M['value']['caveats']
+  >
 }
+
+export type InferCreateOptions<R extends Resource, C extends {}> = {
+  with: Resource
+  caveats?: {}
+} & Optionalize<{
+  with: R
+  caveats: InferCaveatParams<C>
+}>
+
+type Optionalize<T> = InferRequried<T> & InferOptional<T>
+
+type InferOptional<T> = {
+  [K in keyof T as T[K] | undefined extends T[K] ? K : never]?: T[K]
+}
+
+type InferRequried<T> = {
+  [K in keyof T as T[K] | undefined extends T[K] ? never : K]: T[K]
+}
+
+export type InvokeCapabilityOptions<R extends Resource, C> = UCANOptions &
+  InferCreateOptions<R, C> & {
+    issuer: SigningAuthority
+  }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
   /**
@@ -234,28 +269,14 @@ export interface ParsedCapability<
   C extends object = {}
 > {
   can: Can
-  with: Resource["href"]
+  with: Resource['href']
   uri: Resource
   caveats: C
 }
 
-export type InferCaveats<C> = InferRequiredCaveats<C>
-
-export type InferOptionalCaveats<C> = {
-  [K in keyof C as C[K] extends Decoder<unknown, infer T, infer _>
-    ? T extends Exclude<T, undefined>
-      ? never
-      : K
-    : never]?: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
-}
-
-export type InferRequiredCaveats<C> = {
-  [K in keyof C as C[K] extends Decoder<unknown, infer T, infer _>
-    ? T extends Exclude<T, undefined>
-      ? K
-      : never
-    : never]: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
-}
+export type InferCaveats<C> = Optionalize<{
+  [K in keyof C]: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
+}>
 
 export interface Descriptor<
   A extends Ability,
@@ -266,7 +287,7 @@ export interface Descriptor<
   with: Decoder<Resource, R, Failure>
   caveats?: C
 
-  derives: Derives<
+  derives?: Derives<
     ParsedCapability<A, R, InferCaveats<C>>,
     ParsedCapability<A, R, InferCaveats<C>>
   >
@@ -318,54 +339,54 @@ export interface ValidationOptions<C extends ParsedCapability>
 }
 
 export interface DelegationError extends Failure {
-  name: "InvalidClaim"
+  name: 'InvalidClaim'
   causes: (InvalidCapability | EscalatedDelegation | DelegationError)[]
 
   cause: InvalidCapability | EscalatedDelegation | DelegationError
 }
 
 export interface EscalatedDelegation extends Failure {
-  name: "EscalatedCapability"
+  name: 'EscalatedCapability'
   claimed: ParsedCapability
   delegated: object
   cause: Failure
 }
 
 export interface UnknownCapability extends Failure {
-  name: "UnknownCapability"
+  name: 'UnknownCapability'
   capability: Capability
 }
 
 export interface MalformedCapability extends Failure {
-  name: "MalformedCapability"
+  name: 'MalformedCapability'
   capability: Capability
 }
 
 export interface InvalidAudience extends Failure {
-  readonly name: "InvalidAudience"
+  readonly name: 'InvalidAudience'
   readonly audience: Identity
   readonly delegation: Delegation
 }
 
 export interface UnavailableProof extends Failure {
-  readonly name: "UnavailableProof"
+  readonly name: 'UnavailableProof'
   readonly link: LinkedProof
 }
 
 export interface Expired extends Failure {
-  readonly name: "Expired"
+  readonly name: 'Expired'
   readonly delegation: Delegation
   readonly expiredAt: number
 }
 
 export interface NotValidBefore extends Failure {
-  readonly name: "NotValidBefore"
+  readonly name: 'NotValidBefore'
   readonly delegation: Delegation
   readonly validAt: number
 }
 
 export interface InvalidSignature extends Failure {
-  readonly name: "InvalidSignature"
+  readonly name: 'InvalidSignature'
   readonly issuer: Identity
   readonly audience: Identity
   readonly delegation: Delegation
@@ -381,13 +402,13 @@ export type InvalidProof =
   | InvalidAudience
 
 export interface Unauthorized extends Failure {
-  name: "Unauthorized"
+  name: 'Unauthorized'
   cause: InvalidCapability | InvalidProof | InvalidClaim
 }
 
 export interface InvalidClaim extends Failure {
   issuer: Identity
-  name: "InvalidClaim"
+  name: 'InvalidClaim'
   capability: ParsedCapability
   delegation: Delegation
 

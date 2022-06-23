@@ -1,1 +1,9 @@
-{"packages/authority":"0.3.0","packages/client":"0.2.2","packages/core":"0.3.0","packages/interface":"0.3.0","packages/server":"0.3.0","packages/transport":"0.3.0","packages/validator":"0.3.0"}
+{
+  "packages/authority": "0.4.0",
+  "packages/client": "0.3.0",
+  "packages/core": "0.4.0",
+  "packages/interface": "0.4.0",
+  "packages/server": "0.4.0",
+  "packages/transport": "0.4.0",
+  "packages/validator": "0.4.0"
+}

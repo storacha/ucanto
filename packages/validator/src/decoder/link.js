@@ -1,7 +1,7 @@
-import * as API from "@ucanto/interface"
-import { Failure } from "../error.js"
-import { create, createV0, isLink, asLink, parse } from "@ucanto/core/link"
-import { sha256 } from "multiformats/hashes/sha2"
+import * as API from '@ucanto/interface'
+import { Failure } from '../error.js'
+import { create, createV0, isLink, asLink, parse } from '@ucanto/core/link'
+import { sha256 } from 'multiformats/hashes/sha2'
 
 export { create, createV0, isLink, asLink, parse }
 
@@ -59,8 +59,8 @@ export const decode = (input, options = {}) => {
  * @returns {API.Decoder<unknown,  API.Link<unknown, Code, Alg, Version>, API.Failure>}
  */
 
-export const match = options => ({
-  decode: input => decode(input, options),
+export const match = (options) => ({
+  decode: (input) => decode(input, options),
 })
 
 /**
@@ -70,8 +70,8 @@ export const match = options => ({
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} [options]
  * @returns {API.Decoder<unknown, undefined|API.Link<unknown, Code, Alg, Version>, API.Failure>}
  */
-export const optional = options => ({
-  decode: input => {
+export const optional = (options) => ({
+  decode: (input) => {
     if (input === undefined) {
       return undefined
     } else {

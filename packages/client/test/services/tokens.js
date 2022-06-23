@@ -1,11 +1,11 @@
-import * as API from "../api.js"
-import { the, unreachable } from "./util.js"
+import * as API from '../api.js'
+import { the, unreachable } from './util.js'
 
 /**
  * @param {Map<string, API.Found|API.RevokedError|API.ExpiredError>} store
  * @returns {API.TokenStore}
  */
-export const create = store => new TokenService(store)
+export const create = (store) => new TokenService(store)
 
 /**
  * @implements {API.TokenStore}
@@ -26,16 +26,16 @@ class TokenService {
       const record = this.store.get(id) || new NotFoundError(token.cid)
 
       switch (record.status) {
-        case "not-found":
+        case 'not-found':
           this.store.set(id, new Found(token))
-        case "ok":
+        case 'ok':
           break // no-op as we already have this token
-        case "revoked":
+        case 'revoked':
           // if we do not have this token yet store even though it is expired
           if (record.bytes == null) {
             record.bytes = token.bytes
           }
-        case "expired":
+        case 'expired':
           break // if it already expired we got nothing todo
         default:
           return unreachable`Record has unexpected state ${record}`
@@ -69,12 +69,12 @@ class TokenService {
     const { record } = await this.select({ record: cid })
     const id = cid.toString()
     switch (record.status) {
-      case "ok":
+      case 'ok':
         this.store.set(id, new RevokedError(revocation.cid, cid, record))
-      case "expired":
-      case "not-found":
+      case 'expired':
+      case 'not-found':
         this.store.set(id, new RevokedError(revocation.cid, cid, null))
-      case "revoked":
+      case 'revoked':
         break // noop
       default:
         return unreachable`record has unknown state ${record}`
@@ -104,7 +104,7 @@ class Found {
     this.cid = cid
     this.bytes = bytes
     this.ttl = ttl
-    this.status = the("ok")
+    this.status = the('ok')
   }
 }
 
@@ -120,7 +120,7 @@ class NotFoundError extends RangeError {
     this.error = the(true)
     this.cid = cid
 
-    this.status = the("not-found")
+    this.status = the('not-found')
   }
 }
 
@@ -136,7 +136,7 @@ class RevokedError extends Error {
   constructor(proof, cid, token) {
     super()
     this.error = the(true)
-    this.status = the("revoked")
+    this.status = the('revoked')
     this.proof = proof
     this.cid = cid
     this.bytes = token ? token.bytes : null
@@ -155,7 +155,7 @@ class ExpiredError extends Error {
   constructor(cid, expiry) {
     super()
     this.error = the(true)
-    this.status = the("expired")
+    this.status = the('expired')
     this.cid = cid
     this.expiry = expiry
   }

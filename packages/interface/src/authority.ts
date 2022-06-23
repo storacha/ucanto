@@ -1,5 +1,5 @@
-import * as UCAN from "@ipld/dag-ucan"
-import type { DID, Identity, Signer, Verifier, Signature } from "@ipld/dag-ucan"
+import * as UCAN from '@ipld/dag-ucan'
+import type { DID, Identity, Signer, Verifier, Signature } from '@ipld/dag-ucan'
 
 export type { DID, Identity, Signer, Verifier, Signature }
 

@@ -6,23 +6,23 @@ on:
     branches:
       - main
     paths:
-      - "packages/interface/**"
-      - "packages/core/**"
-      - "packages/transport/**"
-      - "packages/client/**"
-      - "packages/validator/**"
-      - "packages/server/**"
+      - 'packages/interface/**'
+      - 'packages/core/**'
+      - 'packages/transport/**'
+      - 'packages/client/**'
+      - 'packages/validator/**'
+      - 'packages/server/**'
   pull_request:
     branches:
       - main
     paths:
-      - "packages/interface/**"
-      - "packages/core/**"
-      - "packages/transport/**"
-      - "packages/client/**"
-      - "packages/validator/**"
-      - "packages/server/**"
-      - ".github/workflows/server.yml"
+      - 'packages/interface/**'
+      - 'packages/core/**'
+      - 'packages/transport/**'
+      - 'packages/client/**'
+      - 'packages/validator/**'
+      - 'packages/server/**'
+      - '.github/workflows/server.yml'
 jobs:
   check:
     name: Typecheck

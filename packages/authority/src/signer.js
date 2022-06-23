@@ -1,8 +1,8 @@
-import * as ED25519 from "@noble/ed25519"
-import { varint } from "multiformats"
-import * as API from "@ucanto/interface"
-import * as Authority from "./authority.js"
-import { base64pad } from "multiformats/bases/base64"
+import * as ED25519 from '@noble/ed25519'
+import { varint } from 'multiformats'
+import * as API from '@ucanto/interface'
+import * as Authority from './authority.js'
+import { base64pad } from 'multiformats/bases/base64'
 
 export const code = 0x1300
 export const name = Authority.name
@@ -23,7 +23,7 @@ export const generate = () => derive(ED25519.utils.randomPrivateKey())
  * @param {Uint8Array} secret
  * @returns {Promise<API.SigningAuthority<typeof Authority.code>>}
  */
-export const derive = async secret => {
+export const derive = async (secret) => {
   if (secret.byteLength !== KEY_SIZE) {
     throw new Error(
       `Expected Uint8Array with byteLength of ${KEY_SIZE} instead not ${secret.byteLength}`
@@ -47,7 +47,7 @@ export const derive = async secret => {
  * @param {Uint8Array} bytes
  * @returns {SigningAuthority}
  */
-export const decode = bytes => {
+export const decode = (bytes) => {
   if (bytes.byteLength !== SIZE) {
     throw new Error(
       `Expected Uint8Array with byteLength of ${SIZE} instead not ${bytes.byteLength}`

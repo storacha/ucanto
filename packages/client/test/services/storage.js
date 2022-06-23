@@ -1,12 +1,12 @@
-import * as API from "../api.js"
-import { UnknownDIDError, create as Accounts } from "./account.js"
-import { the } from "./util.js"
+import * as API from '../api.js'
+import { UnknownDIDError, create as Accounts } from './account.js'
+import { the } from './util.js'
 
 /**
  * @param {Partial<Model> & { accounts: API.AccessProvider }} config
  * @returns {API.StorageProvider}
  */
-export const create = config => new StoreProvider(config)
+export const create = (config) => new StoreProvider(config)
 
 /**
  * @typedef {{
@@ -43,7 +43,7 @@ export const add = async ({ accounts, groups, cars }, group, link, proof) => {
     const links = groups.get(group) || new Map()
     links.set(`${link}`, link)
     groups.set(group, links)
-    return { status: cars.get(`${link}`) ? the("in-s3") : the("not-in-s3") }
+    return { status: cars.get(`${link}`) ? the('in-s3') : the('not-in-s3') }
   } else {
     return new UnknownDIDError(`DID ${group} has no account`, group)
   }
@@ -75,7 +75,7 @@ class DoesNotHasError extends RangeError {
    */
   constructor(group, link) {
     super()
-    this.name = the("DoesNotHasError")
+    this.name = the('DoesNotHasError')
     this.group = group
     this.link = link
     this.error = /** @type {true} */ (true)

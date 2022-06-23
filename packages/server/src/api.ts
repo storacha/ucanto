@@ -1,7 +1,7 @@
-import * as API from "@ucanto/interface"
-import { InferCaveats, CanIssue } from "@ucanto/interface"
+import * as API from '@ucanto/interface'
+import { InferCaveats, CanIssue } from '@ucanto/interface'
 
-export * from "@ucanto/interface"
+export * from '@ucanto/interface'
 
 export type InvocationError =
   | API.HandlerNotFound
@@ -24,7 +24,7 @@ export interface ProviderContext<
   C extends API.Caveats = API.Caveats
 > {
   capability: API.ParsedCapability<A, R, API.InferCaveats<C>>
-  invocation: API.Invocation<API.Capability<A, R["href"]> & API.InferCaveats<C>>
+  invocation: API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>
 
   context: API.InvocationContext
 }

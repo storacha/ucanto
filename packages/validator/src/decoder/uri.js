@@ -1,5 +1,5 @@
-import * as API from "@ucanto/interface"
-import { Failure } from "../error.js"
+import * as API from '@ucanto/interface'
+import { Failure } from '../error.js'
 
 /**
  * @template {`${string}:`} Protocol
@@ -8,6 +8,10 @@ import { Failure } from "../error.js"
  * @return {API.Result<API.URI<Protocol>, API.Failure>}
  */
 export const decode = (input, { protocol } = {}) => {
+  if (typeof input !== 'string' && !(input instanceof URL)) {
+    return new Failure(`Expected URI but got ${typeof input}`)
+  }
+
   try {
     const url = new URL(String(input))
     if (protocol != null && url.protocol !== protocol) {
@@ -25,8 +29,8 @@ export const decode = (input, { protocol } = {}) => {
  * @param {{protocol: Protocol}} options
  * @returns {API.Decoder<unknown, API.URI<Protocol>, API.Failure>}
  */
-export const match = options => ({
-  decode: input => decode(input, options),
+export const match = (options) => ({
+  decode: (input) => decode(input, options),
 })
 
 /**
@@ -39,8 +43,8 @@ export const match = options => ({
  * @param {{protocol?: API.Protocol<Schema>}} [options]
  * @returns {API.Decoder<unknown, `${Schema}:${string}`, API.Failure>}
  */
-export const string = options => ({
-  decode: input => {
+export const string = (options) => ({
+  decode: (input) => {
     const result = decode(input, options)
     return result.error ? result : result.href
   },

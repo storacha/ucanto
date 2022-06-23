@@ -1,11 +1,11 @@
-import * as API from "@ucanto/interface"
-import * as CAR from "./car/codec.js"
-import { Delegation } from "@ucanto/core"
+import * as API from '@ucanto/interface'
+import * as CAR from './car/codec.js'
+import { Delegation } from '@ucanto/core'
 
 export { CAR as codec }
 
 const HEADERS = Object.freeze({
-  "content-type": "application/car",
+  'content-type': 'application/car',
 })
 
 /**
@@ -43,8 +43,8 @@ export const encode = async (invocations, options) => {
  * @returns {Promise<API.InferInvocations<Invocations>>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers["content-type"] || headers["Content-Type"]
-  if (contentType !== "application/car") {
+  const contentType = headers['content-type'] || headers['Content-Type']
+  if (contentType !== 'application/car') {
     throw TypeError(
       `Only 'content-type: application/car' is supported, intsead got '${contentType}'`
     )

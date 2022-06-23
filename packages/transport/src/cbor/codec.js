@@ -1,7 +1,7 @@
-import * as CBOR from "@ipld/dag-cbor"
-export { code, decode } from "@ipld/dag-cbor"
-import { sha256 } from "multiformats/hashes/sha2"
-import { asLink, createLink } from "@ucanto/core"
+import * as CBOR from '@ipld/dag-cbor'
+export { code, decode } from '@ipld/dag-cbor'
+import { sha256 } from 'multiformats/hashes/sha2'
+import { asLink, createLink } from '@ucanto/core'
 
 /**
  * @param {unknown} data
@@ -10,7 +10,7 @@ import { asLink, createLink } from "@ucanto/core"
  */
 const prepare = (data, seen) => {
   if (seen.has(data)) {
-    throw new TypeError("Can not encode circular structure")
+    throw new TypeError('Can not encode circular structure')
   }
   // top level undefined is ok
   if (data === undefined && seen.size === 0) {
@@ -21,7 +21,7 @@ const prepare = (data, seen) => {
     return null
   }
 
-  if (typeof data === "symbol" && seen.size === 0) {
+  if (typeof data === 'symbol' && seen.size === 0) {
     return null
   }
 
@@ -39,7 +39,7 @@ const prepare = (data, seen) => {
     const items = []
     for (const item of data) {
       items.push(
-        item === undefined || typeof item === "symbol"
+        item === undefined || typeof item === 'symbol'
           ? null
           : prepare(item, seen)
       )
@@ -47,18 +47,18 @@ const prepare = (data, seen) => {
     return items
   }
 
-  if (typeof (/** @type {{toJSON?:unknown}} */ (data).toJSON) === "function") {
+  if (typeof (/** @type {{toJSON?:unknown}} */ (data).toJSON) === 'function') {
     seen.add(data)
     const json = /** @type {{toJSON():unknown}} */ (data).toJSON()
     return prepare(json, seen)
   }
 
-  if (typeof data === "object") {
+  if (typeof data === 'object') {
     seen.add(data)
     /** @type {Record<string, unknown>} */
     const object = {}
     for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined && typeof value !== "symbol") {
+      if (value !== undefined && typeof value !== 'symbol') {
         object[key] = prepare(value, seen)
       }
     }
@@ -73,7 +73,7 @@ const prepare = (data, seen) => {
  * @param {T} data
  * @returns {CBOR.ByteView<T>}
  */
-export const encode = data => CBOR.encode(prepare(data, new Set()))
+export const encode = (data) => CBOR.encode(prepare(data, new Set()))
 
 /**
  * @template T

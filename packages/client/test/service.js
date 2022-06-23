@@ -1,7 +1,7 @@
-import * as API from "./api.js"
-import * as Storage from "./services/storage.js"
-import * as Accounts from "./services/account.js"
-import { the } from "./services/util.js"
+import * as API from './api.js'
+import * as Storage from './services/storage.js'
+import * as Accounts from './services/account.js'
+import { the } from './services/util.js'
 
 /**
  * @typedef {{
@@ -62,18 +62,18 @@ class StorageService {
       /** @type {any} */ (ucan).cid
     )
     if (!result.error) {
-      if (result.status === "in-s3") {
+      if (result.status === 'in-s3') {
         return {
           with: capability.with,
           link: capability.link,
-          status: the("done"),
+          status: the('done'),
         }
       } else {
         return {
           with: capability.with,
           link: capability.link,
-          status: the("upload"),
-          url: "http://localhost:9090/",
+          status: the('upload'),
+          url: 'http://localhost:9090/',
         }
       }
     } else {
@@ -120,7 +120,7 @@ class AccessService {
     const [capability] = ucan.capabilities
     // const access = await Auth.access(capability, /** @type {any} */ (ucan))
     // if (access.ok) {
-    if (capability.with.startsWith("did:email:")) {
+    if (capability.with.startsWith('did:email:')) {
       return this.accounts.register(
         ucan.issuer.did(),
         capability.with,
@@ -154,6 +154,6 @@ class Main {
  * @param {Partial<Model>} [config]
  * @returns {Service}
  */
-export const create = config => new Main(config)
+export const create = (config) => new Main(config)
 
 export { Storage, Accounts }

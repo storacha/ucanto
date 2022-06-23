@@ -1,5 +1,5 @@
-import * as API from "@ucanto/interface"
-import { the } from "./util.js"
+import * as API from '@ucanto/interface'
+import { the } from './util.js'
 
 /**
  * @implements {API.Failure}
@@ -33,7 +33,7 @@ export class EscalatedCapability extends Failure {
     this.claimed = claimed
     this.delegated = delegated
     this.cause = cause
-    this.name = the("EscalatedCapability")
+    this.name = the('EscalatedCapability')
   }
   describe() {
     return `Constraint violation: ${this.cause.message}`
@@ -50,15 +50,15 @@ export class DelegationError extends Failure {
    */
   constructor(causes, context) {
     super()
-    this.name = the("InvalidClaim")
+    this.name = the('InvalidClaim')
     this.causes = causes
     this.context = context
   }
   describe() {
     return [
       `Can not derive ${this.context} from delegated capabilities:`,
-      ...this.causes.map(cause => li(cause.message)),
-    ].join("\n")
+      ...this.causes.map((cause) => li(cause.message)),
+    ].join('\n')
   }
 
   /**
@@ -69,7 +69,7 @@ export class DelegationError extends Failure {
       return this
     } else {
       const [cause] = this.causes
-      const value = cause.name === "InvalidClaim" ? cause.cause : cause
+      const value = cause.name === 'InvalidClaim' ? cause.cause : cause
       Object.defineProperties(this, { cause: { value } })
       return value
     }
@@ -85,7 +85,7 @@ export class InvalidSignature extends Failure {
    */
   constructor(delegation) {
     super()
-    this.name = the("InvalidSignature")
+    this.name = the('InvalidSignature')
     this.delegation = delegation
   }
   get issuer() {
@@ -95,7 +95,7 @@ export class InvalidSignature extends Failure {
     return this.delegation.audience
   }
   describe() {
-    return [`Signature is invalid`].join("\n")
+    return [`Signature is invalid`].join('\n')
   }
 }
 
@@ -109,7 +109,7 @@ export class UnavailableProof extends Failure {
    */
   constructor(link, cause) {
     super()
-    this.name = the("UnavailableProof")
+    this.name = the('UnavailableProof')
     this.link = link
     this.cause = cause
   }
@@ -119,7 +119,7 @@ export class UnavailableProof extends Failure {
       ...(this.cause
         ? [li(`Provided resolve failed: ${this.cause.message}`)]
         : []),
-    ].join("\n")
+    ].join('\n')
   }
 }
 
@@ -133,7 +133,7 @@ export class InvalidAudience extends Failure {
    */
   constructor(audience, delegation) {
     super()
-    this.name = the("InvalidAudience")
+    this.name = the('InvalidAudience')
     this.audience = audience
     this.delegation = delegation
   }
@@ -162,7 +162,7 @@ export class MalformedCapability extends Failure {
    */
   constructor(capability, cause) {
     super()
-    this.name = the("MalformedCapability")
+    this.name = the('MalformedCapability')
     this.capability = capability
     this.cause = cause
   }
@@ -172,7 +172,7 @@ export class MalformedCapability extends Failure {
         this.capability
       )}`,
       li(this.cause.message),
-    ].join("\n")
+    ].join('\n')
   }
 }
 
@@ -182,7 +182,7 @@ export class UnknownCapability extends Failure {
    */
   constructor(capability) {
     super()
-    this.name = the("UnknownCapability")
+    this.name = the('UnknownCapability')
     this.capability = capability
   }
   describe() {
@@ -196,7 +196,7 @@ export class Expired extends Failure {
    */
   constructor(delegation) {
     super()
-    this.name = the("Expired")
+    this.name = the('Expired')
     this.delegation = delegation
   }
   describe() {
@@ -204,6 +204,15 @@ export class Expired extends Failure {
   }
   get expiredAt() {
     return this.delegation.expiration
+  }
+  toJSON() {
+    const { error, name, expiredAt, message } = this
+    return {
+      error,
+      name,
+      message,
+      expiredAt,
+    }
   }
 }
 
@@ -213,7 +222,7 @@ export class NotValidBefore extends Failure {
    */
   constructor(delegation) {
     super()
-    this.name = the("NotValidBefore")
+    this.name = the('NotValidBefore')
     this.delegation = delegation
   }
   describe() {
@@ -245,10 +254,10 @@ const format = (capability, space) =>
 /**
  * @param {string} message
  */
-export const indent = (message, indent = "  ") =>
-  `${indent}${message.split("\n").join(`\n${indent}`)}`
+export const indent = (message, indent = '  ') =>
+  `${indent}${message.split('\n').join(`\n${indent}`)}`
 
 /**
  * @param {string} message
  */
-export const li = message => indent(`- ${message}`)
+export const li = (message) => indent(`- ${message}`)
