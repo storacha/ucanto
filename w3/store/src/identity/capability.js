@@ -1,7 +1,7 @@
-import * as Server from "@ucanto/server"
-import { capability, URI, Failure, provide, Link } from "@ucanto/server"
-import * as API from "../type.js"
-import store from "../store/capability.js"
+import * as Server from '@ucanto/server'
+import { capability, URI, Failure } from '@ucanto/server'
+import * as API from '../type.js'
+import * as Store from '../store/capability.js'
 
 /**
  * Checks that `with` on claimed capability is the same as `with`
@@ -23,7 +23,7 @@ const equalWith = (claimed, delegated) =>
  * @param {string} delegated
  */
 const derivesURIPattern = (claimed, delegated) => {
-  if (delegated.endsWith("*")) {
+  if (delegated.endsWith('*')) {
     if (claimed.startsWith(delegated.slice(0, -1))) {
       return true
     } else {
@@ -38,30 +38,30 @@ const derivesURIPattern = (claimed, delegated) => {
   }
 }
 
-export const validate = capability({
-  can: "identity/validate",
-  with: URI.match({ protocol: "did:" }),
+export const Validate = capability({
+  can: 'identity/validate',
+  with: URI.match({ protocol: 'did:' }),
   caveats: {
-    as: URI.string({ protocol: "mailto:" }),
+    as: URI.string({ protocol: 'mailto:' }),
   },
   derives: (claimed, delegated) =>
     derivesURIPattern(claimed.caveats.as, delegated.caveats.as) &&
     equalWith(claimed, delegated),
 })
 
-export const register = capability({
-  can: "identity/register",
-  with: URI.match({ protocol: "mailto:" }),
+export const Register = capability({
+  can: 'identity/register',
+  with: URI.match({ protocol: 'mailto:' }),
   caveats: {
-    as: URI.string({ protocol: "did:" }),
+    as: URI.string({ protocol: 'did:' }),
   },
   derives: (claimed, delegated) =>
     derivesURIPattern(claimed.caveats.as, delegated.caveats.as) &&
-    equalWith(claimed, delegated),
+    derivesURIPattern(claimed.with, delegated.with),
 })
 
-export const link = capability({
-  can: "identity/link",
+export const Link = capability({
+  can: 'identity/link',
   with: URI,
   derives: equalWith,
 })
@@ -71,9 +71,9 @@ export const link = capability({
  * capability that has matichng `with`. This allows store service
  * to identify account based on any user request.
  */
-export const identify = store.derive({
+export const Identify = Store.Capability.derive({
   to: capability({
-    can: "identity/identify",
+    can: 'identity/identify',
     with: URI,
     derives: equalWith,
   }),
@@ -83,4 +83,4 @@ export const identify = store.derive({
 /**
  * Represents `identity/*` capability.
  */
-export default register.or(link).or(identify)
+export const Capability = Register.or(Link).or(Identify)

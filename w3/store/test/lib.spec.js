@@ -1,15 +1,13 @@
-import { test, assert } from "./test.js"
-import * as Client from "@ucanto/client"
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
-import { SigningAuthority } from "@ucanto/authority"
-import * as Identity from "./identity.js"
-import * as Accounting from "./accounting.js"
-import * as Store from "../src/lib.js"
-import * as Signer from "w3-signer"
-import { alice, bob, mallory, service as validator } from "./fixtures.js"
+import { test, assert } from './test.js'
+import * as Client from '@ucanto/client'
+import * as CAR from '@ucanto/transport/car'
+import * as CBOR from '@ucanto/transport/cbor'
+import { SigningAuthority } from '@ucanto/authority'
+import { Store, Identity, Accounting } from '../src/lib.js'
+import * as Signer from 'w3-signer'
+import { alice, bob, mallory, service as validator } from './fixtures.js'
 
-test("main", async () => {
+test('main', async () => {
   const w3store = await SigningAuthority.generate()
   const w3id = await SigningAuthority.generate()
   const s3 = new Map()
@@ -21,7 +19,7 @@ test("main", async () => {
     decoder: CBOR,
     channel: Identity.server({
       id: w3id.authority,
-      context: { db: accounts },
+      context: { db: accounts, id: w3id },
       decoder: CAR,
       encoder: CBOR,
     }),
@@ -40,10 +38,10 @@ test("main", async () => {
       }),
       signer: Signer,
       signerConfig: {
-        accessKeyId: "id",
-        secretAccessKey: "secret",
-        region: "us-east-2",
-        bucket: "my-test-bucket",
+        accessKeyId: 'id',
+        secretAccessKey: 'secret',
+        region: 'us-east-2',
+        bucket: 'my-test-bucket',
       },
       identity: {
         id: w3id.authority,
@@ -59,20 +57,21 @@ test("main", async () => {
   })
 
   const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: "world" })],
+    roots: [await CBOR.codec.write({ hello: 'world' })],
   })
 
   // errors if not registered
   {
-    const result = await Store.add({
+    const result = await Store.Add.invoke({
       issuer: alice,
       audience: w3store.authority,
-      link: car.cid,
+      with: alice.did(),
+      caveats: { link: car.cid },
     }).execute(store)
 
     assert.containSubset(result, {
       error: true,
-      name: "NotRegistered",
+      name: 'NotRegistered',
       message: `No account is registered for ${alice.did()}`,
     })
   }
@@ -85,8 +84,9 @@ test("main", async () => {
       audience: validator,
       capabilities: [
         {
-          can: "identity/register",
-          with: "mailto:*",
+          can: 'identity/register',
+          with: 'mailto:*',
+          as: 'did:*',
         },
       ],
     })
@@ -97,18 +97,22 @@ test("main", async () => {
       audience: alice,
       capabilities: [
         {
-          can: "identity/register",
-          with: "mailto:alice@web.mail",
+          can: 'identity/register',
+          with: 'mailto:alice@web.mail',
+          as: alice.did(),
         },
       ],
       proofs: [validatorToken],
     })
 
-    const result = await Identity.register({
+    const result = await Identity.Register.invoke({
       issuer: alice,
       audience: w3id,
-      id: "mailto:alice@web.mail",
-      proof: registrationToken,
+      with: 'mailto:alice@web.mail',
+      caveats: {
+        as: alice.did(),
+      },
+      proofs: [registrationToken],
     }).execute(id)
 
     assert.deepEqual(result, null)
@@ -116,10 +120,10 @@ test("main", async () => {
 
   // alice should be able to check her identity
   {
-    const result = await Identity.identify({
+    const result = await Identity.Identify.invoke({
       issuer: alice,
       audience: w3id,
-      id: alice.did(),
+      with: alice.did(),
     }).execute(id)
 
     assert.match(String(result), /did:ipld:bafy/)
@@ -127,14 +131,15 @@ test("main", async () => {
 
   // now that alice is registered she can add a car file
   {
-    const result = await Store.add({
+    const result = await Store.Add.invoke({
       issuer: alice,
       audience: w3store.authority,
-      link: car.cid,
+      with: alice.did(),
+      caveats: { link: car.cid },
     }).execute(store)
 
     assert.containSubset(result, {
-      status: "upload",
+      status: 'upload',
       with: alice.did(),
       link: car.cid,
     })
@@ -145,20 +150,21 @@ test("main", async () => {
   // if alice adds a car that is already in s3 no upload will be needed
   {
     const car = await CAR.codec.write({
-      roots: [await CBOR.codec.write({ another: "car" })],
+      roots: [await CBOR.codec.write({ another: 'car' })],
     })
 
     // add car to S3
     s3.set(`${car.cid}/data`, true)
 
-    const result = await Store.add({
+    const result = await Store.Add.invoke({
       issuer: alice,
       audience: w3store.authority,
-      link: car.cid,
+      with: alice.did(),
+      caveats: { link: car.cid },
     }).execute(store)
 
     assert.containSubset(result, {
-      status: "done",
+      status: 'done',
       with: alice.did(),
       link: car.cid,
       url: undefined,
@@ -167,36 +173,40 @@ test("main", async () => {
 
   // bob can not store/add into alice's group
   {
-    const result = await Store.add({
+    const result = await Store.Add.invoke({
       issuer: bob,
       audience: w3store.authority,
-      group: alice.did(),
-      link: car.cid,
+      with: alice.did(),
+      caveats: {
+        link: car.cid,
+      },
     }).execute(store)
 
     assert.containSubset(result, {
       error: true,
-      name: "Unauthorized",
+      name: 'Unauthorized',
     })
   }
 
   // but if alice delegates capability to bob we can add to alice's group
   {
-    const result = await Store.add({
+    const result = await Store.Add.invoke({
       issuer: bob,
       audience: w3store.authority,
-      group: alice.did(),
-      link: car.cid,
-      proof: await Client.delegate({
-        issuer: alice,
-        audience: bob,
-        capabilities: [
-          {
-            can: "store/add",
-            with: alice.did(),
-          },
-        ],
-      }),
+      with: alice.did(),
+      caveats: { link: car.cid },
+      proofs: [
+        await Client.delegate({
+          issuer: alice,
+          audience: bob,
+          capabilities: [
+            {
+              can: 'store/add',
+              with: alice.did(),
+            },
+          ],
+        }),
+      ],
     }).execute(store)
 
     assert.containSubset(result, {

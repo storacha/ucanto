@@ -1,8 +1,8 @@
-import * as Server from "@ucanto/server"
-import { provide } from "@ucanto/server"
-import * as API from "../type.js"
-import * as Identity from "../identity/invoke.js"
-import * as Capability from "./capability.js"
+import * as Server from '@ucanto/server'
+import { provide } from '@ucanto/server'
+import * as API from '../type.js'
+import * as Identity from '../identity/capability.js'
+import * as Capability from './capability.js'
 
 /**
  * @param {API.Store.ServiceOptions} options
@@ -16,7 +16,7 @@ export const service = ({
   signerConfig,
 }) => {
   return {
-    add: provide(Capability.add, async ({ capability, invocation }) => {
+    add: provide(Capability.Add, async ({ capability, invocation }) => {
       const link = /** @type {API.Store.CARLink|undefined} */ (
         capability.caveats.link
       )
@@ -30,13 +30,11 @@ export const service = ({
       const id = /** @type {API.DID} */ (capability.with)
       // First we need to check if we have an account associted with a DID
       // car is been added to.
-      const account = await Identity.identify({
+      const account = await Identity.Identify.invoke({
         issuer: self,
         audience: identity.id,
-        id,
-        // We use `store/add` invocation as a proof that we can identify an
-        // account for the did.
-        proof: invocation,
+        with: id,
+        proofs: [invocation],
       }).execute(identity.client)
 
       // If we failed to resolve an account we deny access by returning n error.
@@ -49,23 +47,23 @@ export const service = ({
         return result
       }
 
-      if (result.status === "not-in-s3") {
+      if (result.status === 'not-in-s3') {
         const url = await signer.sign(link, signerConfig)
         return {
-          status: "upload",
+          status: 'upload',
           with: id,
           link,
           url: url.href,
         }
       } else {
         return {
-          status: "done",
+          status: 'done',
           with: id,
           link,
         }
       }
     }),
-    remove: provide(Capability.remove, async ({ capability, invocation }) => {
+    remove: provide(Capability.Remove, async ({ capability, invocation }) => {
       const { link } = capability.caveats
       if (!link) {
         return new Server.MalformedCapability(
@@ -78,7 +76,7 @@ export const service = ({
       await accounting.remove(id, link, invocation.cid)
       return link
     }),
-    list: provide(Capability.list, async ({ capability, invocation }) => {
+    list: provide(Capability.List, async ({ capability, invocation }) => {
       const id = /** @type {API.DID} */ (capability.with)
       return await accounting.list(id, invocation.cid)
     }),

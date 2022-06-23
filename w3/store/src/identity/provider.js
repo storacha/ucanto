@@ -1,13 +1,7 @@
-import * as Capability from "./capability.js"
-import * as Server from "@ucanto/server"
-import { delegate } from "@ucanto/client"
-import * as API from "../type.js"
-
-export * from "./invoke.js"
-
-Capability.validate.create("did:key:zAlice", {
-  as: "mailto:alice@web.mail",
-})
+import * as Capability from './capability.js'
+import * as Server from '@ucanto/server'
+import { delegate } from '@ucanto/client'
+import * as API from '../type.js'
 
 /**
  * @template K
@@ -33,14 +27,14 @@ Capability.validate.create("did:key:zAlice", {
  */
 export const service = ({ id, db }) => ({
   validate: Server.provide(
-    Capability.validate,
+    Capability.Validate,
     async ({ capability, invocation }) => {
       const delegation = await delegate({
         issuer: id,
         audience: invocation.issuer,
         capabilities: [
           {
-            can: "identity/register",
+            can: 'identity/register',
             with: capability.caveats.as,
             as: capability.uri.href,
           },
@@ -57,7 +51,7 @@ export const service = ({ id, db }) => ({
     }
   ),
   register: Server.provide(
-    Capability.register,
+    Capability.Register,
     async ({ capability, invocation }) => {
       const result = await associate(
         db,
@@ -73,7 +67,7 @@ export const service = ({ id, db }) => ({
       }
     }
   ),
-  link: Server.provide(Capability.link, async ({ capability, invocation }) => {
+  link: Server.provide(Capability.Link, async ({ capability, invocation }) => {
     const id = /** @type {API.Identity.ID} */ (capability.uri.href)
     if (
       await associate(db, invocation.issuer.did(), id, invocation.cid, false)
@@ -83,7 +77,7 @@ export const service = ({ id, db }) => ({
       return new NotRegistered([invocation.issuer.did(), id])
     }
   }),
-  identify: Server.provide(Capability.identify, async ({ capability }) => {
+  identify: Server.provide(Capability.Identify, async ({ capability }) => {
     const id = /** @type {API.Identity.ID} */ (capability.uri.href)
     const account = await resolve(db, id)
     return account || new NotRegistered([id])
@@ -179,7 +173,7 @@ export class NotRegistered {
   get message() {
     if (this.ids.length > 1) {
       return `No account is registered with such identifiers:\n - ${this.ids.join(
-        "\n - "
+        '\n - '
       )}`
     } else {
       return `No account is registered for ${this.ids[0]}`
@@ -190,7 +184,7 @@ export class NotRegistered {
   }
   /** @type {"NotRegistered"} */
   get name() {
-    return "NotRegistered"
+    return 'NotRegistered'
   }
   toJSON() {
     const { name, message, ids, error } = this

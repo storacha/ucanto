@@ -45,7 +45,7 @@ describe('Signer', function () {
       const search = url.searchParams
       assert.equal(search.get('X-Amz-Expires'), '86400')
       assert.equal(search.get('X-Amz-Algorithm'), 'AWS4-HMAC-SHA256')
-      assert.match(search.get('X-Amz-Credential'), /aws4_request/)
+      assert.match(search.get('X-Amz-Credential') || '', /aws4_request/)
       assert.equal(search.get('X-Amz-SignedHeaders'), 'host')
       assert.ok(typeof search.get('X-Amz-Signature') === 'string')
     })

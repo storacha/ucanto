@@ -20,9 +20,9 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
-    "@ucanto/server": "^0.3.0",
-    "@ucanto/client": "^0.2.2",
-    "@ucanto/interface": "^0.3.0"
+    "@ucanto/server": "workspace:*",
+    "@ucanto/client": "workspace:*",
+    "@ucanto/interface": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^4.7.2"

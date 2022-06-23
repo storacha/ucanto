@@ -1,9 +1,9 @@
-import * as Server from "@ucanto/server"
-import { capability, Link, URI, Failure } from "@ucanto/server"
-import * as API from "../type.js"
+import * as Server from '@ucanto/server'
+import { capability, Link, URI, Failure } from '@ucanto/server'
+import * as API from '../type.js'
 
 /**
- * @template {Server.ParsedCapability<"store/add"|"store/remove", {link?: API.Store.Link<unknown, number, number, 0|1>}>} T
+ * @template {Server.ParsedCapability<"store/add"|"store/remove", Server.API.URI<'did:'>, {link?: API.Store.Link<unknown, number, number, 0|1>}>} T
  * @param {T} claimed
  * @param {T} delegated
  * @returns
@@ -19,7 +19,7 @@ const derives = (claimed, delegated) => {
   ) {
     return new Failure(
       `Link ${
-        claimed.caveats.link == null ? "" : `${claimed.caveats.link} `
+        claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
       }violates imposed ${delegated.caveats.link} constraint`
     )
   } else {
@@ -27,27 +27,27 @@ const derives = (claimed, delegated) => {
   }
 }
 
-export const add = capability({
-  can: "store/add",
-  with: URI.match({ protocol: "did:" }),
+export const Add = capability({
+  can: 'store/add',
+  with: URI.match({ protocol: 'did:' }),
   caveats: {
     link: Link.optional(),
   },
   derives,
 })
 
-export const remove = capability({
-  can: "store/remove",
-  with: URI.match({ protocol: "did:" }),
+export const Remove = capability({
+  can: 'store/remove',
+  with: URI.match({ protocol: 'did:' }),
   caveats: {
     link: Link.optional(),
   },
   derives,
 })
 
-export const list = capability({
-  can: "store/list",
-  with: URI.match({ protocol: "did:" }),
+export const List = capability({
+  can: 'store/list',
+  with: URI.match({ protocol: 'did:' }),
   derives: (claimed, delegated) => {
     if (claimed.uri.href !== delegated.uri.href) {
       return new Failure(
@@ -58,4 +58,4 @@ export const list = capability({
   },
 })
 
-export default add.or(remove).or(list)
+export const Capability = Add.or(Remove).or(List)
