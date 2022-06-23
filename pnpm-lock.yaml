@@ -336,6 +336,7 @@ importers:
       '@ucanto/interface': workspace:*
       '@ucanto/server': workspace:*
       '@ucanto/transport': workspace:*
+      '@web-std/fetch': ^4.1.0
       '@web3-storage/sigv4': workspace:*
       chai: ^4.3.6
       chai-subset: ^1.6.0
@@ -347,6 +348,7 @@ importers:
       '@ucanto/client': link:../../packages/client
       '@ucanto/interface': link:../../packages/interface
       '@ucanto/server': link:../../packages/server
+      '@web-std/fetch': 4.1.0
       '@web3-storage/sigv4': link:../sigv4
       multiformats: 9.7.0
     devDependencies:

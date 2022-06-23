@@ -5,16 +5,12 @@ import ora from 'ora'
 import Z from 'zod'
 import * as Client from '@ucanto/client'
 import { SigningAuthority, Authority } from '@ucanto/authority'
-import { Delegation, parseLink, UCAN } from '@ucanto/core'
+import { Delegation, UCAN } from '@ucanto/core'
 import * as CBOR from '@ucanto/transport/cbor'
-import * as CAR from '@ucanto/transport/car'
-import * as HTTP from '@ucanto/transport/http'
 import Inquirer from 'inquirer'
-import fetch from '@web-std/fetch'
-import * as Service from 'w3-store'
+import { Store, Identity } from 'w3-store'
 import { Failure } from '@ucanto/server'
-
-Z.literal
+import * as Service from 'w3-store'
 
 const cli = Soly.createCLI('w3-cli')
 cli
@@ -44,39 +40,36 @@ cli
  * @param {string} [input]
  * @return {Promise<undefined>}
  */
-export const register = async (input, context = configure()) => {
+export const register = async (input, { client, settings } = configure()) => {
   const view = ora('register')
   const email = input == undefined ? null : tryParseEmail(input)
 
   // if email was provided we start registration
   if (email) {
     view.start(`🎫 Registering account for ${email}`)
-    context.settings.set('email', email)
+    settings.set('email', email)
 
     const issuer = await identity()
-    const audience = context.serviceID
-    const result = await Service.Identity.Validate.invoke({
+    const result = await Identity.Validate.invoke({
       issuer,
-      audience,
+      audience: client.id,
       with: issuer.did(),
       caveats: {
         as: `mailto:${email}`,
       },
-    }).execute(context.client)
+    }).execute(client)
 
     if (result?.error) {
       return void view.fail(result.message)
     }
 
     view.stopAndPersist()
-    return register(undefined, context)
+    return register(undefined, { client, settings })
   }
   // If cid is provided complete we complete a registration
-  else if (context.settings.has('email')) {
+  else if (settings.has('email')) {
     if (input && input.split('.').length >= 3) {
-      const issuer = await identity(context)
-      const audience = context.serviceID
-      const email = context.settings.get('email')
+      const issuer = await identity({ client, settings })
 
       const proof = await importToken(input)
 
@@ -90,27 +83,28 @@ export const register = async (input, context = configure()) => {
         )
       }
 
-      console.log(`${issuer.did()} -> ${context.serviceID.did()}`)
+      console.log(`${issuer.did()} -> ${client.id.did()}`)
 
-      const result = await Service.Identity.Register.invoke({
+      const result = await Identity.Register.invoke({
         issuer,
-        audience: context.serviceID,
+        audience: client.id,
         with: proof.capabilities[0].with,
         caveats: {
           as: proof.capabilities[0].as,
         },
         proofs: [proof],
-      }).execute(context.client)
+      }).execute(client)
 
       if (result?.error) {
         return void view.fail(`🎫 Registration failed: ${result.message}`)
       } else {
+        settings.delete('email')
         view.succeed('🎫 Registration complete')
       }
 
       return undefined
     } else {
-      const email = context.settings.get('email')
+      const email = settings.get('email')
       view.start(`🎫 Check ${email} inbox & paste registration token below\n`)
       view.stopAndPersist()
 
@@ -124,7 +118,7 @@ export const register = async (input, context = configure()) => {
           }
         },
       })
-      return await register(token, context)
+      return await register(token, { client, settings })
     }
   }
   // otherwise we prompt for the email address to initiate registration
@@ -136,7 +130,7 @@ export const register = async (input, context = configure()) => {
       validate: (input) => tryParseEmail(input) != null,
     })
 
-    return await register(email, context)
+    return await register(email, { client, settings })
   }
 }
 
@@ -155,18 +149,6 @@ const importToken = async (input) => {
     return Delegation.create({ root })
   } catch (error) {
     return new Failure(String(error))
-  }
-}
-
-/**
- * @param {string} input
- */
-
-const tryParseLink = (input) => {
-  try {
-    return parseLink(input)
-  } catch (error) {
-    return null
   }
 }
 
@@ -210,15 +192,14 @@ export const identity = async ({ settings } = configure()) => {
   }
 }
 
-export const whoami = async (context = configure()) => {
+export const whoami = async ({ client } = configure()) => {
   const view = ora('whoami').start('🪪 Resolving account')
   const issuer = await identity()
-  const audience = context.serviceID
   const result = await Service.Identity.Identify.invoke({
     issuer,
-    audience,
+    audience: client.id,
     with: issuer.did(),
-  }).execute(context.client)
+  }).execute(client)
 
   if (result.error) {
     view.fail(`🪪 Failed to resolve: ${result.message}`)
@@ -230,7 +211,7 @@ export const whoami = async (context = configure()) => {
 /**
  * @typedef {{
  *   secret?: Uint8Array
- *   email?: boolean
+ *   email?: string
  *   token?: Uint8Array
  *   serviceDID: Client.DID
  *   serviceURL?: URL
@@ -247,24 +228,24 @@ const configure = ({ projectName = 'w3-cli' } = {}) => {
     })
   )
 
-  const client = connect({ url: new URL(process.env.SERVICE_URL || '') })
-  const serviceID = Authority.parse(
-    /** @type {Client.DID} */ (process.env.SERVICE_DID)
-  )
+  const client = connect()
 
-  return { settings, client, serviceID }
+  return { settings, client }
 }
 
 /**
- *
- * @param {{url?:URL}} config
- * @return {Client.ConnectionView<ReturnType<typeof import('../test/server').service>>}>
+ * @param {{id?: Client.DID, url?:URL}} [config]
  */
-const connect = ({ url = new URL(process.env.SERVICE_URL || '') } = {}) =>
-  Client.connect({
-    encoder: CAR,
-    decoder: CBOR,
-    channel: HTTP.open({ url, fetch }),
+const connect = ({
+  id = /** @type {Client.DID} */ (
+    process.env.W3_STORE_DID ||
+      'did:key:z6MkqJLaQH7VNbn4d8cNZiiABK2uzMCThzMWtgU7vyrFJRe1'
+  ),
+  url = new URL(process.env.SERVICE_URL || 'http://localhost:8080'),
+} = {}) =>
+  Store.connect({
+    id,
+    url,
   })
 
 script({ ...import.meta, main, dotenv: true })

@@ -28,7 +28,8 @@
     "@ucanto/client": "workspace:*",
     "@ucanto/interface": "workspace:*",
     "multiformats": "^9.7.0",
-    "@web3-storage/sigv4": "workspace:*"
+    "@web3-storage/sigv4": "workspace:*",
+    "@web-std/fetch": "^4.1.0"
   },
   "devDependencies": {
     "@ucanto/authority": "workspace:*",

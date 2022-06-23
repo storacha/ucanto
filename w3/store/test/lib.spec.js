@@ -4,54 +4,52 @@ import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
 import { SigningAuthority } from '@ucanto/authority'
 import { Store, Identity, Accounting } from '../src/lib.js'
-import { alice, bob, mallory, service as validator } from './fixtures.js'
+import { alice, bob, service as validator } from './fixtures.js'
+import HTTP from 'node:http'
 
 test('main', async () => {
-  const w3store = await SigningAuthority.generate()
-  const w3id = await SigningAuthority.generate()
   const s3 = new Map()
-  const metadata = new Map()
-  const accounts = new Map()
 
-  const id = Client.connect({
-    encoder: CAR,
-    decoder: CBOR,
-    channel: Identity.server({
-      id: w3id.authority,
-      context: { db: accounts, id: w3id },
-      decoder: CAR,
-      encoder: CBOR,
+  const w3 = await SigningAuthority.generate()
+
+  const provider = Store.create({
+    keypair: SigningAuthority.format(await SigningAuthority.generate()),
+    identity: Identity.create({
+      keypair: SigningAuthority.format(w3),
     }),
-  })
-
-  const server = Store.server({
-    transport: {
-      encoder: CBOR,
-      decoder: CAR,
-    },
-    context: {
-      self: w3store,
-      accounting: Accounting.create({
-        db: metadata,
-        cars: s3,
-      }),
-      signerConfig: {
-        accessKeyId: 'id',
-        secretAccessKey: 'secret',
-        region: 'us-east-2',
-        bucket: 'my-test-bucket',
-      },
-      identity: {
-        id: w3id.authority,
-        client: id,
-      },
+    accounting: Accounting.create({ cars: s3 }),
+    signingOptions: {
+      accessKeyId: 'id',
+      secretAccessKey: 'secret',
+      region: 'us-east-2',
+      bucket: 'my-test-bucket',
     },
   })
 
-  const store = Client.connect({
-    channel: server,
-    encoder: CAR,
-    decoder: CBOR,
+  const server = HTTP.createServer(async (request, response) => {
+    const chunks = []
+    for await (const chunk of request) {
+      chunks.push(chunk)
+    }
+
+    const { headers, body } = await provider.handleRequest({
+      // @ts-ignore - node type is Record<string, string|string[]|undefined>
+      headers: request.headers,
+      body: Buffer.concat(chunks),
+    })
+
+    response.writeHead(200, headers)
+    response.write(body)
+    response.end()
+  })
+  await new Promise((resolve) => server.listen(resolve))
+  // @ts-ignore - this is actually what it returns on http
+  const { port } = server.address()
+
+  // This is something that client like CLI will do
+  const store = Store.connect({
+    id: provider.id.did(),
+    url: new URL(`http://localhost:${port}`),
   })
 
   const car = await CAR.codec.write({
@@ -62,7 +60,7 @@ test('main', async () => {
   {
     const result = await Store.Add.invoke({
       issuer: alice,
-      audience: w3store.authority,
+      audience: store.id,
       with: alice.did(),
       caveats: { link: car.cid },
     }).execute(store)
@@ -78,7 +76,7 @@ test('main', async () => {
   {
     // service delegates to the validator
     const validatorToken = await Client.delegate({
-      issuer: w3id,
+      issuer: w3,
       audience: validator,
       capabilities: [
         {
@@ -105,13 +103,15 @@ test('main', async () => {
 
     const result = await Identity.Register.invoke({
       issuer: alice,
-      audience: w3id,
+      audience: store.id,
       with: 'mailto:alice@web.mail',
       caveats: {
         as: alice.did(),
       },
       proofs: [registrationToken],
-    }).execute(id)
+    }).execute(store)
+
+    console.log(result)
 
     assert.deepEqual(result, null)
   }
@@ -120,9 +120,9 @@ test('main', async () => {
   {
     const result = await Identity.Identify.invoke({
       issuer: alice,
-      audience: w3id,
+      audience: store.id,
       with: alice.did(),
-    }).execute(id)
+    }).execute(store)
 
     assert.match(String(result), /did:ipld:bafy/)
   }
@@ -131,7 +131,7 @@ test('main', async () => {
   {
     const result = await Store.Add.invoke({
       issuer: alice,
-      audience: w3store.authority,
+      audience: store.id,
       with: alice.did(),
       caveats: { link: car.cid },
     }).execute(store)
@@ -156,7 +156,7 @@ test('main', async () => {
 
     const result = await Store.Add.invoke({
       issuer: alice,
-      audience: w3store.authority,
+      audience: store.id,
       with: alice.did(),
       caveats: { link: car.cid },
     }).execute(store)
@@ -173,7 +173,7 @@ test('main', async () => {
   {
     const result = await Store.Add.invoke({
       issuer: bob,
-      audience: w3store.authority,
+      audience: store.id,
       with: alice.did(),
       caveats: {
         link: car.cid,
@@ -190,7 +190,7 @@ test('main', async () => {
   {
     const result = await Store.Add.invoke({
       issuer: bob,
-      audience: w3store.authority,
+      audience: store.id,
       with: alice.did(),
       caveats: { link: car.cid },
       proofs: [
@@ -212,4 +212,6 @@ test('main', async () => {
       link: car.cid,
     })
   }
+
+  server.close()
 })

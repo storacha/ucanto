@@ -1,80 +1,32 @@
-import * as Client from '@ucanto/client'
-import * as Server from '@ucanto/server'
-import * as CAR from '@ucanto/transport/car'
-import * as CBOR from '@ucanto/transport/cbor'
-import { SigningAuthority } from '@ucanto/authority'
 import { Identity, Accounting, Store } from 'w3-store'
 import * as HTTP from 'node:http'
 import { script } from 'subprogram'
 
 /**
- *
- * @param {{
- * w3id: Server.API.SigningAuthority
- * w3store: Server.API.SigningAuthority
- * }} config
- * @returns
+ * @typedef {{
+ *   w3storeKepair: string
+ *   w3idKepair: string
+ *   url: URL
+ * }} Config
+ * @param {Partial<Config>} config
  */
-export const service = ({ w3id, w3store }) => {
-  const s3 = new Map()
-  const metadata = new Map()
-  const accounts = new Map()
-
-  const identity = Identity.create({ id: w3id, db: accounts })
-
-  const store = Store.service({
-    self: w3store,
-    accounting: Accounting.create({
-      db: metadata,
-      cars: s3,
-    }),
-    signerConfig: {
+export const main = async ({
+  w3storeKepair = process.env.W3_STORE_KEYPAIR ||
+    'MgCZ+Sw7psm7xsVmvIqToSJSKcwNUextBonLkTaAycDlCVe0BoSdzzwY8vi0gpTGo7EjcTGqvWEjBOQGreE0TWpDPbWo=',
+  w3idKepair = process.env.W3_ID_KEYPAIR ||
+    'MgCYfUUr1JN+q9mX1JEp5hteX7v+Xe2LqRCFa4iPMIgVrf+0BLGRATq2sd8qCBXb6IvKw7mi+8oKZ20gCHKtjaPPzl20=',
+  url = new URL(process.env.SERVICE_URL || 'http://localhost:8080'),
+} = {}) => {
+  const provider = Store.create({
+    keypair: w3storeKepair,
+    accounting: Accounting.create(),
+    identity: Identity.create({ keypair: w3idKepair }),
+    signingOptions: {
       accessKeyId: process.env.S3_ACCESS_KEY_ID || 'id',
       secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'secret',
       region: process.env.AWS_REGION || 'us-east-2',
       bucket: process.env.S3_BUCKET || 'my-test-bucket',
     },
-    identity: {
-      id: w3id,
-      client: Client.connect({
-        encoder: CAR,
-        decoder: CBOR,
-        channel: Server.create({
-          id: w3id,
-          decoder: CAR,
-          encoder: CBOR,
-          service: { identity },
-        }),
-      }),
-    },
-  })
-
-  return { store, identity }
-}
-
-/**
- * @typedef {{
- *   w3storeKepair: string
- *   w3idKepair: string
- *   port: number
- * }} Config
- * @param {Partial<Config>} config
- */
-export const main = async ({
-  w3storeKepair = process.env.SERVICE_KEYPAIR || '',
-  w3idKepair = process.env.W3_ID_KEYPAIR || '',
-  port = parseInt(process.env.PORT || '8080'),
-} = {}) => {
-  const w3store = SigningAuthority.parse(w3storeKepair)
-  // const w3id = SigningAuthority.parse(w3idKepair)
-
-  const server = Server.create({
-    id: w3store.authority,
-    encoder: CBOR,
-    decoder: CAR,
-    // we actually want to use differnt w3id but right now there is no good
-    // way to expose services bound different keys.
-    service: service({ w3id: w3store, w3store }),
   })
 
   HTTP.createServer(async (request, response) => {
@@ -83,7 +35,7 @@ export const main = async ({
       chunks.push(chunk)
     }
 
-    const { headers, body } = await server.request({
+    const { headers, body } = await provider.request({
       // @ts-ignore - node type is badly typed
       headers: request.headers,
       body: Buffer.concat(chunks),
@@ -92,9 +44,11 @@ export const main = async ({
     response.writeHead(200, headers)
     response.write(body)
     response.end()
-  }).listen(port)
+  }).listen(parseInt(url.port))
 
-  console.log(`Service ${w3store.did()} is listening on port ${port}`)
+  console.log(
+    `Service ${provider.id.did()} is running on http://localhost:${url.port}`
+  )
 }
 
 script({ ...import.meta, main, dotenv: true })

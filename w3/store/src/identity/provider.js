@@ -2,36 +2,28 @@ import * as Capability from './capability.js'
 import * as Server from '@ucanto/server'
 import { delegate } from '@ucanto/client'
 import * as API from '../type.js'
-
-/**
- * @template K
- * @template V
- * @typedef {{
- *   get(key:K):API.Await<V|undefined>
- *   has(key:K):API.Await<boolean>
- *   set(key:K, value:V):API.Await<object>
- *   delete(key:K):API.Await<boolean>
- * }} KVStore
- */
+import { Authority } from '@ucanto/server'
 
 /**
  * @typedef {{account:API.DID, proof:Server.LinkedProof}} AccountLink
- * @typedef {KVStore<API.Identity.ID, AccountLink>} DB
+ * @typedef {{
+ *   set: (key:string, value:AccountLink) => API.Await<unknown>
+ *   get: (key:string) => API.Await<AccountLink|undefined>
+ * }} DB
  * @typedef {{
  * id: API.SigningAuthority
  * db: DB
  * }} Context
  *
  * @param {Context} context
- * @return {API.Identity.Identity}
+ * @return {{identity: API.Identity.Identity}}
  */
 export const create = ({ id, db }) => ({
-  validate: Server.provide(
-    Capability.Validate,
-    async ({ capability, invocation }) => {
+  identity: {
+    validate: Server.provide(Capability.Validate, async ({ capability }) => {
       const delegation = await delegate({
         issuer: id,
-        audience: invocation.issuer,
+        audience: Authority.parse(capability.with),
         capabilities: [
           {
             can: 'identity/register',
@@ -48,40 +40,43 @@ export const create = ({ id, db }) => ({
       )
 
       return null
-    }
-  ),
-  register: Server.provide(
-    Capability.Register,
-    async ({ capability, invocation }) => {
-      const result = await associate(
-        db,
-        capability.caveats.as,
-        capability.uri.href,
-        invocation.cid,
-        true
-      )
-      if (result) {
-        return null
-      } else {
-        throw new Error(`registering account should never fail`)
+    }),
+    register: Server.provide(
+      Capability.Register,
+      async ({ capability, invocation }) => {
+        const result = await associate(
+          db,
+          capability.caveats.as,
+          capability.uri.href,
+          invocation.cid,
+          true
+        )
+        if (result) {
+          return null
+        } else {
+          throw new Error(`registering account should never fail`)
+        }
       }
-    }
-  ),
-  link: Server.provide(Capability.Link, async ({ capability, invocation }) => {
-    const id = /** @type {API.Identity.ID} */ (capability.uri.href)
-    if (
-      await associate(db, invocation.issuer.did(), id, invocation.cid, false)
-    ) {
-      return null
-    } else {
-      return new NotRegistered([invocation.issuer.did(), id])
-    }
-  }),
-  identify: Server.provide(Capability.Identify, async ({ capability }) => {
-    const id = /** @type {API.Identity.ID} */ (capability.uri.href)
-    const account = await resolve(db, id)
-    return account || new NotRegistered([id])
-  }),
+    ),
+    link: Server.provide(
+      Capability.Link,
+      async ({ capability, invocation }) => {
+        const id = /** @type {API.Identity.ID} */ (capability.uri.href)
+        if (
+          await associate(db, capability.caveats.as, id, invocation.cid, false)
+        ) {
+          return null
+        } else {
+          return new NotRegistered([invocation.issuer.did(), id])
+        }
+      }
+    ),
+    identify: Server.provide(Capability.Identify, async ({ capability }) => {
+      const id = /** @type {API.Identity.ID} */ (capability.uri.href)
+      const account = await resolve(db, id)
+      return account || new NotRegistered([id])
+    }),
+  },
 })
 
 /**

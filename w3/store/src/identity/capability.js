@@ -62,7 +62,10 @@ export const Register = capability({
 
 export const Link = capability({
   can: 'identity/link',
-  with: URI,
+  with: URI.match({ protocol: 'did:' }),
+  caveats: {
+    as: URI.string({ protocol: 'did:' }),
+  },
   derives: equalWith,
 })
 
@@ -74,7 +77,7 @@ export const Link = capability({
 export const Identify = Store.Capability.derive({
   to: capability({
     can: 'identity/identify',
-    with: URI,
+    with: URI.match({ protocol: 'did:' }),
     derives: equalWith,
   }),
   derives: equalWith,

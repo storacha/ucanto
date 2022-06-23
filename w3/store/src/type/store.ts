@@ -26,19 +26,16 @@ export interface StoreService {
   start(options: ServiceOptions): Server.ServerView<Store>
 }
 export interface ServiceOptions {
-  self: SigningAuthority
-  identity: {
-    id: Audience
-    client: ConnectionView<{ identity: Identity.Identity }>
-  }
+  id: SigningAuthority
+  identity: ConnectionView<{ identity: Identity.Identity }>
 
   accounting: Accounting.Provider
 
-  signerConfig: Signer.SignOptions
+  signingOptions: Signer.SignOptions
 }
 
 export interface Options {
-  transport: Server.TranpsortOptions
+  transport: Server.InboundTransportOptions
   validation?: Server.ValidatorOptions
   context: ServiceOptions
 }

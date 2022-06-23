@@ -4,9 +4,9 @@ import type {
   DID,
   Resource,
   Failure,
-} from "@ucanto/server"
-import type { API, URI } from "@ucanto/interface"
-import type { ServiceError } from "./error"
+} from '@ucanto/server'
+import type { API, URI } from '@ucanto/interface'
+import type { ServiceError } from './error'
 
 export interface Identity {
   /**
@@ -40,20 +40,22 @@ export interface Identity {
 export type MailtoID = `mailto:${string}`
 export type ID = `did:${string}` | MailtoID
 
-export interface Register extends Capability<"identity/register", MailtoID> {
+export interface Register extends Capability<'identity/register', MailtoID> {
   as: `did:${string}`
 }
 
-export interface Validate extends Capability<"identity/validate", DID> {
+export interface Validate extends Capability<'identity/validate', DID> {
   as: MailtoID
 }
 
-export interface Link extends Capability<"identity/link", ID> {}
+export interface Link extends Capability<'identity/link', DID> {
+  as: DID
+}
 
-export interface Identify extends Capability<"identity/identify", Resource> {}
+export interface Identify extends Capability<'identity/identify', DID> {}
 
 export interface NotRegistered
-  extends ServiceError<"NotRegistered", NotRegistered> {
+  extends ServiceError<'NotRegistered', NotRegistered> {
   ids: [ID, ...ID[]]
 }
 
