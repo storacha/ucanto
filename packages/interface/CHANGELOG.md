@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://www.github.com/web3-storage/ucanto/compare/interface-v0.5.0...interface-v0.6.0) (2022-06-24)
+
+
+### Features
+
+* **ucanto:** upstream changes from w3 branch ([#54](https://www.github.com/web3-storage/ucanto/issues/54)) ([861e997](https://www.github.com/web3-storage/ucanto/commit/861e997e31c2a51195b8384eff5df656b6ec9efc))
+
 ## [0.5.0](https://www.github.com/web3-storage/ucanto/compare/interface-v0.4.0...interface-v0.5.0) (2022-06-23)
 
 

@@ -1,5 +1,14 @@
 # Changelog
 
+### [0.4.2](https://www.github.com/web3-storage/ucanto/compare/authority-v0.4.1...authority-v0.4.2) (2022-06-24)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^0.5.0 to ^0.6.0
+
 ### [0.4.1](https://www.github.com/web3-storage/ucanto/compare/authority-v0.4.0...authority-v0.4.1) (2022-06-23)
 
 
