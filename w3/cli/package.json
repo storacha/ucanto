@@ -5,7 +5,7 @@
   "types": "./dist/src/main.d.ts",
   "main": "./src/main.js",
   "bin": {
-    "w3": "./src/main.js"
+    "w3": "./src/cli.js"
   },
   "keywords": [
     "web3.storage"
@@ -31,7 +31,7 @@
     "@ucanto/core": "^0.5.1",
     "@ucanto/interface": "^0.6.0",
     "@ucanto/transport": "^0.6.0",
-    "subprogram": "^1.2.0",
+    "subprogram": "^1.3.0",
     "soly": "^1.1.2",
     "conf": "^10.1.2",
     "ora": "^6.1.0",

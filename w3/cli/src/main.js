@@ -11,7 +11,7 @@ import { Delegation, UCAN } from '@ucanto/core'
 import * as CBOR from '@ucanto/transport/cbor'
 import Inquirer from 'inquirer'
 import { Store, Identity } from 'w3-store'
-import { Failure } from '@ucanto/server'
+import { Failure, parseLink } from '@ucanto/server'
 import * as Service from 'w3-store'
 import * as CAR from '@ucanto/transport/car'
 import * as FS from 'node:fs/promises'
@@ -28,6 +28,14 @@ cli
     const [path] = input.positionals([Soly.path()])
 
     return async () => importCAR(resolveURL(path.value), configure())
+  })
+  .command('unlink', (input) => {
+    const [link] = input.positionals([Z.string().refine(parseLink)])
+
+    return async () => unlink(parseLink(link.value), configure())
+  })
+  .command('list', () => {
+    return () => listCARs()
   })
   .command('id', (input) => {
     return async () => {
@@ -145,7 +153,6 @@ export const register = async (input, { client, settings } = configure()) => {
 }
 
 /**
- *
  * @param {URL} url
  */
 export const importCAR = async (url, { client, settings } = configure()) => {
@@ -197,6 +204,46 @@ export const importCAR = async (url, { client, settings } = configure()) => {
   } catch (error) {
     view.fail(/** @type {Error} */ (error).message)
   }
+}
+
+/**
+ *
+ * @param {Client.Link<unknown, number, number, 0|1>} link
+ */
+export const unlink = async (link, { client, settings } = configure()) => {
+  const view = ora('unlink')
+  const id = await identity({ client, settings })
+  const result = await Store.Remove.invoke({
+    issuer: id,
+    audience: client.id,
+    with: id.did(),
+    caveats: {
+      link,
+    },
+  }).execute(client)
+
+  if (result.error) {
+    return void view.fail(`😖 Opps: ${result}`)
+  }
+
+  view.succeed()
+}
+
+export const listCARs = async ({ client, settings } = configure()) => {
+  const view = ora('list')
+  const id = await identity({ client, settings })
+  view.start(`🚙 Looking what cars ${id.did()} has`)
+  const result = await Store.List.invoke({
+    issuer: id,
+    audience: client.id,
+    with: id.did(),
+  }).execute(client)
+
+  if (result.error) {
+    return void view.fail(`😖 Opps: ${result}`)
+  }
+
+  view.succeed(result.map((link) => ` - ${link}`).join('\n'))
 }
 /**
  * @param {string} input
