@@ -243,6 +243,9 @@ test('codec', async () => {
   const car = await CAR.codec.write({ roots: [root] })
   assert.deepEqual(car.bytes, bytes)
   assert.ok(asLink(car.cid) === car.cid)
+
+  const link = await CAR.codec.link(car.bytes)
+  assert.deepEqual(car.cid, link)
 })
 
 test('car writer', async () => {
