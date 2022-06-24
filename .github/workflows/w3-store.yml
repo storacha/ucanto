@@ -65,7 +65,7 @@ jobs:
         os:
           - ubuntu-latest
         project:
-          - w3
+          - store
 
     steps:
       - uses: actions/checkout@v2
