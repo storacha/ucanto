@@ -15,8 +15,8 @@
   },
   "scripts": {
     "lint": "tsc && eslint '**/*.{js,ts}' && prettier --check '**/*.{js,ts,md,yml,json}' --ignore-path ../../.gitignore",
-    "test": "DOTENV_CONFIG_PATH=../../.env mocha -r dotenv/config",
-    "test-browser": "pw-test test",
+    "test:node": "DOTENV_CONFIG_PATH=../../.env mocha -r dotenv/config",
+    "test:web": "pw-test test",
     "testw": "watch 'pnpm test' src test --interval 1"
   },
   "files": [
