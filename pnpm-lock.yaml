@@ -272,7 +272,7 @@ importers:
       soly: ^1.1.2
       subprogram: ^1.3.0
       typescript: ^4.7.2
-      w3-store: ^1.0.0
+      w3-store: ^1.1.0
       zod: ^3.17.3
     dependencies:
       '@ucanto/client': link:../../packages/client
