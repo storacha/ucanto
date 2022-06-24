@@ -42,12 +42,13 @@ export const create = ({ id, identity, accounting, signingOptions }) => ({
       }
 
       if (result.status === 'not-in-s3') {
-        const url = await Signer.sign(link, signingOptions)
+        const { url, headers } = await Signer.sign(link, signingOptions)
         return {
           status: 'upload',
           with: group,
           link,
           url: url.href,
+          headers,
         }
       } else {
         return {

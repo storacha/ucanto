@@ -68,6 +68,7 @@ export interface UploadRequired {
   with: DID
   link: Link
   url: string
+  headers: Record<string, string>
 }
 
 export type CARLink = Link<CAR.codec.Model, typeof CAR.codec.code>

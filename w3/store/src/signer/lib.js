@@ -5,6 +5,7 @@ import * as API from './type.js'
 /**
  * @param {API.Link<unknown, number, number, 0 | 1>} link
  * @param {API.SignOptions} options
+ * @return {{url:URL, headers:Record<string, string>}}
  */
 export const sign = (link, { bucket, expires = 1000, ...options }) => {
   // sigv4
@@ -15,10 +16,17 @@ export const sign = (link, { bucket, expires = 1000, ...options }) => {
   })
 
   const checksum = base64pad.baseEncode(link.multihash.digest)
-  return sig.sign({
-    key: link.toString(),
+  const url = sig.sign({
+    key: `${link}/${link}.car`,
     checksum: checksum,
     bucket,
     expires,
   })
+
+  return {
+    url,
+    headers: {
+      'x-amz-checksum-sha256': checksum,
+    },
+  }
 }
