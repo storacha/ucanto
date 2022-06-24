@@ -272,7 +272,7 @@ importers:
       soly: ^1.1.2
       subprogram: ^1.2.0
       typescript: ^4.7.2
-      w3-store: ^0.0.1
+      w3-store: ^1.0.0
       zod: ^3.17.3
     dependencies:
       '@ucanto/client': link:../../packages/client
@@ -337,7 +337,7 @@ importers:
       '@ucanto/server': ^0.6.0
       '@ucanto/transport': ^0.6.0
       '@web-std/fetch': ^4.1.0
-      '@web3-storage/sigv4': ^0.0.3
+      '@web3-storage/sigv4': ^1.0.0
       chai: ^4.3.6
       chai-subset: ^1.6.0
       mocha: ^9.2.2
