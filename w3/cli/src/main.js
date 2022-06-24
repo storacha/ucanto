@@ -11,6 +11,9 @@ import Inquirer from 'inquirer'
 import { Store, Identity } from 'w3-store'
 import { Failure } from '@ucanto/server'
 import * as Service from 'w3-store'
+import * as CAR from '@ucanto/transport/car'
+import * as FS from 'node:fs/promises'
+import fetch from '@web-std/fetch'
 
 const cli = Soly.createCLI('w3-cli')
 cli
@@ -21,10 +24,8 @@ cli
   })
   .command('import', (input) => {
     const [path] = input.positionals([Soly.path()])
-    return async () => {
-      const id = identity(configure())
-      const proof = console.log(path.value)
-    }
+
+    return async () => importCAR(resolveURL(path.value), configure())
   })
   .command('id', (input) => {
     return async () => {
@@ -34,6 +35,13 @@ cli
   })
   .command('whoami', () => {
     return () => whoami()
+  })
+  .action(() => {
+    console.log(
+      `You can run one of the following commands: ${Object.keys(
+        cli.commands
+      ).join(' ')}`
+    )
   })
 
 /**
@@ -134,6 +142,60 @@ export const register = async (input, { client, settings } = configure()) => {
   }
 }
 
+/**
+ *
+ * @param {URL} url
+ */
+export const importCAR = async (url, { client, settings } = configure()) => {
+  const view = ora('register')
+  view.start(`🚗 Importing car from ${url}`)
+  try {
+    const id = await identity({ client, settings })
+    const bytes = await FS.readFile(url)
+    view.text = `🚗 Decoding car file`
+    const car = await CAR.codec.decode(bytes)
+    view.text = `🚗 Computing CID`
+    const link = await CAR.codec.link(bytes)
+    view.text = `🚗 Requesting upload destination ${link}`
+
+    const result = await Store.Add.invoke({
+      issuer: id,
+      audience: client.id,
+      with: id.did(),
+      caveats: {
+        link,
+      },
+    }).execute(client)
+
+    if (result.error) {
+      throw result
+    }
+
+    if (result.status === 'done') {
+      return void view.succeed(`🚗 Car ${link} is added to ${id.did()}`)
+    }
+
+    view.text = `⏫ Uploading car ${result.url}`
+
+    const response = await fetch(result.url, {
+      method: 'PUT',
+      body: bytes,
+      headers: result.headers,
+    })
+
+    if (!response.ok) {
+      throw new Error(
+        `S3Upload failed with ${response.status}: ${response.statusText}`
+      )
+    }
+
+    view.text = `✨ Car ${link} is added to ${id.did()}`
+
+    view.succeed()
+  } catch (error) {
+    view.fail(/** @type {Error} */ (error).message)
+  }
+}
 /**
  * @param {string} input
  * @return {Promise<Client.Result<Client.Delegation<[Service.Type.Identity.Register]>, Client.Failure>>}
@@ -247,5 +309,13 @@ const connect = ({
     id,
     url,
   })
+
+/**
+ *
+ * @param {string} path
+ */
+
+const resolveURL = (path) =>
+  new URL(path, new URL(`${process.cwd()}`, import.meta.url).href + '/')
 
 script({ ...import.meta, main, dotenv: true })
