@@ -19,7 +19,7 @@ jobs:
         with:
           command: manifest
           token: ${{secrets.GITHUB_TOKEN}}
-          default-branch: main
+          default-branch: w3
           config-file: .github/w3-release-please-config.json
           manifest-file: .github/w3-release-please-manifest.json
 
@@ -101,6 +101,6 @@ jobs:
           title: 'chore: release w3'
           message: 'chore: release w3'
           branch: release-please/branches/w3
-          primary: main
+          primary: w3
           force: true
           fork: false
