@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://www.github.com/web3-storage/ucanto/compare/w3-store-v1.0.0...w3-store-v1.1.0) (2022-06-24)
+
+
+### Features
+
+* make email service plugable ([7189cf7](https://www.github.com/web3-storage/ucanto/commit/7189cf73d67cf50af750c96c7b8d0b000b4fe0c0))
+
 ## 1.0.0 (2022-06-24)
 
 
