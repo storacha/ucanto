@@ -11,14 +11,18 @@ import { Authority } from '@ucanto/server'
  *   get: (key:string) => API.Await<AccountLink|undefined>
  * }} DB
  * @typedef {{
+ *   send: (to:string, token:string) => API.Await<unknown>
+ * }} Email
+ * @typedef {{
  * id: API.SigningAuthority
  * db: DB
+ * email: Email
  * }} Context
  *
  * @param {Context} context
  * @return {{identity: API.Identity.Identity}}
  */
-export const create = ({ id, db }) => ({
+export const create = ({ id, db, email }) => ({
   identity: {
     validate: Server.provide(Capability.Validate, async ({ capability }) => {
       const delegation = await delegate({
@@ -33,10 +37,9 @@ export const create = ({ id, db }) => ({
         ],
       })
 
-      console.log(
-        `Emailing registration token to ${
-          capability.caveats.as
-        }?subject=Verification&body=${Server.UCAN.format(delegation.data)}\n`
+      await email.send(
+        capability.caveats.as.slice('mailto:'.length),
+        Server.UCAN.format(delegation.data)
       )
 
       return null
@@ -78,15 +81,6 @@ export const create = ({ id, db }) => ({
     }),
   },
 })
-
-/**
- * @param {API.ServerOptions & { context: Context }} options
- */
-export const server = ({ context, ...options }) =>
-  Server.create({
-    ...options,
-    service: { identity: create(context) },
-  })
 
 /**
  * @param {DB} db

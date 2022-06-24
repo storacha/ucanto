@@ -5,7 +5,7 @@ import { SigningAuthority, Authority } from '@ucanto/authority'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
 import * as HTTP from '@ucanto/transport/http'
-import * as Server from '@ucanto/server'
+import * as Service from '@ucanto/server'
 import * as Client from '@ucanto/client'
 import webfetch from '@web-std/fetch'
 
@@ -13,27 +13,32 @@ import webfetch from '@web-std/fetch'
  * @param {object} options
  * @param {string} options.keypair
  * @param {Provider.DB} [options.db]
- * @return {API.ConnectionView<{identity: API.Identity.Identity}>}
+ * @param {Provider.Email} [options.email]
  */
-export const create = ({ keypair, db = new Map() }) => {
+export const create = ({ keypair, db = new Map(), email = mail }) => {
   const id = SigningAuthority.parse(keypair)
-  const service = Provider.create({
+  const provider = Provider.create({
     id,
     db,
+    email,
   })
 
-  const server = Server.create({
+  const service = Service.create({
     id,
-    service,
+    service: provider,
     encoder: CBOR,
     decoder: CAR,
   })
 
-  return Client.connect({
-    id: id.authority,
-    encoder: CAR,
-    decoder: CBOR,
-    channel: server,
+  return Object.assign(service, {
+    handleRequest: service.request.bind(service),
+    connect: () =>
+      Client.connect({
+        id: id.authority,
+        encoder: CAR,
+        decoder: CBOR,
+        channel: service,
+      }),
   })
 }
 
@@ -62,3 +67,12 @@ export const connect = ({
       method,
     }),
   })
+
+/** @type {Provider.Email} */
+const mail = {
+  send(to, token) {
+    console.log(
+      `Emailing registration token to mailto:${to}?subject=Verification&body=${token}\n`
+    )
+  },
+}

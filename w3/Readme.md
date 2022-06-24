@@ -80,7 +80,7 @@ This package provides implementation of uploads v2 service that can be via HTTP 
    UCANs and deny service if not authorized).
 
    Library includes reference implementation (not fit for production use) of the
-   "identity" service. You can activate and obtain in-process "ucanto connection" to it as follows:
+   "identity" service which you can create and obtain in-process "ucanto connection" to it:
 
    ```ts
    import { Identity } from 'w3-store'
@@ -89,11 +89,13 @@ This package provides implementation of uploads v2 service that can be via HTTP 
      // base64url encoded Ed25519 keypair
      keypair: process.env.W3_ID_KEYPAIR,
    })
+
+   const connection = identity.connect()
    ```
 
    However above instantiation will use in-memory store, which will not presist state
    across sessions. In serverless environments that would mean no state persisted
-   across requests. You may provied your own persistance layer by passing optional `db` store:
+   across requests. You may provied your own persistance layer by passing optional `db` store and `email` service for sending out tokens to verified accounts:
 
    ```ts
    import { Identity } from 'w3-store'
@@ -115,6 +117,11 @@ This package provides implementation of uploads v2 service that can be via HTTP 
          //...
        },
      },
+     email: {
+      send(to:string, ucanToken:string) Promise<unknown> {
+        // ...
+      }
+     }
    })
    ```
 
@@ -171,5 +178,5 @@ const server = HTTP.createServer(async (request, response) => {
   response.write(body)
   response.end()
 })
-server.listen(resolve)
+server.listen()
 ```

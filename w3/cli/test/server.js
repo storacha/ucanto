@@ -20,7 +20,7 @@ export const main = async ({
   const provider = Store.create({
     keypair: w3storeKepair,
     accounting: Accounting.create(),
-    identity: Identity.create({ keypair: w3idKepair }),
+    identity: Identity.create({ keypair: w3idKepair }).connect(),
     signingOptions: {
       accessKeyId: process.env.S3_ACCESS_KEY_ID || 'id',
       secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'secret',
