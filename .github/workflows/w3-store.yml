@@ -1,4 +1,4 @@
-name: client
+name: w3-store
 
 on:
   workflow_dispatch:
