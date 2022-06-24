@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.6.0](https://www.github.com/web3-storage/ucanto/compare/server-v0.5.0...server-v0.6.0) (2022-06-24)
+
+
+### Features
+
+* **ucanto:** upstream changes from w3 branch ([#54](https://www.github.com/web3-storage/ucanto/issues/54)) ([861e997](https://www.github.com/web3-storage/ucanto/commit/861e997e31c2a51195b8384eff5df656b6ec9efc))
+
+
+### Bug Fixes
+
+* **ucanto:** capability provider inference ([#52](https://www.github.com/web3-storage/ucanto/issues/52)) ([4fa6876](https://www.github.com/web3-storage/ucanto/commit/4fa68762ca69f304515d56f9b658ddba30fb51a7))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^0.5.0 to ^0.6.0
+    * @ucanto/core bumped from ^0.5.0 to ^0.5.1
+    * @ucanto/validator bumped from ^0.5.0 to ^0.5.1
+  * devDependencies
+    * @ucanto/client bumped from ^0.4.0 to ^0.5.0
+    * @ucanto/transport bumped from ^0.5.0 to ^0.6.0
+    * @ucanto/authority bumped from ^0.4.1 to ^0.4.2
+
 ## [0.5.0](https://www.github.com/web3-storage/ucanto/compare/server-v0.4.0...server-v0.5.0) (2022-06-23)
 
 

@@ -1,5 +1,18 @@
 # Changelog
 
+### [0.5.1](https://www.github.com/web3-storage/ucanto/compare/validator-v0.5.0...validator-v0.5.1) (2022-06-24)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^0.5.0 to ^0.5.1
+    * @ucanto/interface bumped from ^0.5.0 to ^0.6.0
+  * devDependencies
+    * @ucanto/client bumped from ^0.4.0 to ^0.5.0
+    * @ucanto/authority bumped from ^0.4.1 to ^0.4.2
+
 ## [0.5.0](https://www.github.com/web3-storage/ucanto/compare/validator-v0.4.0...validator-v0.5.0) (2022-06-23)
 
 
