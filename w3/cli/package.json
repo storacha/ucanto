@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "types": "./dist/src/main.d.ts",
   "main": "./src/main.js",
+  "bin": {
+    "w3": "./src/main.js"
+  },
   "keywords": [
     "web3.storage"
   ],

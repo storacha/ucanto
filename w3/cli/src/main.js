@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as Soly from 'soly'
 import { script } from 'subprogram'
 import Conf from 'conf'
