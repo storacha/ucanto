@@ -54,9 +54,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
         run: |
-          pnpm --dir w3/sigv4 publish --access=public --publish-branch=w3
-          pnpm --dir w3/store publish --access=public --publish-branch=w3
-          pnpm --dir w3/cli publish --access=public --publish-branch=w3
+          pnpm publish w3/sigv4 --access=public --publish-branch=w3
+          pnpm publish w3/store --access=public --publish-branch=w3
+          pnpm publish w3/cli --access=public --publish-branch=w3
 
   update-pull-request:
     name: Update pull request
