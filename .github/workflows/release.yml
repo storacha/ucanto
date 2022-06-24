@@ -97,9 +97,9 @@ jobs:
           command: pr
           upstream_owner: ${{ github.repository_owner }}
           upstream_repo: ${{ github.event.repository.name }}
-          description: 'release master'
-          title: 'chore: release master'
-          message: 'chore: release master'
+          description: '🚢 release ucanto'
+          title: 'chore: release ucanto'
+          message: 'chore: release ucanto'
           branch: release-please/branches/main
           primary: main
           force: true

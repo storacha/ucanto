@@ -109,15 +109,20 @@ export const decode = async (bytes) => {
 }
 
 /**
+ * @param {Uint8Array} bytes
+ * @param {{hasher?: API.MultihashHasher }} [options]
+ */
+export const link = async (bytes, { hasher = sha256 } = {}) =>
+  /** @type {UCAN.Link<Model, typeof code, number> & import('multiformats').CID} */
+  (createLink(code, await hasher.digest(bytes)))
+
+/**
  * @param {Partial<Model>} data
  * @param {{hasher?: API.MultihashHasher }} [options]
  */
 export const write = async (data, { hasher = sha256 } = {}) => {
   const bytes = encode(data)
-  const digest = await hasher.digest(bytes)
+  const cid = await link(bytes)
 
-  const cid =
-    /** @type {UCAN.Link<Model, typeof code, number> & import('multiformats').CID}*/
-    (createLink(code, digest))
   return { bytes, cid }
 }

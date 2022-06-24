@@ -292,21 +292,24 @@ export interface HandlerExecutionError extends Failure {
 
 export type API<T> = T[keyof T]
 
-export interface ConnectionOptions<T> extends Transport.EncodeOptions {
+export interface OutpboundTranpsortOptions {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
+}
+export interface ConnectionOptions<T>
+  extends Transport.EncodeOptions,
+    OutpboundTranpsortOptions {
+  readonly id: Identity
   readonly channel: Transport.Channel<T>
 }
 
-export interface Connection<T> extends Phantom<T> {
-  readonly encoder: Transport.RequestEncoder
-  readonly decoder: Transport.ResponseDecoder
-  readonly channel: Transport.Channel<T>
-
+export interface Connection<T> extends Phantom<T>, ConnectionOptions<T> {
+  readonly id: Identity
   readonly hasher: MultihashHasher
 }
 
 export interface ConnectionView<T> extends Connection<T> {
+  id: Identity
   execute<
     C extends Capability,
     I extends Transport.Tuple<ServiceInvocation<C, T>>
@@ -315,7 +318,7 @@ export interface ConnectionView<T> extends Connection<T> {
   ): Await<InferServiceInvocations<I, T>>
 }
 
-export interface TranpsortOptions {
+export interface InboundTransportOptions {
   /**
    * Request decoder which is will be used by a server to decode HTTP Request
    * into an invocation `Batch` that will be executed using a `service`.
@@ -341,7 +344,9 @@ export interface ValidatorOptions {
   readonly resolve?: InvocationContext['resolve']
 }
 
-export interface ServerOptions extends TranpsortOptions, ValidatorOptions {
+export interface ServerOptions
+  extends InboundTransportOptions,
+    ValidatorOptions {
   /**
    * Service DID which will be used to verify that received invocation
    * audience matches it.
