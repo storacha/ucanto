@@ -118,6 +118,9 @@
     },
     {
       "path": "../../packages/authority"
+    },
+    {
+      "path": "../sigv4"
     }
   ]
 }
