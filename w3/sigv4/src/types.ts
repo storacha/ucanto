@@ -1,6 +1,7 @@
 export interface SigV4Options {
   accessKeyId: string
   secretAccessKey: string
+  securityToken?: string
   region: string
   cache?: Map<string, ArrayBuffer>
 }

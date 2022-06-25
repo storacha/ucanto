@@ -6,7 +6,7 @@ export class SigV4 {
   /**
    * @param {import('./types').SigV4Options} options
    */
-  constructor({ accessKeyId, secretAccessKey, region, cache }) {
+  constructor({ accessKeyId, secretAccessKey, region, cache, securityToken }) {
     this.accessKeyId = accessKeyId
     this.secretAccessKey = secretAccessKey
     /** @type {string} */
@@ -21,6 +21,7 @@ export class SigV4 {
       this.service,
       'aws4_request',
     ].join('/')
+    this.securityToken = securityToken
   }
 
   /**
@@ -55,6 +56,9 @@ export class SigV4 {
       this.accessKeyId + '/' + this.credentialString
     )
     params.set('X-Amz-SignedHeaders', this.signedHeaders)
+    if (this.securityToken) {
+      params.set('x-amz-security-token', this.signedHeaders)
+    }
 
     // Encode query string to be signed
     const seenKeys = new Set()
