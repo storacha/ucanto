@@ -57,7 +57,7 @@ export class SigV4 {
     )
     params.set('X-Amz-SignedHeaders', this.signedHeaders)
     if (this.securityToken) {
-      params.set('x-amz-security-token', this.signedHeaders)
+      params.set('x-amz-security-token', this.securityToken)
     }
 
     // Encode query string to be signed
