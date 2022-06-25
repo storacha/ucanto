@@ -13,6 +13,7 @@ export const sign = (link, { bucket, expires = 1000, ...options }) => {
     accessKeyId: options.accessKeyId,
     secretAccessKey: options.secretAccessKey,
     region: options.region,
+    securityToken: options.securityToken,
   })
 
   const checksum = base64pad.baseEncode(link.multihash.digest)
