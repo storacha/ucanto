@@ -364,6 +364,31 @@ importers:
       playwright-test: 7.4.1
       typescript: 4.7.3
 
+  w3/streaming-multihash:
+    specifiers:
+      '@noble/hashes': ^1.1.2
+      '@types/chai': ^4.3.0
+      '@types/chai-subset': ^1.3.3
+      '@types/mocha': ^9.1.0
+      chai: ^4.3.6
+      chai-subset: ^1.6.0
+      mocha: ^9.2.2
+      multiformats: ^9.7.0
+      playwright-test: ^7.3.0
+      typescript: ^4.7.2
+    dependencies:
+      '@noble/hashes': 1.1.2
+      multiformats: 9.7.0
+    devDependencies:
+      '@types/chai': 4.3.1
+      '@types/chai-subset': 1.3.3
+      '@types/mocha': 9.1.1
+      chai: 4.3.6
+      chai-subset: 1.6.0
+      mocha: 9.2.2
+      playwright-test: 7.4.1
+      typescript: 4.7.3
+
 packages:
 
   /@ampproject/remapping/2.2.0:
@@ -661,6 +686,10 @@ packages:
 
   /@noble/hashes/1.1.1:
     resolution: {integrity: sha512-Lkp9+NijmV7eSVZqiUvt3UCuuHeJpUVmRrvh430gyJjJiuJMqkeHf6/A9lQ/smmbWV/0spDeJscscPzyB4waZg==}
+    dev: false
+
+  /@noble/hashes/1.1.2:
+    resolution: {integrity: sha512-KYRCASVTv6aeUi1tsF8/vpyR7zpfs3FUzy2Jqm+MU+LmUKhQ0y2FpfwqkCcxSg2ua4GALJd8k2R76WxwZGbQpA==}
     dev: false
 
   /@nodelib/fs.scandir/2.1.5:
