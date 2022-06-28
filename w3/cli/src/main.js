@@ -16,6 +16,8 @@ import * as Service from 'w3-store'
 import * as CAR from '@ucanto/transport/car'
 import * as FS from 'node:fs/promises'
 import fetch from '@web-std/fetch'
+import path from 'path'
+import { pathToFileURL } from 'url'
 
 const cli = Soly.createCLI('w3-cli')
 cli
@@ -361,10 +363,10 @@ const connect = ({
 
 /**
  *
- * @param {string} path
+ * @param {string} relativeFilepath
  */
 
-const resolveURL = (path) =>
-  new URL(path, new URL(`${process.cwd()}`, import.meta.url).href + '/')
+const resolveURL = (relativeFilepath) =>
+  pathToFileURL(path.resolve(process.cwd(), relativeFilepath))
 
 script({ ...import.meta, main, dotenv: true })
