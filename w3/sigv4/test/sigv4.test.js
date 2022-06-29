@@ -1,4 +1,4 @@
-import assert from 'assert'
+import { assert } from 'chai'
 import { sha256 } from '@noble/hashes/sha256'
 import { SigV4 } from '../src/index.js'
 import fetch from '@web-std/fetch'
