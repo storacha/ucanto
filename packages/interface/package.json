@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/interface",
   "description": "interface definitions for ucanto",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "types": "./dist/src/lib.d.ts",
   "main": "./src/lib.js",
   "keywords": [
@@ -33,18 +33,6 @@
     ".": {
       "types": "./dist/src/lib.d.ts",
       "import": "./src/lib.js"
-    },
-    "./authority": {
-      "types": "./dist/src/authority.d.ts",
-      "import": "./src/authority.js"
-    },
-    "./client": {
-      "types": "./dist/src/transport.d.ts",
-      "import": "./src/transport.js"
-    },
-    "./server": {
-      "types": "./dist/src/server.d.ts",
-      "import": "./src/server.js"
     }
   },
   "type": "module",
