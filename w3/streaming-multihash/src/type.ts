@@ -11,7 +11,7 @@ export interface StreamingMultihashHasher<Code extends number = number> {
    */
   readonly code: Code
   
-  **
+  /**
    * Takes binary `input` stream and computes it's (multi) hash digest by consuming it.
    * Return value is either promise of a digest or a digest.
    */
