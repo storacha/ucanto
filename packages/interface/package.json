@@ -19,7 +19,8 @@
   },
   "homepage": "https://github.com/web3-storage/ucanto",
   "scripts": {
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --build",
+    "build": "tsc --build"
   },
   "dependencies": {
     "@ipld/dag-ucan": "^1.7.0-beta",
