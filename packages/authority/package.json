@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/authority",
   "description": "ed25519 identity",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "keywords": [
     "UCAN",
     "ed25519",
@@ -27,7 +27,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ucanto/interface": "^0.6.0",
+    "@ucanto/interface": "^0.6.1",
     "@noble/ed25519": "^1.6.0",
     "@ipld/dag-ucan": "^1.7.0-beta",
     "multiformats": "^9.6.4"
