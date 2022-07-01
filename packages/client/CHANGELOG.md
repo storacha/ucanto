@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.5.3](https://www.github.com/web3-storage/ucanto/compare/client-v0.5.2...client-v0.5.3) (2022-07-01)
+
+
+### Bug Fixes
+
+* remove invalid package exports ([d5a112b](https://www.github.com/web3-storage/ucanto/commit/d5a112ba7852c442a3af744f98c58ecbe23669ee))
+
 ### [0.5.2](https://www.github.com/web3-storage/ucanto/compare/client-v0.5.1...client-v0.5.2) (2022-07-01)
 
 
