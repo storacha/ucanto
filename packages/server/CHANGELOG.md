@@ -1,5 +1,20 @@
 # Changelog
 
+### [0.6.2](https://www.github.com/web3-storage/ucanto/compare/server-v0.6.1...server-v0.6.2) (2022-07-01)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^0.6.1 to ^0.6.2
+    * @ucanto/core bumped from ^0.5.2 to ^0.5.3
+    * @ucanto/validator bumped from ^0.5.2 to ^0.5.3
+  * devDependencies
+    * @ucanto/client bumped from ^0.5.1 to ^0.5.2
+    * @ucanto/transport bumped from ^0.6.1 to ^0.6.2
+    * @ucanto/authority bumped from ^0.4.3 to ^0.4.4
+
 ### [0.6.1](https://www.github.com/web3-storage/ucanto/compare/server-v0.6.0...server-v0.6.1) (2022-06-30)
 
 
