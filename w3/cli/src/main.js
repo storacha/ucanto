@@ -349,8 +349,8 @@ const configure = ({ projectName = 'w3-cli' } = {}) => {
 /**
  *
  * @param {string} relativeFilepath
+ * @returns {URL}
  */
-
 const resolveURL = (relativeFilepath) =>
   pathToFileURL(path.resolve(process.cwd(), relativeFilepath))
 
