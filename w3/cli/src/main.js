@@ -17,6 +17,7 @@ import * as CAR from '@ucanto/transport/car'
 import * as FS from 'node:fs/promises'
 import fetch from '@web-std/fetch'
 import path from 'path'
+import { pathToFileURL } from 'url'
 
 const cli = Soly.createCLI('w3-cli')
 cli
@@ -350,8 +351,8 @@ const configure = ({ projectName = 'w3-cli' } = {}) => {
  * @param {string} relativeFilepath
  */
 
-const resolveURL = (relativeFilepath) => path.resolve(process.cwd(), relativeFilepath)
-
+const resolveURL = (relativeFilepath) =>
+  pathToFileURL(path.resolve(process.cwd(), relativeFilepath))
 
 /**
  * @param {{id?: Client.DID, url?:URL}} [config]
