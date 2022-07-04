@@ -347,6 +347,14 @@ const configure = ({ projectName = 'w3-cli' } = {}) => {
 }
 
 /**
+ *
+ * @param {string} relativeFilepath
+ */
+
+const resolveURL = (relativeFilepath) => path.resolve(process.cwd(), relativeFilepath)
+
+
+/**
  * @param {{id?: Client.DID, url?:URL}} [config]
  */
 const connect = ({
@@ -361,12 +369,6 @@ const connect = ({
     url,
   })
 
-/**
- *
- * @param {string} relativeFilepath
- */
 
-const resolveURL = (relativeFilepath) =>
-  pathToFileURL(path.resolve(process.cwd(), relativeFilepath))
 
 script({ ...import.meta, main, dotenv: true })
