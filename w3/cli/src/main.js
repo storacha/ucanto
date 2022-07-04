@@ -17,7 +17,6 @@ import * as CAR from '@ucanto/transport/car'
 import * as FS from 'node:fs/promises'
 import fetch from '@web-std/fetch'
 import path from 'path'
-import { pathToFileURL } from 'url'
 
 const cli = Soly.createCLI('w3-cli')
 cli
