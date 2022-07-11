@@ -1,7 +1,21 @@
 import type { MultihashDigest } from 'multiformats/hashes/interface'
 
 export interface StreamingMultihashHasher<Code extends number = number> {
+  /**
+   * Name of the multihash
+   */
+  readonly name: string
+
+  /**
+   * Code of the multihash
+   */
   readonly code: Code
+  
+  /**
+   * Takes binary `input` stream and computes it's (multi) hash digest by consuming it.
+   * Return value is either promise of a digest or a digest.
+   */
+  digestStream(input:AwaitIterable<Uint8Array>): Await<MultihashDigest<Code>>
 
   create(): StreamingHasher<Code>
 }
