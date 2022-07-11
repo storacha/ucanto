@@ -15,7 +15,7 @@ importers:
   packages/authority:
     specifiers:
       '@ipld/dag-ucan': ^1.7.0-beta
-      '@noble/ed25519': ^1.6.0
+      '@noble/ed25519': ^1.6.1
       '@types/chai': ^4.3.0
       '@types/mocha': ^9.1.0
       '@ucanto/interface': ^0.6.2
@@ -28,7 +28,7 @@ importers:
       typescript: ^4.7.2
     dependencies:
       '@ipld/dag-ucan': 1.7.0-beta
-      '@noble/ed25519': 1.6.0
+      '@noble/ed25519': 1.6.1
       '@ucanto/interface': link:../interface
       multiformats: 9.6.5
     devDependencies:
@@ -540,8 +540,8 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.13
     dev: true
 
-  /@noble/ed25519/1.6.0:
-    resolution: {integrity: sha512-UKju89WV37IUALIMfKhKW3psO8AqmrE/GvH6QbPKjzolQ98zM7WmGUeY+xdIgSf5tqPFf75ZCYMgym6E9Jsw3Q==}
+  /@noble/ed25519/1.6.1:
+    resolution: {integrity: sha512-Gptpue6qPmg7p1E5LBO5GDtXw5WMc2DVtUmu4EQequOcoCvum1dT9sY6s9M8aSJWq9YopCN4jmTOAvqMdw3q7w==}
     dev: false
 
   /@nodelib/fs.scandir/2.1.5:
