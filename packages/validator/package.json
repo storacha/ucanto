@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/validator",
   "description": "UCAN RPC validators",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "keywords": [
     "UCAN",
     "ed25519",
@@ -30,7 +30,7 @@
     "@ipld/car": "^4.1.0",
     "@ipld/dag-cbor": "^7.0.1",
     "multiformats": "^9.6.4",
-    "@ucanto/core": "^0.5.3",
+    "@ucanto/core": "^0.5.4",
     "@ucanto/interface": "^0.6.2"
   },
   "devDependencies": {
@@ -44,8 +44,8 @@
     "c8": "^7.11.0",
     "nyc": "^15.1.0",
     "typescript": "^4.7.3",
-    "@ucanto/client": "^0.5.3",
-    "@ucanto/authority": "^0.4.4"
+    "@ucanto/client": "^0.5.4",
+    "@ucanto/authority": "^0.4.5"
   },
   "type": "module",
   "main": "src/lib.js",

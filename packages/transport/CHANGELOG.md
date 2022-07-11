@@ -1,5 +1,16 @@
 # Changelog
 
+### [0.6.3](https://www.github.com/web3-storage/ucanto/compare/transport-v0.6.2...transport-v0.6.3) (2022-07-11)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^0.5.3 to ^0.5.4
+  * devDependencies
+    * @ucanto/authority bumped from ^0.4.4 to ^0.4.5
+
 ### [0.6.2](https://www.github.com/web3-storage/ucanto/compare/transport-v0.6.1...transport-v0.6.2) (2022-07-01)
 
 

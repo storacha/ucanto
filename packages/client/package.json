@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/client",
   "description": "UCAN RPC Client",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "keywords": [
     "UCAN",
     "RPC",
@@ -45,9 +45,9 @@
     "c8": "^7.11.0",
     "nyc": "^15.1.0",
     "typescript": "^4.7.2",
-    "@ucanto/authority": "^0.4.4",
-    "@ucanto/transport": "^0.6.2",
-    "@ucanto/core": "^0.5.3"
+    "@ucanto/authority": "^0.4.5",
+    "@ucanto/transport": "^0.6.3",
+    "@ucanto/core": "^0.5.4"
   },
   "type": "module",
   "main": "src/lib.js",
