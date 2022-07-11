@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.4.5](https://www.github.com/web3-storage/ucanto/compare/authority-v0.4.4...authority-v0.4.5) (2022-07-11)
+
+
+### Bug Fixes
+
+* skypack builds ([#75](https://www.github.com/web3-storage/ucanto/issues/75)) ([8fd4f44](https://www.github.com/web3-storage/ucanto/commit/8fd4f44aabf9f5204d28abfbf650b013faee4306))
+
 ### [0.4.4](https://www.github.com/web3-storage/ucanto/compare/authority-v0.4.3...authority-v0.4.4) (2022-07-01)
 
 

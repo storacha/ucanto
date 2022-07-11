@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/server",
   "description": "UCAN RPC Server",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "types": "./dist/src/lib.d.ts",
   "main": "./src/lib.js",
   "keywords": [
@@ -29,8 +29,8 @@
   },
   "dependencies": {
     "@ucanto/interface": "^0.6.2",
-    "@ucanto/core": "^0.5.3",
-    "@ucanto/validator": "^0.5.4"
+    "@ucanto/core": "^0.5.4",
+    "@ucanto/validator": "^0.5.5"
   },
   "devDependencies": {
     "@types/mocha": "^9.1.0",
@@ -45,9 +45,9 @@
     "c8": "^7.11.0",
     "nyc": "^15.1.0",
     "typescript": "^4.7.2",
-    "@ucanto/client": "^0.5.3",
-    "@ucanto/transport": "^0.6.2",
-    "@ucanto/authority": "^0.4.4",
+    "@ucanto/client": "^0.5.4",
+    "@ucanto/transport": "^0.6.3",
+    "@ucanto/authority": "^0.4.5",
     "multiformats": "^9.6.4"
   },
   "exports": {

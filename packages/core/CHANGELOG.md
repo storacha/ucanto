@@ -1,5 +1,14 @@
 # Changelog
 
+### [0.5.4](https://www.github.com/web3-storage/ucanto/compare/core-v0.5.3...core-v0.5.4) (2022-07-11)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @ucanto/authority bumped from ^0.4.4 to ^0.4.5
+
 ### [0.5.3](https://www.github.com/web3-storage/ucanto/compare/core-v0.5.2...core-v0.5.3) (2022-07-01)
 
 

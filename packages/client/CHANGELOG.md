@@ -1,5 +1,16 @@
 # Changelog
 
+### [0.5.4](https://www.github.com/web3-storage/ucanto/compare/client-v0.5.3...client-v0.5.4) (2022-07-11)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @ucanto/authority bumped from ^0.4.4 to ^0.4.5
+    * @ucanto/transport bumped from ^0.6.2 to ^0.6.3
+    * @ucanto/core bumped from ^0.5.3 to ^0.5.4
+
 ### [0.5.3](https://www.github.com/web3-storage/ucanto/compare/client-v0.5.2...client-v0.5.3) (2022-07-01)
 
 
