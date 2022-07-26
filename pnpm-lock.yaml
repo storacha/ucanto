@@ -19,6 +19,7 @@ importers:
       '@sentry/webpack-plugin': ^1.16.0
       '@types/assert': ^1.5.6
       '@types/git-rev-sync': ^2.0.0
+      '@types/node': ^17.0.42
       '@ucanto/authority': workspace:^
       '@ucanto/client': workspace:^
       '@ucanto/core': workspace:^
@@ -68,6 +69,7 @@ importers:
       '@sentry/webpack-plugin': 1.18.9
       '@types/assert': 1.5.6
       '@types/git-rev-sync': 2.0.0
+      '@types/node': 17.0.45
       assert: 2.0.0
       ava: 4.3.0
       buffer: 6.0.3

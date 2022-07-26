@@ -1,4 +1,4 @@
-import { Delegation, isDelegation, isLink } from '@ucanto/core'
+import { Delegation } from '@ucanto/core'
 import * as UCAN from '@ipld/dag-ucan'
 import { UTF8 } from '@ucanto/transport'
 

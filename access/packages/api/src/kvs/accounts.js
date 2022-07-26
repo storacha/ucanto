@@ -1,4 +1,3 @@
-import { CID } from 'multiformats/cid'
 /**
  * @typedef {{account: string, proof: string}} AccountValue
  */

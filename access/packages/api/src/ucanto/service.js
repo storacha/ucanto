@@ -29,10 +29,10 @@ export function service(ctx) {
 
           // For testing
           if (process.env.NODE_ENV === 'development') {
-            console.log(
-              '🚀 ~ file: service.js ~ line 34 ~ Server.UCAN.format(delegation.data)',
-              Server.UCAN.format(delegation.data)
-            )
+            // console.log(
+            //   '🚀 ~ file: service.js ~ line 34 ~ Server.UCAN.format(delegation.data)',
+            //   Server.UCAN.format(delegation.data)
+            // )
 
             return {
               delegation: Server.UCAN.format(delegation.data),

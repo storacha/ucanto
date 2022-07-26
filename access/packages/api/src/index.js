@@ -24,7 +24,10 @@ r.add('post', '/', async (request, env) => {
     catch: (/** @type {string | Error} */ err) => {
       env.log.error(err)
     },
-    canIssue: (capability, issuer) => {
+    canIssue: (
+      /** @type {{ with: any; can: string; }} */ capability,
+      /** @type {import("@ucanto/interface").DID<unknown>} */ issuer
+    ) => {
       if (capability.with === issuer || issuer === env.keypair.did()) {
         return true
       }

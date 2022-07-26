@@ -3,7 +3,7 @@ import { SigningAuthority } from '@ucanto/authority'
 import * as UCAN from '@ipld/dag-ucan'
 import { Accounts } from '../src/kvs/accounts.js'
 import * as caps from '../src/ucanto/capabilities.js'
-import { Delegation } from '@ucanto/server'
+import { Delegation } from '@ucanto/core'
 
 test.before((t) => {
   t.context = { mf }
@@ -40,10 +40,8 @@ test('register', async (t) => {
     proofs: [proof],
   })
 
-  const result = await register.execute(con)
-
+  await register.execute(con)
   const invocation = await register.delegate()
-  t.deepEqual(result, null)
   // @ts-ignore
   const accounts = new Accounts(await mf.getKVNamespace('ACCOUNTS'))
   const email = await accounts.get('mailto:hugo@dag.house')
@@ -53,7 +51,7 @@ test('register', async (t) => {
   t.is(did?.proof, invocation.cid.toString())
 })
 
-test.only('identify', async (t) => {
+test('identify', async (t) => {
   const con = connection()
   const kp = await SigningAuthority.generate()
 
@@ -84,10 +82,8 @@ test.only('identify', async (t) => {
     proofs: [proof],
   })
 
-  const result = await register.execute(con)
-
-  const invocation = await register.delegate()
-  t.deepEqual(result, null)
+  await register.execute(con)
+  await register.delegate()
 
   const identify = caps.identityIdentify.invoke({
     audience: serviceAuthority,
@@ -96,10 +92,11 @@ test.only('identify', async (t) => {
   })
 
   const identifyResult = await identify.execute(con)
-  console.log(
-    '🚀 ~ file: identity-register.test.js ~ line 99 ~ test.only ~ identifyResult',
-    identifyResult
-  )
+
+  // @ts-ignore
+  const accounts = new Accounts(await mf.getKVNamespace('ACCOUNTS'))
+  const did = await accounts.get(kp.did())
+  t.is(did?.account, identifyResult)
 })
 
 // test('should route correctly to identity/register', async (t) => {
