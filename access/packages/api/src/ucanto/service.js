@@ -1,3 +1,4 @@
+import { UCAN } from '@ucanto/core'
 import * as Server from '@ucanto/server'
 import { Accounts } from '../kvs/accounts.js'
 import { sendEmail } from '../utils/email.js'
@@ -8,7 +9,7 @@ import {
 } from './capabilities.js'
 
 /**
- * @param {import('../utils/router.js').RouteContext} ctx
+ * @param {import('../bindings').RouteContext} ctx
  */
 export function service(ctx) {
   return {
@@ -35,13 +36,14 @@ export function service(ctx) {
             // )
 
             return {
-              delegation: Server.UCAN.format(delegation.data),
+              delegation: UCAN.format(delegation.data),
             }
           }
 
           await sendEmail({
             to: capability.caveats.as.replace('mailto:', ''),
-            ucan: Server.UCAN.format(delegation.data),
+            ucan: UCAN.format(delegation.data),
+            token: ctx.config.POSTMARK_TOKEN,
           })
         }
       ),
@@ -54,8 +56,6 @@ export function service(ctx) {
             capability.with,
             invocation.cid
           )
-
-          return null
         }
       ),
       identify: Server.provide(identityIdentify, async ({ capability }) => {

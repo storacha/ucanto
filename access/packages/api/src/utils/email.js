@@ -1,5 +1,5 @@
 /**
- * @param {{ to: string; ucan: string; }} opts
+ * @param {{ to: string; ucan: string; token: string }} opts
  */
 export async function sendEmail(opts) {
   const rsp = await fetch('https://api.postmarkapp.com/email', {
@@ -7,7 +7,7 @@ export async function sendEmail(opts) {
     headers: {
       Accept: 'text/json',
       'Content-Type': 'text/json',
-      'X-Postmark-Server-Token': POSTMARK_TOKEN,
+      'X-Postmark-Server-Token': opts.token,
     },
     body: JSON.stringify({
       From: 'noreply@dag.house',

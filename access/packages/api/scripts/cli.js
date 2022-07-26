@@ -72,6 +72,7 @@ prog
           authToken: process.env.SENTRY_TOKEN,
           org: 'protocol-labs-it',
           project: 'w3account-api',
+          // @ts-ignore
           dist: git.short(__dirname),
         })
 

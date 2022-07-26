@@ -92,7 +92,9 @@ test('identify', async (t) => {
   })
 
   const identifyResult = await identify.execute(con)
-
+  if (identifyResult?.error || !identifyResult) {
+    return t.fail()
+  }
   // @ts-ignore
   const accounts = new Accounts(await mf.getKVNamespace('ACCOUNTS'))
   const did = await accounts.get(kp.did())

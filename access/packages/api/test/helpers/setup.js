@@ -62,10 +62,11 @@ export function channel() {
  * @typedef {ReturnType<import('../../src/ucanto/service')['service']> } Service
  *
  *
- * @returns {Client.ConnectionView<Service>}
+ * @returns {import('@ucanto/interface').ConnectionView<Service>}
  */
 export function connection() {
   return Client.connect({
+    id: serviceAuthority,
     encoder: CAR,
     decoder: CBOR,
     channel: channel(),
