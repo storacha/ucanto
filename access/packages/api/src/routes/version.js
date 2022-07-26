@@ -1,14 +1,14 @@
-import { JSONResponse } from '../utils/responses.js'
+import { JSONResponse } from '@web3-storage/worker-utils/response'
 
 /**
- * @param {FetchEvent} event
- * @param {import('../utils/router.js').RouteContext} ctx
+ * @param {import('@web3-storage/worker-utils/router').ParsedRequest} event
+ * @param {import('../bindings.js').RouteContext} env
  */
-export function version(event, ctx) {
+export function version(event, env) {
   return new JSONResponse({
-    version: ctx.config.VERSION,
-    commit: ctx.config.COMMITHASH,
-    branch: ctx.config.BRANCH,
-    did: ctx.keypair.did(),
+    version: env.config.VERSION,
+    commit: env.config.COMMITHASH,
+    branch: env.config.BRANCH,
+    did: env.keypair.did(),
   })
 }

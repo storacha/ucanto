@@ -1,4 +1,4 @@
-import type { Logging } from './utils/logging'
+import type { Logging } from '@web3-storage/worker-utils/logging'
 import type { SigningAuthority } from '@ucanto/interface'
 import type { config } from './config'
 

@@ -1,62 +1,79 @@
-import { Router } from './utils/router.js'
-import { getContext } from './utils/context.js'
-import { HTTPError } from './utils/errors.js'
-import { cors, postCors } from './utils/cors.js'
-import { version } from './routes/version.js'
-import { notFound } from './utils/responses.js'
 import * as Server from '@ucanto/server'
-import { BaseRequestTransport } from './client.js'
-import { service } from './ucanto/service.js'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
+import { version } from './routes/version.js'
+import { serverCodec } from './ucanto/server-codec.js'
+import { service } from './ucanto/service.js'
+import { getContext } from './utils/context.js'
 
-const r = new Router(getContext, {
-  onError(req, err, ctx) {
-    return HTTPError.respond(err, ctx)
-  },
+import { corsHeaders, preflight } from '@web3-storage/worker-utils/cors'
+import { errorHandler } from '@web3-storage/worker-utils/error'
+import { notFound } from '@web3-storage/worker-utils/response'
+import { Router } from '@web3-storage/worker-utils/router'
+
+/** @type Router<import('./bindings.js').RouteContext> */
+const r = new Router({ onNotFound: notFound })
+r.add('options', '*', preflight)
+r.add('get', '/version', version)
+r.add('post', '/', async (request, env) => {
+  const server = Server.create({
+    id: env.keypair,
+    encoder: CBOR,
+    decoder: CAR,
+    service: service(env),
+    catch: (/** @type {string | Error} */ err) => {
+      env.log.error(err)
+    },
+    canIssue: (capability, issuer) => {
+      if (capability.with === issuer || issuer === env.keypair.did()) {
+        return true
+      }
+
+      if (capability.can === 'identity/validate') {
+        return true
+      }
+
+      return false
+    },
+  })
+
+  const rsp = await server.request({
+    body: new Uint8Array(await request.arrayBuffer()),
+    headers: Object.fromEntries(request.headers.entries()),
+  })
+  return new Response(rsp.body, { headers: rsp.headers })
 })
 
-// CORS
-r.add('options', '*', cors)
+r.add('post', '/raw', async (request, env) => {
+  const server = Server.create({
+    id: env.keypair,
+    encoder: serverCodec,
+    decoder: serverCodec,
+    service: service(env),
+    catch: (/** @type {string | Error} */ err) => {
+      env.log.error(err)
+    },
+  })
 
-// Version
-r.add('get', '/version', version, [postCors])
+  const rsp = await server.request({
+    body: new Uint8Array(await request.arrayBuffer()),
+    headers: Object.fromEntries(request.headers.entries()),
+  })
+  return new Response(rsp.body, { headers: rsp.headers })
+})
 
-r.add(
-  'post',
-  '/',
-  async (event, ctx) => {
-    // const t = new BaseRequestTransport()
-    const server = Server.create({
-      id: ctx.keypair,
-      encoder: CBOR,
-      decoder: CAR,
-      service: service(ctx),
-      catch: (err) => {
-        ctx.log.error(err)
-      },
-      canIssue: (capability, issuer) => {
-        if (capability.with === issuer || issuer === ctx.keypair.did()) {
-          return true
-        }
-
-        if (capability.can === 'identity/validate') {
-          return true
-        }
-
-        return false
-      },
-      ...ctx,
-    })
-
-    const rsp = await server.request({
-      body: new Uint8Array(await event.request.arrayBuffer()),
-      headers: Object.fromEntries(event.request.headers.entries()),
-    })
-    return new Response(rsp.body, { headers: rsp.headers })
-  },
-  [postCors]
-)
-
-r.add('all', '*', notFound)
-addEventListener('fetch', r.listen.bind(r))
+addEventListener('fetch', (event) => {
+  const env = getContext(event, {})
+  env.log.time('request')
+  event.respondWith(
+    r
+      .handle(event, env)
+      .then((rsp) => {
+        env.log.timeEnd('request')
+        return env.log.end(corsHeaders(event.request, rsp))
+      })
+      .catch((error) => {
+        return errorHandler(error, env.log)
+      })
+  )
+})

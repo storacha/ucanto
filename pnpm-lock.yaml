@@ -13,7 +13,7 @@ importers:
 
   access/packages/api:
     specifiers:
-      '@cloudflare/workers-types': ^3.7.1
+      '@cloudflare/workers-types': ^3.14.0
       '@ipld/dag-ucan': 1.7.0-beta
       '@sentry/cli': ^2.1.0
       '@sentry/webpack-plugin': ^1.16.0
@@ -26,12 +26,13 @@ importers:
       '@ucanto/server': workspace:^
       '@ucanto/transport': workspace:^
       '@ucanto/validator': workspace:^
+      '@web3-storage/worker-utils': 0.2.0-dev
       assert: ^2.0.0
       ava: ^4.3.0
       buffer: ^6.0.3
       delay: ^5.0.0
       dotenv: ^16.0.0
-      esbuild: ^0.14.42
+      esbuild: ^0.14.48
       execa: ^6.1.0
       git-rev-sync: ^3.0.1
       hd-scripts: ^2.0.1
@@ -45,7 +46,7 @@ importers:
       toucan-js: ^2.6.0
       typescript: 4.7.3
       ucans: ^0.9.1
-      wrangler: ^2.0.12
+      wrangler: ^2.0.16
     dependencies:
       '@ipld/dag-ucan': 1.7.0-beta
       '@ucanto/authority': link:../../../packages/authority
@@ -55,13 +56,14 @@ importers:
       '@ucanto/server': link:../../../packages/server
       '@ucanto/transport': link:../../../packages/transport
       '@ucanto/validator': link:../../../packages/validator
+      '@web3-storage/worker-utils': 0.2.0-dev
       multiformats: 9.7.0
       nanoid: 4.0.0
       regexparam: 2.0.0
       toucan-js: 2.6.1
       ucans: 0.9.1
     devDependencies:
-      '@cloudflare/workers-types': 3.13.0
+      '@cloudflare/workers-types': 3.14.0
       '@sentry/cli': 2.2.0
       '@sentry/webpack-plugin': 1.18.9
       '@types/assert': 1.5.6
@@ -71,7 +73,7 @@ importers:
       buffer: 6.0.3
       delay: 5.0.0
       dotenv: 16.0.1
-      esbuild: 0.14.47
+      esbuild: 0.14.48
       execa: 6.1.0
       git-rev-sync: 3.0.2
       hd-scripts: 2.0.1
@@ -80,7 +82,7 @@ importers:
       readable-stream: 3.6.0
       sade: 1.8.1
       typescript: 4.7.3
-      wrangler: 2.0.15
+      wrangler: 2.0.16
 
   access/packages/website:
     specifiers:
@@ -93,7 +95,7 @@ importers:
       react: 18.1.0
       react-dom: 18.1.0
       typescript: 4.7.3
-      wrangler: ^2.0.12
+      wrangler: ^2.0.16
     dependencies:
       next: 12.1.6_ef5jwxihqo6n7gxfmzogljlgcm
       react: 18.1.0
@@ -105,7 +107,7 @@ importers:
       eslint-config-next: 12.1.6_qrxyazsaok3qlceqflgbmeftpq
       hd-scripts: 2.0.1
       typescript: 4.7.3
-      wrangler: 2.0.15
+      wrangler: 2.0.16
 
   packages/authority:
     specifiers:
@@ -156,15 +158,15 @@ importers:
       playwright-test: ^7.3.0
       typescript: ^4.7.2
     dependencies:
-      '@ucanto/interface': link:../interface
+      '@ucanto/interface': 0.6.2
       multiformats: 9.7.0
     devDependencies:
       '@types/chai': 4.3.1
       '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
-      '@ucanto/authority': link:../authority
-      '@ucanto/core': link:../core
-      '@ucanto/transport': link:../transport
+      '@ucanto/authority': 0.4.4
+      '@ucanto/core': 0.5.3
+      '@ucanto/transport': 0.6.2
       '@web-std/fetch': 4.1.0
       '@web-std/file': 3.0.2
       c8: 7.11.3
@@ -197,13 +199,13 @@ importers:
       '@ipld/car': 4.1.3
       '@ipld/dag-cbor': 7.0.2
       '@ipld/dag-ucan': 1.7.0-beta
-      '@ucanto/interface': link:../interface
+      '@ucanto/interface': 0.6.2
       multiformats: 9.7.0
     devDependencies:
       '@types/chai': 4.3.1
       '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
-      '@ucanto/authority': link:../authority
+      '@ucanto/authority': 0.4.4
       c8: 7.11.3
       chai: 4.3.6
       chai-subset: 1.6.0
@@ -245,16 +247,16 @@ importers:
       playwright-test: ^7.3.0
       typescript: ^4.7.2
     dependencies:
-      '@ucanto/core': link:../core
-      '@ucanto/interface': link:../interface
-      '@ucanto/validator': link:../validator
+      '@ucanto/core': 0.5.3
+      '@ucanto/interface': 0.6.2
+      '@ucanto/validator': 0.5.4
     devDependencies:
       '@types/chai': 4.3.1
       '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
-      '@ucanto/authority': link:../authority
-      '@ucanto/client': link:../client
-      '@ucanto/transport': link:../transport
+      '@ucanto/authority': 0.4.4
+      '@ucanto/client': 0.5.3
+      '@ucanto/transport': 0.6.2
       '@web-std/fetch': 4.1.0
       '@web-std/file': 3.0.2
       c8: 7.11.3
@@ -288,14 +290,14 @@ importers:
     dependencies:
       '@ipld/car': 4.1.3
       '@ipld/dag-cbor': 7.0.2
-      '@ucanto/core': link:../core
-      '@ucanto/interface': link:../interface
+      '@ucanto/core': 0.5.3
+      '@ucanto/interface': 0.6.2
       multiformats: 9.7.0
     devDependencies:
       '@types/chai': 4.3.1
       '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
-      '@ucanto/authority': link:../authority
+      '@ucanto/authority': 0.4.4
       '@web-std/fetch': 4.1.0
       c8: 7.11.3
       chai: 4.3.6
@@ -327,15 +329,15 @@ importers:
     dependencies:
       '@ipld/car': 4.1.3
       '@ipld/dag-cbor': 7.0.2
-      '@ucanto/core': link:../core
-      '@ucanto/interface': link:../interface
+      '@ucanto/core': 0.5.3
+      '@ucanto/interface': 0.6.2
       multiformats: 9.7.0
     devDependencies:
       '@types/chai': 4.3.1
       '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
-      '@ucanto/authority': link:../authority
-      '@ucanto/client': link:../client
+      '@ucanto/authority': 0.4.4
+      '@ucanto/client': 0.5.3
       c8: 7.11.3
       chai: 4.3.6
       chai-subset: 1.6.0
@@ -675,7 +677,7 @@ packages:
     peerDependencies:
       esbuild: '*'
     dependencies:
-      esbuild: 0.14.34
+      esbuild: 0.14.47
     dev: true
 
   /@esbuild-plugins/node-modules-polyfill/0.1.4_esbuild@0.14.34:
@@ -686,7 +688,7 @@ packages:
     peerDependencies:
       esbuild: '*'
     dependencies:
-      esbuild: 0.14.34
+      esbuild: 0.14.47
       escape-string-regexp: 4.0.0
       rollup-plugin-node-polyfills: 0.2.1
     dev: true
@@ -749,7 +751,6 @@ packages:
       cborg: 1.9.4
       multiformats: 9.7.0
       varint: 6.0.0
-    dev: false
 
   /@ipld/dag-cbor/7.0.2:
     resolution:
@@ -759,7 +760,6 @@ packages:
     dependencies:
       cborg: 1.9.4
       multiformats: 9.7.0
-    dev: false
 
   /@ipld/dag-json/8.0.10:
     resolution:
@@ -769,7 +769,6 @@ packages:
     dependencies:
       cborg: 1.9.4
       multiformats: 9.7.0
-    dev: false
 
   /@ipld/dag-ucan/1.7.0-beta:
     resolution:
@@ -780,7 +779,6 @@ packages:
       '@ipld/dag-cbor': 7.0.2
       '@ipld/dag-json': 8.0.10
       multiformats: 9.7.0
-    dev: false
 
   /@istanbuljs/load-nyc-config/1.1.0:
     resolution:
@@ -1476,7 +1474,6 @@ packages:
     dependencies:
       '@web-std/stream': 1.0.0
       web-encoding: 1.1.5
-    dev: true
 
   /@web-std/fetch/4.1.0:
     resolution:
@@ -1491,7 +1488,6 @@ packages:
       '@web3-storage/multipart-parser': 1.0.0
       data-uri-to-buffer: 3.0.1
       mrmime: 1.0.1
-    dev: true
 
   /@web-std/file/3.0.2:
     resolution:
@@ -1509,7 +1505,6 @@ packages:
       }
     dependencies:
       web-encoding: 1.1.5
-    dev: true
 
   /@web-std/stream/1.0.0:
     resolution:
@@ -1518,7 +1513,6 @@ packages:
       }
     dependencies:
       web-streams-polyfill: 3.2.1
-    dev: true
 
   /@web-std/stream/1.0.1:
     resolution:
@@ -1527,7 +1521,6 @@ packages:
       }
     dependencies:
       web-streams-polyfill: 3.2.1
-    dev: true
 
   /@web3-storage/multipart-parser/1.0.0:
     resolution:
@@ -1542,7 +1535,6 @@ packages:
         integrity: sha512-U/4aVJ2mxI0aDNI8Uq0wEhMgY+u4CNtEb0om3+y3+niDAsoTCOB33UF0sxpzqzdqXLqmvc+vZyAt4O8pPdfkwA==,
       }
     requiresBuild: true
-    dev: true
     optional: true
 
   /acorn-jsx/5.3.2_acorn@8.7.1:
@@ -2174,7 +2166,6 @@ packages:
     dependencies:
       function-bind: 1.1.1
       get-intrinsic: 1.1.2
-    dev: true
 
   /callsites/3.1.0:
     resolution:
@@ -2230,7 +2221,6 @@ packages:
         integrity: sha512-ltobKo17xKYJolhg8UxQhvzcqXhjtUnovwe9Xx59Izo32gLwozGoJs/efp+8dZ5+zu9pNJYnHtmp6iJnDUapww==,
       }
     hasBin: true
-    dev: false
 
   /chai-subset/1.6.0:
     resolution:
@@ -2928,7 +2918,6 @@ packages:
     dependencies:
       has-property-descriptors: 1.0.0
       object-keys: 1.1.1
-    dev: true
 
   /defined/1.0.0:
     resolution:
@@ -3126,7 +3115,6 @@ packages:
       string.prototype.trimend: 1.0.5
       string.prototype.trimstart: 1.0.5
       unbox-primitive: 1.0.2
-    dev: true
 
   /es-get-iterator/1.1.2:
     resolution:
@@ -3163,7 +3151,6 @@ packages:
       is-callable: 1.2.4
       is-date-object: 1.0.5
       is-symbol: 1.0.4
-    dev: true
 
   /es6-error/4.1.1:
     resolution:
@@ -3906,7 +3893,7 @@ packages:
       }
     engines: { node: '>=12' }
     cpu: [x64]
-    os: [openbsd]
+    os: [netbsd]
     requiresBuild: true
     dev: true
     optional: true
@@ -3954,7 +3941,7 @@ packages:
       }
     engines: { node: '>=12' }
     cpu: [x64]
-    os: [sunos]
+    os: [openbsd]
     requiresBuild: true
     dev: true
     optional: true
@@ -4139,6 +4126,18 @@ packages:
     dev: true
     optional: true
 
+  /esbuild-windows-arm64/0.14.48:
+    resolution:
+      {
+        integrity: sha512-HHaOMCsCXp0rz5BT2crTka6MPWVno121NKApsGs/OIW5QC0ggC69YMGs1aJct9/9FSUF4A1xNE/cLvgB5svR4g==,
+      }
+    engines: { node: '>=12' }
+    cpu: [arm64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /esbuild/0.14.27:
     resolution:
       {
@@ -4261,6 +4260,37 @@ packages:
       esbuild-windows-32: 0.14.47
       esbuild-windows-64: 0.14.47
       esbuild-windows-arm64: 0.14.47
+    dev: true
+
+  /esbuild/0.14.48:
+    resolution:
+      {
+        integrity: sha512-w6N1Yn5MtqK2U1/WZTX9ZqUVb8IOLZkZ5AdHkT6x3cHDMVsYWC7WPdiLmx19w3i4Rwzy5LqsEMtVihG3e4rFzA==,
+      }
+    engines: { node: '>=12' }
+    hasBin: true
+    requiresBuild: true
+    optionalDependencies:
+      esbuild-android-64: 0.14.48
+      esbuild-android-arm64: 0.14.48
+      esbuild-darwin-64: 0.14.48
+      esbuild-darwin-arm64: 0.14.48
+      esbuild-freebsd-64: 0.14.48
+      esbuild-freebsd-arm64: 0.14.48
+      esbuild-linux-32: 0.14.48
+      esbuild-linux-64: 0.14.48
+      esbuild-linux-arm: 0.14.48
+      esbuild-linux-arm64: 0.14.48
+      esbuild-linux-mips64le: 0.14.48
+      esbuild-linux-ppc64le: 0.14.48
+      esbuild-linux-riscv64: 0.14.48
+      esbuild-linux-s390x: 0.14.48
+      esbuild-netbsd-64: 0.14.48
+      esbuild-openbsd-64: 0.14.48
+      esbuild-sunos-64: 0.14.48
+      esbuild-windows-32: 0.14.48
+      esbuild-windows-64: 0.14.48
+      esbuild-windows-arm64: 0.14.48
     dev: true
 
   /escalade/3.1.1:
@@ -5153,7 +5183,6 @@ packages:
       }
     dependencies:
       is-callable: 1.2.4
-    dev: true
 
   /foreground-child/2.0.0:
     resolution:
@@ -5209,7 +5238,6 @@ packages:
       define-properties: 1.1.4
       es-abstract: 1.20.1
       functions-have-names: 1.2.3
-    dev: true
 
   /functional-red-black-tree/1.0.1:
     resolution:
@@ -5290,7 +5318,6 @@ packages:
       function-bind: 1.1.1
       has: 1.0.3
       has-symbols: 1.0.3
-    dev: true
 
   /get-package-type/0.1.0:
     resolution:
@@ -5327,7 +5354,6 @@ packages:
     dependencies:
       call-bind: 1.0.2
       get-intrinsic: 1.1.2
-    dev: true
 
   /git-rev-sync/3.0.2:
     resolution:
@@ -5525,7 +5551,6 @@ packages:
       }
     dependencies:
       get-intrinsic: 1.1.2
-    dev: true
 
   /has-symbols/1.0.3:
     resolution:
@@ -5543,7 +5568,6 @@ packages:
     engines: { node: '>= 0.4' }
     dependencies:
       has-symbols: 1.0.3
-    dev: true
 
   /has-unicode/2.0.1:
     resolution:
@@ -5560,7 +5584,6 @@ packages:
     engines: { node: '>= 0.4.0' }
     dependencies:
       function-bind: 1.1.1
-    dev: true
 
   /hasha/5.2.2:
     resolution:
@@ -5766,7 +5789,6 @@ packages:
       get-intrinsic: 1.1.2
       has: 1.0.3
       side-channel: 1.0.4
-    dev: true
 
   /interpret/1.4.0:
     resolution:
@@ -5800,7 +5822,6 @@ packages:
     dependencies:
       call-bind: 1.0.2
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-arrayish/0.2.1:
     resolution:
@@ -5816,7 +5837,6 @@ packages:
       }
     dependencies:
       has-bigints: 1.0.2
-    dev: true
 
   /is-binary-path/2.1.0:
     resolution:
@@ -5837,7 +5857,6 @@ packages:
     dependencies:
       call-bind: 1.0.2
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-builtin-module/3.1.0:
     resolution:
@@ -5874,7 +5893,6 @@ packages:
     engines: { node: '>= 0.4' }
     dependencies:
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-error/2.2.2:
     resolution:
@@ -5925,7 +5943,6 @@ packages:
     engines: { node: '>= 0.4' }
     dependencies:
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-glob/4.0.3:
     resolution:
@@ -5979,7 +5996,6 @@ packages:
     engines: { node: '>= 0.4' }
     dependencies:
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-number/7.0.0:
     resolution:
@@ -6037,7 +6053,6 @@ packages:
     dependencies:
       call-bind: 1.0.2
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-set/2.0.2:
     resolution:
@@ -6053,7 +6068,6 @@ packages:
       }
     dependencies:
       call-bind: 1.0.2
-    dev: true
 
   /is-stream/2.0.1:
     resolution:
@@ -6079,7 +6093,6 @@ packages:
     engines: { node: '>= 0.4' }
     dependencies:
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-symbol/1.0.4:
     resolution:
@@ -6089,7 +6102,6 @@ packages:
     engines: { node: '>= 0.4' }
     dependencies:
       has-symbols: 1.0.3
-    dev: true
 
   /is-typed-array/1.1.9:
     resolution:
@@ -6103,7 +6115,6 @@ packages:
       es-abstract: 1.20.1
       for-each: 0.3.3
       has-tostringtag: 1.0.0
-    dev: true
 
   /is-typedarray/1.0.0:
     resolution:
@@ -6142,7 +6153,6 @@ packages:
       }
     dependencies:
       call-bind: 1.0.2
-    dev: true
 
   /is-weakset/2.0.2:
     resolution:
@@ -7207,7 +7217,6 @@ packages:
       define-properties: 1.1.4
       has-symbols: 1.0.3
       object-keys: 1.1.1
-    dev: true
 
   /object.entries/1.1.5:
     resolution:
@@ -8146,7 +8155,6 @@ packages:
       call-bind: 1.0.2
       define-properties: 1.1.4
       functions-have-names: 1.2.3
-    dev: true
 
   /regexparam/2.0.0:
     resolution:
@@ -8516,7 +8524,6 @@ packages:
       call-bind: 1.0.2
       get-intrinsic: 1.1.2
       object-inspect: 1.12.2
-    dev: true
 
   /signal-exit/3.0.7:
     resolution:
@@ -8884,7 +8891,6 @@ packages:
       call-bind: 1.0.2
       define-properties: 1.1.4
       es-abstract: 1.20.1
-    dev: true
 
   /string.prototype.trimstart/1.0.5:
     resolution:
@@ -8895,7 +8901,6 @@ packages:
       call-bind: 1.0.2
       define-properties: 1.1.4
       es-abstract: 1.20.1
-    dev: true
 
   /string_decoder/1.1.1:
     resolution:
@@ -9413,7 +9418,6 @@ packages:
       has-bigints: 1.0.2
       has-symbols: 1.0.3
       which-boxed-primitive: 1.0.2
-    dev: true
 
   /undici/5.3.0:
     resolution:
@@ -9482,7 +9486,6 @@ packages:
       is-typed-array: 1.1.9
       safe-buffer: 5.2.1
       which-typed-array: 1.1.8
-    dev: true
 
   /uuid/8.3.2:
     resolution:
@@ -9558,7 +9561,6 @@ packages:
       util: 0.12.4
     optionalDependencies:
       '@zxing/text-encoding': 0.9.0
-    dev: true
 
   /web-streams-polyfill/3.2.1:
     resolution:
@@ -9604,7 +9606,6 @@ packages:
       is-number-object: 1.0.7
       is-string: 1.0.7
       is-symbol: 1.0.4
-    dev: true
 
   /which-collection/1.0.1:
     resolution:
@@ -9635,7 +9636,6 @@ packages:
       for-each: 0.3.3
       has-tostringtag: 1.0.0
       is-typed-array: 1.1.9
-    dev: true
 
   /which/2.0.2:
     resolution:
@@ -9681,10 +9681,10 @@ packages:
     hasBin: true
     dependencies:
       '@cloudflare/kv-asset-handler': 0.2.0
-      '@esbuild-plugins/node-globals-polyfill': 0.1.1_esbuild@0.14.34
-      '@esbuild-plugins/node-modules-polyfill': 0.1.4_esbuild@0.14.34
+      '@esbuild-plugins/node-globals-polyfill': 0.1.1_esbuild@0.14.47
+      '@esbuild-plugins/node-modules-polyfill': 0.1.4_esbuild@0.14.47
       blake3-wasm: 2.1.5
-      esbuild: 0.14.34
+      esbuild: 0.14.47
       miniflare: 2.5.1
       nanoid: 3.3.4
       path-to-regexp: 6.2.1
