@@ -200,7 +200,7 @@ test('checks for single capability invocation', async () => {
   assert.containSubset(result, {
     error: true,
     name: 'InvocationCapabilityError',
-    message: 'Invocation is required to have one single capability.',
+    message: 'Invocation is required to have a single capability.',
     capabilities: [
       { can: 'identity/register', with: 'mailto:bob@web.mail' },
       { can: 'identity/register', with: 'mailto:bob@web.mail' },
