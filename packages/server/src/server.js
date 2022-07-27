@@ -228,7 +228,7 @@ class InvocationCapabilityError extends Error {
     return 'InvocationCapabilityError'
   }
   get message() {
-    return `Invocation is required to have one single capability.`
+    return `Invocation is required to have a single capability.`
   }
   toJSON() {
     return {
