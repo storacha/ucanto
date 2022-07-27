@@ -22,7 +22,7 @@ import * as API from '@ucanto/interface'
  * @returns {API.Channel<T>}
  */
 export const open = ({ url, method = 'POST', fetch = globalThis.fetch }) => {
-  if (typeof fetch === 'undefined') {
+  if (!fetch) {
     throw new TypeError(
       `ucanto HTTP transport got undefined \`fetch\`. Try passing in a \`fetch\` implementation explicitly.`
     )

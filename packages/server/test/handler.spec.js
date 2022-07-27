@@ -157,3 +157,53 @@ test('checks service id', async () => {
     assert.deepEqual(result, null)
   }
 })
+
+test('checks for single capability invocation', async () => {
+  const server = Server.create({
+    id: w3,
+    service: { identity: Access },
+    decoder: CAR,
+    encoder: CBOR,
+  })
+
+  const client = Client.connect({
+    id: w3.authority,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: server,
+  })
+
+  const proof = await Client.delegate({
+    issuer: w3,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'identity/register',
+        with: 'mailto:bob@web.mail',
+      },
+    ],
+  })
+
+  const invocation = Client.invoke({
+    issuer: bob,
+    audience: w3.authority,
+    capability: proof.capabilities[0],
+    proofs: [proof],
+  })
+  invocation.capabilities.push({
+    can: 'identity/register',
+    with: 'mailto:bob@web.mail',
+  })
+
+  const result = await invocation.execute(client)
+
+  assert.containSubset(result, {
+    error: true,
+    name: 'InvocationCapabilityError',
+    message: 'Invocation is required to have one single capability.',
+    capabilities: [
+      { can: 'identity/register', with: 'mailto:bob@web.mail' },
+      { can: 'identity/register', with: 'mailto:bob@web.mail' },
+    ],
+  })
+})

@@ -553,3 +553,62 @@ test('delegation with several proofs', async () => {
 
   assert.deepEqual(Delegation.import(invocation.export()), invocation)
 })
+
+test('delegation iterate over proofs', async () => {
+  const proof1 = await Delegation.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
+  })
+
+  const proof2 = await Delegation.delegate({
+    issuer: service,
+    audience: mallory,
+    capabilities: [
+      {
+        can: 'identity/prove',
+        with: 'mailto:mallory@mail.com',
+      },
+    ],
+  })
+
+  const delegation = await Delegation.delegate({
+    issuer: bob,
+    audience: mallory,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
+    proofs: [proof1],
+  })
+
+  const invocation = await Delegation.delegate({
+    issuer: mallory,
+    audience: service,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+      {
+        can: 'identity/prove',
+        with: 'mailto:mallory@mail.com',
+      },
+    ],
+    proofs: [delegation, proof2],
+  })
+
+  const proofs = []
+  for (const proof of invocation.iterate()) {
+    proofs.push(proof.cid)
+  }
+
+  assert.deepEqual(proofs, [proof1.cid, delegation.cid, proof2.cid])
+})
