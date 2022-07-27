@@ -127,7 +127,7 @@ export class Delegation {
    *
    * @returns {IterableIterator<API.Delegation>}
    */
-  *iterate() {
+  iterate() {
     return it(this)
   }
 }
