@@ -67,3 +67,18 @@ test('faild request', async () => {
     assert.equal(error.url, 'https://ucan.xyz/')
   }
 })
+
+test('fail request without fetch impl', async () => {
+  try {
+    const channel = HTTP.open({
+      url: new URL('https://ucan.xyz/'),
+      // @ts-ignore
+      fetch: null,
+    })
+    assert.fail('expected to throw')
+  } catch (reason) {
+    const error = /** @type {any} */ (reason)
+    assert.match(String(error), /TypeError/)
+    assert.equal(error.name, 'TypeError')
+  }
+})

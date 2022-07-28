@@ -20,9 +20,9 @@
     "typecheck": "pnpm run -r typecheck"
   },
   "devDependencies": {
-    "typescript": "4.7.3",
     "mocha": "^9.2.2",
-    "prettier": "2.7.1"
+    "prettier": "2.7.1",
+    "typescript": "4.7.4"
   },
   "prettier": {
     "trailingComma": "es5",
