@@ -14,10 +14,11 @@
   "scripts": {
     "format": "prettier --write '**/*.{js,ts,yml,json}' --ignore-path .gitignore",
     "format:check": "prettier --check '**/*.{js,ts,yml,json}' --ignore-path .gitignore",
-    "test": "pnpm run -r test",
-    "test:node": "pnpm run -r test:node",
-    "test:web": "pnpm run -r test:web",
-    "typecheck": "pnpm run -r typecheck"
+    "test": "pnpm -r run --if-present test",
+    "build": "pnpm -r run --if-present build",
+    "typecheck": "pnpm -r run --if-present typecheck",
+    "test:node": "pnpm -r run --if-present test:node",
+    "test:web": "pnpm -r run --if-present test:web"
   },
   "devDependencies": {
     "mocha": "^9.2.2",
