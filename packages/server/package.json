@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/server",
   "description": "UCAN RPC Server",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "types": "./dist/src/lib.d.ts",
   "main": "./src/lib.js",
   "keywords": [
