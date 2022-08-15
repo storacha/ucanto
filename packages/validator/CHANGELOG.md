@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://www.github.com/web3-storage/ucanto/compare/validator-v0.5.5...validator-v0.6.0) (2022-07-28)
+
+
+### Features
+
+* delgation iterate, more errors and types  ([0606168](https://www.github.com/web3-storage/ucanto/commit/0606168313d17d66bcc1ad6091440765e1700a4f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^0.5.4 to ^0.6.0
+    * @ucanto/interface bumped from ^0.6.2 to ^0.7.0
+  * devDependencies
+    * @ucanto/authority bumped from ^0.4.5 to ^0.5.0
+    * @ucanto/client bumped from ^0.5.4 to ^0.6.0
+
 ### [0.5.5](https://www.github.com/web3-storage/ucanto/compare/validator-v0.5.4...validator-v0.5.5) (2022-07-11)
 
 

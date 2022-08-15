@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://www.github.com/web3-storage/ucanto/compare/authority-v0.4.5...authority-v0.5.0) (2022-07-28)
+
+
+### Features
+
+* delgation iterate, more errors and types  ([0606168](https://www.github.com/web3-storage/ucanto/commit/0606168313d17d66bcc1ad6091440765e1700a4f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^0.6.2 to ^0.7.0
+
 ### [0.4.5](https://www.github.com/web3-storage/ucanto/compare/authority-v0.4.4...authority-v0.4.5) (2022-07-11)
 
 
