@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://www.github.com/web3-storage/ucanto/compare/core-v0.5.4...core-v0.6.0) (2022-07-28)
+
+
+### Features
+
+* delgation iterate, more errors and types  ([0606168](https://www.github.com/web3-storage/ucanto/commit/0606168313d17d66bcc1ad6091440765e1700a4f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^0.6.2 to ^0.7.0
+  * devDependencies
+    * @ucanto/authority bumped from ^0.4.5 to ^0.5.0
+
 ### [0.5.4](https://www.github.com/web3-storage/ucanto/compare/core-v0.5.3...core-v0.5.4) (2022-07-11)
 
 
