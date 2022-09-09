@@ -1,4 +1,4 @@
-import * as DID from '@ipld/dag-ucan/src/did.js'
+import * as DID from '@ipld/dag-ucan/did'
 import * as ED25519 from '@noble/ed25519'
 import { varint } from 'multiformats'
 import * as API from '@ucanto/interface'
@@ -9,18 +9,18 @@ const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 32 + PUBLIC_TAG_SIZE
 
 /**
- * Parses `did:key:` string as an Audience.
+ * Parses `did:key:` string as an Principal.
  * @param {API.DID} did
- * @returns {API.Authority<typeof code>}
+ * @returns {API.Principal<typeof code>}
  */
 export const parse = (did) => decode(DID.parse(did))
 
 /**
  * Takes ed25519 public key tagged with `0xed` multiformat code and creates a
- * corresponding `Authority` that can be used to verify signatures.
+ * corresponding `Principal` that can be used to verify signatures.
  *
  * @param {Uint8Array} bytes
- * @returns {API.Authority<typeof code>}
+ * @returns {API.Principal<typeof code>}
  */
 export const decode = (bytes) => {
   const [algorithm] = varint.decode(bytes)
@@ -33,29 +33,29 @@ export const decode = (bytes) => {
       `Expected Uint8Array with byteLength ${SIZE}, instead got Uint8Array with byteLength ${bytes.byteLength}`
     )
   } else {
-    return new Authority(bytes.buffer, bytes.byteOffset)
+    return new Principal(bytes.buffer, bytes.byteOffset)
   }
 }
 
 /**
- * Formats given authority into `did:key:` format.
+ * Formats given Principal into `did:key:` format.
  *
- * @param {API.Authority<typeof code>} authority
+ * @param {API.Principal<typeof code>} authority
  */
 export const format = (authority) => DID.format(authority.bytes)
 
 /**
- * Encodes given authority by tagging it's ed25519 public key with `0xed`
+ * Encodes given Principal by tagging it's ed25519 public key with `0xed`
  * multiformat code.
  *
- * @param {API.Authority<typeof code>} authority
+ * @param {API.Principal<typeof code>} authority
  */
 export const encode = (authority) => authority.bytes
 
 /**
- * @implements {API.Authority<typeof code>}
+ * @implements {API.Principal<typeof code>}
  */
-class Authority {
+class Principal {
   /**
    * @param {ArrayBuffer} buffer
    * @param {number} [byteOffset]
@@ -89,7 +89,7 @@ class Authority {
     return key
   }
   /**
-   * DID of the authority in `did:key` format.
+   * DID of the Principal in `did:key` format.
    * @returns {API.DID}
    */
   did() {

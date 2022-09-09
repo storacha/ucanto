@@ -10,7 +10,7 @@ import fetch from '@web-std/fetch'
 test('encode inovocation', async () => {
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    id: w3.authority,
+    id: w3.principal,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -62,7 +62,7 @@ test('encode delegated invocation', async () => {
 
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    id: w3.authority,
+    id: w3.principal,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -140,7 +140,7 @@ test('encode delegated invocation', async () => {
 const service = Service.create()
 /** @type {Client.ConnectionView<Service.Service>} */
 const connection = Client.connect({
-  id: w3.authority,
+  id: w3.principal,
   channel: HTTP.open({
     url: new URL('about:blank'),
     fetch: async (url, input) => {
@@ -189,7 +189,7 @@ test('execute', async () => {
       with: alice.did(),
       link: car.cid,
     },
-    proofs: [],
+    // proofs: [],
   })
 
   const remove = Client.invoke({

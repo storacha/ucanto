@@ -22,7 +22,7 @@ export * as Link from './decoder/link.js'
 const empty = () => []
 
 /**
- * @param {UCAN.Proof} proof
+ * @param {UCAN.Link} proof
  */
 const unavailable = (proof) => new UnavailableProof(proof)
 

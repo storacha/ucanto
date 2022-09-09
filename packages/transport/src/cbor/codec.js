@@ -1,3 +1,4 @@
+import * as API from '@ucanto/interface'
 import * as CBOR from '@ipld/dag-cbor'
 export { code, decode } from '@ipld/dag-cbor'
 import { sha256 } from 'multiformats/hashes/sha2'
@@ -78,7 +79,7 @@ export const encode = (data) => CBOR.encode(prepare(data, new Set()))
 /**
  * @template T
  * @param {T} data
- * @param {{hasher?: import('multiformats/hashes/interface').MultihashHasher }} [options]
+ * @param {{hasher?: API.UCAN.MultihashHasher }} options
  */
 export const write = async (data, { hasher = sha256 } = {}) => {
   const bytes = encode(data)

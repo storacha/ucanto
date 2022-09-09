@@ -8,7 +8,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 export const code = 0x0202
 
 /**
- * @typedef {API.UCAN.Block<unknown, number, number, 0|1>} Block
+ * @typedef {API.UCAN.Block<any, number>} Block
  * @typedef {{
  * roots: Block[]
  * blocks: Map<string, Block>
@@ -110,17 +110,16 @@ export const decode = async (bytes) => {
 
 /**
  * @param {Uint8Array} bytes
- * @param {{hasher?: API.MultihashHasher }} [options]
+ * @param {{hasher?: API.UCAN.MultihashHasher }} options
  */
 export const link = async (bytes, { hasher = sha256 } = {}) =>
-  /** @type {UCAN.Link<Model, typeof code, number> & import('multiformats').CID} */
+  /** @type {UCAN.Link<any, number>} */
   (createLink(code, await hasher.digest(bytes)))
 
 /**
  * @param {Partial<Model>} data
- * @param {{hasher?: API.MultihashHasher }} [options]
  */
-export const write = async (data, { hasher = sha256 } = {}) => {
+export const write = async (data) => {
   const bytes = encode(data)
   const cid = await link(bytes)
 

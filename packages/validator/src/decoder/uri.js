@@ -4,7 +4,7 @@ import { Failure } from '../error.js'
 /**
  * @template {`${string}:`} Protocol
  * @param {unknown} input
- * @param {{protocol?: Protocol}} [options]
+ * @param {{protocol?: Protocol}} options
  * @return {API.Result<API.URI<Protocol>, API.Failure>}
  */
 export const decode = (input, { protocol } = {}) => {

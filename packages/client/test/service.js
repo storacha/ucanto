@@ -39,7 +39,7 @@ import { the } from './services/util.js'
 
 class StorageService {
   /**
-   * @param {Partial<Model>} [config]
+   * @param {Partial<Model>} config
    */
   constructor({
     accounts = Accounts.create(),
@@ -103,7 +103,7 @@ class StorageService {
 
 class AccessService {
   /**
-   * @param {Partial<Model>} [config]
+   * @param {Partial<Model>} config
    */
   constructor({ accounts = Accounts.create() } = {}) {
     this.accounts = accounts
@@ -141,7 +141,7 @@ class AccessService {
 
 class Main {
   /**
-   * @param {Partial<Model>} [config]
+   * @param {Partial<Model>} config
    */
   constructor({ accounts = Accounts.create(), ...config } = {}) {
     this.access = new AccessService({ accounts })

@@ -1,7 +1,7 @@
 import * as Server from '../../src/server.js'
 import * as Client from '@ucanto/client'
 import { provide } from '../../src/handler.js'
-import { Authority } from '@ucanto/authority'
+import { Principal } from '@ucanto/authority'
 import * as API from './api.js'
 import * as Access from './access.js'
 import { service as issuer } from '../fixtures.js'
@@ -61,7 +61,7 @@ const removeCapability = Server.capability({
 /** @type {Map<API.DID, Map<string, API.Link>>} */
 const state = new Map()
 
-export const id = issuer.authority
+export const id = issuer.principal
 
 export const add = provide(addCapability, async ({ capability, context }) => {
   const identify = await Client.delegate({

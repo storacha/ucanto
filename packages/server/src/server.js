@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import { InvalidAudience } from '@ucanto/validator'
-import { Authority } from '@ucanto/authority'
+import { Principal } from '@ucanto/authority'
 export {
   capability,
   URI,
@@ -12,14 +12,14 @@ export {
 /**
  * Creates a connection to a service.
  *
- * @template Service
+ * @template {Record<string, any>} Service
  * @param {API.Server<Service>} options
  * @returns {API.ServerView<Service>}
  */
 export const create = (options) => new Server(options)
 
 /**
- * @template Service
+ * @template {Record<string, any>} Service
  * @implements {API.ServerView<Service>}
  */
 class Server {
@@ -32,7 +32,7 @@ class Server {
     encoder,
     decoder,
     catch: fail,
-    authority = Authority,
+    authority = Principal,
     canIssue = (capability, issuer) =>
       capability.with === issuer || issuer === id.did(),
     ...context
@@ -59,7 +59,7 @@ class Server {
 }
 
 /**
- * @template T
+ * @template {Record<string, any>} T
  * @template {API.Capability} C
  * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
  * @param {API.ServerView<T>} server
@@ -73,7 +73,7 @@ export const handle = async (server, request) => {
 }
 
 /**
- * @template Service
+ * @template {Record<string, any>} Service
  * @template {API.Capability} C
  * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
  * @param {API.InferInvocations<I>} invocations
@@ -94,7 +94,7 @@ export const execute = async (invocations, server) => {
 }
 
 /**
- * @template Service
+ * @template {Record<string, any>} Service
  * @template {API.Capability} C
  * @param {API.InferInvocation<API.ServiceInvocation<C, Service>>} invocation
  * @param {API.ServerView<Service>} server

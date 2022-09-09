@@ -7,7 +7,7 @@ import * as Link from './link.js'
  * Import `isLink` from module directly
  */
 export const isLink =
-  /** @type {(value:API.Proof) => value is API.LinkedProof} */
+  /** @type {(value:API.Proof) => value is API.Link} */
   (Link.isLink)
 
 /**
@@ -21,7 +21,7 @@ export const isDelegation = (proof) => !Link.isLink(proof)
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of
  * this as UCAN interface of the CAR.
  *
- * @template {[API.Capability, ...API.Capability[]]} C
+ * @template {API.Capabilities} C
  * @implements {API.Delegation<C>}
  * @extends {DelegationView<C>}
  */
@@ -73,14 +73,14 @@ export class Delegation {
   }
 
   /**
-   * @type {API.Identity}
+   * @type {API.UCAN.Principal}
    */
   get issuer() {
     return this.data.issuer
   }
 
   /**
-   * @type {API.Identity}
+   * @type {API.UCAN.Principal}
    */
   get audience() {
     return this.data.audience
@@ -147,9 +147,9 @@ const it = function* (delegation) {
 
 const decodeCache = new WeakMap()
 /**
- * @template {[API.Capability, ...API.Capability[]]} C
+ * @template {API.Capabilities} C
  * @param {API.Block<C>} block
- * @returns {UCAN.View<C[number]>}
+ * @returns {UCAN.View<C>}
  */
 const decode = ({ bytes }) => {
   const data = decodeCache.get(bytes)
@@ -167,7 +167,7 @@ const decode = ({ bytes }) => {
  * representation.
  *
  * @template {number} A
- * @template {[API.Capability, ...API.Capability[]]} C
+ * @template {API.Capabilities} C
  * @param {API.DelegationOptions<C, A>} data
  * @param {API.EncodeOptions} [options]
  * @returns {Promise<API.Delegation<C>>}
@@ -207,7 +207,7 @@ export const delegate = async (
 }
 
 /**
- * @template {[API.Capability, ...API.Capability[]]} C
+ * @template {API.Capabilities} C
  * @param {API.Block<C>} root
  * @param {Map<string, API.Block>} blocks
  * @returns {IterableIterator<API.Block>}
@@ -226,7 +226,7 @@ const exportDAG = function* (root, blocks) {
 }
 
 /**
- * @template {[API.Capability, ...API.Capability[]]} C
+ * @template {API.Capabilities} C
  * @param {Iterable<API.Block & { data?: UCAN.UCAN }>} dag
  * @returns {API.Delegation<C>}
  */
@@ -248,7 +248,7 @@ export const importDAG = (dag) => {
 }
 
 /**
- * @template {[API.Capability, ...API.Capability[]]} C
+ * @template {API.Capabilities} C
  * @param {object} dag
  * @param {API.Block<C>} dag.root
  * @param {Map<string, API.Block>} [dag.blocks]

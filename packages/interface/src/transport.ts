@@ -4,7 +4,6 @@ import type {
   ServiceInvocation,
   InferServiceInvocations,
   InferInvocations,
-  Capability,
 } from './lib.js'
 
 /**
@@ -18,7 +17,7 @@ export interface EncodeOptions {
   readonly hasher?: UCAN.MultihashHasher
 }
 
-export interface Channel<T> extends Phantom<T> {
+export interface Channel<T extends Record<string, any>> extends Phantom<T> {
   request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
     request: HTTPRequest<I>
   ): Await<HTTPResponse<InferServiceInvocations<I, T>>>
@@ -54,12 +53,4 @@ export interface HTTPRequest<T = unknown> extends Phantom<T> {
 export interface HTTPResponse<T = unknown> extends Phantom<T> {
   headers: Readonly<Record<string, string>>
   body: Uint8Array
-}
-
-export interface Block<
-  C extends [Capability, ...Capability[]] = [Capability, ...Capability[]],
-  A extends number = number
-> {
-  readonly cid: UCAN.Proof<C[number], A>
-  readonly bytes: UCAN.ByteView<UCAN.UCAN<C[number]>>
 }

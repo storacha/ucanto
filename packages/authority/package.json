@@ -27,7 +27,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "2.0.0-beta",
+    "@ipld/dag-ucan": "link:/Users/hd/code/js-dag-ucan",
     "@noble/ed25519": "^1.7.0",
     "@ucanto/interface": "^0.7.0",
     "multiformats": "^9.8.1"

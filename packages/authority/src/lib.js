@@ -1,3 +1,3 @@
-export * from './signer.js'
-export * as Authority from './authority.js'
-export * as SigningAuthority from './signer.js'
+export * from './agent.js'
+export * as Principal from './principal.js'
+export * as Agent from './agent.js'
