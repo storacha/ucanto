@@ -21,11 +21,15 @@ import * as API from '@ucanto/interface'
  * @param {string} [options.method]
  * @returns {API.Channel<T>}
  */
-export const open = ({ url, method = 'POST', fetch = globalThis.fetch.bind(globalThis) }) => {
+export const open = ({ url, method = 'POST', fetch }) => {
   if (!fetch) {
-    throw new TypeError(
-      `ucanto HTTP transport got undefined \`fetch\`. Try passing in a \`fetch\` implementation explicitly.`
-    )
+    if (globalThis.fetch) {
+      fetch = globalThis.fetch.bind(globalThis)
+    } else {
+      throw new TypeError(
+        `ucanto HTTP transport got undefined \`fetch\`. Try passing in a \`fetch\` implementation explicitly.`
+      )
+    }
   }
   return new Channel({ url, method, fetch })
 }
