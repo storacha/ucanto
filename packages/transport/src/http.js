@@ -23,8 +23,8 @@ import * as API from '@ucanto/interface'
  */
 export const open = ({ url, method = 'POST', fetch }) => {
   if (!fetch) {
+    /* c8 ignore next 2 */
     if (globalThis.fetch) {
-      /* c8 ignore next 1 */
       fetch = globalThis.fetch.bind(globalThis)
     } else {
       throw new TypeError(
