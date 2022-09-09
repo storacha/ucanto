@@ -73,7 +73,7 @@ if (typeof globalThis.fetch === 'undefined') {
   test('fail request without fetch impl', async () => {
     try {
       const channel = HTTP.open({
-        url: new URL('https://ucan.xyz/')
+        url: new URL('https://ucan.xyz/'),
       })
       assert.fail('expected to throw')
     } catch (reason) {
