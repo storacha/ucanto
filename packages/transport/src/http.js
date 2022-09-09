@@ -22,9 +22,9 @@ import * as API from '@ucanto/interface'
  * @returns {API.Channel<T>}
  */
 export const open = ({ url, method = 'POST', fetch }) => {
+  /* c8 ignore next 9 */
   if (!fetch) {
-    /* c8 ignore next 2 */
-    if (globalThis.fetch) {
+    if (typeof globalThis.fetch !== 'undefined') {
       fetch = globalThis.fetch.bind(globalThis)
     } else {
       throw new TypeError(
