@@ -110,11 +110,12 @@ export const decode = async (bytes) => {
 
 /**
  * @param {Uint8Array} bytes
- * @param {{hasher?: API.UCAN.MultihashHasher }} options
+ * @param {{hasher?: API.UCAN.MultihashHasher }} [options]
  */
-export const link = async (bytes, { hasher = sha256 } = {}) =>
-  /** @type {UCAN.Link<any, number>} */
-  (createLink(code, await hasher.digest(bytes)))
+export const link = async (bytes, options) =>{
+  const hasher = options?.hasher ?? sha256
+  return /** @type {UCAN.Link<any, number>} */ (createLink(code, await hasher.digest(bytes)))
+}
 
 /**
  * @param {Partial<Model>} data

@@ -11,7 +11,7 @@ export { create, createV0, isLink, asLink, parse }
  * @template {1|0} Version
  * @param {unknown} input
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} [options]
- * @returns {API.Result<API.Link<any, Alg>, API.Failure>}
+ * @returns {API.Result<API.Link<unknown, Alg>, API.Failure>}
  */
 export const decode = (input, options = {}) => {
   if (input == null) {
@@ -56,7 +56,7 @@ export const decode = (input, options = {}) => {
  * @template {number} Alg
  * @template {1|0} Version
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} options
- * @returns {API.Decoder<unknown,  API.Link<any, Alg>, API.Failure>}
+ * @returns {API.Decoder<unknown,  API.Link<unknown, Alg>, API.Failure>}
  */
 
 export const match = (options) => ({
@@ -68,7 +68,7 @@ export const match = (options) => ({
  * @template {number} Alg
  * @template {1|0} Version
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} [options]
- * @returns {API.Decoder<unknown, undefined|API.Link<any,Alg>, API.Failure>}
+ * @returns {API.Decoder<unknown, undefined|API.Link<unknown,Alg>, API.Failure>}
  */
 export const optional = (options) => ({
   decode: (input) => {

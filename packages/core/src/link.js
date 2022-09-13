@@ -6,7 +6,7 @@ import * as API from '@ucanto/interface'
  * @template {number} Alg
  * @param {Code} code
  * @param {API.UCAN.MultihashDigest<Alg>} digest
- * @return {API.Link<any, Alg>}
+ * @return {API.Link<unknown, Alg>}
  */
 export const create = (code, digest) =>
   /** @type {any} */ (CID.createV1(code, digest))
@@ -14,7 +14,7 @@ export const create = (code, digest) =>
 /**
  * @template {number} Alg
  * @param {API.UCAN.MultihashDigest<Alg>} digest
- * @return {API.Link<any, Alg>}
+ * @return {API.Link<unknown, Alg>}
  */
 export const createV0 = (digest) => /** @type {any} */ (CID.createV0(digest))
 
@@ -23,13 +23,13 @@ export const createV0 = (digest) => /** @type {any} */ (CID.createV0(digest))
  *
  * @template {API.Link<any, number>} L
  * @param {unknown} value
- * @returns {value is (L)}
+ * @returns {value is L}
  */
 export const isLink = (value) =>
   value != null && /** @type {{asCID: unknown}} */ (value).asCID === value
 
 export const asLink =
-  /** @type {<L extends API.Link<any, number>>(value:L|unknown) => (L)|null} */
+  /** @type {<L extends API.Link<any, number>>(value:L|unknown) => L|null} */
   (CID.asCID)
 
 export const parse =

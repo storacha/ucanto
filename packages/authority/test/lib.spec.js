@@ -4,7 +4,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { varint } from 'multiformats'
 
 describe('signing authority', () => {
-  const { Agent: SigningAuthority } = Lib
+  const { Agent } = Lib
   it('exports', () => {
     assert.equal(Lib.name, 'Ed25519')
     assert.equal(Lib.code, 0x1300)
@@ -55,20 +55,17 @@ describe('signing authority', () => {
     }
   })
 
-  it('SigningAuthority.decode', async () => {
+  it('Agent.decode', async () => {
     const signer = await Lib.generate()
 
-    assert.deepEqual(SigningAuthority.decode(signer.bytes), signer)
+    assert.deepEqual(Agent.decode(signer.bytes), signer)
 
     const invalid = new Uint8Array(signer.bytes)
     varint.encodeTo(4, invalid, 0)
-    assert.throws(
-      () => SigningAuthority.decode(invalid),
-      /must be a multiformat with/
-    )
+    assert.throws(() => Agent.decode(invalid), /must be a multiformat with/)
 
     assert.throws(
-      () => SigningAuthority.decode(signer.bytes.slice(0, 32)),
+      () => Agent.decode(signer.bytes.slice(0, 32)),
       /Expected Uint8Array with byteLength/
     )
 
@@ -76,30 +73,30 @@ describe('signing authority', () => {
     varint.encodeTo(4, malformed, signer.principal.byteOffset)
 
     assert.throws(
-      () => SigningAuthority.decode(malformed),
+      () => Agent.decode(malformed),
       /must contain public key/
     )
   })
 
-  it('SigningAuthority decode encode roundtrip', async () => {
+  it('Agent decode encode roundtrip', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(
-      SigningAuthority.decode(SigningAuthority.encode(signer)),
+      Agent.decode(Agent.encode(signer)),
       signer
     )
   })
 
-  it('SigningAuthority.format', async () => {
+  it('Agent.format', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(
-      SigningAuthority.parse(SigningAuthority.format(signer)),
+      Agent.parse(Agent.format(signer)),
       signer
     )
   })
 
-  it('SigningAuthority.did', async () => {
+  it('Agent.did', async () => {
     const signer = await Lib.generate()
 
     assert.equal(signer.did().startsWith('did:key:'), true)
@@ -115,7 +112,7 @@ describe('authority', () => {
     assert.equal(Principal.name, 'Ed25519')
   })
 
-  it('Athority.parse', async () => {
+  it('Authority.parse', async () => {
     const signer = await Lib.generate()
     const authority = Principal.parse(signer.did())
 
@@ -123,7 +120,7 @@ describe('authority', () => {
     assert.equal(authority.did(), signer.did())
   })
 
-  it('Athority.decode', async () => {
+  it('Authority.decode', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(Principal.decode(signer.principal.bytes), signer.principal)

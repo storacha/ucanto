@@ -79,9 +79,10 @@ export const encode = (data) => CBOR.encode(prepare(data, new Set()))
 /**
  * @template T
  * @param {T} data
- * @param {{hasher?: API.UCAN.MultihashHasher }} options
+ * @param {{hasher?: API.UCAN.MultihashHasher }} [options]
  */
-export const write = async (data, { hasher = sha256 } = {}) => {
+export const write = async (data, options) => {
+  const hasher = options?.hasher ?? sha256
   const bytes = encode(data)
   const digest = await hasher.digest(bytes)
 

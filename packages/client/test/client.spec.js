@@ -189,7 +189,7 @@ test('execute', async () => {
       with: alice.did(),
       link: car.cid,
     },
-    // proofs: [],
+    proofs: [],
   })
 
   const remove = Client.invoke({
