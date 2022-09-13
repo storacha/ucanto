@@ -4,18 +4,18 @@ import { Failure } from '../error.js'
 /**
  * @template {`${string}:`} Protocol
  * @param {unknown} input
- * @param {{protocol?: Protocol}} options
+ * @param {{protocol?: Protocol}} [options]
  * @return {API.Result<API.URI<Protocol>, API.Failure>}
  */
-export const decode = (input, { protocol } = {}) => {
+export const decode = (input, options) => {
   if (typeof input !== 'string' && !(input instanceof URL)) {
     return new Failure(`Expected URI but got ${typeof input}`)
   }
 
   try {
     const url = new URL(String(input))
-    if (protocol != null && url.protocol !== protocol) {
-      return new Failure(`Expected ${protocol} URI instead got ${url.href}`)
+    if (options?.protocol != null && url.protocol !== options?.protocol) {
+      return new Failure(`Expected ${options?.protocol} URI instead got ${url.href}`)
     } else {
       return /** @type {API.URI<Protocol>} */ (url)
     }
