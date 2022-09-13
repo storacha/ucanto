@@ -93,7 +93,7 @@ test('content-type case', async () => {
   })
 
   test('cids', async () => {
-    const hello = await write({ hello: 'world' })
+    const hello = await write({ hello: 'world' }, {})
 
     assert.deepEqual(transcode({ message: hello.cid }), {
       message: hello.cid,
