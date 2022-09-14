@@ -56,7 +56,7 @@ describe('signing principal', () => {
     }
   })
 
-  it('Agent.decode', async () => {
+  it('SigningPrincipal.decode', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(SigningPrincipal.decode(signer.bytes), signer)
@@ -82,7 +82,7 @@ describe('signing principal', () => {
     )
   })
 
-  it('Agent decode encode roundtrip', async () => {
+  it('SigningPrincipal decode encode roundtrip', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(
@@ -91,7 +91,7 @@ describe('signing principal', () => {
     )
   })
 
-  it('Agent.format', async () => {
+  it('SigningPrincipal.format', async () => {
     const signer = await Lib.generate()
 
     assert.deepEqual(
@@ -100,7 +100,7 @@ describe('signing principal', () => {
     )
   })
 
-  it('Agent.did', async () => {
+  it('SigningPrincipal.did', async () => {
     const signer = await Lib.generate()
 
     assert.equal(signer.did().startsWith('did:key:'), true)
@@ -140,17 +140,17 @@ describe('principal', () => {
   })
 
   it('Principal.format', async () => {
-    const agent = await Lib.generate()
+    const principal = await Lib.generate()
 
-    assert.deepEqual(Principal.format(agent.principal), agent.did())
+    assert.deepEqual(Principal.format(principal.principal), principal.did())
   })
 
   it('Principal.encode', async () => {
-    const agent = await Lib.generate()
+    const principal = await Lib.generate()
 
     assert.deepEqual(
-      [...Principal.encode(agent.principal)],
-      [...agent.principal.bytes]
+      [...Principal.encode(principal.principal)],
+      [...principal.principal.bytes]
     )
   })
 })
