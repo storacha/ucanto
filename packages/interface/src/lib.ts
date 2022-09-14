@@ -1,89 +1,75 @@
-import type * as Transport from './transport.js'
-import type { Tuple } from './transport.js'
-export * as UCAN from '@ipld/dag-ucan'
-import type {
-  Authority,
-  SigningAuthority,
-  AuthorityParser,
-} from './authority.js'
-import type {
-  Phantom,
-  Encoded,
-  Link,
-  Issuer,
-  Identity,
-  Audience,
-  MultihashHasher,
-  MultihashDigest,
-  ByteView,
-  Ability,
-  Resource,
-  DID,
-  Fact,
-  Proof as LinkedProof,
-  View as UCANView,
-  UCAN as UCANData,
-  Capability,
-} from '@ipld/dag-ucan'
-
-export type {
-  MultibaseEncoder,
-  MultibaseDecoder,
-} from 'multiformats/bases/interface'
-
-export type {
-  MultihashDigest,
-  MultihashHasher,
-  Transport,
-  Encoded,
-  Link,
-  Issuer,
-  Audience,
-  Authority,
-  SigningAuthority,
-  Identity,
-  ByteView,
-  Phantom,
-  Ability,
-  Resource,
-  DID,
-  Fact,
-  Tuple,
-  LinkedProof,
-  Capability,
-}
-
 import {
-  CapabilityParser,
-  ParsedCapability,
+  Ability,
+  Block as UCANBlock,
+  ByteView,
+  Capabilities,
+  Capability,
+  DID,
+  Fact,
+  Link as UCANLink,
+  IPLDLink as Link,
+  MultihashHasher,
+  MultihashDigest,
+  Phantom,
+  Resource,
+  Signature,
+} from '@ipld/dag-ucan'
+import * as UCAN from '@ipld/dag-ucan'
+import type {
+  Principal,
+  PrincipalParser,
+  SigningPrincipal,
+} from './principal.js'
+import {
+  CanIssue,
   InvalidAudience,
   Unauthorized,
-  CanIssue,
   UnavailableProof,
 } from './capability.js'
+import type * as Transport from './transport.js'
+import type { Tuple, Block } from './transport.js'
 
-export * from './transport.js'
-export * from './authority.js'
+export type {
+  MultibaseDecoder,
+  MultibaseEncoder,
+} from 'multiformats/bases/interface'
+export * from './principal.js'
 export * from './capability.js'
-
-/**
- * Represents an {@link Ability} that a UCAN holder `Can` perform `With` some {@link Resource}.
- *
- * @template Can - the {@link Ability} (action/verb) the UCAN holder can perform
- * @template With - the {@link Resource} (thing/noun) the UCAN holder can perform their `Ability` on / with
- *
- */
+export * from './transport.js'
+export type {
+  Transport,
+  Principal,
+  PrincipalParser,
+  SigningPrincipal,
+  Phantom,
+  Tuple,
+  DID,
+  Signature,
+  ByteView,
+  Capabilities,
+  Capability,
+  Fact,
+  UCANBlock,
+  UCANLink,
+  Link,
+  Block,
+  Ability,
+  Resource,
+  MultihashDigest,
+  MultihashHasher,
+}
+export * as UCAN from '@ipld/dag-ucan'
 
 /**
  * Proof can either be a link to a delegated UCAN or a materialized `Delegation`
  * view.
  */
-export type Proof<
-  C extends [Capability, ...Capability[]] = [Capability, ...Capability[]]
-> = LinkedProof<C[number]> | Delegation<C>
+export type Proof<C extends Capabilities = Capabilities> =
+  | UCANLink<C>
+  | Delegation<C>
 
 export interface UCANOptions {
-  audience: Identity
+  audience: Principal
   lifetimeInSeconds?: number
   expiration?: number
   notBefore?: number
@@ -95,30 +81,41 @@ export interface UCANOptions {
 }
 
 export interface DelegationOptions<
-  C extends [Capability, ...Capability[]],
+  C extends Capabilities,
   A extends number = number
 > extends UCANOptions {
-  issuer: SigningAuthority<A>
-  audience: Identity
+  issuer: SigningPrincipal<A>
+  audience: Principal
   capabilities: C
+  proofs?: Proof[]
 }
 
-export interface Delegation<
-  C extends [Capability, ...Capability[]] = [Capability, ...Capability[]]
-> {
-  readonly root: Transport.Block<C>
-  readonly blocks: Map<string, Transport.Block>
+export interface Delegation<C extends Capabilities = Capabilities> {
+  readonly root: UCANBlock<C>
+  /**
+    * Map of all the IPLD blocks that where included with this delegation DAG.
+    * Usually this would be blocks corresponding to proofs, however it may
+    * also contain other blocks e.g. things that `capabilities` or `facts` may
+    * link.
+    * It is not guaranteed to include all the blocks of this DAG, as it represents
+    * a partial DAG of the delegation desired for transporting.
+    *
+    * Also note that map may contain blocks that are not part of this
+    * delegation DAG. That is because `Delegation` is usually constructed as
+    * view / selection over the CAR which may contain bunch of other blocks.
+    */
+  readonly blocks: Map<string, Block>
 
-  readonly cid: LinkedProof<C[number]>
-  readonly bytes: ByteView<UCANData<C[number]>>
-  readonly data: UCANView<C[number]>
+  readonly cid: UCANLink<C>
+  readonly bytes: ByteView<UCAN.UCAN<C>>
+  readonly data: UCAN.View<C>
 
-  asCID: LinkedProof<Capability>
+  asCID: UCANLink<C>
 
-  export(): IterableIterator<Transport.Block>
+  export(): IterableIterator<Block>
 
-  issuer: Identity
-  audience: Identity
+  issuer: UCAN.Principal
+  audience: UCAN.Principal
   capabilities: C
   expiration?: number
   notBefore?: number
@@ -135,14 +132,14 @@ export interface Invocation<C extends Capability = Capability>
 
 export interface InvocationOptions<C extends Capability = Capability>
   extends UCANOptions {
-  issuer: SigningAuthority
+  issuer: SigningPrincipal
   capability: C
 }
 
 export interface IssuedInvocation<C extends Capability = Capability>
   extends DelegationOptions<[C]> {
-  readonly issuer: SigningAuthority
-  readonly audience: Identity
+  readonly issuer: SigningPrincipal
+  readonly audience: Principal
   readonly capabilities: [C]
 
   readonly proofs: Proof[]
@@ -181,11 +178,11 @@ export type InvocationError =
   | Unauthorized
 
 export interface InvocationContext extends CanIssue {
-  id: Identity
+  id: Principal
   my?: (issuer: DID) => Capability[]
-  resolve?: (proof: LinkedProof) => Await<Result<Delegation, UnavailableProof>>
+  resolve?: (proof: UCANLink) => Await<Result<Delegation, UnavailableProof>>
 
-  authority: AuthorityParser
+  principal: PrincipalParser
 }
 
 export type ResolveServiceMethod<
@@ -210,7 +207,7 @@ export type ResolveServiceInvocation<
 
 export type InferServiceInvocationReturn<
   C extends Capability,
-  S
+  S extends Record<string, any>
 > = ResolveServiceMethod<S, C['can']> extends ServiceMethod<
   infer _,
   infer T,
@@ -226,7 +223,10 @@ export type InferServiceInvocationReturn<
     >
   : never
 
-export type InferServiceInvocations<I extends unknown[], T> = I extends []
+export type InferServiceInvocations<
+  I extends unknown[],
+  T extends Record<string, any>
+> = I extends []
   ? []
   : I extends [ServiceInvocation<infer C, T>, ...infer Rest]
   ? [InferServiceInvocationReturn<C, T>, ...InferServiceInvocations<Rest, T>]
@@ -297,20 +297,23 @@ export interface OutpboundTranpsortOptions {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
 }
-export interface ConnectionOptions<T>
+export interface ConnectionOptions<T extends Record<string, any>>
   extends Transport.EncodeOptions,
     OutpboundTranpsortOptions {
-  readonly id: Identity
+  readonly id: Principal
   readonly channel: Transport.Channel<T>
 }
 
-export interface Connection<T> extends Phantom<T>, ConnectionOptions<T> {
-  readonly id: Identity
+export interface Connection<T extends Record<string, any>>
+  extends Phantom<T>,
+    ConnectionOptions<T> {
+  readonly id: Principal
   readonly hasher: MultihashHasher
 }
 
-export interface ConnectionView<T> extends Connection<T> {
-  id: Identity
+export interface ConnectionView<T extends Record<string, any>>
+  extends Connection<T> {
+  id: Principal
   execute<
     C extends Capability,
     I extends Transport.Tuple<ServiceInvocation<C, T>>
@@ -335,10 +338,10 @@ export interface InboundTransportOptions {
 
 export interface ValidatorOptions {
   /**
-   * Takes authority parser that can be used to turn an `UCAN.Identity`
-   * into `Ucanto.Authority`.
+   * Takes principal parser that can be used to turn a `UCAN.Principal`
+   * into `Ucanto.Principal`.
    */
-  readonly authority?: AuthorityParser
+  readonly principal?: PrincipalParser
 
   readonly canIssue?: CanIssue['canIssue']
   readonly my?: InvocationContext['my']
@@ -352,7 +355,7 @@ export interface ServerOptions
    * Service DID which will be used to verify that received invocation
    * audience matches it.
    */
-  readonly id: Identity
+  readonly id: Principal
 }
 
 export interface Server<T> extends ServerOptions {
@@ -364,7 +367,9 @@ export interface Server<T> extends ServerOptions {
   readonly catch?: (err: HandlerExecutionError) => void
 }
 
-export interface ServerView<T> extends Server<T>, Transport.Channel<T> {
+export interface ServerView<T extends Record<string, any>>
+  extends Server<T>,
+    Transport.Channel<T> {
   context: InvocationContext
   catch: (err: HandlerExecutionError) => void
 }

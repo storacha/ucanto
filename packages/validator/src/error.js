@@ -104,7 +104,7 @@ export class InvalidSignature extends Failure {
  */
 export class UnavailableProof extends Failure {
   /**
-   * @param {API.UCAN.Proof} link
+   * @param {API.UCAN.Link} link
    * @param {Error} [cause]
    */
   constructor(link, cause) {
@@ -128,7 +128,7 @@ export class UnavailableProof extends Failure {
  */
 export class InvalidAudience extends Failure {
   /**
-   * @param {API.UCAN.Identity} audience
+   * @param {API.UCAN.Principal} audience
    * @param {API.Delegation} delegation
    */
   constructor(audience, delegation) {

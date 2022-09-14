@@ -6,7 +6,7 @@ import * as API from '@ucanto/interface'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { test, assert } from './test.js'
 import * as Access from './service/access.js'
-import { Authority } from '@ucanto/authority'
+import { Principal } from '@ucanto/principal'
 import { UnavailableProof } from '@ucanto/validator'
 
 const context = {
@@ -19,9 +19,9 @@ const context = {
    */
   canIssue: (capability, issuer) =>
     capability.with === issuer || issuer == w3.did(),
-  authority: Authority,
+  principal: Principal,
   /**
-   * @param {API.LinkedProof} link
+   * @param {API.UCANLink} link
    */
   resolve: (link) => new UnavailableProof(link),
 }
@@ -29,7 +29,7 @@ const context = {
 test('invocation', async () => {
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: [
       {
         can: 'identity/link',
@@ -64,7 +64,7 @@ test('delegated invocation fail', async () => {
 
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: proof.capabilities,
     proofs: [proof],
   })
@@ -91,7 +91,7 @@ test('delegated invocation fail', async () => {
 
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: proof.capabilities,
     proofs: [proof],
   })
@@ -109,7 +109,7 @@ test('checks service id', async () => {
   })
 
   const client = Client.connect({
-    id: w3.authority,
+    id: w3.principal,
     encoder: CAR,
     decoder: CBOR,
     channel: server,
@@ -129,7 +129,7 @@ test('checks service id', async () => {
   {
     const invocation = Client.invoke({
       issuer: bob,
-      audience: mallory.authority,
+      audience: mallory.principal,
       capability: proof.capabilities[0],
       proofs: [proof],
     })
@@ -147,7 +147,7 @@ test('checks service id', async () => {
   {
     const invocation = Client.invoke({
       issuer: bob,
-      audience: w3.authority,
+      audience: w3.principal,
       capability: proof.capabilities[0],
       proofs: [proof],
     })
@@ -167,7 +167,7 @@ test('checks for single capability invocation', async () => {
   })
 
   const client = Client.connect({
-    id: w3.authority,
+    id: w3.principal,
     encoder: CAR,
     decoder: CBOR,
     channel: server,
@@ -186,7 +186,7 @@ test('checks for single capability invocation', async () => {
 
   const invocation = Client.invoke({
     issuer: bob,
-    audience: w3.authority,
+    audience: w3.principal,
     capability: proof.capabilities[0],
     proofs: [proof],
   })

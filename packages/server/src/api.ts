@@ -12,10 +12,10 @@ export type InvocationError =
 export interface ProviderOptions extends CanIssue {
   my?: (issuer: API.DID) => API.Capability[]
   resolve?: (
-    proof: API.LinkedProof
+    proof: API.Link
   ) => API.Await<API.Result<API.Delegation, API.UnavailableProof>>
 
-  authority: API.AuthorityParser
+  principal: API.PrincipalParser
 }
 
 export interface ProviderContext<

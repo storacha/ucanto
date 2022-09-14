@@ -22,7 +22,7 @@ export * as Link from './decoder/link.js'
 const empty = () => []
 
 /**
- * @param {UCAN.Proof} proof
+ * @param {UCAN.Link} proof
  */
 const unavailable = (proof) => new UnavailableProof(proof)
 
@@ -142,9 +142,9 @@ const resolveSources = async ({ delegation }, config) => {
  */
 export const access = async (
   invocation,
-  { canIssue, authority, my = empty, resolve = unavailable, capability }
+  { canIssue, principal, my = empty, resolve = unavailable, capability }
 ) => {
-  const config = { canIssue, my, resolve, authority, capability }
+  const config = { canIssue, my, resolve, principal, capability }
 
   const claim = capability.match({
     capability: invocation.capabilities[0],
@@ -245,7 +245,7 @@ export const authorize = async (match, config) => {
 
 class ProofError extends Failure {
   /**
-   * @param {API.Link} proof
+   * @param {API.UCANLink} proof
    * @param {number} index
    * @param {API.Failure} cause
    */
@@ -392,7 +392,7 @@ const parseMyURI = (uri, did) => {
 /**
  * @template {API.Delegation} T
  * @param {T} delegation
- * @param {API.AuthorityOptions} config
+ * @param {API.PrincipalOptions} config
  * @returns {Promise<API.Result<T, API.InvalidProof>>}
  */
 const validate = async (delegation, config) => {
@@ -414,11 +414,11 @@ const validate = async (delegation, config) => {
 /**
  * @template {API.Delegation} T
  * @param {T} delegation
- * @param {API.AuthorityOptions} config
+ * @param {API.PrincipalOptions} config
  * @returns {Promise<API.Result<T, API.InvalidSignature>>}
  */
-const verifySignature = async (delegation, { authority }) => {
-  const issuer = authority.parse(delegation.issuer.did())
+const verifySignature = async (delegation, { principal }) => {
+  const issuer = principal.parse(delegation.issuer.did())
   const valid = await UCAN.verifySignature(delegation.data, issuer)
 
   return valid ? delegation : new InvalidSignature(delegation)

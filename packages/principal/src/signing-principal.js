@@ -1,27 +1,27 @@
 import * as ED25519 from '@noble/ed25519'
 import { varint } from 'multiformats'
 import * as API from '@ucanto/interface'
-import * as Authority from './authority.js'
+import * as Principal from './principal.js'
 import { base64pad } from 'multiformats/bases/base64'
 
 export const code = 0x1300
-export const name = Authority.name
+export const name = Principal.name
 
 const PRIVATE_TAG_SIZE = varint.encodingLength(code)
-const PUBLIC_TAG_SIZE = varint.encodingLength(Authority.code)
+const PUBLIC_TAG_SIZE = varint.encodingLength(Principal.code)
 const KEY_SIZE = 32
 const SIZE = PRIVATE_TAG_SIZE + KEY_SIZE + PUBLIC_TAG_SIZE + KEY_SIZE
 
 /**
  * Generates new issuer by generating underlying ED25519 keypair.
- * @returns {Promise<API.SigningAuthority<typeof Authority.code>>}
+ * @returns {Promise<API.SigningPrincipal<typeof Principal.code>>}
  */
 export const generate = () => derive(ED25519.utils.randomPrivateKey())
 
 /**
  * Derives issuer from 32 byte long secret key.
  * @param {Uint8Array} secret
- * @returns {Promise<API.SigningAuthority<typeof Authority.code>>}
+ * @returns {Promise<API.SigningPrincipal<typeof Principal.code>>}
  */
 export const derive = async (secret) => {
   if (secret.byteLength !== KEY_SIZE) {
@@ -36,16 +36,16 @@ export const derive = async (secret) => {
   varint.encodeTo(code, bytes, 0)
   bytes.set(secret, PRIVATE_TAG_SIZE)
 
-  varint.encodeTo(Authority.code, bytes, PRIVATE_TAG_SIZE + KEY_SIZE)
+  varint.encodeTo(Principal.code, bytes, PRIVATE_TAG_SIZE + KEY_SIZE)
   bytes.set(publicKey, PRIVATE_TAG_SIZE + KEY_SIZE + PUBLIC_TAG_SIZE)
 
-  return new SigningAuthority(bytes)
+  return new SigningPrincipal(bytes)
 }
 
 /**
  *
  * @param {Uint8Array} bytes
- * @returns {SigningAuthority}
+ * @returns {SigningPrincipal}
  */
 export const decode = (bytes) => {
   if (bytes.byteLength !== SIZE) {
@@ -63,24 +63,24 @@ export const decode = (bytes) => {
 
   {
     const [code] = varint.decode(bytes.subarray(PRIVATE_TAG_SIZE + KEY_SIZE))
-    if (code !== Authority.code) {
+    if (code !== Principal.code) {
       throw new Error(
-        `Given bytes must contain public key in multiformats with ${Authority.code} tag`
+        `Given bytes must contain public key in multiformats with ${Principal.code} tag`
       )
     }
   }
 
-  return new SigningAuthority(bytes)
+  return new SigningPrincipal(bytes)
 }
 
 /**
- * @param {API.SigningAuthority<typeof Authority.code>} signingAuthority
+ * @param {API.SigningPrincipal<typeof Principal.code>} agent
  */
 export const encode = ({ bytes }) => bytes
 
 /**
  * @template {string} Prefix
- * @param {API.SigningAuthority<typeof Authority.code>} signingAuthority
+ * @param {API.SigningPrincipal<typeof Principal.code>} agent
  * @param {API.MultibaseEncoder<Prefix>} [encoder]
  */
 export const format = ({ bytes }, encoder) =>
@@ -88,23 +88,23 @@ export const format = ({ bytes }, encoder) =>
 
 /**
  * @template {string} Prefix
- * @param {string} signingAuthority
+ * @param {string} principal
  * @param {API.MultibaseDecoder<Prefix>} [decoder]
- * @returns {API.SigningAuthority<typeof Authority.code>}
+ * @returns {API.SigningPrincipal<typeof Principal.code>}
  */
-export const parse = (signingAuthority, decoder) =>
-  decode((decoder || base64pad).decode(signingAuthority))
+export const parse = (principal, decoder) =>
+  decode((decoder || base64pad).decode(principal))
 
 /**
- * @param {API.SigningAuthority<typeof Authority.code>} signingAuthority
+ * @param {API.SigningPrincipal<typeof Principal.code>} principal
  * @returns {API.DID}
  */
-export const did = ({ authority }) => authority.did()
+export const did = ({ principal }) => principal.did()
 
 /**
- * @implements {API.SigningAuthority<typeof Authority.code>}
+ * @implements {API.SigningPrincipal<typeof Principal.code>}
  */
-class SigningAuthority {
+class SigningPrincipal {
   /**
    * @param {Uint8Array} bytes
    */
@@ -114,17 +114,17 @@ class SigningAuthority {
     this.byteLength = SIZE
     this.bytes = bytes
   }
-  get authority() {
+  get principal() {
     const bytes = new Uint8Array(this.buffer, PRIVATE_TAG_SIZE + KEY_SIZE)
-    const authority = Authority.decode(bytes)
+    const principal = Principal.decode(bytes)
 
     Object.defineProperties(this, {
-      authority: {
-        value: authority,
+      principal: {
+        value: principal,
       },
     })
 
-    return authority
+    return principal
   }
 
   /**
@@ -142,7 +142,7 @@ class SigningAuthority {
   }
 
   /**
-   * DID of the authority in `did:key` format.
+   * DID of this principal in `did:key` format.
    *
    * @returns {API.DID}
    */
@@ -153,7 +153,7 @@ class SigningAuthority {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @returns {Promise<API.Signature<T, typeof Authority.code>>}
+   * @returns {Promise<API.Signature<T, typeof Principal.code>>}
    */
   sign(payload) {
     return ED25519.sign(payload, this.secret)
@@ -162,9 +162,9 @@ class SigningAuthority {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @param {API.Signature<T, typeof Authority.code>} signature
+   * @param {API.Signature<T, typeof Principal.code>} signature
    */
   verify(payload, signature) {
-    return this.authority.verify(payload, signature)
+    return this.principal.verify(payload, signature)
   }
 }

@@ -8,7 +8,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 export const code = 0x0202
 
 /**
- * @typedef {API.UCAN.Block<unknown, number, number, 0|1>} Block
+ * @typedef {API.Block<unknown, number, number, 0|1>} Block
  * @typedef {{
  * roots: Block[]
  * blocks: Map<string, Block>
@@ -75,7 +75,9 @@ class Writer {
 export const createWriter = () => new Writer()
 
 /**
- * @param {Partial<Model>} input
+ * @template {Partial<Model>} T
+ * @param {T} input
+ * @returns {API.ByteView<T>}
  */
 export const encode = ({ roots = [], blocks }) => {
   const writer = new Writer()
@@ -86,16 +88,16 @@ export const encode = ({ roots = [], blocks }) => {
 }
 
 /**
- * @param {Uint8Array} bytes
+ * @param {API.ByteView<Partial<Model>>} bytes
  * @returns {Promise<Model>}
  */
-export const decode = async (bytes) => {
+export const decode = async bytes => {
   const reader = await /** @type {any} */ (CarReader.fromBytes(bytes))
   /** @type {{_header: { roots: CARWriter.CID[] }, _keys: string[], _blocks: UCAN.Block[] }} */
   const { _header, _blocks, _keys } = reader
   const roots = []
   const blocks = new Map()
-  const index = _header.roots.map((cid) => _keys.indexOf(String(cid)))
+  const index = _header.roots.map(cid => _keys.indexOf(String(cid)))
 
   for (const [n, block] of _blocks.entries()) {
     if (index.includes(n)) {
@@ -109,20 +111,25 @@ export const decode = async (bytes) => {
 }
 
 /**
- * @param {Uint8Array} bytes
- * @param {{hasher?: API.MultihashHasher }} [options]
+ * @template {Partial<Model>} T
+ * @param {API.ByteView<T>} bytes
+ * @param {{hasher?: API.MultihashHasher }} options
  */
-export const link = async (bytes, { hasher = sha256 } = {}) =>
-  /** @type {UCAN.Link<Model, typeof code, number> & import('multiformats').CID} */
-  (createLink(code, await hasher.digest(bytes)))
+export const link = async (bytes, { hasher = sha256 } = {}) => {
+  return /** @type {API.Link<T, typeof code, typeof hasher.code>} */ (
+    createLink(code, await hasher.digest(bytes))
+  )
+}
 
 /**
- * @param {Partial<Model>} data
+ * @template {Partial<Model>} T
+ * @param {T} data
  * @param {{hasher?: API.MultihashHasher }} [options]
+ * @returns {Promise<API.Block<T, typeof code>>}
  */
-export const write = async (data, { hasher = sha256 } = {}) => {
+export const write = async (data, options) => {
   const bytes = encode(data)
-  const cid = await link(bytes)
+  const cid = await link(bytes, options)
 
   return { bytes, cid }
 }

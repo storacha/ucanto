@@ -1,3 +1,4 @@
+import * as API from '@ucanto/interface'
 import * as CBOR from '@ipld/dag-cbor'
 export { code, decode } from '@ipld/dag-cbor'
 import { sha256 } from 'multiformats/hashes/sha2'
@@ -73,17 +74,30 @@ const prepare = (data, seen) => {
  * @param {T} data
  * @returns {CBOR.ByteView<T>}
  */
-export const encode = (data) => CBOR.encode(prepare(data, new Set()))
+export const encode = data => CBOR.encode(prepare(data, new Set()))
+
+/**
+ * @template T
+ * @param {API.ByteView<T>} bytes
+ * @param {{hasher?: API.MultihashHasher }} options
+ * @returns {Promise<API.Link<T, typeof CBOR.code>>}
+ *
+ */
+export const link = async (bytes, { hasher = sha256 } = {}) => {
+  return /** @type {API.Link<T, typeof CBOR.code>} */ (
+    createLink(CBOR.code, await hasher.digest(bytes))
+  )
+}
 
 /**
  * @template T
  * @param {T} data
- * @param {{hasher?: import('multiformats/hashes/interface').MultihashHasher }} [options]
+ * @param {{hasher?: API.MultihashHasher }} [options]
+ * @returns {Promise<API.Block<T, typeof CBOR.code>>}
  */
-export const write = async (data, { hasher = sha256 } = {}) => {
+export const write = async (data, options) => {
   const bytes = encode(data)
-  const digest = await hasher.digest(bytes)
+  const cid = await link(bytes, options)
 
-  const cid = createLink(CBOR.code, digest)
   return { cid, bytes }
 }

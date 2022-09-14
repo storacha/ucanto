@@ -1,20 +1,14 @@
+import { Ability, Capability, DID, Link, Resource } from '@ipld/dag-ucan'
+import * as UCAN from '@ipld/dag-ucan'
 import {
   Delegation,
   Result,
   Failure,
-  AuthorityParser,
-  Identity,
-  Resource,
-  Ability,
+  PrincipalParser,
+  SigningPrincipal,
   URI,
-  Capability,
-  DID,
-  LinkedProof,
   Await,
-  Proof,
-  SigningAuthority,
   IssuedInvocationView,
-  Fact,
   UCANOptions,
 } from './lib.js'
 
@@ -168,9 +162,12 @@ type InferRequried<T> = {
   [K in keyof T as T[K] | undefined extends T[K] ? never : K]: T[K]
 }
 
-export type InvokeCapabilityOptions<R extends Resource, C> = UCANOptions &
+export type InvokeCapabilityOptions<
+  R extends Resource,
+  C extends {}
+> = UCANOptions &
   InferCreateOptions<R, C> & {
-    issuer: SigningAuthority
+    issuer: SigningPrincipal
   }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
@@ -307,8 +304,8 @@ export interface CanIssue {
   canIssue(capability: ParsedCapability, issuer: DID): boolean
 }
 
-export interface AuthorityOptions {
-  authority: AuthorityParser
+export interface PrincipalOptions {
+  principal: PrincipalParser
 }
 
 export interface IssuingOptions {
@@ -321,19 +318,19 @@ export interface IssuingOptions {
   my?: (issuer: DID) => Capability[]
 }
 
-export interface ProofResolver extends AuthorityOptions, IssuingOptions {
+export interface ProofResolver extends PrincipalOptions, IssuingOptions {
   /**
    * You can provide a proof resolver that validator will call when UCAN
    * links to external proof. If resolver is not provided validator may not
    * be able to explore correesponding path within a proof chain.
    */
-  resolve?: (proof: LinkedProof) => Await<Result<Delegation, UnavailableProof>>
+  resolve?: (proof: Link) => Await<Result<Delegation, UnavailableProof>>
 }
 
 export interface ValidationOptions<C extends ParsedCapability>
   extends CanIssue,
     IssuingOptions,
-    AuthorityOptions,
+    PrincipalOptions,
     ProofResolver {
   capability: CapabilityParser<Match<C, any>>
 }
@@ -364,13 +361,13 @@ export interface MalformedCapability extends Failure {
 
 export interface InvalidAudience extends Failure {
   readonly name: 'InvalidAudience'
-  readonly audience: Identity
+  readonly audience: UCAN.Principal
   readonly delegation: Delegation
 }
 
 export interface UnavailableProof extends Failure {
   readonly name: 'UnavailableProof'
-  readonly link: LinkedProof
+  readonly link: Link
 }
 
 export interface Expired extends Failure {
@@ -387,8 +384,8 @@ export interface NotValidBefore extends Failure {
 
 export interface InvalidSignature extends Failure {
   readonly name: 'InvalidSignature'
-  readonly issuer: Identity
-  readonly audience: Identity
+  readonly issuer: UCAN.Principal
+  readonly audience: UCAN.Principal
   readonly delegation: Delegation
 }
 
@@ -407,7 +404,7 @@ export interface Unauthorized extends Failure {
 }
 
 export interface InvalidClaim extends Failure {
-  issuer: Identity
+  issuer: UCAN.Principal
   name: 'InvalidClaim'
   capability: ParsedCapability
   delegation: Delegation

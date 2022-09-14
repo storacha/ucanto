@@ -4,14 +4,14 @@ import { sha256 } from 'multiformats/hashes/sha2'
 /**
  * Creates a connection to a service.
  *
- * @template T
+ * @template {Record<string, any>} T
  * @param {API.ConnectionOptions<T>} options
  * @returns {API.ConnectionView<T>}
  */
 export const connect = (options) => new Connection(options)
 
 /**
- * @template T
+ * @template {Record<string, any>} T
  * @implements {API.ConnectionView<T>}
  */
 class Connection {
@@ -38,7 +38,7 @@ class Connection {
 
 /**
  * @template {API.Capability} C
- * @template T
+ * @template {Record<string, any>} T
  * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
  * @param {API.Connection<T>} connection
  * @param {I} invocations

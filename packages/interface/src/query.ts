@@ -9,8 +9,8 @@ import type {
   Connection,
   ConnectionView,
   Service,
-  Authority,
-  SigningAuthority,
+  Principal,
+  SigningPrincipal,
   Failure,
 } from './lib.js'
 
@@ -105,7 +105,9 @@ export declare function invoke<Capability extends UCAN.Capability>(
   input: InvocationOptions<Capability>
 ): IssuedInvocationView<Capability>
 
-export declare function connection<T>(): Connection<T>
+export declare function connection<
+  T extends Record<string, any>
+>(): Connection<T>
 
 export declare function query<In extends QueryInput>(query: In): Query<In>
 export declare function select<In extends Input, S extends Selector = true>(
@@ -135,8 +137,8 @@ type Store = {
 }
 declare var store: Store
 declare var channel: ConnectionView<{ store: Store }>
-declare const alice: SigningAuthority
-declare const bob: Authority
+declare const alice: SigningPrincipal
+declare const bob: Principal
 declare const car: UCAN.Link
 
 type ToPath<T extends string> = T extends `${infer Base}/${infer Path}`

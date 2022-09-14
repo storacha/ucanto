@@ -20,7 +20,7 @@ test('encode / decode', async () => {
   const request = await JWT.encode([
     {
       issuer: alice,
-      audience: bob.authority,
+      audience: bob.principal,
       capabilities: [
         {
           can: 'store/add',
@@ -46,7 +46,7 @@ test('encode / decode', async () => {
     [
       await Delegation.delegate({
         issuer: alice,
-        audience: bob.authority,
+        audience: bob.principal,
         capabilities: [
           {
             can: 'store/add',
@@ -80,7 +80,7 @@ test('decode requires application/json contet type', async () => {
 test('delegated proofs', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: [
       {
         can: 'store/add',
@@ -131,7 +131,7 @@ test('delegated proofs', async () => {
 test('omit proof', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: [
       {
         can: 'store/add',
@@ -182,7 +182,7 @@ test('omit proof', async () => {
 test('thorws on invalid heard', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: [
       {
         can: 'store/add',
@@ -228,7 +228,7 @@ test('thorws on invalid heard', async () => {
 test('leaving out root throws', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: [
       {
         can: 'store/add',

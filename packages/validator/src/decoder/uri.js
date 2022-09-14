@@ -4,7 +4,7 @@ import { Failure } from '../error.js'
 /**
  * @template {`${string}:`} Protocol
  * @param {unknown} input
- * @param {{protocol?: Protocol}} [options]
+ * @param {{protocol?: Protocol}} options
  * @return {API.Result<API.URI<Protocol>, API.Failure>}
  */
 export const decode = (input, { protocol } = {}) => {
@@ -29,8 +29,8 @@ export const decode = (input, { protocol } = {}) => {
  * @param {{protocol: Protocol}} options
  * @returns {API.Decoder<unknown, API.URI<Protocol>, API.Failure>}
  */
-export const match = (options) => ({
-  decode: (input) => decode(input, options),
+export const match = options => ({
+  decode: input => decode(input, options),
 })
 
 /**
@@ -43,8 +43,8 @@ export const match = (options) => ({
  * @param {{protocol?: API.Protocol<Schema>}} [options]
  * @returns {API.Decoder<unknown, `${Schema}:${string}`, API.Failure>}
  */
-export const string = (options) => ({
-  decode: (input) => {
+export const string = options => ({
+  decode: input => {
     const result = decode(input, options)
     return result.error ? result : result.href
   },

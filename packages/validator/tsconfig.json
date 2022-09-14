@@ -102,7 +102,7 @@
   "references": [
     { "path": "../interface" },
     { "path": "../client" },
-    { "path": "../authority" },
+    { "path": "../principal" },
     { "path": "../core" }
   ]
 }

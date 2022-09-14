@@ -45,7 +45,7 @@ test('content-type case', async () => {
    * @template T
    * @param {T} value
    */
-  const transcode = (value) => decode(encode(value))
+  const transcode = value => decode(encode(value))
 
   const dataset = [
     undefined,

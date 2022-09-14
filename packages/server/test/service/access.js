@@ -1,7 +1,6 @@
 import * as Server from '../../src/server.js'
 import { provide } from '../../src/handler.js'
 import * as API from './api.js'
-import { Authority, SigningAuthority } from '@ucanto/authority'
 import { service as w3 } from '../fixtures.js'
 export const id = w3
 

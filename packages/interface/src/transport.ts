@@ -1,10 +1,9 @@
-import type { Phantom, Await } from '@ipld/dag-ucan'
+import type { ByteView, Phantom, Await, IPLDLink as Link } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import type {
   ServiceInvocation,
   InferServiceInvocations,
   InferInvocations,
-  Capability,
 } from './lib.js'
 
 /**
@@ -18,7 +17,7 @@ export interface EncodeOptions {
   readonly hasher?: UCAN.MultihashHasher
 }
 
-export interface Channel<T> extends Phantom<T> {
+export interface Channel<T extends Record<string, any>> extends Phantom<T> {
   request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
     request: HTTPRequest<I>
   ): Await<HTTPResponse<InferServiceInvocations<I, T>>>
@@ -57,9 +56,13 @@ export interface HTTPResponse<T = unknown> extends Phantom<T> {
 }
 
 export interface Block<
-  C extends [Capability, ...Capability[]] = [Capability, ...Capability[]],
-  A extends number = number
+  T extends unknown = unknown,
+  Format extends number = number,
+  Alg extends number = number,
+  V extends UCAN.CIDVersion = 1
 > {
-  readonly cid: UCAN.Proof<C[number], A>
-  readonly bytes: UCAN.ByteView<UCAN.UCAN<C[number]>>
+  bytes: ByteView<T>
+  cid: Link<T, Format, Alg, V>
+
+  data?: T
 }
