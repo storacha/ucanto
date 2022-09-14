@@ -21,7 +21,7 @@ export const createV0 = (digest) => /** @type {any} */ (CID.createV0(digest))
 /**
  * Type predicate returns true if value is the link.
  *
- * @template {API.Link<any, number>} L
+ * @template {API.Link} L
  * @param {unknown} value
  * @returns {value is L}
  */
@@ -29,13 +29,13 @@ export const isLink = (value) =>
   value != null && /** @type {{asCID: unknown}} */ (value).asCID === value
 
 export const asLink =
-  /** @type {<L extends API.Link<any, number>>(value:L|unknown) => L|null} */
+  /** @type {<L extends API.Link<unknown, number>>(value:L|unknown) => L|null} */
   (CID.asCID)
 
 export const parse =
-  /** @type {<P extends string>(source:string, base?:API.MultibaseDecoder<P>) => API.Link<any, number>} */
+  /** @type {<P extends string>(source:string, base?:API.MultibaseDecoder<P>) => API.Link<unknown, number>} */
   (CID.parse)
 
 export const decode =
-  /** @type {(bytes:Uint8Array) => API.Link<any, number>} */
+  /** @type {(bytes:Uint8Array) => API.Link<unknown, number>} */
   (CID.decode)

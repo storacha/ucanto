@@ -14,14 +14,14 @@ const SIZE = PRIVATE_TAG_SIZE + KEY_SIZE + PUBLIC_TAG_SIZE + KEY_SIZE
 
 /**
  * Generates new issuer by generating underlying ED25519 keypair.
- * @returns {Promise<API.Agent<typeof Principal.code>>}
+ * @returns {Promise<API.SigningPrincipal<typeof Principal.code>>}
  */
 export const generate = () => derive(ED25519.utils.randomPrivateKey())
 
 /**
  * Derives issuer from 32 byte long secret key.
  * @param {Uint8Array} secret
- * @returns {Promise<API.Agent<typeof Principal.code>>}
+ * @returns {Promise<API.SigningPrincipal<typeof Principal.code>>}
  */
 export const derive = async (secret) => {
   if (secret.byteLength !== KEY_SIZE) {
@@ -39,13 +39,13 @@ export const derive = async (secret) => {
   varint.encodeTo(Principal.code, bytes, PRIVATE_TAG_SIZE + KEY_SIZE)
   bytes.set(publicKey, PRIVATE_TAG_SIZE + KEY_SIZE + PUBLIC_TAG_SIZE)
 
-  return new Agent(bytes)
+  return new SigningPrincipal(bytes)
 }
 
 /**
  *
  * @param {Uint8Array} bytes
- * @returns {Agent}
+ * @returns {SigningPrincipal}
  */
 export const decode = (bytes) => {
   if (bytes.byteLength !== SIZE) {
@@ -70,17 +70,17 @@ export const decode = (bytes) => {
     }
   }
 
-  return new Agent(bytes)
+  return new SigningPrincipal(bytes)
 }
 
 /**
- * @param {API.Agent<typeof Principal.code>} agent
+ * @param {API.SigningPrincipal<typeof Principal.code>} agent
  */
 export const encode = ({ bytes }) => bytes
 
 /**
  * @template {string} Prefix
- * @param {API.Agent<typeof Principal.code>} agent
+ * @param {API.SigningPrincipal<typeof Principal.code>} agent
  * @param {API.MultibaseEncoder<Prefix>} [encoder]
  */
 export const format = ({ bytes }, encoder) =>
@@ -90,21 +90,21 @@ export const format = ({ bytes }, encoder) =>
  * @template {string} Prefix
  * @param {string} agent
  * @param {API.MultibaseDecoder<Prefix>} [decoder]
- * @returns {API.Agent<typeof Principal.code>}
+ * @returns {API.SigningPrincipal<typeof Principal.code>}
  */
 export const parse = (agent, decoder) =>
   decode((decoder || base64pad).decode(agent))
 
 /**
- * @param {API.Agent<typeof Principal.code>} agent
+ * @param {API.SigningPrincipal<typeof Principal.code>} agent
  * @returns {API.DID}
  */
 export const did = ({ principal }) => principal.did()
 
 /**
- * @implements {API.Agent<typeof Principal.code>}
+ * @implements {API.SigningPrincipal<typeof Principal.code>}
  */
-class Agent {
+class SigningPrincipal {
   /**
    * @param {Uint8Array} bytes
    */
@@ -142,7 +142,7 @@ class Agent {
   }
 
   /**
-   * DID of the authority in `did:key` format.
+   * DID of this principal in `did:key` format.
    *
    * @returns {API.DID}
    */

@@ -6,7 +6,7 @@ import * as API from '@ucanto/interface'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { test, assert } from './test.js'
 import * as Access from './service/access.js'
-import { Principal } from '@ucanto/authority'
+import { Principal } from '@ucanto/principal'
 import { UnavailableProof } from '@ucanto/validator'
 
 const context = {
@@ -19,9 +19,9 @@ const context = {
    */
   canIssue: (capability, issuer) =>
     capability.with === issuer || issuer == w3.did(),
-  authority: Principal,
+  principal: Principal,
   /**
-   * @param {API.Link} link
+   * @param {API.UCANLink} link
    */
   resolve: (link) => new UnavailableProof(link),
 }

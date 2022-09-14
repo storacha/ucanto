@@ -1,7 +1,6 @@
 import * as Server from '../../src/server.js'
 import * as Client from '@ucanto/client'
 import { provide } from '../../src/handler.js'
-import { Principal } from '@ucanto/authority'
 import * as API from './api.js'
 import * as Access from './access.js'
 import { service as issuer } from '../fixtures.js'

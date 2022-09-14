@@ -8,7 +8,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 export const code = 0x0202
 
 /**
- * @typedef {API.UCAN.Block<any, number>} Block
+ * @typedef {API.Block<unknown, number, number, 0|1>} Block
  * @typedef {{
  * roots: Block[]
  * blocks: Map<string, Block>
@@ -75,7 +75,9 @@ class Writer {
 export const createWriter = () => new Writer()
 
 /**
- * @param {Partial<Model>} input
+ * @template {Partial<Model>} T
+ * @param {T} input
+ * @returns {API.ByteView<T>}
  */
 export const encode = ({ roots = [], blocks }) => {
   const writer = new Writer()
@@ -86,7 +88,7 @@ export const encode = ({ roots = [], blocks }) => {
 }
 
 /**
- * @param {Uint8Array} bytes
+ * @param {API.ByteView<Partial<Model>>} bytes
  * @returns {Promise<Model>}
  */
 export const decode = async (bytes) => {
@@ -109,20 +111,25 @@ export const decode = async (bytes) => {
 }
 
 /**
- * @param {Uint8Array} bytes
- * @param {{hasher?: API.UCAN.MultihashHasher }} [options]
+ * @template {Partial<Model>} T
+ * @param {API.ByteView<T>} bytes
+ * @param {{hasher?: API.UCAN.MultihashHasher }} options
  */
-export const link = async (bytes, options) =>{
-  const hasher = options?.hasher ?? sha256
-  return /** @type {UCAN.Link<any, number>} */ (createLink(code, await hasher.digest(bytes)))
+export const link = async (bytes, { hasher = sha256 } = {}) => {
+  return /** @type {API.Link<T, typeof code, typeof hasher.code>} */ (
+    createLink(code, await hasher.digest(bytes))
+  )
 }
 
 /**
- * @param {Partial<Model>} data
+ * @template {Partial<Model>} T
+ * @param {T} data
+ * @param {{hasher?: API.UCAN.MultihashHasher }} [options]
+ * @returns {Promise<API.Block<T, typeof code>>}
  */
-export const write = async (data) => {
+export const write = async (data, options) => {
   const bytes = encode(data)
-  const cid = await link(bytes)
+  const cid = await link(bytes, options)
 
   return { bytes, cid }
 }

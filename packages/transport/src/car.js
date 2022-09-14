@@ -54,7 +54,7 @@ export const decode = async ({ headers, body }) => {
 
   const invocations = []
 
-  for (const root of /** @type {API.Block[]} */ (roots)) {
+  for (const root of /** @type {API.UCANBlock[]} */ (roots)) {
     invocations.push(
       Delegation.create({
         root,

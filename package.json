@@ -8,7 +8,7 @@
     "packages/client",
     "packages/server",
     "packages/transport",
-    "packages/authority",
+    "packages/principal",
     "packages/validator"
   ],
   "scripts": {

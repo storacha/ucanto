@@ -7,7 +7,7 @@ import * as Link from './link.js'
  * Import `isLink` from module directly
  */
 export const isLink =
-  /** @type {(value:API.Proof) => value is API.Link} */
+  /** @type {(value:API.Proof) => value is API.UCANLink} */
   (Link.isLink)
 
 /**
@@ -27,7 +27,7 @@ export const isDelegation = (proof) => !Link.isLink(proof)
  */
 export class Delegation {
   /**
-   * @param {API.Block<C>} root
+   * @param {API.UCANBlock<C>} root
    * @param {Map<string, API.Block>} [blocks]
    */
   constructor(root, blocks = new Map()) {
@@ -148,7 +148,7 @@ const it = function* (delegation) {
 const decodeCache = new WeakMap()
 /**
  * @template {API.Capabilities} C
- * @param {API.Block<C>} block
+ * @param {API.UCANBlock<C>} block
  * @returns {UCAN.View<C>}
  */
 const decode = ({ bytes }) => {
@@ -208,7 +208,7 @@ export const delegate = async (
 
 /**
  * @template {API.Capabilities} C
- * @param {API.Block<C>} root
+ * @param {API.UCANBlock<C>} root
  * @param {Map<string, API.Block>} blocks
  * @returns {IterableIterator<API.Block>}
  */
@@ -216,7 +216,7 @@ export const delegate = async (
 const exportDAG = function* (root, blocks) {
   for (const link of decode(root).proofs) {
     // Check if block is included in this delegation
-    const root = blocks.get(link.toString())
+    const root = /** @type {UCAN.Block} */ (blocks.get(link.toString()))
     if (root) {
       yield* exportDAG(root, blocks)
     }
@@ -227,7 +227,7 @@ const exportDAG = function* (root, blocks) {
 
 /**
  * @template {API.Capabilities} C
- * @param {Iterable<API.Block & { data?: UCAN.UCAN }>} dag
+ * @param {Iterable<API.Block>} dag
  * @returns {API.Delegation<C>}
  */
 export const importDAG = (dag) => {
@@ -243,15 +243,18 @@ export const importDAG = (dag) => {
   } else {
     const [, root] = last
 
-    return new Delegation(/** @type {API.Block<C>} */ (root), new Map(entries))
+    return new Delegation(
+      /** @type {API.UCANBlock<C>} */ (root),
+      new Map(entries)
+    )
   }
 }
 
 /**
  * @template {API.Capabilities} C
  * @param {object} dag
- * @param {API.Block<C>} dag.root
- * @param {Map<string, API.Block>} [dag.blocks]
+ * @param {API.UCANBlock<C>} dag.root
+ * @param {Map<string, API.Block<unknown>>} [dag.blocks]
  * @returns {API.Delegation<C>}
  */
 export const create = ({ root, blocks }) => new Delegation(root, blocks)
@@ -267,7 +270,7 @@ const proofs = (delegation) => {
   for (const link of decode(root).proofs) {
     // Check if linked proof is included in our blocks if so create delegation
     // view otherwise use a link
-    const root = blocks.get(link.toString())
+    const root = /** @type {UCAN.Block} */ (blocks.get(link.toString()))
     proofs.push(root ? create({ root, blocks }) : link)
   }
 

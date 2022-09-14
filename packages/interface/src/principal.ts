@@ -11,9 +11,8 @@ export interface Principal<A extends number = number>
   bytes: Uint8Array
 }
 
-export interface Agent<A extends number = number>
-  extends ArrayBufferView,
-    UCAN.Verifier<A>,
+export interface SigningPrincipal<A extends number = number>
+  extends Principal<A>,
     UCAN.Signer<A> {
   principal: Principal<A>
   bytes: Uint8Array

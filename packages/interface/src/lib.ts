@@ -1,25 +1,45 @@
-import { Ability, Block, ByteView, Capabilities, Capability, DID, Fact, Link, MultihashHasher, Phantom, Resource, Signature } from '@ipld/dag-ucan'
+import {
+  Ability,
+  Block as UCANBlock,
+  ByteView,
+  Capabilities,
+  Capability,
+  DID,
+  Fact,
+  Link as UCANLink,
+  IPLDLink as Link,
+  MultihashHasher,
+  Phantom,
+  Resource,
+  Signature,
+} from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import type {
-  Agent, Principal, PrincipalParser
-} from './authority.js'
+  Principal,
+  PrincipalParser,
+  SigningPrincipal,
+} from './principal.js'
 import {
-  CanIssue, InvalidAudience,
-  Unauthorized, UnavailableProof
+  CanIssue,
+  InvalidAudience,
+  Unauthorized,
+  UnavailableProof,
 } from './capability.js'
 import type * as Transport from './transport.js'
-import type { Tuple } from './transport.js'
+import type { Tuple, Block } from './transport.js'
 
 export type {
-  MultibaseDecoder, MultibaseEncoder
+  MultibaseDecoder,
+  MultibaseEncoder,
 } from 'multiformats/bases/interface'
-export * from './authority.js'
+export * from './principal.js'
 export * from './capability.js'
 export * from './transport.js'
 export type {
   Transport,
   Principal,
-  Agent,
+  PrincipalParser,
+  SigningPrincipal,
   Phantom,
   Tuple,
   DID,
@@ -27,11 +47,13 @@ export type {
   ByteView,
   Capabilities,
   Capability,
-  Block,
   Fact,
+  UCANBlock,
+  UCANLink,
   Link,
+  Block,
   Ability,
-  Resource
+  Resource,
 }
 export * as UCAN from '@ipld/dag-ucan'
 
@@ -39,9 +61,9 @@ export * as UCAN from '@ipld/dag-ucan'
  * Proof can either be a link to a delegated UCAN or a materialized `Delegation`
  * view.
  */
-export type Proof<
-  C extends Capabilities = Capabilities
-> = Link<C> | Delegation<C>
+export type Proof<C extends Capabilities = Capabilities> =
+  | UCANLink<C>
+  | Delegation<C>
 
 export interface UCANOptions {
   audience: Principal
@@ -59,23 +81,21 @@ export interface DelegationOptions<
   C extends Capabilities,
   A extends number = number
 > extends UCANOptions {
-  issuer: Agent<A>
+  issuer: SigningPrincipal<A>
   audience: Principal
   capabilities: C
   proofs?: Proof[]
 }
 
-export interface Delegation<
-  C extends Capabilities = Capabilities
-> {
-  readonly root: Block<C>
+export interface Delegation<C extends Capabilities = Capabilities> {
+  readonly root: UCANBlock<C>
   readonly blocks: Map<string, Block>
 
-  readonly cid: Link<C>
+  readonly cid: UCANLink<C>
   readonly bytes: ByteView<UCAN.UCAN<C>>
   readonly data: UCAN.View<C>
 
-  asCID: Link<C>
+  asCID: UCANLink<C>
 
   export(): IterableIterator<Block>
 
@@ -97,13 +117,13 @@ export interface Invocation<C extends Capability = Capability>
 
 export interface InvocationOptions<C extends Capability = Capability>
   extends UCANOptions {
-  issuer: Agent
+  issuer: SigningPrincipal
   capability: C
 }
 
 export interface IssuedInvocation<C extends Capability = Capability>
   extends DelegationOptions<[C]> {
-  readonly issuer: Agent
+  readonly issuer: SigningPrincipal
   readonly audience: Principal
   readonly capabilities: [C]
 
@@ -145,9 +165,9 @@ export type InvocationError =
 export interface InvocationContext extends CanIssue {
   id: Principal
   my?: (issuer: DID) => Capability[]
-  resolve?: (proof: Link) => Await<Result<Delegation, UnavailableProof>>
+  resolve?: (proof: UCANLink) => Await<Result<Delegation, UnavailableProof>>
 
-  authority: PrincipalParser
+  principal: PrincipalParser
 }
 
 export type ResolveServiceMethod<
@@ -303,10 +323,10 @@ export interface InboundTransportOptions {
 
 export interface ValidatorOptions {
   /**
-   * Takes authority parser that can be used to turn an `UCAN.Principal`
-   * into `Ucanto.Authority`.
+   * Takes principal parser that can be used to turn a `UCAN.Principal`
+   * into `Ucanto.Principal`.
    */
-  readonly authority?: PrincipalParser
+  readonly principal?: PrincipalParser
 
   readonly canIssue?: CanIssue['canIssue']
   readonly my?: InvocationContext['my']

@@ -31,11 +31,11 @@ The very first thing we want to do is define set of capabilities our service wil
 Lets define `file/link` capability, where resources are identified via `file:` URLs and MAY contain `link` to be mapped to a given path.
 
 ```ts
-import { capability, URI, Link, Failure } from "@ucanto/server"
+import { capability, URI, Link, Failure } from '@ucanto/server'
 
 const Add = capability({
-  can: "file/link",
-  with: URI.match({ protocol: "file:" }),
+  can: 'file/link',
+  with: URI.match({ protocol: 'file:' }),
   caveats: { link: Link },
   derives: (claimed, delegated) =>
     // Can be derived if claimed capability path is contained in the delegated
@@ -44,7 +44,7 @@ const Add = capability({
     new Failure(`Notebook ${claimed.uri} is not included in ${delegaed.uri}`),
 })
 
-const ensureTrailingDelimiter = uri => (uri.endsWith("/") ? uri : `${uri}/`)
+const ensureTrailingDelimiter = (uri) => (uri.endsWith('/') ? uri : `${uri}/`)
 ```
 
 > Please note that library gurantees that both `claimed` and `delegated` capabilty will have `{can: "file/link", with: string, uri: URL, caveats: { link?: CID }}`
@@ -57,7 +57,7 @@ const ensureTrailingDelimiter = uri => (uri.endsWith("/") ? uri : `${uri}/`)
 Now that we have a `file/link` capability we can define a service providing it:
 
 ```ts
-import { provide, Failure, MalformedCapability } from "@ucanto/server"
+import { provide, Failure, MalformedCapability } from '@ucanto/server'
 
 const service = (context: { store: Map<string, string> }) => {
   const add = provide(Add, ({ capability, invocation }) => {
@@ -91,13 +91,13 @@ Library comes with several transport layer codecs you can pick from, but you can
 import * as Server from "@ucanto/server"
 import * as CAR from "@ucanto/transport/car"
 import * as CBOR from "@ucanto/transport/cbor"
-import { SigningAuthority } from "@ucanto/authority"
+import { SigningPrincipal } from "@ucanto/principal"
 import * as HTTP from "node:http"
 import * as Buffer from "node:buffer"
 
 export const server = (context { store = new Map() } : { store: Map<string, string> }) =>
   Server.create({
-    id: await SigningAuthority.derive(process.env.SERVICE_SECRET),
+    id: await SigningPrincipal.derive(process.env.SERVICE_SECRET),
     service: service(context),
     decoder: CAR,
     encoder: CBOR,
@@ -145,21 +145,21 @@ Client can be used to issue and execute UCAN invocations. Here is an example of
 invoking `file/link` capability we've defined earlier
 
 ```ts
-import * as Client from "@ucanto/client"
-import { SigningAuthority, Authority } from "@ucanto/authority"
-import { CID } from "multiformats"
+import * as Client from '@ucanto/client'
+import { SigningPrincipal, Principal } from '@ucanto/principal'
+import { CID } from 'multiformats'
 
 // Service will have a well known DID
-const service = Authority.parse(process.env.SERVICE_ID)
+const service = Principal.parse(process.env.SERVICE_ID)
 // Client keypair
-const issuer = SigningAuthority.parse(process.env.MY_KEPAIR)
+const issuer = SigningPrincipal.parse(process.env.MY_KEPAIR)
 
-const demo1 = async connection => {
+const demo1 = async (connection) => {
   const me = await Client.invoke({
     issuer: alice,
     audience: service,
     capability: {
-      can: "file/link",
+      can: 'file/link',
       with: `file://${issuer.did()}/me/about`,
       link: CID.parse(process.env.ME_CID),
     },
@@ -167,9 +167,9 @@ const demo1 = async connection => {
 
   const result = await me.execute(connection)
   if (result.error) {
-    console.error("oops", result)
+    console.error('oops', result)
   } else {
-    console.log("file got linked", result.link.toString())
+    console.log('file got linked', result.link.toString())
   }
 }
 ```
@@ -191,9 +191,9 @@ const connection = Client.connect({
 In practice you probably would want client/server communication to happen across the wire, or at least across processes. You can bring your own transport channel, or choose an existing one. For example:
 
 ```ts
-import * as HTTP from "@ucanto/transport/http"
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
+import * as HTTP from '@ucanto/transport/http'
+import * as CAR from '@ucanto/transport/car'
+import * as CBOR from '@ucanto/transport/cbor'
 
 const connection = Client.connect({
   encoder: Transport.CAR, // encode as CAR because server decodes from car
@@ -210,22 +210,22 @@ const connection = Client.connect({
 The library supports batch invocations and takes care of all the nitty gritty details when it comes to UCAN delegation chains, specifically taking chains apart to encode as blocks in CAR and putting them back together into a chain on the other side. All you need to do is provide a delegation in the proofs:
 
 ```ts
-import { SigningAuthority, Authority } from "@ucanto/authority"
-import * as Client from "@ucanto/client"
-import { CID } from "multiformats"
+import { SigningPrincipal, Principal } from '@ucanto/principal'
+import * as Client from '@ucanto/client'
+import { CID } from 'multiformats'
 
-const service = Authority.parse(process.env.SERVICE_DID)
-const alice = SigningAuthority.parse(process.env.ALICE_KEYPAIR)
-const bob = SigningAuthority.parse(process.env.BOB_KEYPAIR)
+const service = Principal.parse(process.env.SERVICE_DID)
+const alice = SigningPrincipal.parse(process.env.ALICE_KEYPAIR)
+const bob = SigningPrincipal.parse(process.env.BOB_KEYPAIR)
 
-const demo2 = async connection => {
+const demo2 = async (connection) => {
   // Alice delegates capability to mutate FS under bob's namespace
   const proof = await Client.delegate({
     issuer: alice,
-    audience: bob.authority,
+    audience: bob.principal,
     capabilities: [
       {
-        can: "file/link",
+        can: 'file/link',
         with: `file://${alice.did()}/friends/${bob.did()}/`,
       },
     ],
@@ -235,7 +235,7 @@ const demo2 = async connection => {
     issuer: bob,
     audience: service,
     capability: {
-      can: "file/link",
+      can: 'file/link',
       with: `file://${alice.did()}/friends/${bob.did()}/about`,
       link: CID.parse(process.env.BOB_CID),
     },
@@ -245,7 +245,7 @@ const demo2 = async connection => {
     issuer: bob,
     audience: service,
     capability: {
-      can: "file/link",
+      can: 'file/link',
       with: `file://${alice.did()}/friends/${MALLORY_DID}/about`,
       link: CID.parse(process.env.MALLORY_CID),
     },
@@ -257,15 +257,15 @@ const demo2 = async connection => {
   ])
 
   if (bobResult.error) {
-    console.error("oops", r1)
+    console.error('oops', r1)
   } else {
-    console.log("about bob is linked", r1)
+    console.log('about bob is linked', r1)
   }
 
   if (malloryResult.error) {
-    console.log("oops", r2)
+    console.log('oops', r2)
   } else {
-    console.log("about mallory is linked", r2)
+    console.log('about mallory is linked', r2)
   }
 }
 ```

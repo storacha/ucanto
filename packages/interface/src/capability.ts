@@ -5,10 +5,9 @@ import {
   Result,
   Failure,
   PrincipalParser,
-  Principal,
+  SigningPrincipal,
   URI,
   Await,
-  Agent,
   IssuedInvocationView,
   UCANOptions,
 } from './lib.js'
@@ -168,7 +167,7 @@ export type InvokeCapabilityOptions<
   C extends {}
 > = UCANOptions &
   InferCreateOptions<R, C> & {
-    issuer: Agent
+    issuer: SigningPrincipal
   }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
@@ -305,8 +304,8 @@ export interface CanIssue {
   canIssue(capability: ParsedCapability, issuer: DID): boolean
 }
 
-export interface AuthorityOptions {
-  authority: PrincipalParser
+export interface PrincipalOptions {
+  principal: PrincipalParser
 }
 
 export interface IssuingOptions {
@@ -319,7 +318,7 @@ export interface IssuingOptions {
   my?: (issuer: DID) => Capability[]
 }
 
-export interface ProofResolver extends AuthorityOptions, IssuingOptions {
+export interface ProofResolver extends PrincipalOptions, IssuingOptions {
   /**
    * You can provide a proof resolver that validator will call when UCAN
    * links to external proof. If resolver is not provided validator may not
@@ -331,7 +330,7 @@ export interface ProofResolver extends AuthorityOptions, IssuingOptions {
 export interface ValidationOptions<C extends ParsedCapability>
   extends CanIssue,
     IssuingOptions,
-    AuthorityOptions,
+    PrincipalOptions,
     ProofResolver {
   capability: CapabilityParser<Match<C, any>>
 }

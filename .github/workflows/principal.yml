@@ -1,4 +1,4 @@
-name: authority
+name: principal
 
 on:
   workflow_dispatch:
@@ -7,14 +7,14 @@ on:
       - main
     paths:
       - 'packages/interface/**'
-      - 'packages/authority/**'
+      - 'packages/principal/**'
   pull_request:
     branches:
       - main
     paths:
       - 'packages/interface/**'
-      - 'packages/authority/**'
-      - '.github/workflows/authority.yml'
+      - 'packages/principal/**'
+      - '.github/workflows/principal.yml'
 jobs:
   check:
     name: Typecheck
@@ -24,7 +24,7 @@ jobs:
         node-version:
           - 16
         project:
-          - authority
+          - principal
     steps:
       - uses: actions/checkout@v2
 
@@ -58,7 +58,7 @@ jobs:
           - windows-latest
           - macos-latest
         project:
-          - authority
+          - principal
 
     steps:
       - uses: actions/checkout@v2

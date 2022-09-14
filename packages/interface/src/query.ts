@@ -10,7 +10,7 @@ import type {
   ConnectionView,
   Service,
   Principal,
-  Agent,
+  SigningPrincipal,
   Failure,
 } from './lib.js'
 
@@ -137,7 +137,7 @@ type Store = {
 }
 declare var store: Store
 declare var channel: ConnectionView<{ store: Store }>
-declare const alice: Agent
+declare const alice: SigningPrincipal
 declare const bob: Principal
 declare const car: UCAN.Link
 

@@ -78,14 +78,26 @@ export const encode = (data) => CBOR.encode(prepare(data, new Set()))
 
 /**
  * @template T
+ * @param {API.ByteView<T>} bytes
+ * @param {{hasher?: API.UCAN.MultihashHasher }} options
+ * @returns {Promise<API.Link<T, typeof CBOR.code>>}
+ *
+ */
+export const link = async (bytes, { hasher = sha256 } = {}) => {
+  return /** @type {API.Link<T, typeof CBOR.code>} */ (
+    createLink(CBOR.code, await hasher.digest(bytes))
+  )
+}
+
+/**
+ * @template T
  * @param {T} data
  * @param {{hasher?: API.UCAN.MultihashHasher }} [options]
+ * @returns {Promise<API.Block<T, typeof CBOR.code>>}
  */
 export const write = async (data, options) => {
-  const hasher = options?.hasher ?? sha256
   const bytes = encode(data)
-  const digest = await hasher.digest(bytes)
+  const cid = await link(bytes, options)
 
-  const cid = createLink(CBOR.code, digest)
   return { cid, bytes }
 }

@@ -1,5 +1,5 @@
 {
-  "packages/authority": "0.5.0",
+  "packages/principal": "0.5.0",
   "packages/client": "0.6.0",
   "packages/core": "0.6.0",
   "packages/interface": "0.7.0",

@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import { InvalidAudience } from '@ucanto/validator'
-import { Principal } from '@ucanto/authority'
+import { Principal } from '@ucanto/principal'
 export {
   capability,
   URI,
@@ -32,12 +32,12 @@ class Server {
     encoder,
     decoder,
     catch: fail,
-    authority = Principal,
+    principal = Principal,
     canIssue = (capability, issuer) =>
       capability.with === issuer || issuer === id.did(),
     ...context
   }) {
-    this.context = { id, authority, canIssue, ...context }
+    this.context = { id, principal, canIssue, ...context }
     this.service = service
     this.encoder = encoder
     this.decoder = decoder

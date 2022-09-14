@@ -1,6 +1,6 @@
 {
-  "name": "@ucanto/authority",
-  "description": "ed25519 identity",
+  "name": "@ucanto/principal",
+  "description": "ed25519 principal",
   "version": "0.5.0",
   "keywords": [
     "UCAN",

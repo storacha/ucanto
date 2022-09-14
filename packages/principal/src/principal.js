@@ -9,7 +9,7 @@ const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 32 + PUBLIC_TAG_SIZE
 
 /**
- * Parses `did:key:` string as an Principal.
+ * Parses `did:key:` string as a VerifyingPrincipal.
  * @param {API.DID} did
  * @returns {API.Principal<typeof code>}
  */
@@ -40,17 +40,17 @@ export const decode = (bytes) => {
 /**
  * Formats given Principal into `did:key:` format.
  *
- * @param {API.Principal<typeof code>} authority
+ * @param {API.Principal<typeof code>} principal
  */
-export const format = (authority) => DID.format(authority.bytes)
+export const format = (principal) => DID.format(principal.bytes)
 
 /**
  * Encodes given Principal by tagging it's ed25519 public key with `0xed`
  * multiformat code.
  *
- * @param {API.Principal<typeof code>} authority
+ * @param {API.Principal<typeof code>} principal
  */
-export const encode = (authority) => authority.bytes
+export const encode = (principal) => principal.bytes
 
 /**
  * @implements {API.Principal<typeof code>}

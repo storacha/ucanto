@@ -2,7 +2,7 @@ import { test, assert } from './test.js'
 import { access } from '../src/lib.js'
 import { capability, URI, Link } from '../src/lib.js'
 import { Failure } from '../src/error.js'
-import { Principal } from '@ucanto/authority'
+import { Principal } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 import * as API from '@ucanto/interface'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
@@ -48,7 +48,7 @@ test('self-issued invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -82,7 +82,7 @@ test('expired invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -131,7 +131,7 @@ test('not vaid before invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -164,7 +164,7 @@ test('invalid signature', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -196,7 +196,7 @@ test('unknown capability', async () => {
   const result = await access(invocation, {
     // @ts-ignore
     capability: storeAdd,
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -238,7 +238,7 @@ test('delegated invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -280,7 +280,7 @@ test('invalid claim / no proofs', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -325,7 +325,7 @@ test('invalid claim / expired', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -372,7 +372,7 @@ test('invalid claim / not valid before', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -419,7 +419,7 @@ test('invalid claim / invalid signature', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -469,7 +469,7 @@ test('invalid claim / unknown capability', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -515,7 +515,7 @@ test('invalid claim / malformed capability', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -560,7 +560,7 @@ test('invalid claim / unavailable proof', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -604,7 +604,7 @@ test('invalid claim / failed to resolve', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -652,7 +652,7 @@ test('invalid claim / invalid audience', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -696,7 +696,7 @@ test('invalid claim / invalid claim', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -752,7 +752,7 @@ test('invalid claim / invalid sub delegation', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -799,7 +799,7 @@ test('delegate with my:*', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -861,7 +861,7 @@ test('delegate with my:did', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -935,7 +935,7 @@ test('delegate with as:*', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -1022,7 +1022,7 @@ test('delegate with as:did', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return (
         claim.with === issuer ||
@@ -1095,7 +1095,7 @@ test('resolve proof', async () => {
   })
 
   const result = await access(invocation, {
-    authority: Principal,
+    principal: Principal,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },

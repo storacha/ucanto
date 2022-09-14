@@ -1,4 +1,4 @@
-import type { Phantom, Await } from '@ipld/dag-ucan'
+import type { ByteView, Phantom, Await, IPLDLink as Link } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import type {
   ServiceInvocation,
@@ -53,4 +53,16 @@ export interface HTTPRequest<T = unknown> extends Phantom<T> {
 export interface HTTPResponse<T = unknown> extends Phantom<T> {
   headers: Readonly<Record<string, string>>
   body: Uint8Array
+}
+
+export interface Block<
+  T extends unknown = unknown,
+  Format extends number = number,
+  Alg extends number = number,
+  V extends UCAN.CIDVersion = 1
+> {
+  bytes: ByteView<T>
+  cid: Link<T, Format, Alg, V>
+
+  data?: T
 }
