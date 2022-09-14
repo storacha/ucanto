@@ -88,15 +88,15 @@ export const format = ({ bytes }, encoder) =>
 
 /**
  * @template {string} Prefix
- * @param {string} agent
+ * @param {string} principal
  * @param {API.MultibaseDecoder<Prefix>} [decoder]
  * @returns {API.SigningPrincipal<typeof Principal.code>}
  */
-export const parse = (agent, decoder) =>
-  decode((decoder || base64pad).decode(agent))
+export const parse = (principal, decoder) =>
+  decode((decoder || base64pad).decode(principal))
 
 /**
- * @param {API.SigningPrincipal<typeof Principal.code>} agent
+ * @param {API.SigningPrincipal<typeof Principal.code>} principal
  * @returns {API.DID}
  */
 export const did = ({ principal }) => principal.did()
