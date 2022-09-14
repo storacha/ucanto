@@ -29,7 +29,7 @@ export const isLink = value =>
   value != null && /** @type {{asCID: unknown}} */ (value).asCID === value
 
 export const asLink =
-  /** @type {<L extends API.Link<unknown, number>>(value:L|unknown) => L|null} */
+  /** @type {<L extends API.Link<unknown, number, number, API.UCAN.CIDVersion>>(value:L|unknown) => L|null} */
   (CID.asCID)
 
 export const parse =
