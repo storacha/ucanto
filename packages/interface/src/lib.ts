@@ -92,6 +92,18 @@ export interface DelegationOptions<
 
 export interface Delegation<C extends Capabilities = Capabilities> {
   readonly root: UCANBlock<C>
+  /**
+    * Map of all the IPLD blocks that where included with this delegation DAG.
+    * Usually this would be blocks corresponding to proofs, however it may
+    * also contain other blocks e.g. things that `capabilities` or `facts` may
+    * link.
+    * It is not guaranteed to include all the blocks of this DAG, as it represents
+    * a partial DAG of the delegation desired for transporting.
+    *
+    * Also note that map may contain blocks that are not part of this
+    * delegation DAG. That is because `Delegation` is usually constructed as
+    * view / selection over the CAR which may contain bunch of other blocks.
+    */
   readonly blocks: Map<string, Block>
 
   readonly cid: UCANLink<C>
