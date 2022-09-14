@@ -91,13 +91,13 @@ export const encode = ({ roots = [], blocks }) => {
  * @param {API.ByteView<Partial<Model>>} bytes
  * @returns {Promise<Model>}
  */
-export const decode = async (bytes) => {
+export const decode = async bytes => {
   const reader = await /** @type {any} */ (CarReader.fromBytes(bytes))
   /** @type {{_header: { roots: CARWriter.CID[] }, _keys: string[], _blocks: UCAN.Block[] }} */
   const { _header, _blocks, _keys } = reader
   const roots = []
   const blocks = new Map()
-  const index = _header.roots.map((cid) => _keys.indexOf(String(cid)))
+  const index = _header.roots.map(cid => _keys.indexOf(String(cid)))
 
   for (const [n, block] of _blocks.entries()) {
     if (index.includes(n)) {
@@ -113,7 +113,7 @@ export const decode = async (bytes) => {
 /**
  * @template {Partial<Model>} T
  * @param {API.ByteView<T>} bytes
- * @param {{hasher?: API.UCAN.MultihashHasher }} options
+ * @param {{hasher?: API.MultihashHasher }} options
  */
 export const link = async (bytes, { hasher = sha256 } = {}) => {
   return /** @type {API.Link<T, typeof code, typeof hasher.code>} */ (
@@ -124,7 +124,7 @@ export const link = async (bytes, { hasher = sha256 } = {}) => {
 /**
  * @template {Partial<Model>} T
  * @param {T} data
- * @param {{hasher?: API.UCAN.MultihashHasher }} [options]
+ * @param {{hasher?: API.MultihashHasher }} [options]
  * @returns {Promise<API.Block<T, typeof code>>}
  */
 export const write = async (data, options) => {

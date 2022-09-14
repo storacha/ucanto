@@ -44,7 +44,7 @@ const Add = capability({
     new Failure(`Notebook ${claimed.uri} is not included in ${delegaed.uri}`),
 })
 
-const ensureTrailingDelimiter = (uri) => (uri.endsWith('/') ? uri : `${uri}/`)
+const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 ```
 
 > Please note that library gurantees that both `claimed` and `delegated` capabilty will have `{can: "file/link", with: string, uri: URL, caveats: { link?: CID }}`
@@ -154,7 +154,7 @@ const service = Principal.parse(process.env.SERVICE_ID)
 // Client keypair
 const issuer = SigningPrincipal.parse(process.env.MY_KEPAIR)
 
-const demo1 = async (connection) => {
+const demo1 = async connection => {
   const me = await Client.invoke({
     issuer: alice,
     audience: service,
@@ -218,7 +218,7 @@ const service = Principal.parse(process.env.SERVICE_DID)
 const alice = SigningPrincipal.parse(process.env.ALICE_KEYPAIR)
 const bob = SigningPrincipal.parse(process.env.BOB_KEYPAIR)
 
-const demo2 = async (connection) => {
+const demo2 = async connection => {
   // Alice delegates capability to mutate FS under bob's namespace
   const proof = await Client.delegate({
     issuer: alice,

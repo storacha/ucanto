@@ -346,7 +346,6 @@ test('import delegation', async () => {
   })
 
   const replica = Delegation.import(original.export())
-  // @ts-ignore
   assert.deepEqual(original, replica)
 
   assert.equal(replica.issuer.did(), alice.did())
@@ -405,7 +404,6 @@ test('issue chained delegation', async () => {
     return assert.fail('must be a delegation')
   }
 
-  // @ts-ignore
   assert.deepEqual(proof.bytes, delegation.bytes)
 
   assert.deepEqual([...proof.export()], [proof.root])

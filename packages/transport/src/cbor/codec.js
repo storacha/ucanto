@@ -74,12 +74,12 @@ const prepare = (data, seen) => {
  * @param {T} data
  * @returns {CBOR.ByteView<T>}
  */
-export const encode = (data) => CBOR.encode(prepare(data, new Set()))
+export const encode = data => CBOR.encode(prepare(data, new Set()))
 
 /**
  * @template T
  * @param {API.ByteView<T>} bytes
- * @param {{hasher?: API.UCAN.MultihashHasher }} options
+ * @param {{hasher?: API.MultihashHasher }} options
  * @returns {Promise<API.Link<T, typeof CBOR.code>>}
  *
  */
@@ -92,7 +92,7 @@ export const link = async (bytes, { hasher = sha256 } = {}) => {
 /**
  * @template T
  * @param {T} data
- * @param {{hasher?: API.UCAN.MultihashHasher }} [options]
+ * @param {{hasher?: API.MultihashHasher }} [options]
  * @returns {Promise<API.Block<T, typeof CBOR.code>>}
  */
 export const write = async (data, options) => {

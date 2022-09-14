@@ -9,6 +9,7 @@ import {
   Link as UCANLink,
   IPLDLink as Link,
   MultihashHasher,
+  MultihashDigest,
   Phantom,
   Resource,
   Signature,
@@ -54,6 +55,8 @@ export type {
   Block,
   Ability,
   Resource,
+  MultihashDigest,
+  MultihashHasher,
 }
 export * as UCAN from '@ipld/dag-ucan'
 
