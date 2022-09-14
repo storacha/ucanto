@@ -1,9 +1,1 @@
-{
-  "packages/principal": "0.5.0",
-  "packages/client": "0.6.0",
-  "packages/core": "0.6.0",
-  "packages/interface": "0.7.0",
-  "packages/server": "0.7.0",
-  "packages/transport": "0.7.0",
-  "packages/validator": "0.6.0"
-}
+{"packages/client":"1.0.0","packages/core":"1.0.0","packages/interface":"1.0.0","packages/principal":"1.0.0","packages/server":"1.0.0","packages/transport":"1.0.0","packages/validator":"1.0.0"}
