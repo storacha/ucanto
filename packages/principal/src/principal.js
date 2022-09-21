@@ -10,7 +10,7 @@ const SIZE = 32 + PUBLIC_TAG_SIZE
 
 /**
  * Parses `did:key:` string as a VerifyingPrincipal.
- * @param {API.DID} did
+ * @param {API.DID|string} did
  * @returns {API.Principal<typeof code>}
  */
 export const parse = (did) => decode(DID.parse(did))
