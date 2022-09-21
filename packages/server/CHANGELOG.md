@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.0.1](https://www.github.com/web3-storage/ucanto/compare/server-v1.0.0...server-v1.0.1) (2022-09-21)
+
+
+### Bug Fixes
+
+* **server:** generarting invaild typedefs ([#91](https://www.github.com/web3-storage/ucanto/issues/91)) ([f528031](https://www.github.com/web3-storage/ucanto/commit/f528031121e9cd7f17f106c737fafae15f928776))
+
 ## [1.0.0](https://www.github.com/web3-storage/ucanto/compare/server-v0.7.0...server-v1.0.0) (2022-09-14)
 
 
