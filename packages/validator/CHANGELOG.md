@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.0.0](https://www.github.com/web3-storage/ucanto/compare/validator-v0.6.0...validator-v1.0.0) (2022-09-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* update dag-ucan, types and names (#90)
+
+### Features
+
+* update dag-ucan, types and names ([#90](https://www.github.com/web3-storage/ucanto/issues/90)) ([cd792c9](https://www.github.com/web3-storage/ucanto/commit/cd792c934fbd358d6ccfa5d02f205b14b5f2e14e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^0.6.0 to ^1.0.0
+    * @ucanto/interface bumped from ^0.7.0 to ^1.0.0
+  * devDependencies
+    * @ucanto/principal bumped from ^0.5.0 to ^1.0.0
+    * @ucanto/client bumped from ^0.6.0 to ^1.0.0
+
 ## [0.6.0](https://www.github.com/web3-storage/ucanto/compare/validator-v0.5.5...validator-v0.6.0) (2022-07-28)
 
 

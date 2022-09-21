@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.0.0](https://www.github.com/web3-storage/ucanto/compare/transport-v0.7.0...transport-v1.0.0) (2022-09-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* update dag-ucan, types and names (#90)
+
+### Features
+
+* update dag-ucan, types and names ([#90](https://www.github.com/web3-storage/ucanto/issues/90)) ([cd792c9](https://www.github.com/web3-storage/ucanto/commit/cd792c934fbd358d6ccfa5d02f205b14b5f2e14e))
+
+
+### Bug Fixes
+
+* default fetch implementation called on non Window object ([#88](https://www.github.com/web3-storage/ucanto/issues/88)) ([66a22ee](https://www.github.com/web3-storage/ucanto/commit/66a22eeb749e4f8091e5bfe832af36deb4dfff2e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^0.6.0 to ^1.0.0
+    * @ucanto/interface bumped from ^0.7.0 to ^1.0.0
+  * devDependencies
+    * @ucanto/principal bumped from ^0.5.0 to ^1.0.0
+
 ## [0.7.0](https://www.github.com/web3-storage/ucanto/compare/transport-v0.6.3...transport-v0.7.0) (2022-07-28)
 
 

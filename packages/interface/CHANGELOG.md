@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://www.github.com/web3-storage/ucanto/compare/interface-v0.7.0...interface-v1.0.0) (2022-09-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* update dag-ucan, types and names (#90)
+
+### Features
+
+* update dag-ucan, types and names ([#90](https://www.github.com/web3-storage/ucanto/issues/90)) ([cd792c9](https://www.github.com/web3-storage/ucanto/commit/cd792c934fbd358d6ccfa5d02f205b14b5f2e14e))
+
 ## [0.7.0](https://www.github.com/web3-storage/ucanto/compare/interface-v0.6.2...interface-v0.7.0) (2022-07-28)
 
 
