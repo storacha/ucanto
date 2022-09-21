@@ -1,5 +1,14 @@
 # Changelog
 
+### [1.0.1](https://www.github.com/web3-storage/ucanto/compare/core-v1.0.0...core-v1.0.1) (2022-09-21)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @ucanto/principal bumped from ^1.0.0 to ^1.0.1
+
 ## [1.0.0](https://www.github.com/web3-storage/ucanto/compare/core-v0.6.0...core-v1.0.0) (2022-09-14)
 
 
