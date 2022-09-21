@@ -1,5 +1,19 @@
 # Changelog
 
+### [1.0.2](https://www.github.com/web3-storage/ucanto/compare/server-v1.0.1...server-v1.0.2) (2022-09-21)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^1.0.0 to ^1.0.1
+    * @ucanto/validator bumped from ^1.0.0 to ^1.0.1
+  * devDependencies
+    * @ucanto/principal bumped from ^1.0.0 to ^1.0.1
+    * @ucanto/client bumped from ^1.0.0 to ^1.0.1
+    * @ucanto/transport bumped from ^1.0.0 to ^1.0.1
+
 ### [1.0.1](https://www.github.com/web3-storage/ucanto/compare/server-v1.0.0...server-v1.0.1) (2022-09-21)
 
 

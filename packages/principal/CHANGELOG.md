@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.0.1](https://www.github.com/web3-storage/ucanto/compare/principal-v1.0.0...principal-v1.0.1) (2022-09-21)
+
+
+### Bug Fixes
+
+* parse should take strings ([#93](https://www.github.com/web3-storage/ucanto/issues/93)) ([db57d6b](https://www.github.com/web3-storage/ucanto/commit/db57d6bdf3ad989e4dc6e906d9b0bce4befbd735))
+
 ## [1.0.0](https://www.github.com/web3-storage/ucanto/compare/principal-v0.5.0...principal-v1.0.0) (2022-09-14)
 
 

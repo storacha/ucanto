@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/principal",
   "description": "ed25519 principal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "keywords": [
     "UCAN",
     "ed25519",
