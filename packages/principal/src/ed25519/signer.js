@@ -2,7 +2,7 @@ import * as ED25519 from '@noble/ed25519'
 import { varint } from 'multiformats'
 import * as API from '@ucanto/interface'
 import * as Verifier from './verifier.js'
-import { base64pad } from 'multiformats/bases/base64'
+import { base64pad, base64url } from 'multiformats/bases/base64'
 import * as Signature from '@ipld/dag-ucan/signature'
 
 export const code = 0x1300
@@ -145,14 +145,13 @@ class Ed25519Signer extends Uint8Array {
    * @returns {Promise<API.Signature<T, typeof Signature.EdDSA>>}
    */
   async sign(payload) {
-    return Signature.create(
-      Signature.EdDSA,
-      await ED25519.sign(payload, this.secret)
-    )
+    const raw = await ED25519.sign(payload, this.secret)
+
+    return Signature.create(this.signatureCode, raw)
   }
 
   get signatureAlgorithm() {
-    return name
+    return 'EdDSA'
   }
   get signatureCode() {
     return Signature.EdDSA

@@ -4,13 +4,14 @@ import { delegate, Delegation, UCAN } from '@ucanto/core'
 import * as UTF8 from '../src/utf8.js'
 import { alice, bob, mallory, service } from './fixtures.js'
 import * as API from '@ucanto/interface'
+import { base64url } from 'multiformats/bases/base64'
 
 const NOW = 1654298135
 
 const fixtures = {
   basic: {
-    cid: 'bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i',
-    jwt: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOC4xIn0.eyJhdHQiOlt7ImNhbiI6InN0b3JlL2FkZCIsIndpdGgiOiJkaWQ6a2V5Ono2TWtrODliQzNKclZxS2llNzFZRWNjNU0xU01WeHVDZ054NnpMWjhTWUpzeEFMaSJ9XSwiYXVkIjoiZGlkOmtleTp6Nk1rZmZEWkNrQ1RXcmVnODg2OGZHMUZHRm9nY0pqNVg2UFk5M3BQY1dEbjlib2IiLCJleHAiOjE2NTQyOTgxMzUsImlzcyI6ImRpZDprZXk6ejZNa2s4OWJDM0pyVnFLaWU3MVlFY2M1TTFTTVZ4dUNnTng2ekxaOFNZSnN4QUxpIiwicHJmIjpbXX0.xl_SgW5QrxffsbHslb1vSX7ZAV1JbjxF1rNIAEplNPHLreHtyC3OKqneOouWjO3mqqXAcrWAsnodrBgL50VWCA',
+    cid: 'bafyreiaxnmoptsqiehdff2blpptvdbenxcz6xgrbojw5em36xovn2xea4y',
+    jwt: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOS4xIn0.eyJhdHQiOlt7ImNhbiI6InN0b3JlL2FkZCIsIndpdGgiOiJkaWQ6a2V5Ono2TWtrODliQzNKclZxS2llNzFZRWNjNU0xU01WeHVDZ054NnpMWjhTWUpzeEFMaSJ9XSwiYXVkIjoiZGlkOmtleTp6Nk1rZmZEWkNrQ1RXcmVnODg2OGZHMUZHRm9nY0pqNVg2UFk5M3BQY1dEbjlib2IiLCJleHAiOjE2NTQyOTgxMzUsImlzcyI6ImRpZDprZXk6ejZNa2s4OWJDM0pyVnFLaWU3MVlFY2M1TTFTTVZ4dUNnTng2ekxaOFNZSnN4QUxpIiwicHJmIjpbXX0.amtDCzx4xzI28w8M4gKCOBWuhREPPAh8cdoXfi4JDTMy5wxy-4VYYM4AC7lXufsgdiT6thaBtq3AAIv1P87lAA',
   },
 }
 
@@ -20,7 +21,7 @@ test('encode / decode', async () => {
   const request = await JWT.encode([
     {
       issuer: alice,
-      audience: bob.principal,
+      audience: bob,
       capabilities: [
         {
           can: 'store/add',
@@ -39,6 +40,7 @@ test('encode / decode', async () => {
       [`x-auth-${cid}`]: jwt,
     },
   }
+
   assert.deepEqual(request, expect)
 
   assert.deepEqual(
@@ -46,7 +48,7 @@ test('encode / decode', async () => {
     [
       await Delegation.delegate({
         issuer: alice,
-        audience: bob.principal,
+        audience: bob,
         capabilities: [
           {
             can: 'store/add',
@@ -80,7 +82,7 @@ test('decode requires application/json contet type', async () => {
 test('delegated proofs', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -131,7 +133,7 @@ test('delegated proofs', async () => {
 test('omit proof', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -182,7 +184,7 @@ test('omit proof', async () => {
 test('thorws on invalid heard', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -228,7 +230,7 @@ test('thorws on invalid heard', async () => {
 test('leaving out root throws', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',

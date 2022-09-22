@@ -10,14 +10,14 @@ import { collect } from './util.js'
 
 test('encode / decode', async () => {
   const cid = parseLink(
-    'bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i'
+    'bafyreiaxnmoptsqiehdff2blpptvdbenxcz6xgrbojw5em36xovn2xea4y'
   )
   const expiration = 1654298135
 
   const request = await CAR.encode([
     {
       issuer: alice,
-      audience: bob.principal,
+      audience: bob,
       capabilities: [
         {
           can: 'store/add',
@@ -38,7 +38,7 @@ test('encode / decode', async () => {
 
   const expect = await Delegation.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -59,7 +59,7 @@ test('decode requires application/car contet type', async () => {
   const { body } = await CAR.encode([
     {
       issuer: alice,
-      audience: bob.principal,
+      audience: bob,
       capabilities: [
         {
           can: 'store/add',
@@ -88,7 +88,7 @@ test('accepts Content-Type as well', async () => {
   const request = await CAR.encode([
     {
       issuer: alice,
-      audience: bob.principal,
+      audience: bob,
       capabilities: [
         {
           can: 'store/add',
@@ -109,7 +109,7 @@ test('accepts Content-Type as well', async () => {
 
   const delegation = await delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -126,7 +126,7 @@ test('accepts Content-Type as well', async () => {
 test('delegated proofs', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -181,7 +181,7 @@ test('delegated proofs', async () => {
 test('omit proof', async () => {
   const proof = await delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
