@@ -386,5 +386,5 @@ export type URIString<P extends URI> = `${URI['protocol']}${string}` & {
 }
 
 export interface PrincipalParser {
-  parse(did: UCAN.DID): UCAN.Principal
+  parse(did: UCAN.DID): UCAN.Verifier
 }

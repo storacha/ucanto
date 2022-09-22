@@ -96,7 +96,7 @@ export const format = (signer, encoder) => (encoder || base64pad).encode(signer)
  * @template {string} Prefix
  * @param {string} principal
  * @param {API.MultibaseDecoder<Prefix>} [decoder]
- * @returns {API.Signer<'key', typeof Signature.EdDSA>}
+ * @returns {Signer}
  */
 export const parse = (principal, decoder) =>
   decode((decoder || base64pad).decode(principal))

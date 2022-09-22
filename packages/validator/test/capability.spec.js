@@ -1054,7 +1054,7 @@ test('and prune', () => {
         { can: 'file/read', with: `file:///${alice.did()}/public` },
         { can: 'file/write', with: `file:///${bob.did()}/@alice` },
       ],
-      { issuer: alice.principal }
+      { issuer: alice }
     )
   )
 
@@ -1077,7 +1077,7 @@ test('and prune', () => {
 
   const v2 = matchwrite?.select(
     delegate([{ can: 'file/write', with: `file:///${bob.did()}/@alice` }], {
-      issuer: bob.principal,
+      issuer: bob.verifier,
     })
   )
 
@@ -1325,7 +1325,7 @@ test('invoke capability (without caveats)', () => {
   assert.throws(() => {
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       // @ts-expect-error - not assignable to did:
       with: 'file://gozala/path',
     })
@@ -1334,12 +1334,12 @@ test('invoke capability (without caveats)', () => {
   assert.deepEqual(
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/ping',
         with: alice.did(),
@@ -1350,14 +1350,14 @@ test('invoke capability (without caveats)', () => {
   assert.deepEqual(
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
       // @ts-expect-error - no caveats expected
       caveats: { x: 1 },
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/ping',
         with: alice.did(),
@@ -1368,14 +1368,14 @@ test('invoke capability (without caveats)', () => {
   assert.deepEqual(
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
       // @ts-expect-error - no caveats expected
       caveats: {},
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/ping',
         with: alice.did(),
@@ -1396,7 +1396,7 @@ test('invoke capability (with caveats)', () => {
   assert.throws(() => {
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       // @ts-expect-error - not assignable to did:
       with: 'file://gozala/path',
       caveats: {
@@ -1409,7 +1409,7 @@ test('invoke capability (with caveats)', () => {
     // @ts-expect-error
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
     })
   }, /Invalid 'caveats.message' - Expected URI but got undefined/)
@@ -1427,13 +1427,13 @@ test('invoke capability (with caveats)', () => {
   assert.deepEqual(
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
       caveats: { message: 'data:hello' },
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/echo',
         with: alice.did(),
@@ -1445,14 +1445,14 @@ test('invoke capability (with caveats)', () => {
   assert.deepEqual(
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       // @ts-expect-error - must be a string
       with: new URL(alice.did()),
       caveats: { message: 'data:hello' },
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/echo',
         with: alice.did(),
