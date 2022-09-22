@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import { InvalidAudience } from '@ucanto/validator'
-import { Principal } from '@ucanto/principal'
+import { Verifier } from '@ucanto/principal/ed25519'
 export {
   capability,
   URI,
@@ -16,7 +16,7 @@ export {
  * @param {API.Server<Service>} options
  * @returns {API.ServerView<Service>}
  */
-export const create = (options) => new Server(options)
+export const create = options => new Server(options)
 
 /**
  * @template {Record<string, any>} Service
@@ -31,7 +31,7 @@ class Server {
     service,
     encoder,
     decoder,
-    principal = Principal,
+    principal = Verifier,
     canIssue = (capability, issuer) =>
       capability.with === issuer || issuer === id.did(),
     ...rest

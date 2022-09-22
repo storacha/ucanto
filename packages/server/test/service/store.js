@@ -60,8 +60,6 @@ const removeCapability = Server.capability({
 /** @type {Map<API.DID, Map<string, API.Link>>} */
 const state = new Map()
 
-export const id = issuer.principal
-
 export const add = provide(addCapability, async ({ capability, context }) => {
   const identify = await Client.delegate({
     issuer,
