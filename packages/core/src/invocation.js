@@ -6,7 +6,7 @@ import { delegate } from './delegation.js'
  * @param {API.InvocationOptions<Capability>} options
  * @return {API.IssuedInvocationView<Capability>}
  */
-export const invoke = (options) => new IssuedInvocation(options)
+export const invoke = options => new IssuedInvocation(options)
 
 /**
  * @template {API.Capability} Capability

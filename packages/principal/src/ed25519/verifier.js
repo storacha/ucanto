@@ -2,27 +2,34 @@ import * as DID from '@ipld/dag-ucan/did'
 import * as ED25519 from '@noble/ed25519'
 import { varint } from 'multiformats'
 import * as API from '@ucanto/interface'
+import * as Signature from '@ipld/dag-ucan/signature'
+import { base58btc } from 'multiformats/bases/base58'
 export const code = 0xed
 
+export const signatureCode = Signature.EdDSA
 export const name = 'Ed25519'
 const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 32 + PUBLIC_TAG_SIZE
 
 /**
- * Parses `did:key:` string as a VerifyingPrincipal.
- * @param {API.DID|string} did
- * @returns {API.Principal<typeof code>}
+ * @typedef {API.Verifier<"key", Signature.EdDSA> & Uint8Array} Verifier
  */
-export const parse = (did) => decode(DID.parse(did))
+
+/**
+ * Parses `did:key:` string as a VerifyingPrincipal.
+ *
+ * @param {API.DID<"key">|string} did
+ */
+export const parse = did => decode(DID.parse(did))
 
 /**
  * Takes ed25519 public key tagged with `0xed` multiformat code and creates a
  * corresponding `Principal` that can be used to verify signatures.
  *
  * @param {Uint8Array} bytes
- * @returns {API.Principal<typeof code>}
+ * @returns {Verifier}
  */
-export const decode = (bytes) => {
+export const decode = bytes => {
   const [algorithm] = varint.decode(bytes)
   if (algorithm !== code) {
     throw new RangeError(
@@ -33,47 +40,34 @@ export const decode = (bytes) => {
       `Expected Uint8Array with byteLength ${SIZE}, instead got Uint8Array with byteLength ${bytes.byteLength}`
     )
   } else {
-    return new Principal(bytes.buffer, bytes.byteOffset)
+    return new Ed25519Principal(
+      bytes.buffer,
+      bytes.byteOffset,
+      bytes.byteLength
+    )
   }
 }
 
 /**
  * Formats given Principal into `did:key:` format.
  *
- * @param {API.Principal<typeof code>} principal
+ * @param {API.Principal<"key">} principal
  */
-export const format = (principal) => DID.format(principal.bytes)
+export const format = principal => DID.format(principal)
 
 /**
  * Encodes given Principal by tagging it's ed25519 public key with `0xed`
  * multiformat code.
  *
- * @param {API.Principal<typeof code>} principal
+ * @param {API.Principal<"key">} principal
  */
-export const encode = (principal) => principal.bytes
+export const encode = principal => DID.encode(principal)
 
 /**
- * @implements {API.Principal<typeof code>}
+ * @implements {API.Verifier<"key", typeof Signature.EdDSA>}
+ * @implements {API.Principal<"key">}
  */
-class Principal {
-  /**
-   * @param {ArrayBuffer} buffer
-   * @param {number} [byteOffset]
-   */
-  constructor(buffer, byteOffset = 0) {
-    /** @readonly */
-    this.buffer = buffer
-    /** @readonly */
-    this.byteOffset = byteOffset
-    /** @readonly */
-    this.byteLength = SIZE
-  }
-
-  get bytes() {
-    const bytes = new Uint8Array(this.buffer, this.byteOffset, this.byteLength)
-    Object.defineProperties(this, { bytes: { value: bytes } })
-    return bytes
-  }
+class Ed25519Principal extends Uint8Array {
   /**
    * Raw public key without a multiformat code.
    *
@@ -90,18 +84,21 @@ class Principal {
   }
   /**
    * DID of the Principal in `did:key` format.
-   * @returns {API.DID}
+   * @returns {API.DID<"key">}
    */
   did() {
-    return format(this)
+    return `did:key:${base58btc.encode(this)}`
   }
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @param {API.Signature<T, typeof code>} signature
-   * @returns {Promise<boolean>}
+   * @param {API.Signature<T, Signature.EdDSA>} signature
+   * @returns {API.Await<boolean>}
    */
   verify(payload, signature) {
-    return ED25519.verify(signature, payload, this.publicKey)
+    return (
+      signature.code === signatureCode &&
+      ED25519.verify(signature.raw, payload, this.publicKey)
+    )
   }
 }

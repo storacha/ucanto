@@ -55,7 +55,7 @@ importers:
     specifiers:
       '@ipld/car': ^4.1.5
       '@ipld/dag-cbor': ^7.0.3
-      '@ipld/dag-ucan': 3.0.0-beta
+      '@ipld/dag-ucan': link:/Users/gozala/Projects/js-dag-ucan
       '@types/chai': ^4.3.3
       '@types/chai-subset': ^1.3.3
       '@types/mocha': ^9.1.0
@@ -72,7 +72,7 @@ importers:
     dependencies:
       '@ipld/car': 4.1.5
       '@ipld/dag-cbor': 7.0.3
-      '@ipld/dag-ucan': 3.0.0-beta
+      '@ipld/dag-ucan': link:../../../js-dag-ucan
       '@ucanto/interface': link:../interface
       multiformats: 9.8.1
     devDependencies:
@@ -90,18 +90,18 @@ importers:
 
   packages/interface:
     specifiers:
-      '@ipld/dag-ucan': 3.0.0-beta
+      '@ipld/dag-ucan': link:/Users/gozala/Projects/js-dag-ucan
       multiformats: ^9.8.1
       typescript: ^4.8.3
     dependencies:
-      '@ipld/dag-ucan': 3.0.0-beta
+      '@ipld/dag-ucan': link:../../../js-dag-ucan
       multiformats: 9.8.1
     devDependencies:
       typescript: 4.8.3
 
   packages/principal:
     specifiers:
-      '@ipld/dag-ucan': 3.0.0-beta
+      '@ipld/dag-ucan': link:/Users/gozala/Projects/js-dag-ucan
       '@noble/ed25519': ^1.7.0
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
@@ -114,7 +114,7 @@ importers:
       playwright-test: ^8.1.1
       typescript: ^4.8.3
     dependencies:
-      '@ipld/dag-ucan': 3.0.0-beta
+      '@ipld/dag-ucan': link:../../../js-dag-ucan
       '@noble/ed25519': 1.7.0
       '@ucanto/interface': link:../interface
       multiformats: 9.8.1
@@ -468,21 +468,6 @@ packages:
     resolution: {integrity: sha512-1VVh2huHsuohdXC1bGJNE8WR72slZ9XE2T3wbBBq31dm7ZBatmKLLxrB+XAqafxfRFjv08RZmj/W/ZqaM13AuA==}
     dependencies:
       cborg: 1.9.5
-      multiformats: 9.8.1
-    dev: false
-
-  /@ipld/dag-json/8.0.11:
-    resolution: {integrity: sha512-Pea7JXeYHTWXRTIhBqBlhw7G53PJ7yta3G/sizGEZyzdeEwhZRr0od5IQ0r2ZxOt1Do+2czddjeEPp+YTxDwCA==}
-    dependencies:
-      cborg: 1.9.5
-      multiformats: 9.8.1
-    dev: false
-
-  /@ipld/dag-ucan/3.0.0-beta:
-    resolution: {integrity: sha512-WzKh4mDiUElslfI/cg9VjLNHsT+9r3XjwbDY/gck+1289sCU1Hywj1/9PMx0DMJoEEwd2OFy/bq5PX2IyQ20Cw==}
-    dependencies:
-      '@ipld/dag-cbor': 7.0.3
-      '@ipld/dag-json': 8.0.11
       multiformats: 9.8.1
     dev: false
 

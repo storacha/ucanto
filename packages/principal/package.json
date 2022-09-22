@@ -22,12 +22,12 @@
     "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
     "test": "npm run test:node",
-    "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080",
+    "coverage": "c8 --reporter=html mocha test/**/*.spec.js && npm_config_yes=true npx st -d coverage -p 8080",
     "typecheck": "tsc --build",
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "3.0.0-beta",
+    "@ipld/dag-ucan": "link:/Users/gozala/Projects/js-dag-ucan",
     "@noble/ed25519": "^1.7.0",
     "@ucanto/interface": "^1.0.0",
     "multiformats": "^9.8.1"
@@ -56,7 +56,7 @@
     }
   },
   "exports": {
-    ".": {
+    "ed25519": {
       "types": "./dist/src/lib.d.ts",
       "import": "./src/lib.js"
     }
