@@ -50,15 +50,15 @@
       "*": [
         "dist/*"
       ],
-      "dist/src/lib.d.ts": [
-        "dist/src/lib.d.ts"
+      "ed25519": [
+        "dist/src/ed25519.d.ts"
       ]
     }
   },
   "exports": {
-    "ed25519": {
-      "types": "./dist/src/lib.d.ts",
-      "import": "./src/lib.js"
+    "./ed25519": {
+      "types": "./dist/src/ed25519.d.ts",
+      "import": "./src/ed25519.js"
     }
   },
   "c8": {

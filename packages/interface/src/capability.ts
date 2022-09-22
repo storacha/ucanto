@@ -5,7 +5,7 @@ import {
   Result,
   Failure,
   PrincipalParser,
-  SigningPrincipal,
+  Signer,
   URI,
   Await,
   IssuedInvocationView,
@@ -167,7 +167,7 @@ export type InvokeCapabilityOptions<
   C extends {}
 > = UCANOptions &
   InferCreateOptions<R, C> & {
-    issuer: SigningPrincipal
+    issuer: Signer
   }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
