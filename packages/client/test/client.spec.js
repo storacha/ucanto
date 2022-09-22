@@ -10,7 +10,7 @@ import fetch from '@web-std/fetch'
 test('encode inovocation', async () => {
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    id: w3.principal,
+    id: w3,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -62,7 +62,7 @@ test('encode delegated invocation', async () => {
 
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    id: w3.principal,
+    id: w3,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -140,12 +140,12 @@ test('encode delegated invocation', async () => {
 const service = Service.create()
 /** @type {Client.ConnectionView<Service.Service>} */
 const connection = Client.connect({
-  id: w3.principal,
+  id: w3,
   channel: HTTP.open({
     url: new URL('about:blank'),
     fetch: async (url, input) => {
       const invocations = await CAR.decode(input)
-      const promises = invocations.map((invocation) => {
+      const promises = invocations.map(invocation => {
         const [capabality] = invocation.capabilities
         switch (capabality.can) {
           case 'store/add': {
