@@ -30,7 +30,7 @@ describe('signing principal', () => {
       'signer can verify signature'
     )
 
-    assert.equal(signer.signatureAlgorithm, 'Ed25519')
+    assert.equal(signer.signatureAlgorithm, 'EdDSA')
     assert.equal(signer.signatureCode, 0xd0ed)
   })
 
