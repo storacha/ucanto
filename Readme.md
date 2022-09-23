@@ -2,13 +2,13 @@
 
 (u)canto is a library for [UCAN][] based [RPC][] that provides:
 
-1. A declarative system for defining capabilities (roughly equivalet of HTTP
+1. A declarative system for defining capabilities (roughly equivalent to HTTP
    routes in REST).
 1. A system for binding [capability][] handles (a.k.a providers) to form services with built-in routing.
-1. UCAN validation system.
-1. Runtime for executing UCAN capability [invocations][].
+1. A UCAN validation system.
+1. A runtime for executing UCAN capability [invocations][].
 1. A pluggable transport layer.
-1. Clien supporting batched invocations and full type inference.
+1. A client supporting batched invocations and full type inference.
 
 > the name ucanto is a word play on UCAN and canto (one of the major divisions of a long poem)
 
@@ -16,19 +16,19 @@
 
 To get a taste of the libary we will build up a "filesystem" service, in which:
 
-1. Top level paths are [did:key][] identifiers, here on referred as (user) drives.
+1. Top level paths are [did:key][] identifiers, here on referred to as (user) drives.
 1. Drives are owned by users holding a private key corresponding to the [did:key][] of the drive.
-1. Drive owners could mutate filesystem with-in their drives path and delegate that ability to others.
+1. Drive owners can mutate the filesystem within their drive's path and delegate that ability to others.
 
 ### Capabilities
 
-The very first thing we want to do is define set of capabilities our service will provide. Each (cap)[ability][] MUST:
+The very first thing we want to do is define the set of capabilities our service will provide. Each (cap)[ability][] MUST:
 
 1. Have a `can` field denoting an _action_ it can perform.
-2. Have a `with` URI denoting _resource_ it can perform that action on.
-3. Be comparable to other capabilities _(with set semantics, as in does capability `a` includes capability `b` ?)_
+2. Have a `with` URI denoting the _resource_ it can perform that action on.
+3. Be comparable to other capabilities _(with set semantics, as in does capability `a` include capability `b` ?)_
 
-Lets define `file/link` capability, where resources are identified via `file:` URLs and MAY contain `link` to be mapped to a given path.
+Let's define the `file/link` capability, where resources are identified via `file:` URLs and MAY contain a `link` to be mapped to a given path.
 
 ```ts
 import { capability, URI, Link, Failure } from '@ucanto/server'
@@ -47,10 +47,10 @@ const Add = capability({
 const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 ```
 
-> Please note that library gurantees that both `claimed` and `delegated` capabilty will have `{can: "file/link", with: string, uri: URL, caveats: { link?: CID }}`
+> Please note that the library guarantees that both `claimed` and `delegated` capabilties will have `{can: "file/link", with: string, uri: URL, caveats: { link?: CID }}`
 > type inferred from the definition.
 >
-> We will explore more complicated case later where capability may be derived from a different capability or even a set.
+> We will explore more complicated cases later where a capability may be derived from a different capability or even a set.
 
 ### Services
 
@@ -72,7 +72,7 @@ const service = (context: { store: Map<string, string> }) => {
 }
 ```
 
-Used `provide` building block will take care of associating a handler to the a
+The `provide` building block used above will take care of associating a handler to the
 given capability and performing necessary UCAN validation steps when `add` is
 invoked.
 
@@ -85,7 +85,7 @@ The library provides a pluggable transport architecture so you can expose a serv
 
 > Note that the actual encoder / decoder types are more complicated as they capture capability types, the number of invocations, and corresponding return types. This allows them to provide good type inference. But ignoring those details, that is what they are in a nutshell.
 
-Library comes with several transport layer codecs you can pick from, but you can also bring one yourself. Below we will take invocations encoded in [CAR][] format and produce responses encoded in [DAG-CBOR][] format:
+The library comes with several transport layer codecs you can pick from, but you can also bring one yourself. Below we will take invocations encoded in [CAR][] format and produce responses encoded in [DAG-CBOR][] format:
 
 ```ts
 import * as Server from "@ucanto/server"
@@ -142,7 +142,7 @@ export const listen = ({ port = 8080, context = new Map() }) => {
 ## Client
 
 Client can be used to issue and execute UCAN invocations. Here is an example of
-invoking `file/link` capability we've defined earlier
+invoking the `file/link` capability we've defined earlier:
 
 ```ts
 import * as Client from '@ucanto/client'
@@ -270,7 +270,7 @@ const demo2 = async connection => {
 }
 ```
 
-> In the example above first invocation will succeed, but second will not becasue has not been granted capability to mutate other namespace. Also note that both invocations are send in a single request.
+> In the example above, the first invocation will succeed, but the second one will not because Bob has not been granted a capability to mutate Mallory's namespace. Also note that both invocations are sent in a single request.
 
 [ucan]: https://github.com/ucan-wg/spec/
 [rpc]: https://en.wikipedia.org/wiki/Remote_procedure_call
