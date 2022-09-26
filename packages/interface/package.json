@@ -23,7 +23,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "link:/Users/gozala/Projects/js-dag-ucan",
+    "@ipld/dag-ucan": "^4.0.0-beta",
     "multiformats": "^9.8.1"
   },
   "devDependencies": {
