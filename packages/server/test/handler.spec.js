@@ -72,8 +72,8 @@ test('delegated invocation fail', async () => {
   const result = await Access.link(invocation, context)
   assert.containSubset(result, {
     error: true,
-    name: 'UnknownDIDError',
-    did: 'mailto:alice@web.mail',
+    name: 'UnknownIDError',
+    id: 'mailto:alice@web.mail',
   })
 })
 
