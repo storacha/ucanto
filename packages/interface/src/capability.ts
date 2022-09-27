@@ -132,25 +132,19 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   readonly can: M['value']['can']
 
   create(
-    input: InferCreateOptions<M['value']['with'], M['value']['caveats']>
-  ): Capability<M['value']['can'], M['value']['uri']['href']> &
-    M['value']['caveats']
+    input: InferCreateOptions<M['value']['with'], M['value']['nb']>
+  ): Capability<M['value']['can'], M['value']['with'], M['value']['nb']>
 
   invoke(
-    options: InvokeCapabilityOptions<M['value']['with'], M['value']['caveats']>
+    options: InvokeCapabilityOptions<M['value']['with'], M['value']['nb']>
   ): IssuedInvocationView<
-    Capability<M['value']['can'], M['value']['uri']['href']> &
-      M['value']['caveats']
+    Capability<M['value']['can'], M['value']['with'], M['value']['nb']>
   >
 }
 
 export type InferCreateOptions<R extends Resource, C extends {}> = {
-  with: Resource
-  caveats?: {}
-} & Optionalize<{
   with: R
-  caveats: InferCaveatParams<C>
-}>
+} & (keyof C extends never ? { nb?: { [key: string]: never } } : { nb: C })
 
 type Optionalize<T> = InferRequried<T> & InferOptional<T>
 
@@ -266,9 +260,8 @@ export interface ParsedCapability<
   C extends object = {}
 > {
   can: Can
-  with: Resource['href']
-  uri: Resource
-  caveats: C
+  with: Resource
+  nb: C
 }
 
 export type InferCaveats<C> = Optionalize<{
@@ -282,7 +275,8 @@ export interface Descriptor<
 > {
   can: A
   with: Decoder<Resource, R, Failure>
-  caveats?: C
+
+  nb?: C
 
   derives?: Derives<
     ParsedCapability<A, R, InferCaveats<C>>,

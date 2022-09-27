@@ -12,22 +12,22 @@ import { UnavailableProof } from '../src/error.js'
 const storeAdd = capability({
   can: 'store/add',
   with: URI.match({ protocol: 'did:' }),
-  caveats: {
+  nb: {
     link: Link.optional(),
   },
   derives: (claimed, delegated) => {
-    if (claimed.uri.href !== delegated.uri.href) {
+    if (claimed.with !== delegated.with) {
       return new Failure(
-        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+        `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
-      delegated.caveats.link &&
-      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+      delegated.nb.link &&
+      `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
       return new Failure(
         `Link ${
-          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
-        }violates imposed ${delegated.caveats.link} constraint`
+          claimed.nb.link == null ? '' : `${claimed.nb.link} `
+        }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
       return true
@@ -58,7 +58,7 @@ test('self-issued invocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      caveats: {},
+      nb: {},
     },
     issuer: DID.from(alice.did()),
     audience: DID.parse(bob.did()),
@@ -248,7 +248,7 @@ test('delegated invocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      caveats: {},
+      nb: {},
     },
     issuer: DID.parse(bob.did()),
     audience: DID.parse(w3.did()),
@@ -257,7 +257,7 @@ test('delegated invocation', async () => {
         capability: {
           can: 'store/add',
           with: alice.did(),
-          caveats: {},
+          nb: {},
         },
         issuer: DID.parse(alice.did()),
         audience: DID.parse(bob.did()),
@@ -297,7 +297,7 @@ test('invalid claim / no proofs', async () => {
       capability: {
         can: 'store/add',
         with: bob.did(),
-        caveats: {},
+        nb: {},
       },
     },
   })
@@ -343,7 +343,7 @@ test('invalid claim / expired', async () => {
       capability: {
         can: 'store/add',
         with: alice.did(),
-        caveats: {},
+        nb: {},
       },
       delegation: invocation,
     },
@@ -390,7 +390,7 @@ test('invalid claim / not valid before', async () => {
       capability: {
         can: 'store/add',
         with: alice.did(),
-        caveats: {},
+        nb: {},
       },
       delegation: invocation,
     },
@@ -437,7 +437,7 @@ test('invalid claim / invalid signature', async () => {
       capability: {
         can: 'store/add',
         with: alice.did(),
-        caveats: {},
+        nb: {},
       },
       delegation: invocation,
     },
@@ -1113,7 +1113,7 @@ test('resolve proof', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      caveats: {},
+      nb: {},
     },
     proofs: [
       {

@@ -2,17 +2,19 @@ import * as API from './api.js'
 import { access } from '@ucanto/validator'
 
 /**
- * @template {API.ParsedCapability} T
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
  * @template {unknown} U
- * @param {API.CapabilityParser<API.Match<T>>} capability
- * @param {(input:API.ProviderInput<T>) => API.Await<U>} handler
- * @returns {API.ServiceMethod<API.Capability<T['can'], T['with']> & T['caveats'], Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>>}
+ * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, API.InferCaveats<C>>>>} capability
+ * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, API.InferCaveats<C>>>) => API.Await<U>} handler
+ * @returns {API.ServiceMethod<API.Capability<A, R, API.InferCaveats<C>>, Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>>}
  */
 
 export const provide =
   (capability, handler) =>
   /**
-   * @param {API.Invocation<API.Capability<T['can'], T['with']> & T['caveats']>} invocation
+   * @param {API.Invocation<API.Capability<A, R, API.InferCaveats<C>>>} invocation
    * @param {API.InvocationContext} options
    */
   async (invocation, options) => {

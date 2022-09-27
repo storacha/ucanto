@@ -376,14 +376,13 @@ export type Service = Record<
 export type Await<T> = T | PromiseLike<T> | Promise<T>
 
 export type Protocol<Scheme extends string = string> = `${Scheme}:`
-export interface URI<P extends Protocol = Protocol> extends URL {
-  protocol: P
-  href: `${P}${string}`
-}
 
-export type URIString<P extends URI> = `${URI['protocol']}${string}` & {
-  protocol?: Protocol
-}
+export type URI<P extends Protocol = Protocol> = `${P}${string}` &
+  // ⚠️ Without phantom type TS does not seem to retain `P` type
+  // resulting in `${string}${string}` instead.
+  Phantom<{
+    protocol: P
+  }>
 
 export interface PrincipalParser {
   parse(did: UCAN.DID): UCAN.Verifier

@@ -3,11 +3,11 @@ import { test, assert } from './test.js'
 import { CID } from 'multiformats'
 
 {
-  /** @type {[string, object][]} */
+  /** @type {[string, string|{message:string}][]} */
   const dataset = [
     ['', { message: 'Invalid URI' }],
-    ['did:key:zAlice', { href: 'did:key:zAlice' }],
-    ['mailto:alice@mail.net', { href: 'mailto:alice@mail.net' }],
+    ['did:key:zAlice', 'did:key:zAlice'],
+    ['mailto:alice@mail.net', 'mailto:alice@mail.net'],
   ]
 
   for (const [input, expect] of dataset) {
@@ -18,16 +18,16 @@ import { CID } from 'multiformats'
 }
 
 {
-  /** @type {[string, `${string}:`, {href?:string, message?:string}][]} */
+  /** @type {[string, `${string}:`, {message:string}|string][]} */
   const dataset = [
     ['', 'did:', { message: 'Invalid URI' }],
-    ['did:key:zAlice', 'did:', { href: 'did:key:zAlice' }],
+    ['did:key:zAlice', 'did:', 'did:key:zAlice'],
     [
       'did:key:zAlice',
       'mailto:',
       { message: 'Expected mailto: URI instead got did:key:zAlice' },
     ],
-    ['mailto:alice@mail.net', 'mailto:', { href: 'mailto:alice@mail.net' }],
+    ['mailto:alice@mail.net', 'mailto:', 'mailto:alice@mail.net'],
     [
       'mailto:alice@mail.net',
       'did:',
@@ -40,10 +40,6 @@ import { CID } from 'multiformats'
       protocol,
     })}).decode(${JSON.stringify(input)})}}`, () => {
       assert.containSubset(URI.match({ protocol }).decode(input), expect)
-      assert.containSubset(
-        URI.string({ protocol }).decode(input),
-        expect.href || expect
-      )
     })
   }
 }

@@ -8,22 +8,22 @@ import { service as issuer } from '../fixtures.js'
 const addCapability = Server.capability({
   can: 'store/add',
   with: Server.URI.match({ protocol: 'did:' }),
-  caveats: {
+  nb: {
     link: Server.Link.optional(),
   },
   derives: (claimed, delegated) => {
-    if (claimed.uri.href !== delegated.uri.href) {
+    if (claimed.with !== delegated.with) {
       return new Server.Failure(
-        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+        `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
-      delegated.caveats.link &&
-      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+      delegated.nb.link &&
+      `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
-        }violates imposed ${delegated.caveats.link} constraint`
+          claimed.nb.link == null ? '' : `${claimed.nb.link} `
+        }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
       return true
@@ -34,22 +34,22 @@ const addCapability = Server.capability({
 const removeCapability = Server.capability({
   can: 'store/remove',
   with: Server.URI.match({ protocol: 'did:' }),
-  caveats: {
+  nb: {
     link: Server.Link.optional(),
   },
   derives: (claimed, delegated) => {
-    if (claimed.uri.href !== delegated.uri.href) {
+    if (claimed.with !== delegated.with) {
       return new Server.Failure(
-        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+        `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
-      delegated.caveats.link &&
-      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+      delegated.nb.link &&
+      `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
-        }violates imposed ${delegated.caveats.link} constraint`
+          claimed.nb.link == null ? '' : `${claimed.nb.link} `
+        }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
       return true
@@ -67,7 +67,7 @@ export const add = provide(addCapability, async ({ capability, context }) => {
     capabilities: [
       {
         can: 'identity/identify',
-        with: /** @type {API.Resource} */ (capability.uri.href),
+        with: /** @type {API.Resource} */ (capability.with),
       },
     ],
   })
@@ -77,8 +77,8 @@ export const add = provide(addCapability, async ({ capability, context }) => {
     return account
   }
 
-  const { link } = capability.caveats
-  const groupID = /** @type {API.DID} */ (capability.uri.href)
+  const { link } = capability.nb
+  const groupID = /** @type {API.DID} */ (capability.with)
 
   const links = state.get(groupID) || new Map()
   links.set(`${link}`, link)

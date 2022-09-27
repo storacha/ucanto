@@ -18,13 +18,14 @@ export { capability } from './capability.js'
 
 export * as URI from './decoder/uri.js'
 export * as Link from './decoder/link.js'
+export * as Text from './decoder/text.js'
 
 const empty = () => []
 
 /**
  * @param {UCAN.Link} proof
  */
-const unavailable = (proof) => new UnavailableProof(proof)
+const unavailable = proof => new UnavailableProof(proof)
 
 /**
  * @param {Required<API.ProofResolver>} config
@@ -62,7 +63,7 @@ const resolveProofs = async (delegation, config) => {
   for (const [index, proof] of delegation.proofs.entries()) {
     if (!isDelegation(proof)) {
       promises.push(
-        new Promise(async (resolve) => {
+        new Promise(async resolve => {
           try {
             proofs[index] = await config.resolve(proof)
           } catch (error) {
@@ -134,11 +135,11 @@ const resolveSources = async ({ delegation }, config) => {
 /**
  * @template {API.Ability} A
  * @template {API.URI} R
+ * @template {R} URI
  * @template {API.Caveats} C
- * @template {API.ParsedCapability<A, R, API.InferCaveats<C>>} T
- * @param {API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>} invocation
- * @param {API.ValidationOptions<T>} config
- * @returns {Promise<API.Result<Authorization<T>, API.Unauthorized>>}
+ * @param {API.Invocation<API.Capability<A, URI, API.InferCaveats<C>>>} invocation
+ * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} config
+ * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
  */
 export const access = async (
   invocation,
@@ -294,12 +295,12 @@ class InvalidClaim extends Failure {
   }
   describe() {
     const errors = [
-      ...this.info.failedProofs.map((error) => li(error.message)),
-      ...this.info.delegationErrors.map((error) => li(error.message)),
-      ...this.info.invalidProofs.map((error) => li(error.message)),
+      ...this.info.failedProofs.map(error => li(error.message)),
+      ...this.info.delegationErrors.map(error => li(error.message)),
+      ...this.info.invalidProofs.map(error => li(error.message)),
     ]
 
-    const unknown = this.info.unknownCapaibilities.map((c) =>
+    const unknown = this.info.unknownCapaibilities.map(c =>
       li(JSON.stringify(c))
     )
 
@@ -369,7 +370,7 @@ const MY = /my:(.*)/
  * @param {string} uri
  * @returns {{did:API.DID, protocol:string}|null}
  */
-const parseAsURI = (uri) => {
+const parseAsURI = uri => {
   const [, did, kind] = AS_PATTERN.exec(uri) || []
   return did != null && kind != null
     ? {

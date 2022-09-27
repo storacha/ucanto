@@ -9,22 +9,22 @@ import { test, assert } from './test.js'
 const storeAdd = Server.capability({
   can: 'store/add',
   with: Server.URI.match({ protocol: 'did:' }),
-  caveats: {
+  nb: {
     link: Server.Link.optional(),
   },
   derives: (claimed, delegated) => {
-    if (claimed.uri.href !== delegated.uri.href) {
+    if (claimed.with !== delegated.with) {
       return new Server.Failure(
-        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+        `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
-      delegated.caveats.link &&
-      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+      delegated.nb.link &&
+      `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
-        }violates imposed ${delegated.caveats.link} constraint`
+          claimed.nb.link == null ? '' : `${claimed.nb.link} `
+        }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
       return true
@@ -34,22 +34,22 @@ const storeAdd = Server.capability({
 const storeRemove = Server.capability({
   can: 'store/remove',
   with: Server.URI.match({ protocol: 'did:' }),
-  caveats: {
+  nb: {
     link: Server.Link.optional(),
   },
   derives: (claimed, delegated) => {
-    if (claimed.uri.href !== delegated.uri.href) {
+    if (claimed.with !== delegated.with) {
       return new Server.Failure(
-        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+        `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
-      delegated.caveats.link &&
-      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+      delegated.nb.link &&
+      `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
       return new Server.Failure(
         `Link ${
-          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
-        }violates imposed ${delegated.caveats.link} constraint`
+          claimed.nb.link == null ? '' : `${claimed.nb.link} `
+        }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
       return true
