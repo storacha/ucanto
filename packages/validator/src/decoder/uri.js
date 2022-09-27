@@ -9,7 +9,9 @@ import { Failure } from '../error.js'
  */
 export const decode = (input, { protocol } = {}) => {
   if (typeof input !== 'string' && !(input instanceof URL)) {
-    return new Failure(`Expected URI but got ${typeof input}`)
+    return new Failure(
+      `Expected URI but got ${input === null ? 'null' : typeof input}`
+    )
   }
 
   try {

@@ -8,9 +8,15 @@ import { Failure } from '../error.js'
  */
 export const decode = (input, { pattern } = {}) => {
   if (typeof input != 'string') {
-    return new Failure(`Expected a string but got ${input} instead`)
+    return new Failure(
+      `Expected a string but got ${
+        input === null ? null : typeof input
+      } instead`
+    )
   } else if (pattern && !pattern.test(input)) {
-    return new Failure(`Expect to match ${pattern} but got "${input}" instead`)
+    return new Failure(
+      `Expected to match ${pattern} but got "${input}" instead`
+    )
   } else {
     return input
   }
