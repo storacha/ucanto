@@ -119,7 +119,7 @@ class Capability extends Unit {
   create(options) {
     const { descriptor, can } = this
     const decoders = descriptor.nb
-    const data = options.nb || {}
+    const data = /** @type {API.InferCaveats<C>} */ (options.nb || {})
 
     const resource = descriptor.with.decode(options.with)
     if (resource.error) {
@@ -129,11 +129,11 @@ class Capability extends Unit {
     }
 
     const capabality =
-      /** @type {API.Capability<A, R, API.InferCaveats<C>>} */
+      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */
       ({ can, with: resource })
 
     for (const [name, decoder] of Object.entries(decoders || {})) {
-      const key = /** @type {keyof data} */ (name)
+      const key = /** @type {keyof data & string} */ (name)
       const value = decoder.decode(data[key])
       if (value?.error) {
         throw Object.assign(
@@ -154,7 +154,7 @@ class Capability extends Unit {
   }
 
   /**
-   * @param {API.InvokeCapabilityOptions<R, API.InferCaveats<C>>} data
+   * @param {API.InferInvokeOptions<R, API.InferCaveats<C>>} options
    */
   invoke({ with: with_, nb, ...options }) {
     return invoke({
@@ -407,7 +407,8 @@ class Match {
     return JSON.stringify({
       can: this.descriptor.can,
       with: this.value.with,
-      nb: Object.keys(this.value.nb).length > 0 ? this.value.nb : undefined,
+      nb:
+        Object.keys(this.value.nb || {}).length > 0 ? this.value.nb : undefined,
     })
   }
 }
@@ -625,7 +626,6 @@ const parse = (self, source) => {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template C
- * @implements {API.ParsedCapability<A, R, API.InferCaveats<C>>}
  */
 class CapabilityView {
   /**
@@ -724,11 +724,13 @@ const derives = (claimed, delegated) => {
     )
   }
 
-  for (const [name, value] of entries(delegated.nb)) {
-    if (claimed.nb[name] != value) {
-      return new Failure(
-        `${String(name)}: ${claimed.nb[name]} violates ${value}`
-      )
+  const caveats = delegated.nb || {}
+  const nb = claimed.nb || {}
+  const kv = entries(caveats)
+
+  for (const [name, value] of kv) {
+    if (nb[name] != value) {
+      return new Failure(`${String(name)}: ${nb[name]} violates ${value}`)
     }
   }
 
