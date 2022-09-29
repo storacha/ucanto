@@ -53,7 +53,7 @@ export interface VoucherRedeem
 
 export interface Service {
   voucher: {
-    claim: ServiceMethod<VoucherClaim, undefined, Failure>
-    redeem: ServiceMethod<VoucherRedeem, undefined, Failure>
+    claim: ServiceMethod<VoucherClaim, { service: DID }, Failure>
+    redeem: ServiceMethod<VoucherRedeem, { product: string }, Failure>
   }
 }
