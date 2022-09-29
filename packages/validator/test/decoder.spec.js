@@ -1,4 +1,4 @@
-import { URI, Link, Text } from '../src/lib.js'
+import { URI, Link, Text, DID } from '../src/lib.js'
 import { test, assert } from './test.js'
 import { CID } from 'multiformats'
 
@@ -240,6 +240,106 @@ import { CID } from 'multiformats'
   for (const [options, input, out] of dataset) {
     test(`Text.match({ pattern: ${options.pattern} }).decode(${input})`, () => {
       assert.containSubset(Text.optional(options).decode(input), out)
+    })
+  }
+}
+
+{
+  /** @type {unknown[][]} */
+  const dataset = [
+    [undefined, { message: 'Expected a string but got undefined instead' }],
+    [null, { message: 'Expected a string but got null instead' }],
+    ['hello', { message: 'Expected a did: but got "hello" instead' }],
+    [
+      new String('hello'),
+      { message: 'Expected a string but got object instead' },
+    ],
+    ['did:echo:1', 'did:echo:1'],
+  ]
+
+  for (const [input, out] of dataset) {
+    test(`DID.decode(${input})`, () => {
+      assert.containSubset(DID.decode(input), out)
+    })
+  }
+}
+
+{
+  /** @type {[{method:string}, unknown, unknown][]} */
+  const dataset = [
+    [
+      { method: 'echo' },
+      undefined,
+      { message: 'Expected a string but got undefined instead' },
+    ],
+    [
+      { method: 'echo' },
+      null,
+      { message: 'Expected a string but got null instead' },
+    ],
+    [
+      { method: 'echo' },
+      'hello',
+      { message: 'Expected a did:echo: but got "hello" instead' },
+    ],
+    [{ method: 'echo' }, 'did:echo:hello', 'did:echo:hello'],
+    [
+      { method: 'foo' },
+      'did:echo:hello',
+      { message: 'Expected a did:foo: but got "did:echo:hello" instead' },
+    ],
+    [
+      { method: 'echo' },
+      new String('hello'),
+      { message: 'Expected a string but got object instead' },
+    ],
+  ]
+
+  for (const [options, input, out] of dataset) {
+    test(`DID.match({ method: ${options.method} }).decode(${input})`, () => {
+      assert.containSubset(DID.match(options).decode(input), out)
+    })
+  }
+}
+
+{
+  /** @type {[{method?:string}, unknown, unknown][]} */
+  const dataset = [
+    [{}, undefined, undefined],
+    [{}, null, { message: 'Expected a string but got null instead' }],
+    [{}, 'did:echo:bar', 'did:echo:bar'],
+    [
+      {},
+      new String('hello'),
+      { message: 'Expected a string but got object instead' },
+    ],
+
+    [{ method: 'echo' }, undefined, undefined],
+    [
+      { method: 'echo' },
+      null,
+      { message: 'Expected a string but got null instead' },
+    ],
+    [
+      { method: 'echo' },
+      'did:hello:world',
+      { message: 'Expected a did:echo: but got "did:hello:world" instead' },
+    ],
+    [
+      { method: 'echo' },
+      'hello world',
+      { message: 'Expected a did:echo: but got "hello world" instead' },
+    ],
+    [
+      { method: 'echo' },
+      new String('hello'),
+      { message: 'Expected a string but got object instead' },
+    ],
+  ]
+
+  for (const [options, input, out] of dataset) {
+    test(`DID.optional({ method: "${options.method}" }).decode(${input})`, () => {
+      assert.containSubset(DID.optional(options).decode(input), out)
     })
   }
 }

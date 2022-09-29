@@ -50,3 +50,11 @@ export const optional = options => ({
     }
   },
 })
+
+/**
+ * @template {API.Protocol} P
+ * @template {API.URI<P>} T
+ * @param {T} uri
+ * @return {T}
+ */
+export const from = uri => uri

@@ -1,13 +1,15 @@
 import { test, assert } from './test.js'
 import { access } from '../src/lib.js'
-import { capability, URI, Link } from '../src/lib.js'
+import { capability, URI, Link, DID } from '../src/lib.js'
 import { Failure } from '../src/error.js'
 import * as ed25519 from '@ucanto/principal/ed25519'
 import * as Client from '@ucanto/client'
-import * as API from '@ucanto/interface'
+
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-import { UCAN, DID } from '@ucanto/core'
+import { UCAN, DID as Principal } from '@ucanto/core'
 import { UnavailableProof } from '../src/error.js'
+import { equalWith, canDelegateURI, fail } from './util.js'
+import * as API from './types.js'
 
 const storeAdd = capability({
   can: 'store/add',
@@ -60,8 +62,8 @@ test('self-issued invocation', async () => {
       with: alice.did(),
       nb: {},
     },
-    issuer: DID.from(alice.did()),
-    audience: DID.parse(bob.did()),
+    issuer: Principal.from(alice.did()),
+    audience: Principal.parse(bob.did()),
     proofs: [],
   })
 })
@@ -250,8 +252,8 @@ test('delegated invocation', async () => {
       with: alice.did(),
       nb: {},
     },
-    issuer: DID.parse(bob.did()),
-    audience: DID.parse(w3.did()),
+    issuer: Principal.parse(bob.did()),
+    audience: Principal.parse(w3.did()),
     proofs: [
       {
         capability: {
@@ -259,8 +261,8 @@ test('delegated invocation', async () => {
           with: alice.did(),
           nb: {},
         },
-        issuer: DID.parse(alice.did()),
-        audience: DID.parse(bob.did()),
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         proofs: [],
       },
     ],
@@ -819,13 +821,13 @@ test('delegate with my:*', async () => {
       can: 'store/add',
       with: alice.did(),
     },
-    issuer: DID.parse(bob.did()),
-    audience: DID.parse(w3.did()),
+    issuer: Principal.parse(bob.did()),
+    audience: Principal.parse(w3.did()),
     proofs: [
       {
         delegation,
-        issuer: DID.parse(alice.did()),
-        audience: DID.parse(bob.did()),
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -881,13 +883,13 @@ test('delegate with my:did', async () => {
       can: 'store/add',
       with: alice.did(),
     },
-    issuer: DID.parse(bob.did()),
-    audience: DID.parse(w3.did()),
+    issuer: Principal.parse(bob.did()),
+    audience: Principal.parse(w3.did()),
     proofs: [
       {
         delegation,
-        issuer: DID.parse(alice.did()),
-        audience: DID.parse(bob.did()),
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -958,8 +960,8 @@ test('delegate with as:*', async () => {
     proofs: [
       {
         delegation: as,
-        issuer: DID.parse(bob.did()),
-        audience: DID.parse(mallory.did()),
+        issuer: Principal.parse(bob.did()),
+        audience: Principal.parse(mallory.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -967,8 +969,8 @@ test('delegate with as:*', async () => {
         proofs: [
           {
             delegation: my,
-            issuer: DID.parse(alice.did()),
-            audience: DID.parse(bob.did()),
+            issuer: Principal.parse(alice.did()),
+            audience: Principal.parse(bob.did()),
             capability: {
               can: 'store/add',
               with: alice.did(),
@@ -1048,8 +1050,8 @@ test('delegate with as:did', async () => {
     proofs: [
       {
         delegation: as,
-        issuer: DID.parse(bob.did()),
-        audience: DID.parse(mallory.did()),
+        issuer: Principal.parse(bob.did()),
+        audience: Principal.parse(mallory.did()),
         capability: {
           can: 'msg/send',
           with: 'mailto:alice@web.mail',
@@ -1057,8 +1059,8 @@ test('delegate with as:did', async () => {
         proofs: [
           {
             delegation: my,
-            issuer: DID.parse(alice.did()),
-            audience: DID.parse(bob.did()),
+            issuer: Principal.parse(alice.did()),
+            audience: Principal.parse(bob.did()),
             capability: {
               can: 'msg/send',
               with: 'mailto:alice@web.mail',
@@ -1118,8 +1120,8 @@ test('resolve proof', async () => {
     proofs: [
       {
         delegation,
-        issuer: DID.parse(alice.did()),
-        audience: DID.parse(bob.did()),
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -1128,4 +1130,57 @@ test('resolve proof', async () => {
       },
     ],
   })
+})
+
+test('execute capabilty', async () => {
+  const Voucher = capability({
+    can: 'voucher/*',
+    with: DID.match({ method: 'key' }),
+  })
+
+  const Claim = Voucher.derive({
+    to: capability({
+      can: 'voucher/claim',
+      with: DID.match({ method: 'key' }),
+      nb: {
+        product: Link,
+        identity: URI.match({ protocol: 'mailto:' }),
+        service: DID,
+      },
+      derives: (child, parent) => {
+        return (
+          fail(equalWith(child, parent)) ||
+          fail(canDelegateURI(child.nb.identity, parent.nb.identity)) ||
+          fail(
+            canDelegateURI(
+              child.nb.product.toString(),
+              parent.nb.product.toString()
+            )
+          ) ||
+          fail(canDelegateURI(child.nb.service, parent.nb.service)) ||
+          true
+        )
+      },
+    }),
+    derives: equalWith,
+  })
+
+  const claim = Claim.invoke({
+    issuer: alice,
+    audience: w3,
+    with: alice.did(),
+    nb: {
+      identity: URI.from(`mailto:${alice.did}@web.mail`),
+      product: Link.parse('bafkqaaa'),
+      service: w3.did(),
+    },
+  })
+
+  /**
+   * @param {API.ConnectionView<API.Service>} connection
+   */
+
+  const demo = async connection => {
+    const result = await claim.execute(connection)
+  }
 })
