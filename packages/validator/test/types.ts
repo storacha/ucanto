@@ -34,8 +34,26 @@ export interface VoucherClaim
     }
   > {}
 
+export interface VoucherRedeem
+  extends Capability<
+    'voucher/redeem',
+    `did:${string}`,
+    {
+      product: string
+      identity: string
+      account: `did:${string}`
+    }
+  > {
+  nb: {
+    product: string
+    identity: string
+    account: `did:${string}`
+  }
+}
+
 export interface Service {
   voucher: {
     claim: ServiceMethod<VoucherClaim, undefined, Failure>
+    redeem: ServiceMethod<VoucherRedeem, undefined, Failure>
   }
 }

@@ -133,13 +133,11 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
 
   create(
     input: InferCreateOptions<M['value']['with'], M['value']['nb']>
-  ): Capability<M['value']['can'], M['value']['with'], M['value']['nb']>
+  ): M['value']
 
   invoke(
     options: InvokeCapabilityOptions<M['value']['with'], M['value']['nb']>
-  ): IssuedInvocationView<
-    Capability<M['value']['can'], M['value']['with'], M['value']['nb']>
-  >
+  ): IssuedInvocationView<M['value']>
 }
 
 export type InferCreateOptions<R extends Resource, C extends {}> = {

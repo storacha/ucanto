@@ -1,6 +1,6 @@
 import { test, assert } from './test.js'
 import { access } from '../src/lib.js'
-import { capability, URI, Link, DID } from '../src/lib.js'
+import { capability, URI, Text, Link, DID } from '../src/lib.js'
 import { Failure } from '../src/error.js'
 import * as ed25519 from '@ucanto/principal/ed25519'
 import * as Client from '@ucanto/client'
@@ -1176,11 +1176,46 @@ test('execute capabilty', async () => {
     },
   })
 
+  const Redeem = capability({
+    can: 'voucher/redeem',
+    with: URI.match({ protocol: 'did:' }),
+    nb: {
+      product: Text,
+      identity: Text,
+      account: URI.match({ protocol: 'did:' }),
+    },
+  })
+
+  const proof = Redeem.invoke({
+    issuer: alice,
+    audience: w3,
+    with: alice.did(),
+    nb: {
+      product: 'test',
+      identity: 'whatever',
+      account: alice.did(),
+    },
+  })
+
   /**
    * @param {API.ConnectionView<API.Service>} connection
+   * @param {API.Delegation<[API.VoucherRedeem]>} proof
    */
 
-  const demo = async connection => {
+  const demo = async (connection, proof) => {
+    const redeem = Redeem.invoke({
+      issuer: alice,
+      audience: w3,
+      with: alice.did(),
+      nb: {
+        product: 'test',
+        identity: proof.capabilities[0].nb.identity,
+        account: alice.did(),
+      },
+    })
+
+    const r = await redeem.execute(connection)
+
     const result = await claim.execute(connection)
   }
 })
