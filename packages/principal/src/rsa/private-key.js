@@ -38,7 +38,6 @@ const VERSION = new Uint8Array()
  * @returns {RSAPrivateKey}
  */
 export const decode = (source, byteOffset = 0) => {
-  const sequence = readSequence(source, byteOffset)
   const [v, n, e, d, p, q, dp, dq, qi] = readSequenceWith(
     [
       readInt,
@@ -51,7 +50,8 @@ export const decode = (source, byteOffset = 0) => {
       readInt,
       readInt,
     ],
-    sequence
+    source,
+    byteOffset
   )
 
   return { v, n, e, d, p, q, dp, dq, qi }

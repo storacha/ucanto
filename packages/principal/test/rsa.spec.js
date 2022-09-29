@@ -1,6 +1,7 @@
 import * as RSA from '../src/rsa.js'
 import * as PrivateKey from '../src/rsa/private-key.js'
 import * as PublicKey from '../src/rsa/public-key.js'
+import * as PKCS8 from '../src/rsa/pkcs8.js'
 import { assert } from 'chai'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { varint } from 'multiformats'
@@ -23,7 +24,7 @@ describe('RSA', () => {
     assert.equal(principal.did(), principal.verifier.did())
 
     if (principal.toCryptoKey) {
-      const key = principal.toCryptoKey()
+      const key = await principal.toCryptoKey()
       assert.equal(key.algorithm.name, 'RSASSA-PKCS1-v1_5')
       assert.equal(key.extractable, false)
       assert.equal(key.type, 'private')
@@ -48,7 +49,7 @@ describe('RSA', () => {
       return assert.fail('expected to have toCryptoKey')
     }
 
-    const key = principal.toCryptoKey()
+    const key = await principal.toCryptoKey()
     assert.equal(key.algorithm.name, 'RSASSA-PKCS1-v1_5')
     assert.equal(key.extractable, true)
     assert.equal(key.type, 'private')
@@ -62,7 +63,7 @@ describe('RSA', () => {
     assert.equal(bytes instanceof Uint8Array, true)
     assert.deepEqual([0x1305, 2], varint.decode(bytes))
 
-    const signer = await RSA.Signer.import(bytes)
+    const signer = RSA.decode(bytes)
     const payload = utf8.encode('hello world')
     const signature = await signer.sign(payload)
     assert.equal(await principal.verify(payload, signature), true)
@@ -71,7 +72,7 @@ describe('RSA', () => {
   it('can sign & verify', async () => {
     const principal = await RSA.generate()
     const payload = utf8.encode('hello world')
-    p
+
     const signature = await principal.sign(payload)
     assert.equal(signature.code, principal.signatureCode)
     assert.equal(signature.algorithm, principal.signatureAlgorithm)
@@ -127,44 +128,83 @@ describe('RSA', () => {
   })
 })
 
-describe('RSA codec', () => {
-  it('public key roundtrips', () => {
-    const expect = new TextEncoder().encode('my secret code')
-
-    const info = RSA.fromRSAPublicKey(expect)
-    const actual = RSA.toRSAPublicKey(info)
-
-    assert.deepEqual(actual, expect)
-  })
-
-  it('private key roundtrips', () => {
-    const expect = new TextEncoder().encode('my secret code')
-
-    const info = RSA.fromRSAPrivateKey(expect)
-    const actual = RSA.toRSAPrivateKey(info)
-
-    assert.deepEqual(actual, expect)
-  })
-
-  /**
-   * @param {Exclude<KeyFormat, "jwk">} format
-   * @param {{toCryptoKey?: () => PromiseLike<CryptoKey>|CryptoKey}} key
-   */
-  const exportKey = async (format, key) => {
-    if (!key.toCryptoKey) {
-      assert.fail()
-    }
-    const cryptoKey = await key.toCryptoKey()
-
-    return webcrypto.subtle.exportKey(format, cryptoKey)
+/**
+ * @param {Exclude<KeyFormat, "jwk">} format
+ * @param {{toCryptoKey?: () => PromiseLike<CryptoKey>|CryptoKey}} key
+ */
+const exportKey = async (format, key) => {
+  if (!key.toCryptoKey) {
+    assert.fail()
   }
+  const cryptoKey = await key.toCryptoKey()
+  return webcrypto.subtle.exportKey(format, cryptoKey)
+}
 
-  it.only('PublicKey fromSPKI 🔁 toSPKI', async () => {
+describe('PrivateKey', () => {
+  it('PublicKey fromSPKI 🔁 toSPKI', async () => {
     const { verifier } = await RSA.generate()
     const spki = new Uint8Array(await exportKey('spki', verifier))
-
     const key = PublicKey.fromSPKI(spki)
-
     assert.deepEqual(spki, PublicKey.toSPKI(key))
   })
+
+  it.only('PKCS8 decode 🔁 encode', async () => {
+    const { signer } = await RSA.generate({ extractable: true })
+    const expected = new Uint8Array(await exportKey('pkcs8', signer))
+    const key = PKCS8.decode(expected)
+    const actual = PKCS8.encode(key)
+
+    assert.deepEqual(actual, expected)
+  })
+
+  it.only('PrivateKey decode 🔁 encode', async () => {
+    const { signer } = await RSA.generate({ extractable: true })
+    const pkcs8 = new Uint8Array(await exportKey('pkcs8', signer))
+    const source = PKCS8.decode(pkcs8)
+
+    const key = PrivateKey.decode(source)
+    const bytes = PrivateKey.encode(key)
+
+    assert.deepEqual(source, bytes)
+  })
+
+  it('PrivateKey fromPKCS8 🔁 toPKCS8', async () => {
+    const { signer } = await RSA.generate({ extractable: true })
+    const pkcs8 = new Uint8Array(await exportKey('pkcs8', signer))
+    const key = PrivateKey.fromPKCS8(pkcs8)
+    const info = PrivateKey.toPKCS8(key)
+    assert.deepEqual(info, pkcs8)
+  })
 })
+
+// describe('RSA codec', () => {
+//   it('public key roundtrips', () => {
+//     const expect = new TextEncoder().encode('my secret code')
+//     const info = RSA.fromRSAPublicKey(expect)
+//     const actual = RSA.toRSAPublicKey(info)
+//     assert.deepEqual(actual, expect)
+//   })
+//   it('private key roundtrips', () => {
+//     const expect = new TextEncoder().encode('my secret code')
+//     const info = RSA.fromRSAPrivateKey(expect)
+//     const actual = RSA.toRSAPrivateKey(info)
+//     assert.deepEqual(actual, expect)
+//   })
+//   /**
+//    * @param {Exclude<KeyFormat, "jwk">} format
+//    * @param {{toCryptoKey?: () => PromiseLike<CryptoKey>|CryptoKey}} key
+//    */
+//   const exportKey = async (format, key) => {
+//     if (!key.toCryptoKey) {
+//       assert.fail()
+//     }
+//     const cryptoKey = await key.toCryptoKey()
+//     return webcrypto.subtle.exportKey(format, cryptoKey)
+//   }
+//   it.only('PublicKey fromSPKI 🔁 toSPKI', async () => {
+//     const { verifier } = await RSA.generate()
+//     const spki = new Uint8Array(await exportKey('spki', verifier))
+//     const key = PublicKey.fromSPKI(spki)
+//     assert.deepEqual(spki, PublicKey.toSPKI(key))
+//   })
+// })

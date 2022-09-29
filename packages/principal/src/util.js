@@ -54,6 +54,26 @@ export const untagWith = (code, source, byteOffset = 0) => {
 }
 
 /**
+ * @param {number} code
+ * @param {Uint8Array} source
+ * @param {number} byteOffset
+ * @returns {number}
+ */
+export const read = (code, source, byteOffset) => {
+  const bytes = byteOffset !== 0 ? source.subarray(byteOffset) : source
+  const [tag, size] = varint.decode(bytes)
+  if (tag !== code) {
+    throw new Error(
+      `Expected multiformat with 0x${code.toString(
+        16
+      )} tag instead got 0x${tag.toString(16)}`
+    )
+  } else {
+    return byteOffset + size
+  }
+}
+
+/**
  * @template {number} Code
  * @param {Code} code
  * @param {CryptoKey} key

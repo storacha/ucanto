@@ -1,7 +1,7 @@
 import { webcrypto } from 'one-webcrypto'
 import { bytes, varint } from 'multiformats'
 import { base58btc } from 'multiformats/bases/base58'
-import * as API from '@ucanto/interface'
+import * as API from './rsa/type.js'
 import * as DID from '@ipld/dag-ucan/did'
 import { tagWith, untagWith } from './util.js'
 import * as Signature from '@ipld/dag-ucan/signature'
@@ -9,9 +9,6 @@ import * as SPKI from './rsa/spki.js'
 import * as PKCS8 from './rsa/pkcs8.js'
 import * as PrivateKey from './rsa/private-key.js'
 import * as PublicKey from './rsa/public-key.js'
-
-import { base64url } from 'multiformats/bases/base64'
-import { encodeSequence, encodeInt, encodeBitString } from './rsa/asn1.js'
 
 export const name = 'RSA'
 export const code = 0x1305
@@ -24,12 +21,16 @@ const ALG = 'RSASSA-PKCS1-v1_5'
 const HASH_ALG = 'SHA-256'
 const KEY_SIZE = 2048
 const SALT_LEGNTH = 128
+const IMPORT_PARAMS = {
+  name: ALG,
+  hash: { name: HASH_ALG },
+}
 
 /**
  * @param {object} options
  * @param {number} [options.size]
  * @param {boolean} [options.extractable]
- * @returns {Promise<API.SigningPrincipal<"key", typeof signatureCode>>}
+ * @returns {Promise<API.RSASigner>}
  */
 export const generate = async ({
   size = KEY_SIZE,
@@ -58,29 +59,62 @@ export const generate = async ({
     key: publicKey,
   })
 
-  const signer = privateKey.extractable
-    ? new ExtractableRSASigner({
-        verifier,
-        key: privateKey,
-      })
-    : new RSASigner({
-        verifier,
-        key: privateKey,
-      })
-
-  return signer
+  return new RSASigner({ verifier, key: privateKey })
 }
 
-class RSASigner {
+/**
+ * @param {API.ByteView<API.Signer<'key', typeof signatureCode>>} bytes
+ */
+export const decode = bytes => {
+  const key = PrivateKey.decode(untagWith(code, bytes))
+  const verifier = new RSAVerifier({
+    bytes: tagWith(verifierCode, PublicKey.encode(key)),
+  })
+  return new ImportedRSASigner({ bytes, verifier })
+}
+
+/**
+ * @template T
+ * @param {API.RSASigner} signer
+ * @param {API.ByteView<T>} payload
+ * @returns {Promise<API.Signature<T, typeof signatureCode>>}
+ */
+export const sign = async (signer, payload) => {
+  const buffer = await webcrypto.subtle.sign(
+    { name: ALG, saltLength: SALT_LEGNTH },
+    signer.key || (await signer.toCryptoKey()),
+    payload
+  )
+
+  return Signature.create(signatureCode, new Uint8Array(buffer))
+}
+
+/**
+ * @template T
+ * @param {API.RSAVerifier} verifier
+ * @param {API.ByteView<T>} payload
+ * @param {API.Signature<T, typeof signatureCode>} signature
+ * @returns {Promise<boolean>}
+ */
+export const verify = async (verifier, payload, signature) => {
+  if (signature.code !== signatureCode) {
+    return false
+  }
+
+  return webcrypto.subtle.verify(
+    { name: ALG, hash: { name: HASH_ALG } },
+    verifier.key || (await verifier.toCryptoKey()),
+    signature.raw,
+    payload
+  )
+}
+
+class RSAPrincipal {
   /**
    * @param {object} options
-   * @param {CryptoKey|null} options.key
-   * @param {API.ByteView<API.Signer<"key", typeof signatureCode>>|null} options.bytes
    * @param {API.Verifier<"key", typeof this.signatureCode> & { bytes: Uint8Array }} options.verifier
    */
-  constructor({ key, bytes, verifier }) {
-    this.key = key
-    this.bytes = bytes
+  constructor({ verifier }) {
     this.verifier = verifier
   }
   get signer() {
@@ -110,21 +144,64 @@ class RSASigner {
   verify(payload, signature) {
     return this.verifier.verify(payload, signature)
   }
+}
+
+/**
+ * @implements {API.RSASigner}
+ */
+class RSASigner extends RSAPrincipal {
+  /**
+   * @param {object} options
+   * @param {CryptoKey} options.key
+   * @param {API.ByteView<API.Signer<"key", typeof signatureCode>>|null} [options.bytes]
+   * @param {API.Verifier<"key", typeof signatureCode> & { bytes: Uint8Array }} options.verifier
+   */
+  constructor({ bytes = null, key, verifier }) {
+    super({ verifier })
+    this.key = key
+    this.bytes = bytes
+
+    // If non extractable we unset the export field
+    if (!key.extractable) {
+      const signer = /** @type {API.RSASigner} */ (this)
+      signer.export = undefined
+    }
+  }
+  async export() {
+    const pkcs8 = await webcrypto.subtle.exportKey('pkcs8', this.key)
+    return tagWith(code, PKCS8.decode(new Uint8Array(pkcs8)))
+  }
+  toCryptoKey() {
+    return this.key
+  }
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @returns {Promise<API.Signature<T, typeof this.signatureCode>>}
+   * @returns {Promise<API.Signature<T, typeof signatureCode>>}
    */
-  async sign(payload) {
-    const buffer = await webcrypto.subtle.sign(
-      { name: ALG, saltLength: SALT_LEGNTH },
-      this.key || (await this.import()),
-      payload
-    )
-
-    return Signature.create(this.signatureCode, new Uint8Array(buffer))
+  sign(payload) {
+    return sign(this, payload)
   }
+}
 
+/**
+ * @implements {API.RSASigner}
+ */
+class ImportedRSASigner extends RSAPrincipal {
+  /**
+   * @param {object} options
+   * @param {CryptoKey|null} [options.key]
+   * @param {API.ByteView<API.Signer<"key", typeof signatureCode>>} options.bytes
+   * @param {API.Verifier<"key", typeof signatureCode> & { bytes: Uint8Array }} options.verifier
+   */
+  constructor({ bytes, key = null, verifier }) {
+    super({ verifier })
+    this.key = key
+    this.bytes = bytes
+  }
+  export() {
+    return this.bytes
+  }
   async import() {
     const key = await webcrypto.subtle.importKey(
       'pkcs8',
@@ -137,42 +214,17 @@ class RSASigner {
 
     return key
   }
+  /**
+   * @template T
+   * @param {API.ByteView<T>} payload
+   * @returns {Promise<API.Signature<T, typeof this.signatureCode>>}
+   */
+  sign(payload) {
+    return sign(this, payload)
+  }
 
   toCryptoKey() {
     return this.key || this.import()
-  }
-}
-
-/**
- * @implements {API.SigningPrincipal<"key", typeof signatureCode>}
- */
-class ImportedRSASigner extends RSASigner {
-  /**
-   * @param {object} options
-   * @param {CryptoKey|null} options.key
-   * @param {API.ByteView<API.Signer<"key", typeof signatureCode>>} options.bytes
-   * @param {API.Verifier<"key", typeof signatureCode> & { bytes: Uint8Array }} options.verifier
-   */
-  constructor({ bytes, verifier }) {
-    super({ key: null, bytes, verifier })
-    this.bytes = bytes
-  }
-  export() {
-    return this.bytes
-  }
-}
-
-/**
- * @implements {API.Signer<"key", typeof signatureCode>}
- */
-class ExtractableRSASigner extends RSASigner {
-  // async export() {
-  //   const buffer = await webcrypto.subtle.exportKey('pkcs8', this.key)
-  //   const bytes = toRSAPrivateKey(new Uint8Array(buffer))
-  //   return tagWith(code, bytes)
-  // }
-  async export() {
-    return exportPrivateKey(this.key)
   }
 }
 
@@ -182,10 +234,10 @@ class ExtractableRSASigner extends RSASigner {
 class RSAVerifier {
   /**
    * @param {object} options
-   * @param {CryptoKey|null} options.key
+   * @param {CryptoKey|null} [options.key]
    * @param {API.ByteView<API.Verifier<"key", typeof signatureCode>>} options.bytes
    */
-  constructor({ bytes, key }) {
+  constructor({ bytes, key = null }) {
     this.key = key
     this.bytes = bytes
   }
@@ -216,19 +268,7 @@ class RSAVerifier {
    * @returns {Promise<boolean>}
    */
   async verify(payload, signature) {
-    if (signature.code !== this.signatureCode) {
-      return false
-    }
-
-    return (
-      signature.code === this.signatureCode &&
-      webcrypto.subtle.verify(
-        { name: ALG, hash: { name: HASH_ALG } },
-        this.key || (await this.import()),
-        signature.raw,
-        payload
-      )
-    )
+    return verify(this, payload, signature)
   }
 
   async import() {
@@ -241,6 +281,10 @@ class RSAVerifier {
     )
     this.key = key
     return key
+  }
+
+  toCryptoKey() {
+    return this.key || this.import()
   }
 
   export() {
@@ -261,24 +305,4 @@ export const Verifier = {
       key: null,
     })
   },
-}
-
-const IMPORT_PARAMS = {
-  name: ALG,
-  hash: { name: HASH_ALG },
-}
-
-/**
- * @param {API.ByteView<API.Signer<'key', typeof signatureCode>>} bytes
- */
-export const decode = bytes => {
-  const key = PrivateKey.decode(untagWith(code, bytes))
-
-  return new RSASignerDecoder({
-    bytes,
-    verifier: new RSAVerifier({
-      bytes: tagWith(verifierCode, PublicKey.encode(key)),
-      key: null,
-    }),
-  })
 }
