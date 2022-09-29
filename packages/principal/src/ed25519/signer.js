@@ -102,7 +102,7 @@ export const parse = (principal, decoder) =>
   decode((decoder || base64pad).decode(principal))
 
 /**
- * @implements {API.Signer<'key', typeof Signature.EdDSA>}
+ * @implements {API.ExportableSigner<'key', typeof Signature.EdDSA>}
  */
 class Ed25519Signer extends Uint8Array {
   get verifier() {
@@ -155,5 +155,9 @@ class Ed25519Signer extends Uint8Array {
   }
   get signatureCode() {
     return Signature.EdDSA
+  }
+
+  export() {
+    return this
   }
 }

@@ -14,8 +14,8 @@ import {
   Resource,
   Signature,
   Principal,
-  Verifier,
-  Signer,
+  Verifier as UCANVerifier,
+  Signer as UCANSigner,
 } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import {
@@ -36,8 +36,6 @@ export * from './transport.js'
 export type {
   Transport,
   Principal,
-  Verifier,
-  Signer,
   Phantom,
   Tuple,
   DID,
@@ -386,4 +384,25 @@ export type URI<P extends Protocol = Protocol> = `${P}${string}` &
 
 export interface PrincipalParser {
   parse(did: UCAN.DID): UCAN.Verifier
+}
+
+export interface Signer<M extends string = string, A extends number = number>
+  extends UCANSigner<M, A> {
+  export?: () => Await<ByteView<Signer<M, A>>>
+  toCryptoKey?: () => Await<CryptoKey>
+}
+
+export interface Verifier<M extends string = string, A extends number = number>
+  extends UCANVerifier<M, A> {
+  export?: () => Await<ByteView<Verifier<M, A>>>
+  toCryptoKey?: () => Await<CryptoKey>
+}
+
+export interface SigningPrincipal<
+  M extends string = string,
+  A extends number = number
+> extends Signer<M, A>,
+    UCANVerifier<M, A> {
+  verifier: Verifier<M, A>
+  signer: Signer<M, A>
 }
