@@ -19,6 +19,7 @@ export { capability } from './capability.js'
 export * as URI from './decoder/uri.js'
 export * as Link from './decoder/link.js'
 export * as Text from './decoder/text.js'
+export * as DID from './decoder/did.js'
 
 const empty = () => []
 
