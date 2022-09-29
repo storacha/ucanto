@@ -33,7 +33,7 @@ export const match = options => ({
 
 /**
  * @template {string} M
- * @param {{method: M}} options
+ * @param {{method?: M}} options
  * @returns {API.Decoder<unknown, undefined|(API.DID<M> & API.URI<"did:">), API.Failure>}
  */
 
