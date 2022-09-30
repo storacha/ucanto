@@ -207,3 +207,5 @@ test('checks for single capability invocation', async () => {
     ],
   })
 })
+
+test('handle text fields', () => {})

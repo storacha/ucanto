@@ -1,19 +1,16 @@
 import * as DID from '@ipld/dag-ucan/did'
 import * as ED25519 from '@noble/ed25519'
 import { varint } from 'multiformats'
-import * as API from '@ucanto/interface'
+import * as API from './type.js'
 import * as Signature from '@ipld/dag-ucan/signature'
 import { base58btc } from 'multiformats/bases/base58'
 export const code = 0xed
+export const name = 'Ed25519'
 
 export const signatureCode = Signature.EdDSA
-export const name = 'Ed25519'
+export const signatureAlgorithm = 'EdDSA'
 const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 32 + PUBLIC_TAG_SIZE
-
-/**
- * @typedef {API.Verifier<"key", Signature.EdDSA> & Uint8Array} Verifier
- */
 
 /**
  * Parses `did:key:` string as a VerifyingPrincipal.
@@ -27,7 +24,7 @@ export const parse = did => decode(DID.parse(did))
  * corresponding `Principal` that can be used to verify signatures.
  *
  * @param {Uint8Array} bytes
- * @returns {Verifier}
+ * @returns {API.EdVerifier}
  */
 export const decode = bytes => {
   const [algorithm] = varint.decode(bytes)
@@ -40,11 +37,7 @@ export const decode = bytes => {
       `Expected Uint8Array with byteLength ${SIZE}, instead got Uint8Array with byteLength ${bytes.byteLength}`
     )
   } else {
-    return new Ed25519Principal(
-      bytes.buffer,
-      bytes.byteOffset,
-      bytes.byteLength
-    )
+    return new Ed25519Verifier(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   }
 }
 
@@ -64,10 +57,21 @@ export const format = principal => DID.format(principal)
 export const encode = principal => DID.encode(principal)
 
 /**
- * @implements {API.Verifier<"key", typeof Signature.EdDSA>}
- * @implements {API.Principal<"key">}
+ * @implements {API.EdVerifier}
  */
-class Ed25519Principal extends Uint8Array {
+class Ed25519Verifier extends Uint8Array {
+  /** @type {typeof code} */
+  get code() {
+    return code
+  }
+  /** @type {typeof signatureCode} */
+  get signatureCode() {
+    return signatureCode
+  }
+  /** @type {typeof signatureAlgorithm} */
+  get signatureAlgorithm() {
+    return signatureAlgorithm
+  }
   /**
    * Raw public key without a multiformat code.
    *
@@ -100,5 +104,12 @@ class Ed25519Principal extends Uint8Array {
       signature.code === signatureCode &&
       ED25519.verify(signature.raw, payload, this.publicKey)
     )
+  }
+
+  export() {
+    return this
+  }
+  encode() {
+    return this
   }
 }

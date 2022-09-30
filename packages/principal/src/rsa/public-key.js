@@ -12,15 +12,6 @@ import { base64url } from 'multiformats/bases/base64'
  */
 
 /**
- * @param {RSAPublicKey} key
- * @return {RSAPublicKey}
- */
-export const fromPrivateKey = ({ n, e }) => ({
-  n,
-  e,
-})
-
-/**
  * Takes private-key information in [Private-Key Information Syntax](https://datatracker.ietf.org/doc/html/rfc5208#section-5)
  * and extracts all the fields as per [RSA private key syntax](https://datatracker.ietf.org/doc/html/rfc3447#appendix-A.1.2)
  *
@@ -59,6 +50,7 @@ export const toJWK = ({ n, e }) => ({
   kty: 'RSA',
   alg: 'RS256',
   key_ops: ['verify'],
+  ext: true,
   n: base64url.baseEncode(n),
   e: base64url.baseEncode(e),
 })

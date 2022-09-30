@@ -3,7 +3,7 @@ import { bytes, varint } from 'multiformats'
 import { base58btc } from 'multiformats/bases/base58'
 import * as API from './rsa/type.js'
 import * as DID from '@ipld/dag-ucan/did'
-import { tagWith, untagWith } from './util.js'
+import { tagWith, untagWith } from './multiformat.js'
 import * as Signature from '@ipld/dag-ucan/signature'
 import * as SPKI from './rsa/spki.js'
 import * as PKCS8 from './rsa/pkcs8.js'
@@ -14,7 +14,7 @@ export const name = 'RSA'
 export const code = 0x1305
 const verifierCode = 0x1205
 
-export const signatureCode = 0xd01205
+export const signatureCode = Signature.RS256
 export const signatureAlgorithm = 'RS256'
 
 const ALG = 'RSASSA-PKCS1-v1_5'
@@ -64,6 +64,7 @@ export const generate = async ({
 
 /**
  * @param {API.ByteView<API.Signer<'key', typeof signatureCode>>} bytes
+ * @returns {API.RSASigner}
  */
 export const decode = bytes => {
   const key = PrivateKey.decode(untagWith(code, bytes))
@@ -112,13 +113,19 @@ export const verify = async (verifier, payload, signature) => {
 class RSAPrincipal {
   /**
    * @param {object} options
-   * @param {API.Verifier<"key", typeof this.signatureCode> & { bytes: Uint8Array }} options.verifier
+   * @param {API.RSAVerifier} options.verifier
    */
   constructor({ verifier }) {
     this.verifier = verifier
   }
   get signer() {
     return this
+  }
+  /**
+   * @type {typeof code}
+   */
+  get code() {
+    return code
   }
   /**
    * @type {typeof signatureCode}
@@ -154,7 +161,7 @@ class RSASigner extends RSAPrincipal {
    * @param {object} options
    * @param {CryptoKey} options.key
    * @param {API.ByteView<API.Signer<"key", typeof signatureCode>>|null} [options.bytes]
-   * @param {API.Verifier<"key", typeof signatureCode> & { bytes: Uint8Array }} options.verifier
+   * @param {API.RSAVerifier} options.verifier
    */
   constructor({ bytes = null, key, verifier }) {
     super({ verifier })
@@ -192,7 +199,7 @@ class ImportedRSASigner extends RSAPrincipal {
    * @param {object} options
    * @param {CryptoKey|null} [options.key]
    * @param {API.ByteView<API.Signer<"key", typeof signatureCode>>} options.bytes
-   * @param {API.Verifier<"key", typeof signatureCode> & { bytes: Uint8Array }} options.verifier
+   * @param {API.RSAVerifier} options.verifier
    */
   constructor({ bytes, key = null, verifier }) {
     super({ verifier })
@@ -229,17 +236,21 @@ class ImportedRSASigner extends RSAPrincipal {
 }
 
 /**
- * @implements {API.Verifier<"key", typeof signatureCode>}
+ * @implements {API.RSAVerifier}
  */
 class RSAVerifier {
   /**
    * @param {object} options
    * @param {CryptoKey|null} [options.key]
-   * @param {API.ByteView<API.Verifier<"key", typeof signatureCode>>} options.bytes
+   * @param {API.ByteView<API.RSAVerifier>} options.bytes
    */
   constructor({ bytes, key = null }) {
     this.key = key
     this.bytes = bytes
+  }
+  /** @type {typeof verifierCode} */
+  get code() {
+    return verifierCode
   }
   /**
    * @type {typeof signatureCode}
@@ -292,17 +303,22 @@ class RSAVerifier {
   }
 }
 
-/**
- * @type {API.PrincipalParser}
- */
 export const Verifier = {
   /**
    * @param {API.DID} did
+   * @returns {API.RSAVerifier}
    */
   parse: did => {
     return new RSAVerifier({
       bytes: /** @type {Uint8Array} */ (DID.parse(did)),
       key: null,
     })
+  },
+  /**
+   * @param {API.ByteView<API.RSAVerifier>} bytes
+   * @returns {API.RSAVerifier}
+   */
+  decode: bytes => {
+    return new RSAVerifier({ bytes })
   },
 }

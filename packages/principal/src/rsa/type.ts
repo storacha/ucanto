@@ -1,18 +1,17 @@
-import { Signer, Verifier, Principal, UCAN, Await } from '@ucanto/interface'
+import { Signer, Verifier, ByteView, UCAN, Await } from '@ucanto/interface'
 
 export * from '@ucanto/interface'
 
-export interface RSAPrincipal<M extends string = 'key'> extends Principal<M> {
-  readonly signatureCode: 0xd01205
-  readonly signatureAlgorithm: 'RS256'
-}
+type CODE = 0xd01205
+type ALG = 'RS256'
 
 export interface RSASigner<M extends string = 'key'>
-  extends Principal<M>,
-    Signer<M, RSAPrincipal['signatureCode']>,
-    UCAN.Verifier<M, RSAPrincipal['signatureCode']> {
+  extends Signer<M, CODE>,
+    UCAN.Verifier<M, CODE> {
   readonly signer: RSASigner<M>
   readonly verifier: RSAVerifier<M>
+
+  readonly code: 0x1305
 
   key: CryptoKey | null
 
@@ -20,8 +19,12 @@ export interface RSASigner<M extends string = 'key'>
 }
 
 export interface RSAVerifier<M extends string = 'key'>
-  extends Principal<M>,
-    Verifier<M, RSAPrincipal['signatureCode']> {
+  extends Verifier<M, CODE> {
+  readonly code: 0x1205
+  readonly signatureCode: CODE
+  readonly signatureAlgorithm: ALG
   key: CryptoKey | null
+
+  export: () => Await<ByteView<RSAVerifier<M>>>
   toCryptoKey: () => Await<CryptoKey>
 }

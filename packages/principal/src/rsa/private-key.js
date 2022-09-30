@@ -1,11 +1,5 @@
 import * as API from '@ucanto/interface'
-import {
-  encodeSequence,
-  readSequence,
-  readInt,
-  readSequenceWith,
-  encodeInt,
-} from './asn1.js'
+import { encodeSequence, readInt, readSequenceWith, encodeInt } from './asn1.js'
 import { base64url } from 'multiformats/bases/base64'
 import * as PKCS8 from './pkcs8.js'
 import * as SPKI from './spki.js'
@@ -83,6 +77,7 @@ export const toJWK = ({ n, e, d, p, q, dp, dq, qi }) => ({
   kty: 'RSA',
   alg: 'RS256',
   key_ops: ['sign'],
+  ext: true,
   n: base64url.baseEncode(n),
   e: base64url.baseEncode(e),
   d: base64url.baseEncode(d),
@@ -130,8 +125,3 @@ export const toSPKI = key => SPKI.encode(PublicKey.encode(key))
  * @returns
  */
 const base6urlDecode = (input = '') => base64url.baseDecode(input)
-
-/**
- * @param {RSAPrivateKey} key
- */
-export const toPrivateKey = key => PublicKey.fromPrivateKey(key)

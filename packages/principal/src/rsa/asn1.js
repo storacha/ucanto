@@ -58,12 +58,6 @@ export const readDERLength = (bytes, offset = 0) => {
 }
 
 /**
- * @param {Uint8Array} bytes
- * @returns {number}
- */
-export const decodeDERLength = bytes => readDERLength(bytes).number
-
-/**
  * @param {Uint8Array} input
  * @param {number} expectedTag
  * @param {number} position
@@ -205,7 +199,7 @@ export const readSequence = (bytes, offset = 0) => {
  * @param {Uint8Array} input
  */
 export const encodeInt = input => {
-  const extra = input[0] & 0x80 ? 1 : 0
+  const extra = input.byteLength === 0 || input[0] & 0x80 ? 1 : 0
 
   // encode input length
   const length = encodeDERLength(input.byteLength + extra)
