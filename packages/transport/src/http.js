@@ -1,23 +1,12 @@
 import * as API from '@ucanto/interface'
-
 /**
- * @typedef {{
- * ok: boolean
- * arrayBuffer():API.Await<ArrayBuffer>
- * headers: {
- *  entries():Iterable<[string, string]>
- * }
- * status?: number
- * statusText?: string
- * url?: string
- * }} FetchResponse
- * @typedef {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} Fetcher
+ * @typedef {typeof fetch} Fetcher
  */
 /**
  * @template T
  * @param {object} options
  * @param {URL} options.url
- * @param {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} [options.fetch]
+ * @param {Fetcher} [options.fetch]
  * @param {string} [options.method]
  * @returns {API.Channel<T>}
  */
@@ -62,7 +51,7 @@ class Channel {
       : HTTPError.throw('HTTP Request failed', response)
 
     return {
-      headers: Object.fromEntries(response.headers.entries()),
+      headers: response.headers,
       body: new Uint8Array(buffer),
     }
   }

@@ -30,7 +30,7 @@ export const encode = async (invocations, options) => {
   const body = CAR.encode({ roots, blocks })
 
   return {
-    headers: HEADERS,
+    headers: new Headers(HEADERS),
     body,
   }
 }
@@ -43,7 +43,7 @@ export const encode = async (invocations, options) => {
  * @returns {Promise<API.InferInvocations<Invocations>>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers['content-type'] || headers['Content-Type']
+  const contentType = headers.get('content-type')
   if (contentType !== 'application/car') {
     throw TypeError(
       `Only 'content-type: application/car' is supported, instead got '${contentType}'`

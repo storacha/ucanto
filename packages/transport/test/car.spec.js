@@ -29,9 +29,12 @@ test('encode / decode', async () => {
     },
   ])
 
-  assert.deepEqual(request.headers, {
-    'content-type': 'application/car',
-  })
+  assert.deepEqual(
+    request.headers,
+    new Headers({
+      'content-type': 'application/car',
+    })
+  )
   const reader = await CarReader.fromBytes(request.body)
 
   assert.deepEqual(await reader.getRoots(), [cid])
@@ -73,9 +76,9 @@ test('decode requires application/car contet type', async () => {
   try {
     await CAR.decode({
       body,
-      headers: {
+      headers: new Headers({
         'content-type': 'application/octet-stream',
-      },
+      }),
     })
     assert.fail('expected to fail')
   } catch (error) {
@@ -102,9 +105,9 @@ test('accepts Content-Type as well', async () => {
 
   const [invocation] = await CAR.decode({
     ...request,
-    headers: {
+    headers: new Headers({
       'Content-Type': 'application/car',
-    },
+    }),
   })
 
   const delegation = await delegate({

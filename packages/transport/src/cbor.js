@@ -14,9 +14,9 @@ export const codec = CBOR
  * @param {I} result
  * @returns {API.HTTPResponse<I>}
  */
-export const encode = (result) => {
+export const encode = result => {
   return {
-    headers: HEADERS,
+    headers: new Headers(HEADERS),
     body: CBOR.encode(result),
   }
 }
@@ -29,10 +29,10 @@ export const encode = (result) => {
  * @returns {Promise<I>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers['content-type'] || headers['Content-Type']
+  const contentType = headers.get('content-type')
   if (contentType !== 'application/cbor') {
     throw TypeError(
-      `Only 'content-type: application/cbor' is supported, intsead got '${contentType}'`
+      `Only 'content-type: application/cbor' is supported, instead got '${contentType}'`
     )
   }
 

@@ -35,10 +35,10 @@ test('encode / decode', async () => {
 
   const expect = {
     body: UTF8.encode(JSON.stringify([cid])),
-    headers: {
+    headers: new Headers({
       'content-type': 'application/json',
       [`x-auth-${cid}`]: jwt,
-    },
+    }),
   }
 
   assert.deepEqual(request, expect)
@@ -69,9 +69,9 @@ test('decode requires application/json contet type', async () => {
   try {
     await JWT.decode({
       body: UTF8.encode(JSON.stringify([cid])),
-      headers: {
+      headers: new Headers({
         [`x-auth-${cid}`]: jwt,
-      },
+      }),
     })
     assert.fail('expected to fail')
   } catch (error) {
@@ -108,7 +108,7 @@ test('delegated proofs', async () => {
     },
   ])
 
-  assert.equal(Object.keys(outgoing.headers).length, 3)
+  assert.equal([...outgoing.headers.entries()].length, 3)
 
   const incoming = await JWT.decode(outgoing)
 
@@ -159,7 +159,7 @@ test('omit proof', async () => {
     },
   ])
 
-  assert.equal(Object.keys(outgoing.headers).length, 2)
+  assert.equal([...outgoing.headers.entries()].length, 2)
 
   const incoming = await JWT.decode(outgoing)
 
@@ -209,17 +209,18 @@ test('thorws on invalid heard', async () => {
       expiration,
     },
   ])
-
-  const { [`x-auth-${proof.cid}`]: jwt, ...headers } = request.headers
+  const newHeaders = new Headers(request.headers)
+  newHeaders.delete(`x-auth-${proof.cid}`)
+  newHeaders.set(
+    `x-auth-bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i`,
+    // @ts-ignore
+    request.headers.get(`x-auth-${proof.cid}`)
+  )
 
   try {
     await JWT.decode({
       ...request,
-      headers: {
-        ...headers,
-        [`x-auth-bafyreigw75rhf7gf7eubwmrhovcrdu4mfy6pfbi4wgbzlfieq2wlfsza5i`]:
-          request.headers[`x-auth-${proof.cid}`],
-      },
+      headers: newHeaders,
     })
     assert.fail('expected to fail')
   } catch (error) {
@@ -269,12 +270,12 @@ test('leaving out root throws', async () => {
     expiration,
   })
 
-  const { [`x-auth-${cid}`]: jwt, ...headers } = request.headers
+  request.headers.delete(`x-auth-${cid}`)
 
   try {
     await JWT.decode({
       ...request,
-      headers,
+      headers: request.headers,
     })
     assert.fail('expected to fail')
   } catch (error) {

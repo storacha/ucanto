@@ -7,9 +7,9 @@ test('encode / decode', async () => {
   const response = CBOR.encode([{ ok: true, value: 1 }])
 
   assert.deepEqual(response, {
-    headers: {
+    headers: new Headers({
       'content-type': 'application/cbor',
-    },
+    }),
     body: encode([{ ok: true, value: 1 }]),
   })
 
@@ -19,7 +19,7 @@ test('encode / decode', async () => {
 test('throws on wrong content-type', async () => {
   try {
     await CBOR.decode({
-      headers: { 'content-type': 'application/octet-stream' },
+      headers: new Headers({ 'content-type': 'application/octet-stream' }),
       body: encode([{ ok: true, value: 1 }]),
     })
     assert.fail('should have failed')
@@ -31,7 +31,7 @@ test('throws on wrong content-type', async () => {
 test('content-type case', async () => {
   assert.deepEqual(
     await CBOR.decode({
-      headers: { 'Content-Type': 'application/cbor' },
+      headers: new Headers({ 'Content-Type': 'application/cbor' }),
       body: encode([{ ok: true, value: 1 }]),
     }),
     [{ ok: true, value: 1 }]

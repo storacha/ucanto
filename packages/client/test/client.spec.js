@@ -33,9 +33,12 @@ test('encode inovocation', async () => {
 
   const payload = await connection.encoder.encode([add])
 
-  assert.deepEqual(payload.headers, {
-    'content-type': 'application/car',
-  })
+  assert.deepEqual(
+    payload.headers,
+    new Headers({
+      'content-type': 'application/car',
+    })
+  )
   assert.ok(payload.body instanceof Uint8Array)
 
   const request = await CAR.decode(payload)
@@ -142,8 +145,16 @@ const connection = Client.connect({
   id: w3,
   channel: HTTP.open({
     url: new URL('about:blank'),
+    // @ts-expect-error - we are mocking fetch it does not implement of the type properties
     fetch: async (url, input) => {
-      const invocations = await CAR.decode(input)
+      if (!input) {
+        return new Error('missing input')
+      }
+      const invocations = await CAR.decode({
+        // @ts-ignore
+        body: input.body,
+        headers: new Headers(input.headers),
+      })
       const promises = invocations.map(invocation => {
         const [capabality] = invocation.capabilities
         switch (capabality.can) {
@@ -162,11 +173,11 @@ const connection = Client.connect({
 
       const results = await Promise.all(promises)
 
-      const { headers, body } = await CBOR.encode(results)
+      const { headers, body } = CBOR.encode(results)
 
       return {
         ok: true,
-        headers: new Map(Object.entries(headers)),
+        headers,
         arrayBuffer: () => body,
       }
     },

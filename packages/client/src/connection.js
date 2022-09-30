@@ -8,7 +8,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
  * @param {API.ConnectionOptions<T>} options
  * @returns {API.ConnectionView<T>}
  */
-export const connect = (options) => new Connection(options)
+export const connect = options => new Connection(options)
 
 /**
  * @template {Record<string, any>} T

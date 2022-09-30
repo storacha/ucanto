@@ -46,12 +46,12 @@ export interface ResponseDecoder {
 
 export interface HTTPRequest<T = unknown> extends Phantom<T> {
   method?: string
-  headers: Readonly<Record<string, string>>
+  headers: Headers
   body: Uint8Array
 }
 
 export interface HTTPResponse<T = unknown> extends Phantom<T> {
-  headers: Readonly<Record<string, string>>
+  headers: Headers
   body: Uint8Array
 }
 

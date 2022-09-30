@@ -6,6 +6,7 @@ import { CAR, JWT, CBOR } from '../src/lib.js'
 test('encode / decode', async () => {
   const channel = HTTP.open({
     url: new URL('about:blank'),
+    // @ts-expect-error - we are mocking fetch it does not implement of the type properties
     fetch: async (url, init) => {
       assert.equal(url.toString(), 'about:blank')
       assert.equal(init?.method, 'POST')
@@ -18,14 +19,22 @@ test('encode / decode', async () => {
   })
 
   const response = await channel.request({
-    headers: { 'content-type': 'text/plain' },
+    headers: new Headers({ 'content-type': 'text/plain' }),
     body: UTF8.encode('ping'),
   })
 
-  assert.deepEqual(response, {
-    headers: { 'content-type': 'text/plain' },
-    body: UTF8.encode('pong'),
-  })
+  assert.deepEqual(
+    {
+      headers: Object.entries(response.headers.entries()),
+      body: response.body,
+    },
+    {
+      headers: Object.entries(
+        new Headers({ 'content-type': 'text/plain' }).entries()
+      ),
+      body: UTF8.encode('pong'),
+    }
+  )
 })
 
 if (!globalThis.fetch) {
@@ -40,6 +49,7 @@ if (!globalThis.fetch) {
 test('failed request', async () => {
   const channel = HTTP.open({
     url: new URL('https://ucan.xyz/'),
+    // @ts-expect-error - we are mocking fetch it does not implement of the type properties
     fetch: async (url, init) => {
       return {
         ok: false,
@@ -54,7 +64,7 @@ test('failed request', async () => {
 
   try {
     await channel.request({
-      headers: { 'content-type': 'text/plain' },
+      headers: new Headers({ 'content-type': 'text/plain' }),
       body: UTF8.encode('ping'),
     })
     assert.fail('expected to throw')

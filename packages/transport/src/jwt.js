@@ -31,7 +31,7 @@ export const encode = async batch => {
   }
 
   return {
-    headers,
+    headers: new Headers(headers),
     body: UTF8.encode(JSON.stringify(body)),
   }
 }
@@ -57,7 +57,7 @@ const iterate = function* (delegation) {
  * @returns {Promise<API.InferInvocations<I>>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers['content-type'] || headers['Content-Type']
+  const contentType = headers.get('content-type')
   if (contentType !== 'application/json') {
     throw TypeError(
       `Only 'content-type: application/json' is supported, instead got '${contentType}'`
@@ -66,7 +66,7 @@ export const decode = async ({ headers, body }) => {
   /** @type {API.Block[]} */
   const invocations = []
   const blocks = new Map()
-  for (const [name, value] of Object.entries(headers)) {
+  for (const [name, value] of headers.entries()) {
     if (name.startsWith(HEADER_PREFIX)) {
       const key = name.slice(HEADER_PREFIX.length)
       const data = UCAN.parse(/** @type {UCAN.JWT<any>} */ (value))
