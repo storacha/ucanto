@@ -140,11 +140,6 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   ): IssuedInvocationView<M['value']>
 }
 
-export type InferInvokedCapability<C extends Capability> = C
-// keyof C['nb'] extends never
-//   ? { can: C['can']; with: C['with']; nb?: never }
-//   : { can: C['can']; with: C['with']; nb: C['nb'] }
-
 export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
   // If capability has no NB we want to prevent passing it into
   // .create funciton so we make `nb` as optional `never` type so

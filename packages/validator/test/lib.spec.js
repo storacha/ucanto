@@ -1,6 +1,6 @@
 import { test, assert } from './test.js'
 import { access } from '../src/lib.js'
-import { capability, URI, Text, Link, DID } from '../src/lib.js'
+import { capability, URI, Link } from '../src/lib.js'
 import { Failure } from '../src/error.js'
 import * as ed25519 from '@ucanto/principal/ed25519'
 import * as Client from '@ucanto/client'
@@ -8,7 +8,6 @@ import * as Client from '@ucanto/client'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { UCAN, DID as Principal } from '@ucanto/core'
 import { UnavailableProof } from '../src/error.js'
-import { equalWith, canDelegateURI, fail } from './util.js'
 import * as API from './types.js'
 
 const storeAdd = capability({
@@ -1130,92 +1129,4 @@ test('resolve proof', async () => {
       },
     ],
   })
-})
-
-test('execute capabilty', async () => {
-  const Voucher = capability({
-    can: 'voucher/*',
-    with: DID.match({ method: 'key' }),
-  })
-
-  const Claim = Voucher.derive({
-    to: capability({
-      can: 'voucher/claim',
-      with: DID.match({ method: 'key' }),
-      nb: {
-        product: Link,
-        identity: URI.match({ protocol: 'mailto:' }),
-        service: DID,
-      },
-      derives: (child, parent) => {
-        return (
-          fail(equalWith(child, parent)) ||
-          fail(canDelegateURI(child.nb.identity, parent.nb.identity)) ||
-          fail(
-            canDelegateURI(
-              child.nb.product.toString(),
-              parent.nb.product.toString()
-            )
-          ) ||
-          fail(canDelegateURI(child.nb.service, parent.nb.service)) ||
-          true
-        )
-      },
-    }),
-    derives: equalWith,
-  })
-
-  const claim = Claim.invoke({
-    issuer: alice,
-    audience: w3,
-    with: alice.did(),
-    nb: {
-      identity: URI.from(`mailto:${alice.did}@web.mail`),
-      product: Link.parse('bafkqaaa'),
-      service: w3.did(),
-    },
-  })
-
-  const Redeem = capability({
-    can: 'voucher/redeem',
-    with: URI.match({ protocol: 'did:' }),
-    nb: {
-      product: Text,
-      identity: Text,
-      account: URI.match({ protocol: 'did:' }),
-    },
-  })
-
-  const proof = Redeem.invoke({
-    issuer: alice,
-    audience: w3,
-    with: alice.did(),
-    nb: {
-      product: 'test',
-      identity: 'whatever',
-      account: alice.did(),
-    },
-  })
-
-  /**
-   * @param {API.ConnectionView<API.Service>} connection
-   * @param {API.Delegation<[API.VoucherRedeem]>} proof
-   */
-
-  const demo = async (connection, proof) => {
-    const redeem = Redeem.invoke({
-      issuer: alice,
-      audience: w3,
-      with: alice.did(),
-      nb: {
-        product: 'test',
-        identity: proof.capabilities[0].nb.identity,
-        account: alice.did(),
-      },
-    })
-
-    const r = await redeem.execute(connection)
-
-    const result = await claim.execute(connection)
-  }
 })

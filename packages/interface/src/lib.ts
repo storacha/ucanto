@@ -20,9 +20,12 @@ import {
 import * as UCAN from '@ipld/dag-ucan'
 import {
   CanIssue,
+  Match,
   InvalidAudience,
   Unauthorized,
   UnavailableProof,
+  ParsedCapability,
+  CapabilityParser,
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
@@ -387,3 +390,7 @@ export type URI<P extends Protocol = Protocol> = `${P}${string}` &
 export interface PrincipalParser {
   parse(did: UCAN.DID): UCAN.Verifier
 }
+
+export type InferInvokedCapability<
+  C extends CapabilityParser<Match<ParsedCapability>>
+> = C extends CapabilityParser<Match<infer T>> ? T : never
