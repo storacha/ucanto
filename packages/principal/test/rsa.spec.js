@@ -311,35 +311,3 @@ it('toSPKI 🔁 fromSPKI', async () => {
 
   assert.deepEqual(PrivateKey.toSPKI(privateKey), spki)
 })
-
-// describe('RSA codec', () => {
-//   it('public key roundtrips', () => {
-//     const expect = new TextEncoder().encode('my secret code')
-//     const info = RSA.fromRSAPublicKey(expect)
-//     const actual = RSA.toRSAPublicKey(info)
-//     assert.deepEqual(actual, expect)
-//   })
-//   it('private key roundtrips', () => {
-//     const expect = new TextEncoder().encode('my secret code')
-//     const info = RSA.fromRSAPrivateKey(expect)
-//     const actual = RSA.toRSAPrivateKey(info)
-//     assert.deepEqual(actual, expect)
-//   })
-//   /**
-//    * @param {Exclude<KeyFormat, "jwk">} format
-//    * @param {{toCryptoKey?: () => PromiseLike<CryptoKey>|CryptoKey}} key
-//    */
-//   const exportKey = async (format, key) => {
-//     if (!key.toCryptoKey) {
-//       assert.fail()
-//     }
-//     const cryptoKey = await key.toCryptoKey()
-//     return webcrypto.subtle.exportKey(format, cryptoKey)
-//   }
-//   it.only('PublicKey fromSPKI 🔁 toSPKI', async () => {
-//     const { verifier } = await RSA.generate()
-//     const spki = new Uint8Array(await exportKey('spki', verifier))
-//     const key = PublicKey.fromSPKI(spki)
-//     assert.deepEqual(spki, PublicKey.toSPKI(key))
-//   })
-// })
