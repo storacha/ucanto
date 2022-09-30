@@ -13,6 +13,10 @@ const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 32 + PUBLIC_TAG_SIZE
 
 /**
+ * @typedef {API.Verifier<"key", Signature.EdDSA> & Uint8Array} Verifier
+ */
+
+/**
  * Parses `did:key:` string as a VerifyingPrincipal.
  *
  * @param {API.DID<"key">|string} did
@@ -88,7 +92,7 @@ class Ed25519Verifier extends Uint8Array {
   }
   /**
    * DID of the Principal in `did:key` format.
-   * @returns {API.DID<"key">}
+   * @returns {API.DID<"key"><"key">}
    */
   did() {
     return `did:key:${base58btc.encode(this)}`

@@ -1303,7 +1303,6 @@ test('capability create without nb', () => {
   assert.deepEqual(
     ping.create({
       with: alice.did(),
-      nb: {},
     }),
     {
       can: 'test/ping',
@@ -1326,6 +1325,15 @@ test('invoke capability (without nb)', () => {
       with: 'file://gozala/path',
     })
   }, /Invalid 'with' - Expected did: URI/)
+
+  const a = invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'test/ping',
+      with: alice.did(),
+    },
+  })
 
   assert.deepEqual(
     ping.invoke({
@@ -1366,7 +1374,41 @@ test('invoke capability (without nb)', () => {
       issuer: alice,
       audience: w3,
       with: alice.did(),
+      nb: undefined,
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3,
+      capability: {
+        can: 'test/ping',
+        with: alice.did(),
+      },
+    })
+  )
+
+  assert.deepEqual(
+    ping.invoke({
+      issuer: alice,
+      audience: w3,
+      with: alice.did(),
+      // @ts-expect-error - no nb expected
       nb: {},
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3,
+      capability: {
+        can: 'test/ping',
+        with: alice.did(),
+      },
+    })
+  )
+
+  assert.deepEqual(
+    ping.invoke({
+      issuer: alice,
+      audience: w3,
+      with: alice.did(),
     }),
     invoke({
       issuer: alice,

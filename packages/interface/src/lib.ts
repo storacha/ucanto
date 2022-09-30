@@ -20,9 +20,12 @@ import {
 import * as UCAN from '@ipld/dag-ucan'
 import {
   CanIssue,
+  Match,
   InvalidAudience,
   Unauthorized,
   UnavailableProof,
+  ParsedCapability,
+  CapabilityParser,
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
@@ -398,11 +401,6 @@ export interface Verifier<M extends string = string, A extends number = number>
   toCryptoKey?: () => Await<CryptoKey>
 }
 
-export interface SigningPrincipal<
-  M extends string = string,
-  A extends number = number
-> extends Signer<M, A>,
-    UCANVerifier<M, A> {
-  verifier: Verifier<M, A>
-  signer: Signer<M, A>
-}
+export type InferInvokedCapability<
+  C extends CapabilityParser<Match<ParsedCapability>>
+> = C extends CapabilityParser<Match<infer T>> ? T : never

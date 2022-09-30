@@ -3,15 +3,15 @@
  * @param {T} value
  * @returns {T}
  */
-export const the = (value) => value
+export const the = value => value
 
 /**
  * @template {{}} O
  * @param {O} object
- * @returns {{ [K in keyof O]: [K, O[K]][] }[keyof O]}
+ * @returns {({ [K in keyof O]: [K, O[K]][] }[keyof O])|[[never, never]]}
  */
 
-export const entries = (object) => /** @type {any} */ (Object.entries(object))
+export const entries = object => /** @type {any} */ (Object.entries(object))
 
 /**
  * @template T
@@ -19,7 +19,7 @@ export const entries = (object) => /** @type {any} */ (Object.entries(object))
  * @returns {T[][]}
  */
 export const combine = ([first, ...rest]) => {
-  const results = first.map((value) => [value])
+  const results = first.map(value => [value])
   for (const values of rest) {
     const tuples = results.splice(0)
     for (const value of values) {

@@ -26,7 +26,7 @@ test('encode inovocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
     proofs: [],
   })
@@ -49,8 +49,7 @@ test('encode inovocation', async () => {
     {
       can: 'store/add',
       with: alice.did(),
-      // @ts-ignore
-      link: car.cid,
+      nb: { link: car.cid },
     },
   ])
 })
@@ -85,7 +84,7 @@ test('encode delegated invocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
     proofs: [proof],
   })
@@ -112,7 +111,7 @@ test('encode delegated invocation', async () => {
       {
         can: 'store/add',
         with: alice.did(),
-        link: car.cid,
+        nb: { link: car.cid },
       },
     ])
 
@@ -187,7 +186,7 @@ test('execute', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
     proofs: [],
   })
@@ -198,7 +197,7 @@ test('execute', async () => {
     capability: {
       can: 'store/remove',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
   })
 
