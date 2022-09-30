@@ -137,7 +137,7 @@ class Capability extends Unit {
           new Error(`Invalid 'caveats.${key}' - ${value.message}`),
           { cause: value }
         )
-      } else {
+      } else if (value !== undefined) {
         const key = /** @type {keyof caveats} */ (name)
         caveats[key] = /** @type {typeof caveats[key]} */ (value)
       }

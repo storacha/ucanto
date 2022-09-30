@@ -1,5 +1,5 @@
-import { capability, URI, Link } from '../src/lib.js'
-import { invoke } from '@ucanto/core'
+import { capability, URI, Link, access } from '../src/lib.js'
+import { invoke, parseLink, Delegation } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
@@ -1460,4 +1460,52 @@ test('invoke capability (with caveats)', () => {
       },
     })
   )
+})
+
+test('capability with optional caveats', async () => {
+  const Echo = capability({
+    can: 'test/echo',
+    with: URI.match({ protocol: 'did:' }),
+    caveats: {
+      message: URI.string({ protocol: 'data:' }),
+      meta: Link.optional(),
+    },
+  })
+
+  const echo = await Echo.invoke({
+    issuer: alice,
+    audience: w3.principal,
+    with: alice.did(),
+    caveats: {
+      message: 'data:hello',
+    },
+  }).delegate()
+
+  assert.deepEqual(echo.capabilities, [
+    {
+      can: 'test/echo',
+      with: alice.did(),
+      message: 'data:hello',
+    },
+  ])
+
+  const link = parseLink('bafkqaaa')
+  const out = await Echo.invoke({
+    issuer: alice,
+    audience: w3.principal,
+    with: alice.did(),
+    caveats: {
+      message: 'data:hello',
+      meta: link,
+    },
+  }).delegate()
+
+  assert.deepEqual(out.capabilities, [
+    {
+      can: 'test/echo',
+      with: alice.did(),
+      message: 'data:hello',
+      meta: link,
+    },
+  ])
 })
