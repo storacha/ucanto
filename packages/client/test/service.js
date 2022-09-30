@@ -7,7 +7,7 @@ import { the } from './services/util.js'
  * @typedef {{
  * can: "store/add"
  * with: API.DID
- * link: API.Link
+ * nb: { link: API.Link }
  * }} Add
  *
  * @typedef {{
@@ -26,7 +26,7 @@ import { the } from './services/util.js'
  * @typedef {{
  * can: "store/remove"
  * with: API.DID
- * link: API.Link
+ * nb: { link: API.Link }
  * }} Remove
  */
 
@@ -58,20 +58,20 @@ class StorageService {
     // if (auth.ok) {
     const result = await this.storage.add(
       capability.with,
-      capability.link,
+      capability.nb.link,
       /** @type {any} */ (ucan).cid
     )
     if (!result.error) {
       if (result.status === 'in-s3') {
         return {
           with: capability.with,
-          link: capability.link,
+          link: capability.nb.link,
           status: the('done'),
         }
       } else {
         return {
           with: capability.with,
-          link: capability.link,
+          link: capability.nb.link,
           status: the('upload'),
           url: 'http://localhost:9090/',
         }
@@ -90,7 +90,7 @@ class StorageService {
     // if (access.ok) {
     const remove = await this.storage.remove(
       capability.with,
-      capability.link,
+      capability.nb.link,
       /** @type {any} */ (ucan).link
     )
     if (remove?.error) {
@@ -154,6 +154,6 @@ class Main {
  * @param {Partial<Model>} [config]
  * @returns {Service}
  */
-export const create = (config) => new Main(config)
+export const create = config => new Main(config)
 
 export { Storage, Accounts }

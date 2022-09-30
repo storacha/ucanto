@@ -24,14 +24,14 @@ export interface ProviderContext<
   C extends API.Caveats = API.Caveats
 > {
   capability: API.ParsedCapability<A, R, API.InferCaveats<C>>
-  invocation: API.Invocation<API.Capability<A, R['href']> & API.InferCaveats<C>>
+  invocation: API.Invocation<API.Capability<A, R, API.InferCaveats<C>>>
 
   context: API.InvocationContext
 }
 
 export interface ProviderInput<T extends ParsedCapability> {
   capability: T
-  invocation: API.Invocation<API.Capability<T['can'], T['with']> & T['caveats']>
+  invocation: API.Invocation<API.Capability<T['can'], T['with'], T['nb']>>
 
   context: API.InvocationContext
 }

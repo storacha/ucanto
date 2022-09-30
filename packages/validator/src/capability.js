@@ -16,7 +16,7 @@ import { invoke, delegate } from '@ucanto/core'
  * @param {API.Descriptor<A, R, C>} descriptor
  * @returns {API.TheCapabilityParser<API.CapabilityMatch<A, R, C>>}
  */
-export const capability = (descriptor) => new Capability(descriptor)
+export const capability = descriptor => new Capability(descriptor)
 
 /**
  * @template {API.Match} M
@@ -114,12 +114,12 @@ class Capability extends Unit {
   }
 
   /**
-   * @param {API.InferCreateOptions<R['href'], API.InferCaveats<C>>} options
+   * @param {API.InferCreateOptions<R, API.InferCaveats<C>>} options
    */
   create(options) {
     const { descriptor, can } = this
-    const decoders = descriptor.caveats
-    const data = options.caveats || {}
+    const decoders = descriptor.nb
+    const data = /** @type {API.InferCaveats<C>} */ (options.nb || {})
 
     const resource = descriptor.with.decode(options.with)
     if (resource.error) {
@@ -128,31 +128,41 @@ class Capability extends Unit {
       })
     }
 
-    const caveats = /** @type {API.InferCaveats<C>} */ ({})
+    const capabality =
+      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */
+      ({ can, with: resource })
+
     for (const [name, decoder] of Object.entries(decoders || {})) {
-      const key = /** @type {keyof caveats & keyof data} */ (name)
+      const key = /** @type {keyof data & string} */ (name)
       const value = decoder.decode(data[key])
       if (value?.error) {
         throw Object.assign(
-          new Error(`Invalid 'caveats.${key}' - ${value.message}`),
+          new Error(`Invalid 'nb.${key}' - ${value.message}`),
           { cause: value }
         )
       } else {
-        const key = /** @type {keyof caveats} */ (name)
-        caveats[key] = /** @type {typeof caveats[key]} */ (value)
+        const nb =
+          capabality.nb ||
+          (capabality.nb = /** @type {API.InferCaveats<C>} */ ({}))
+
+        const key = /** @type {keyof nb} */ (name)
+        nb[key] = /** @type {typeof nb[key]} */ (value)
       }
     }
 
-    return { ...caveats, can, with: resource.href }
+    return capabality
   }
 
   /**
-   * @param {API.InvokeCapabilityOptions<R['href'], API.InferCaveats<C>>} data
+   * @param {API.InferInvokeOptions<R, API.InferCaveats<C>>} options
    */
-  invoke({ with: with_, caveats, ...options }) {
+  invoke({ with: with_, nb, ...options }) {
     return invoke({
       ...options,
-      capability: this.create({ with: with_, caveats }),
+      capability: this.create(
+        /** @type {API.InferCreateOptions<R, API.InferCaveats<C>>} */
+        ({ with: with_, nb })
+      ),
     })
   }
 
@@ -396,11 +406,9 @@ class Match {
   toString() {
     return JSON.stringify({
       can: this.descriptor.can,
-      with: this.value.uri.href,
-      caveats:
-        Object.keys(this.value.caveats).length > 0
-          ? this.value.caveats
-          : undefined,
+      with: this.value.with,
+      nb:
+        Object.keys(this.value.nb || {}).length > 0 ? this.value.nb : undefined,
     })
   }
 }
@@ -482,12 +490,10 @@ class DerivedMatch {
       errors: [
         ...errors,
         ...direct.errors,
-        ...derived.errors.map((error) => new MatchError([error], this)),
+        ...derived.errors.map(error => new MatchError([error], this)),
       ],
       matches: [
-        ...direct.matches.map(
-          (match) => new DerivedMatch(match, from, derives)
-        ),
+        ...direct.matches.map(match => new DerivedMatch(match, from, derives)),
         ...matches,
       ],
     }
@@ -568,7 +574,7 @@ class AndMatch {
     return selectGroup(this, capabilities)
   }
   toString() {
-    return `[${this.matches.map((match) => match.toString()).join(', ')}]`
+    return `[${this.matches.map(match => match.toString()).join(', ')}]`
   }
 }
 
@@ -582,9 +588,9 @@ class AndMatch {
  */
 
 const parse = (self, source) => {
-  const { can, with: withDecoder, caveats: decoders } = self.descriptor
-  const { delegation, index } = source
-  const capability = /** @type {API.Capability & Record<string, unknown>} */ (
+  const { can, with: withDecoder, nb: decoders } = self.descriptor
+  const { delegation } = source
+  const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
     source.capability
   )
 
@@ -597,50 +603,42 @@ const parse = (self, source) => {
     return new MalformedCapability(capability, uri)
   }
 
-  const caveats = /** @type {API.InferCaveats<C>} */ ({})
+  const nb = /** @type {API.InferCaveats<C>} */ ({})
 
   if (decoders) {
+    /** @type {Partial<API.InferCaveats<C>>} */
+    const caveats = capability.nb || {}
     for (const [name, decoder] of entries(decoders)) {
-      const key = /** @type {keyof capability & keyof caveats} */ (name)
-      const value = capability[key]
-      const result = decoder.decode(value)
+      const key = /** @type {keyof caveats & keyof nb} */ (name)
+      const result = decoder.decode(caveats[key])
       if (result?.error) {
         return new MalformedCapability(capability, result)
       } else if (result != null) {
-        caveats[key] = /** @type {any} */ (result)
+        nb[key] = /** @type {any} */ (result)
       }
     }
   }
 
-  return new CapabilityView(
-    can,
-    /** @type {R['href']} */ (capability.with),
-    uri,
-    caveats,
-    delegation
-  )
+  return new CapabilityView(can, capability.with, nb, delegation)
 }
 
 /**
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template C
- * @implements {API.ParsedCapability<A, R, API.InferCaveats<C>>}
  */
 class CapabilityView {
   /**
    * @param {A} can
-   * @param {R['href']} with_
-   * @param {R} uri
-   * @param {API.InferCaveats<C>} caveats
+   * @param {R} with_
+   * @param {API.InferCaveats<C>} nb
    * @param {API.Delegation} delegation
    */
-  constructor(can, with_, uri, caveats, delegation) {
+  constructor(can, with_, nb, delegation) {
     this.can = can
     this.with = with_
-    this.uri = uri
     this.delegation = delegation
-    this.caveats = caveats
+    this.nb = nb
   }
 }
 
@@ -696,7 +694,7 @@ const selectGroup = (self, capabilities) => {
     data.push(selected.matches)
   }
 
-  const matches = combine(data).map((group) => new AndMatch(group))
+  const matches = combine(data).map(group => new AndMatch(group))
 
   return {
     unknown: unknown || [],
@@ -726,11 +724,13 @@ const derives = (claimed, delegated) => {
     )
   }
 
-  for (const [name, value] of entries(delegated.caveats)) {
-    if (claimed.caveats[name] != value) {
-      return new Failure(
-        `${String(name)}: ${claimed.caveats[name]} violates ${value}`
-      )
+  const caveats = delegated.nb || {}
+  const nb = claimed.nb || {}
+  const kv = entries(caveats)
+
+  for (const [name, value] of kv) {
+    if (nb[name] != value) {
+      return new Failure(`${String(name)}: ${nb[name]} violates ${value}`)
     }
   }
 

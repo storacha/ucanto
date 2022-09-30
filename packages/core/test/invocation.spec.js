@@ -35,7 +35,7 @@ test('expired invocation', async () => {
   const expiration = UCAN.now() - 5
   const invocation = invoke({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),
@@ -59,7 +59,7 @@ test('invocation with notBefore', async () => {
   const notBefore = UCAN.now() + 500
   const invocation = invoke({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),
@@ -81,7 +81,7 @@ test('invocation with notBefore', async () => {
 test('invocation with nonce', async () => {
   const invocation = invoke({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),
@@ -103,7 +103,7 @@ test('invocation with nonce', async () => {
 test('invocation with facts', async () => {
   const invocation = invoke({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),

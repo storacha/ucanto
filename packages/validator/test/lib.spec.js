@@ -1,33 +1,35 @@
 import { test, assert } from './test.js'
 import { access } from '../src/lib.js'
-import { capability, URI, Link } from '../src/lib.js'
+import { capability, URI, Text, Link, DID } from '../src/lib.js'
 import { Failure } from '../src/error.js'
-import { Principal } from '@ucanto/principal'
+import * as ed25519 from '@ucanto/principal/ed25519'
 import * as Client from '@ucanto/client'
-import * as API from '@ucanto/interface'
+
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-import { UCAN } from '@ucanto/core'
+import { UCAN, DID as Principal } from '@ucanto/core'
 import { UnavailableProof } from '../src/error.js'
+import { equalWith, canDelegateURI, fail } from './util.js'
+import * as API from './types.js'
 
 const storeAdd = capability({
   can: 'store/add',
   with: URI.match({ protocol: 'did:' }),
-  caveats: {
+  nb: {
     link: Link.optional(),
   },
   derives: (claimed, delegated) => {
-    if (claimed.uri.href !== delegated.uri.href) {
+    if (claimed.with !== delegated.with) {
       return new Failure(
-        `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+        `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
-      delegated.caveats.link &&
-      `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+      delegated.nb.link &&
+      `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
       return new Failure(
         `Link ${
-          claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
-        }violates imposed ${delegated.caveats.link} constraint`
+          claimed.nb.link == null ? '' : `${claimed.nb.link} `
+        }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
       return true
@@ -37,7 +39,7 @@ const storeAdd = capability({
 test('self-issued invocation', async () => {
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -48,7 +50,7 @@ test('self-issued invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -58,10 +60,10 @@ test('self-issued invocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      caveats: {},
+      nb: {},
     },
-    issuer: alice.principal.bytes,
-    audience: bob.principal.bytes,
+    issuer: Principal.from(alice.did()),
+    audience: Principal.parse(bob.did()),
     proofs: [],
   })
 })
@@ -70,7 +72,7 @@ test('expired invocation', async () => {
   const expiration = UCAN.now() - 5
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -82,7 +84,7 @@ test('expired invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -119,7 +121,7 @@ test('not vaid before invocation', async () => {
   const notBefore = UCAN.now() + 500
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -131,7 +133,7 @@ test('not vaid before invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -151,7 +153,7 @@ test('not vaid before invocation', async () => {
 test('invalid signature', async () => {
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -164,7 +166,7 @@ test('invalid signature', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -183,7 +185,7 @@ test('invalid signature', async () => {
 test('unknown capability', async () => {
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/write',
@@ -196,7 +198,7 @@ test('unknown capability', async () => {
   const result = await access(invocation, {
     // @ts-ignore
     capability: storeAdd,
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -215,7 +217,7 @@ test('unknown capability', async () => {
 test('delegated invocation', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -226,7 +228,7 @@ test('delegated invocation', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -238,7 +240,7 @@ test('delegated invocation', async () => {
 
   const result = await access(invocation, {
     capability: storeAdd,
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -248,19 +250,19 @@ test('delegated invocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      caveats: {},
+      nb: {},
     },
-    issuer: bob.principal.bytes,
-    audience: w3.principal.bytes,
+    issuer: Principal.parse(bob.did()),
+    audience: Principal.parse(w3.did()),
     proofs: [
       {
         capability: {
           can: 'store/add',
           with: alice.did(),
-          caveats: {},
+          nb: {},
         },
-        issuer: alice.principal.bytes,
-        audience: bob.principal.bytes,
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         proofs: [],
       },
     ],
@@ -270,7 +272,7 @@ test('delegated invocation', async () => {
 test('invalid claim / no proofs', async () => {
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -280,7 +282,7 @@ test('invalid claim / no proofs', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -297,7 +299,7 @@ test('invalid claim / no proofs', async () => {
       capability: {
         can: 'store/add',
         with: bob.did(),
-        caveats: {},
+        nb: {},
       },
     },
   })
@@ -307,7 +309,7 @@ test('invalid claim / expired', async () => {
   const expiration = UCAN.now() - 5
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     expiration,
     capabilities: [
       {
@@ -319,13 +321,13 @@ test('invalid claim / expired', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: delegation.capabilities,
     proofs: [delegation],
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -343,7 +345,7 @@ test('invalid claim / expired', async () => {
       capability: {
         can: 'store/add',
         with: alice.did(),
-        caveats: {},
+        nb: {},
       },
       delegation: invocation,
     },
@@ -354,7 +356,7 @@ test('invalid claim / not valid before', async () => {
   const notBefore = UCAN.now() + 60 * 60
   const proof = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     notBefore,
     capabilities: [
       {
@@ -366,13 +368,13 @@ test('invalid claim / not valid before', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: proof.capabilities,
     proofs: [proof],
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -390,7 +392,7 @@ test('invalid claim / not valid before', async () => {
       capability: {
         can: 'store/add',
         with: alice.did(),
-        caveats: {},
+        nb: {},
       },
       delegation: invocation,
     },
@@ -400,7 +402,7 @@ test('invalid claim / not valid before', async () => {
 test('invalid claim / invalid signature', async () => {
   const proof = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -413,13 +415,13 @@ test('invalid claim / invalid signature', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: proof.capabilities,
     proofs: [proof],
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -437,7 +439,7 @@ test('invalid claim / invalid signature', async () => {
       capability: {
         can: 'store/add',
         with: alice.did(),
-        caveats: {},
+        nb: {},
       },
       delegation: invocation,
     },
@@ -447,7 +449,7 @@ test('invalid claim / invalid signature', async () => {
 test('invalid claim / unknown capability', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/pin',
@@ -458,7 +460,7 @@ test('invalid claim / unknown capability', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -469,7 +471,7 @@ test('invalid claim / unknown capability', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -493,7 +495,7 @@ test('invalid claim / malformed capability', async () => {
   const badDID = `bib:${alice.did().slice(4)}`
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -504,7 +506,7 @@ test('invalid claim / malformed capability', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -515,7 +517,7 @@ test('invalid claim / malformed capability', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -538,7 +540,7 @@ test('invalid claim / malformed capability', async () => {
 test('invalid claim / unavailable proof', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -549,7 +551,7 @@ test('invalid claim / unavailable proof', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -560,7 +562,7 @@ test('invalid claim / unavailable proof', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -582,7 +584,7 @@ test('invalid claim / unavailable proof', async () => {
 test('invalid claim / failed to resolve', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -593,7 +595,7 @@ test('invalid claim / failed to resolve', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -604,7 +606,7 @@ test('invalid claim / failed to resolve', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -630,7 +632,7 @@ test('invalid claim / failed to resolve', async () => {
 test('invalid claim / invalid audience', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -641,7 +643,7 @@ test('invalid claim / invalid audience', async () => {
 
   const invocation = await Client.delegate({
     issuer: mallory,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -652,7 +654,7 @@ test('invalid claim / invalid audience', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -674,7 +676,7 @@ test('invalid claim / invalid audience', async () => {
 test('invalid claim / invalid claim', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -685,7 +687,7 @@ test('invalid claim / invalid claim', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -696,7 +698,7 @@ test('invalid claim / invalid claim', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -718,7 +720,7 @@ test('invalid claim / invalid claim', async () => {
 test('invalid claim / invalid sub delegation', async () => {
   const proof = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -729,7 +731,7 @@ test('invalid claim / invalid sub delegation', async () => {
 
   const delegation = await Client.delegate({
     issuer: bob,
-    audience: mallory.principal,
+    audience: mallory,
     capabilities: [
       {
         can: 'store/add',
@@ -741,7 +743,7 @@ test('invalid claim / invalid sub delegation', async () => {
 
   const invocation = await Client.delegate({
     issuer: mallory,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -752,7 +754,7 @@ test('invalid claim / invalid sub delegation', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
@@ -777,7 +779,7 @@ test('invalid claim / invalid sub delegation', async () => {
 test('delegate with my:*', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: '*',
@@ -788,7 +790,7 @@ test('delegate with my:*', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -799,11 +801,11 @@ test('delegate with my:*', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
-    my: (issuer) => {
+    my: issuer => {
       return [
         {
           can: 'store/add',
@@ -819,13 +821,13 @@ test('delegate with my:*', async () => {
       can: 'store/add',
       with: alice.did(),
     },
-    issuer: bob.principal.bytes,
-    audience: w3.principal.bytes,
+    issuer: Principal.parse(bob.did()),
+    audience: Principal.parse(w3.did()),
     proofs: [
       {
         delegation,
-        issuer: alice.principal.bytes,
-        audience: bob.principal.bytes,
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -839,7 +841,7 @@ test('delegate with my:*', async () => {
 test('delegate with my:did', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: '*',
@@ -850,7 +852,7 @@ test('delegate with my:did', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -861,11 +863,11 @@ test('delegate with my:did', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
-    my: (issuer) => {
+    my: issuer => {
       return [
         {
           can: 'store/add',
@@ -881,13 +883,13 @@ test('delegate with my:did', async () => {
       can: 'store/add',
       with: alice.did(),
     },
-    issuer: bob.principal.bytes,
-    audience: w3.principal.bytes,
+    issuer: Principal.parse(bob.did()),
+    audience: Principal.parse(w3.did()),
     proofs: [
       {
         delegation,
-        issuer: alice.principal.bytes,
-        audience: bob.principal.bytes,
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -901,7 +903,7 @@ test('delegate with my:did', async () => {
 test('delegate with as:*', async () => {
   const my = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: '*',
@@ -912,7 +914,7 @@ test('delegate with as:*', async () => {
 
   const as = await Client.delegate({
     issuer: bob,
-    audience: mallory.principal,
+    audience: mallory,
     capabilities: [
       {
         can: '*',
@@ -924,7 +926,7 @@ test('delegate with as:*', async () => {
 
   const invocation = await Client.delegate({
     issuer: mallory,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -935,11 +937,11 @@ test('delegate with as:*', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
-    my: (issuer) => {
+    my: issuer => {
       return [
         {
           can: 'store/add',
@@ -958,8 +960,8 @@ test('delegate with as:*', async () => {
     proofs: [
       {
         delegation: as,
-        issuer: bob.principal.bytes,
-        audience: mallory.principal.bytes,
+        issuer: Principal.parse(bob.did()),
+        audience: Principal.parse(mallory.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -967,8 +969,8 @@ test('delegate with as:*', async () => {
         proofs: [
           {
             delegation: my,
-            issuer: alice.principal.bytes,
-            audience: bob.principal.bytes,
+            issuer: Principal.parse(alice.did()),
+            audience: Principal.parse(bob.did()),
             capability: {
               can: 'store/add',
               with: alice.did(),
@@ -988,7 +990,7 @@ test('delegate with as:did', async () => {
 
   const my = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: '*',
@@ -999,7 +1001,7 @@ test('delegate with as:did', async () => {
 
   const as = await Client.delegate({
     issuer: bob,
-    audience: mallory.principal,
+    audience: mallory,
     capabilities: [
       {
         can: 'msg/send',
@@ -1011,7 +1013,7 @@ test('delegate with as:did', async () => {
 
   const invocation = await Client.delegate({
     issuer: mallory,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'msg/send',
@@ -1022,14 +1024,14 @@ test('delegate with as:did', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return (
         claim.with === issuer ||
         (issuer === alice.did() && claim.can === 'msg/send')
       )
     },
-    my: (issuer) => {
+    my: issuer => {
       return [
         {
           can: 'msg/send',
@@ -1048,8 +1050,8 @@ test('delegate with as:did', async () => {
     proofs: [
       {
         delegation: as,
-        issuer: bob.principal.bytes,
-        audience: mallory.principal.bytes,
+        issuer: Principal.parse(bob.did()),
+        audience: Principal.parse(mallory.did()),
         capability: {
           can: 'msg/send',
           with: 'mailto:alice@web.mail',
@@ -1057,8 +1059,8 @@ test('delegate with as:did', async () => {
         proofs: [
           {
             delegation: my,
-            issuer: alice.principal.bytes,
-            audience: bob.principal.bytes,
+            issuer: Principal.parse(alice.did()),
+            audience: Principal.parse(bob.did()),
             capability: {
               can: 'msg/send',
               with: 'mailto:alice@web.mail',
@@ -1073,7 +1075,7 @@ test('delegate with as:did', async () => {
 test('resolve proof', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'store/add',
@@ -1084,7 +1086,7 @@ test('resolve proof', async () => {
 
   const invocation = await Client.delegate({
     issuer: bob,
-    audience: w3.principal,
+    audience: w3,
     capabilities: [
       {
         can: 'store/add',
@@ -1095,11 +1097,11 @@ test('resolve proof', async () => {
   })
 
   const result = await access(invocation, {
-    principal: Principal,
+    principal: ed25519.Verifier,
     canIssue: (claim, issuer) => {
       return claim.with === issuer
     },
-    resolve: async (link) => {
+    resolve: async link => {
       if (link.toString() === delegation.cid.toString()) {
         return delegation
       } else {
@@ -1113,13 +1115,13 @@ test('resolve proof', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      caveats: {},
+      nb: {},
     },
     proofs: [
       {
         delegation,
-        issuer: alice.principal.bytes,
-        audience: bob.principal.bytes,
+        issuer: Principal.parse(alice.did()),
+        audience: Principal.parse(bob.did()),
         capability: {
           can: 'store/add',
           with: alice.did(),
@@ -1128,4 +1130,92 @@ test('resolve proof', async () => {
       },
     ],
   })
+})
+
+test('execute capabilty', async () => {
+  const Voucher = capability({
+    can: 'voucher/*',
+    with: DID.match({ method: 'key' }),
+  })
+
+  const Claim = Voucher.derive({
+    to: capability({
+      can: 'voucher/claim',
+      with: DID.match({ method: 'key' }),
+      nb: {
+        product: Link,
+        identity: URI.match({ protocol: 'mailto:' }),
+        service: DID,
+      },
+      derives: (child, parent) => {
+        return (
+          fail(equalWith(child, parent)) ||
+          fail(canDelegateURI(child.nb.identity, parent.nb.identity)) ||
+          fail(
+            canDelegateURI(
+              child.nb.product.toString(),
+              parent.nb.product.toString()
+            )
+          ) ||
+          fail(canDelegateURI(child.nb.service, parent.nb.service)) ||
+          true
+        )
+      },
+    }),
+    derives: equalWith,
+  })
+
+  const claim = Claim.invoke({
+    issuer: alice,
+    audience: w3,
+    with: alice.did(),
+    nb: {
+      identity: URI.from(`mailto:${alice.did}@web.mail`),
+      product: Link.parse('bafkqaaa'),
+      service: w3.did(),
+    },
+  })
+
+  const Redeem = capability({
+    can: 'voucher/redeem',
+    with: URI.match({ protocol: 'did:' }),
+    nb: {
+      product: Text,
+      identity: Text,
+      account: URI.match({ protocol: 'did:' }),
+    },
+  })
+
+  const proof = Redeem.invoke({
+    issuer: alice,
+    audience: w3,
+    with: alice.did(),
+    nb: {
+      product: 'test',
+      identity: 'whatever',
+      account: alice.did(),
+    },
+  })
+
+  /**
+   * @param {API.ConnectionView<API.Service>} connection
+   * @param {API.Delegation<[API.VoucherRedeem]>} proof
+   */
+
+  const demo = async (connection, proof) => {
+    const redeem = Redeem.invoke({
+      issuer: alice,
+      audience: w3,
+      with: alice.did(),
+      nb: {
+        product: 'test',
+        identity: proof.capabilities[0].nb.identity,
+        account: alice.did(),
+      },
+    })
+
+    const r = await redeem.execute(connection)
+
+    const result = await claim.execute(connection)
+  }
 })

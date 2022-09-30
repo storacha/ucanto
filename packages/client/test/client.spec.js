@@ -10,7 +10,7 @@ import fetch from '@web-std/fetch'
 test('encode inovocation', async () => {
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    id: w3.principal,
+    id: w3,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -26,7 +26,7 @@ test('encode inovocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
     proofs: [],
   })
@@ -49,8 +49,7 @@ test('encode inovocation', async () => {
     {
       can: 'store/add',
       with: alice.did(),
-      // @ts-ignore
-      link: car.cid,
+      nb: { link: car.cid },
     },
   ])
 })
@@ -62,7 +61,7 @@ test('encode delegated invocation', async () => {
 
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
-    id: w3.principal,
+    id: w3,
     channel: HTTP.open({ url: new URL('about:blank'), fetch }),
     encoder: CAR,
     decoder: CBOR,
@@ -85,7 +84,7 @@ test('encode delegated invocation', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
     proofs: [proof],
   })
@@ -112,7 +111,7 @@ test('encode delegated invocation', async () => {
       {
         can: 'store/add',
         with: alice.did(),
-        link: car.cid,
+        nb: { link: car.cid },
       },
     ])
 
@@ -140,12 +139,12 @@ test('encode delegated invocation', async () => {
 const service = Service.create()
 /** @type {Client.ConnectionView<Service.Service>} */
 const connection = Client.connect({
-  id: w3.principal,
+  id: w3,
   channel: HTTP.open({
     url: new URL('about:blank'),
     fetch: async (url, input) => {
       const invocations = await CAR.decode(input)
-      const promises = invocations.map((invocation) => {
+      const promises = invocations.map(invocation => {
         const [capabality] = invocation.capabilities
         switch (capabality.can) {
           case 'store/add': {
@@ -187,7 +186,7 @@ test('execute', async () => {
     capability: {
       can: 'store/add',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
     proofs: [],
   })
@@ -198,7 +197,7 @@ test('execute', async () => {
     capability: {
       can: 'store/remove',
       with: alice.did(),
-      link: car.cid,
+      nb: { link: car.cid },
     },
   })
 

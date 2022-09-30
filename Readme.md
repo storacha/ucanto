@@ -36,7 +36,7 @@ import { capability, URI, Link, Failure } from '@ucanto/server'
 const Add = capability({
   can: 'file/link',
   with: URI.match({ protocol: 'file:' }),
-  caveats: { link: Link },
+  nb: { link: Link },
   derives: (claimed, delegated) =>
     // Can be derived if claimed capability path is contained in the delegated
     // capability path.
@@ -47,7 +47,7 @@ const Add = capability({
 const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 ```
 
-> Please note that the library guarantees that both `claimed` and `delegated` capabilties will have `{can: "file/link", with: string, uri: URL, caveats: { link?: CID }}`
+> Please note that the library guarantees that both `claimed` and `delegated` capabilties will have `{can: "file/link", with: string nb: { link?: CID }}`
 > type inferred from the definition.
 >
 > We will explore more complicated cases later where a capability may be derived from a different capability or even a set.
@@ -61,10 +61,10 @@ import { provide, Failure, MalformedCapability } from '@ucanto/server'
 
 const service = (context: { store: Map<string, string> }) => {
   const add = provide(Add, ({ capability, invocation }) => {
-    store.set(capability.uri.href, capability.caveats.link)
+    store.set(capability.uri.href, capability.nb.link)
     return {
       with: capability.with,
-      link: capability.caveats.link,
+      link: capability.nb.link,
     }
   })
 

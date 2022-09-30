@@ -8,9 +8,9 @@ const registerCapability = Server.capability({
   can: 'identity/register',
   with: Server.URI.match({ protocol: 'mailto:' }),
   derives: (claimed, delegated) =>
-    claimed.uri.href === delegated.uri.href ||
+    claimed.with === delegated.with ||
     new Server.Failure(
-      `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+      `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
     ),
 })
 
@@ -18,9 +18,9 @@ const linkCapability = Server.capability({
   can: 'identity/link',
   with: Server.URI,
   derives: (claimed, delegated) =>
-    claimed.uri.href === delegated.uri.href ||
+    claimed.with === delegated.with ||
     new Server.Failure(
-      `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+      `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
     ),
 })
 
@@ -28,15 +28,13 @@ const identifyCapability = Server.capability({
   can: 'identity/identify',
   with: Server.URI,
   derives: (claimed, delegated) =>
-    claimed.uri.href === delegated.uri.href ||
-    delegated.uri.href === 'ucan:*' ||
-    new Server.Failure(
-      `Can not derive ${claimed.uri.href} from ${claimed.uri.href}`
-    ),
+    claimed.with === delegated.with ||
+    delegated.with === 'ucan:*' ||
+    new Server.Failure(`Can not derive ${claimed.with} from ${claimed.with}`),
 })
 
 /**
- * @typedef {Map<API.DID, {account:API.DID, proof:API.Link}>} Model
+ * @typedef {Map<API.DID|API.URI<"mailto:">, {account:API.DID, proof:API.Link}>} Model
  * @type {Model}
  */
 const state = new Map()
@@ -47,7 +45,7 @@ export const register = provide(
     return associate(
       state,
       invocation.issuer.did(),
-      /** @type {API.DID} */ (capability.with),
+      capability.with,
       invocation.cid,
       true
     )
@@ -70,19 +68,19 @@ export const link = provide(
 export const identify = provide(
   identifyCapability,
   async function identify({ capability }) {
-    const did = /** @type {API.DID} */ (capability.uri.href)
+    const did = /** @type {API.DID} */ (capability.with)
     const account = resolve(state, did)
-    return account == null ? new UnknownDIDError(did) : account
+    return account == null ? new UnknownIDError(did) : account
   }
 )
 
 /**
  * @param {Model} accounts
  * @param {API.DID} from
- * @param {API.DID} to
+ * @param {API.DID|API.URI<"mailto:">} to
  * @param {API.Link} proof
  * @param {boolean} create
- * @returns {API.SyncResult<null, API.UnknownDIDError>}
+ * @returns {API.SyncResult<null, API.UnknownIDError>}
  */
 const associate = (accounts, from, to, proof, create) => {
   const fromAccount = resolve(accounts, from)
@@ -99,7 +97,7 @@ const associate = (accounts, from, to, proof, create) => {
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
-      return new UnknownDIDError('Unknown did', to)
+      return new UnknownIDError('Unknown did', to)
     }
   } else if (toAccount) {
     accounts.set(from, { account: toAccount, proof })
@@ -120,7 +118,7 @@ const associate = (accounts, from, to, proof, create) => {
  * `did:ipld:bafy...hash` form.
  *
  * @param {Model} accounts
- * @param {API.DID} member
+ * @param {API.DID|API.URI<"mailto:">} member
  * @returns {API.DID|null}
  */
 const resolve = (accounts, member) => {
@@ -137,30 +135,30 @@ const resolve = (accounts, member) => {
 }
 
 /**
- * @implements {API.UnknownDIDError}
+ * @implements {API.UnknownIDError}
  */
-export class UnknownDIDError extends RangeError {
+export class UnknownIDError extends RangeError {
   /**
    * @param {string} message
-   * @param {API.DID|null} [did]
+   * @param {API.DID|API.DID|API.URI<"mailto:">|null} [id]
    */
-  constructor(message, did = null) {
+  constructor(message, id = null) {
     super(message)
-    this.did = did
+    this.id = id
   }
   get error() {
     return /** @type {true} */ (true)
   }
-  /** @type {"UnknownDIDError"} */
+  /** @type {"UnknownIDError"} */
   get name() {
-    return 'UnknownDIDError'
+    return 'UnknownIDError'
   }
 
   toJSON() {
     return {
       name: this.name,
       message: this.message,
-      did: this.did,
+      id: this.id,
       error: true,
     }
   }

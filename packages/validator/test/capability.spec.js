@@ -8,7 +8,7 @@ import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 
 /**
- * @template {API.Capability[]} C
+ * @template {API.Capabilities} C
  * @param {C} capabilities
  * @param {object} delegation
  * @returns {API.Source[]}
@@ -26,11 +26,11 @@ test('capability selects matches', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) => {
-      if (claimed.uri.pathname.startsWith(delegated.uri.pathname)) {
+      if (claimed.with.startsWith(delegated.with)) {
         return true
       } else {
         return new Failure(
-          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+          `'${claimed.with}' is not contained in '${delegated.with}'`
         )
       }
     },
@@ -51,7 +51,7 @@ test('capability selects matches', () => {
         source: [d1[2]],
         value: {
           can: 'file/read',
-          uri: { href: 'file:///home/zAlice/photos' },
+          with: 'file:///home/zAlice/photos',
         },
       },
     ],
@@ -97,7 +97,7 @@ test('capability selects matches', () => {
         source: [d2[1]],
         value: {
           can: 'file/read',
-          uri: { href: 'file:///home/zAlice/' },
+          with: 'file:///home/zAlice/',
         },
       },
     ],
@@ -113,8 +113,8 @@ test('capability selects matches', () => {
         context: {
           value: {
             can: 'file/read',
-            uri: { href: 'file:///home/zAlice/photos' },
-            caveats: {},
+            with: 'file:///home/zAlice/photos',
+            nb: {},
           },
         },
         causes: [
@@ -122,11 +122,11 @@ test('capability selects matches', () => {
             name: 'EscalatedCapability',
             claimed: {
               can: 'file/read',
-              uri: { href: 'file:///home/zAlice/photos' },
+              with: 'file:///home/zAlice/photos',
             },
             delegated: {
               can: 'file/read',
-              uri: { href: 'file:///home/zAlice/photos/public' },
+              with: 'file:///home/zAlice/photos/public',
             },
             cause: {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zAlice/photos/public'`,
@@ -139,8 +139,8 @@ test('capability selects matches', () => {
         context: {
           value: {
             can: 'file/read',
-            uri: { href: 'file:///home/zAlice/photos' },
-            caveats: {},
+            with: 'file:///home/zAlice/photos',
+            nb: {},
           },
         },
         causes: [
@@ -148,11 +148,11 @@ test('capability selects matches', () => {
             name: 'EscalatedCapability',
             claimed: {
               can: 'file/read',
-              uri: { href: 'file:///home/zAlice/photos' },
+              with: 'file:///home/zAlice/photos',
             },
             delegated: {
               can: 'file/read',
-              uri: { href: 'file:///home/zBob' },
+              with: 'file:///home/zBob',
             },
             cause: {
               message: `'file:///home/zAlice/photos' is not contained in 'file:///home/zBob'`,
@@ -169,11 +169,11 @@ test('derived capability chain', () => {
     can: 'account/verify',
     with: URI.match({ protocol: 'mailto:' }),
     derives: (claimed, delegated) => {
-      if (claimed.uri.href.startsWith(delegated.uri.href)) {
+      if (claimed.with.startsWith(delegated.with)) {
         return true
       } else {
         return new Failure(
-          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+          `'${claimed.with}' is not contained in '${delegated.with}'`
         )
       }
     },
@@ -190,8 +190,8 @@ test('derived capability chain', () => {
         const c2 = delegated.can
 
         return (
-          claimed.uri.href === delegated.uri.href ||
-          new Failure(`'${claimed.uri.href}' != '${delegated.uri.href}'`)
+          claimed.with === delegated.with ||
+          new Failure(`'${claimed.with}' != '${delegated.with}'`)
         )
       },
     }),
@@ -202,8 +202,8 @@ test('derived capability chain', () => {
       const c2 = delegated.can
 
       return (
-        claimed.uri.href === delegated.uri.href ||
-        new Failure(`'${claimed.uri.href}' != '${delegated.uri.href}'`)
+        claimed.with === delegated.with ||
+        new Failure(`'${claimed.with}' != '${delegated.with}'`)
       )
     },
   })
@@ -225,9 +225,7 @@ test('derived capability chain', () => {
           source: [d1[0]],
           value: {
             can: 'account/register',
-            uri: {
-              href: 'mailto:zAlice@web.mail',
-            },
+            with: 'mailto:zAlice@web.mail',
           },
         },
       ],
@@ -286,9 +284,7 @@ test('derived capability chain', () => {
           source: [d3[0]],
           value: {
             can: 'account/verify',
-            uri: {
-              href: 'mailto:zAlice@web.mail',
-            },
+            with: 'mailto:zAlice@web.mail',
           },
         },
       ],
@@ -316,7 +312,7 @@ test('derived capability chain', () => {
           context: {
             value: {
               can: 'account/register',
-              uri: { href: 'mailto:zAlice@web.mail' },
+              with: 'mailto:zAlice@web.mail',
             },
           },
           causes: [
@@ -324,11 +320,11 @@ test('derived capability chain', () => {
               name: 'EscalatedCapability',
               claimed: {
                 can: 'account/register',
-                uri: { href: 'mailto:zAlice@web.mail' },
+                with: 'mailto:zAlice@web.mail',
               },
               delegated: {
                 can: 'account/verify',
-                uri: { href: 'mailto:bob@web.mail' },
+                with: 'mailto:bob@web.mail',
               },
               cause: {
                 message: `'mailto:zAlice@web.mail' != 'mailto:bob@web.mail'`,
@@ -355,7 +351,7 @@ test('derived capability chain', () => {
         {
           value: {
             can: 'account/register',
-            uri: { href: 'mailto:zAlice@web.mail' },
+            with: 'mailto:zAlice@web.mail',
           },
         },
       ],
@@ -389,7 +385,7 @@ test('derived capability chain', () => {
           source: [d6[0]],
           value: {
             can: 'account/verify',
-            uri: { href: 'mailto:zAlice@web.mail' },
+            with: 'mailto:zAlice@web.mail',
           },
         },
       ],
@@ -418,20 +414,16 @@ test('capability amplification', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const readwrite = read.and(write).derive({
@@ -439,19 +431,19 @@ test('capability amplification', () => {
       can: 'file/read+write',
       with: URI.match({ protocol: 'file:' }),
       derives: (claimed, delegated) =>
-        claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
+        claimed.with.startsWith(delegated.with) ||
         new Failure(
-          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+          `'${claimed.with}' is not contained in '${delegated.with}'`
         ),
     }),
     derives: (claimed, [read, write]) => {
-      if (!claimed.uri.pathname.startsWith(read.uri.pathname)) {
+      if (!claimed.with.startsWith(read.with)) {
         return new Failure(
-          `'${claimed.uri.href}' is not contained in '${read.uri.href}'`
+          `'${claimed.with}' is not contained in '${read.with}'`
         )
-      } else if (!claimed.uri.pathname.startsWith(write.uri.pathname)) {
+      } else if (!claimed.with.startsWith(write.with)) {
         return new Failure(
-          `'${claimed.uri.href}' is not contained in '${write.uri.href}'`
+          `'${claimed.with}' is not contained in '${write.with}'`
         )
       } else {
         return true
@@ -492,7 +484,7 @@ test('capability amplification', () => {
           source: [d2[0]],
           value: {
             can: 'file/read+write',
-            uri: { href: 'file:///home/zAlice/public' },
+            with: 'file:///home/zAlice/public',
           },
         },
       ],
@@ -516,7 +508,7 @@ test('capability amplification', () => {
           source: [d3[0]],
           value: {
             can: 'file/read+write',
-            uri: { href: 'file:///home/zAlice/public' },
+            with: 'file:///home/zAlice/public',
           },
         },
       ],
@@ -542,7 +534,7 @@ test('capability amplification', () => {
           context: {
             value: {
               can: 'file/read+write',
-              uri: { href: 'file:///home/zAlice/public' },
+              with: 'file:///home/zAlice/public',
             },
           },
           causes: [
@@ -550,11 +542,11 @@ test('capability amplification', () => {
               name: 'EscalatedCapability',
               claimed: {
                 can: 'file/read+write',
-                uri: { href: 'file:///home/zAlice/public' },
+                with: 'file:///home/zAlice/public',
               },
               delegated: {
                 can: 'file/read+write',
-                uri: { href: 'file:///home/zAlice/public/photos' },
+                with: 'file:///home/zAlice/public/photos',
               },
               cause: {
                 message: `'file:///home/zAlice/public' is not contained in 'file:///home/zAlice/public/photos'`,
@@ -579,7 +571,7 @@ test('capability amplification', () => {
           source: [d5[0]],
           value: {
             can: 'file/read+write',
-            uri: { href: 'file:///home/zAlice/' },
+            with: 'file:///home/zAlice/',
           },
         },
       ],
@@ -605,11 +597,11 @@ test('capability amplification', () => {
           value: [
             {
               can: 'file/read',
-              uri: { href: 'file:///home/zAlice/' },
+              with: 'file:///home/zAlice/',
             },
             {
               can: 'file/write',
-              uri: { href: 'file:///home/zAlice/public' },
+              with: 'file:///home/zAlice/public',
             },
           ],
         },
@@ -636,11 +628,11 @@ test('capability amplification', () => {
           value: [
             {
               can: 'file/read',
-              uri: { href: 'file:///home/zAlice/' },
+              with: 'file:///home/zAlice/',
             },
             {
               can: 'file/write',
-              uri: { href: 'file:///home/zAlice/' },
+              with: 'file:///home/zAlice/',
             },
           ],
         },
@@ -667,7 +659,7 @@ test('capability amplification', () => {
           context: {
             value: {
               can: 'file/read+write',
-              uri: { href: 'file:///home/zAlice/public' },
+              with: 'file:///home/zAlice/public',
             },
           },
           causes: [
@@ -675,16 +667,16 @@ test('capability amplification', () => {
               name: 'EscalatedCapability',
               claimed: {
                 can: 'file/read+write',
-                uri: { href: 'file:///home/zAlice/public' },
+                with: 'file:///home/zAlice/public',
               },
               delegated: [
                 {
                   can: 'file/read',
-                  uri: { href: 'file:///home/zAlice/public/photos/' },
+                  with: 'file:///home/zAlice/public/photos/',
                 },
                 {
                   can: 'file/write',
-                  uri: { href: 'file:///home/zAlice/public' },
+                  with: 'file:///home/zAlice/public',
                 },
               ],
               cause: {
@@ -714,11 +706,11 @@ test('capability amplification', () => {
           value: [
             {
               can: 'file/read',
-              uri: { href: 'file:///home/zAlice/' },
+              with: 'file:///home/zAlice/',
             },
             {
               can: 'file/write',
-              uri: { href: 'file:///home/zAlice/' },
+              with: 'file:///home/zAlice/',
             },
           ],
         },
@@ -727,11 +719,11 @@ test('capability amplification', () => {
           value: [
             {
               can: 'file/read',
-              uri: { href: 'file:///home/' },
+              with: 'file:///home/',
             },
             {
               can: 'file/write',
-              uri: { href: 'file:///home/zAlice/' },
+              with: 'file:///home/zAlice/',
             },
           ],
         },
@@ -748,20 +740,16 @@ test('capability or combinator', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const readwrite = read.or(write)
@@ -781,14 +769,14 @@ test('capability or combinator', () => {
           source: [r],
           value: {
             can: 'file/read',
-            uri: { href: 'file:///home/zAlice/' },
+            with: 'file:///home/zAlice/',
           },
         },
         {
           source: [w],
           value: {
             can: 'file/write',
-            uri: { href: 'file:///home/zAlice/' },
+            with: 'file:///home/zAlice/',
           },
         },
       ],
@@ -799,26 +787,26 @@ test('capability or combinator', () => {
   )
 })
 
-test('parse with caveats', () => {
+test('parse with nb', () => {
   const storeAdd = capability({
     can: 'store/add',
     with: URI.match({ protocol: 'did:' }),
-    caveats: {
+    nb: {
       link: Link.optional(),
     },
     derives: (claimed, delegated) => {
-      if (claimed.uri.href !== delegated.uri.href) {
+      if (claimed.with !== delegated.with) {
         return new Failure(
-          `Expected 'with: "${delegated.uri.href}"' instead got '${claimed.uri.href}'`
+          `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
         )
       } else if (
-        delegated.caveats.link &&
-        `${delegated.caveats.link}` !== `${claimed.caveats.link}`
+        delegated.nb.link &&
+        `${delegated.nb.link}` !== `${claimed.nb.link}`
       ) {
         return new Failure(
           `Link ${
-            claimed.caveats.link == null ? '' : `${claimed.caveats.link} `
-          }violates imposed ${delegated.caveats.link} constraint`
+            claimed.nb.link == null ? '' : `${claimed.nb.link} `
+          }violates imposed ${delegated.nb.link} constraint`
         )
       } else {
         return true
@@ -827,7 +815,7 @@ test('parse with caveats', () => {
   })
 
   const v1 = storeAdd.select(
-    delegate([{ can: 'store/add', with: 'did:key:zAlice', link: 5 }])
+    delegate([{ can: 'store/add', with: 'did:key:zAlice', nb: { link: 5 } }])
   )
 
   assert.containSubset(v1, {
@@ -842,7 +830,11 @@ test('parse with caveats', () => {
         causes: [
           {
             name: 'MalformedCapability',
-            capability: { can: 'store/add', with: 'did:key:zAlice', link: 5 },
+            capability: {
+              can: 'store/add',
+              with: 'did:key:zAlice',
+              nb: { link: 5 },
+            },
             cause: {
               message: 'Expected link to be a CID instead of 5',
             },
@@ -863,8 +855,8 @@ test('parse with caveats', () => {
       {
         value: {
           can: 'store/add',
-          uri: { href: 'did:key:zAlice' },
-          caveats: {},
+          with: 'did:key:zAlice',
+          nb: {},
         },
       },
     ],
@@ -877,9 +869,11 @@ test('parse with caveats', () => {
       {
         can: 'store/add',
         with: 'did:key:zAlice',
-        link: CID.parse(
-          'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-        ),
+        nb: {
+          link: CID.parse(
+            'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
+          ),
+        },
       },
     ])
   )
@@ -891,8 +885,8 @@ test('parse with caveats', () => {
         context: {
           value: {
             can: 'store/add',
-            uri: { href: 'did:key:zAlice' },
-            caveats: {},
+            with: 'did:key:zAlice',
+            nb: {},
           },
         },
         causes: [
@@ -900,13 +894,13 @@ test('parse with caveats', () => {
             name: 'EscalatedCapability',
             claimed: {
               can: 'store/add',
-              uri: { href: 'did:key:zAlice' },
-              caveats: {},
+              with: 'did:key:zAlice',
+              nb: {},
             },
             delegated: {
               can: 'store/add',
-              uri: { href: 'did:key:zAlice' },
-              caveats: {
+              with: 'did:key:zAlice',
+              nb: {
                 link: CID.parse(
                   'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
                 ),
@@ -928,9 +922,11 @@ test('parse with caveats', () => {
       {
         can: 'store/add',
         with: 'did:key:zAlice',
-        link: CID.parse(
-          'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-        ),
+        nb: {
+          link: CID.parse(
+            'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
+          ),
+        },
       },
     ])
   )
@@ -941,9 +937,11 @@ test('parse with caveats', () => {
       {
         can: 'store/add',
         with: 'did:key:zAlice',
-        link: CID.parse(
-          'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-        ),
+        nb: {
+          link: CID.parse(
+            'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
+          ),
+        },
       },
     ])
   )
@@ -955,8 +953,8 @@ test('parse with caveats', () => {
       {
         value: {
           can: 'store/add',
-          uri: { href: 'did:key:zAlice' },
-          caveats: {
+          with: 'did:key:zAlice',
+          nb: {
             link: CID.parse(
               'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
             ),
@@ -971,9 +969,11 @@ test('parse with caveats', () => {
       {
         can: 'store/add',
         with: 'did:key:zAlice',
-        link: CID.parse(
-          'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
-        ),
+        nb: {
+          link: CID.parse(
+            'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
+          ),
+        },
       },
     ])
   )
@@ -985,8 +985,8 @@ test('parse with caveats', () => {
         context: {
           value: {
             can: 'store/add',
-            uri: { href: 'did:key:zAlice' },
-            caveats: {
+            with: 'did:key:zAlice',
+            nb: {
               link: CID.parse(
                 'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
               ),
@@ -998,8 +998,8 @@ test('parse with caveats', () => {
             name: 'EscalatedCapability',
             claimed: {
               can: 'store/add',
-              uri: { href: 'did:key:zAlice' },
-              caveats: {
+              with: 'did:key:zAlice',
+              nb: {
                 link: CID.parse(
                   'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
                 ),
@@ -1007,8 +1007,8 @@ test('parse with caveats', () => {
             },
             delegated: {
               can: 'store/add',
-              uri: { href: 'did:key:zAlice' },
-              caveats: {
+              with: 'did:key:zAlice',
+              nb: {
                 link: CID.parse(
                   'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
                 ),
@@ -1031,20 +1031,16 @@ test('and prune', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const readwrite = read.and(write)
@@ -1054,7 +1050,7 @@ test('and prune', () => {
         { can: 'file/read', with: `file:///${alice.did()}/public` },
         { can: 'file/write', with: `file:///${bob.did()}/@alice` },
       ],
-      { issuer: alice.principal }
+      { issuer: alice }
     )
   )
 
@@ -1072,12 +1068,12 @@ test('and prune', () => {
   const [match] = v1.matches
   const matchwrite = match.prune({
     canIssue: (capabality, issuer) =>
-      capabality.uri.href.startsWith(`file:///${issuer}`),
+      capabality.with.startsWith(`file:///${issuer}`),
   })
 
   const v2 = matchwrite?.select(
     delegate([{ can: 'file/write', with: `file:///${bob.did()}/@alice` }], {
-      issuer: bob.principal,
+      issuer: bob.verifier,
     })
   )
 
@@ -1091,7 +1087,7 @@ test('and prune', () => {
 
   const none = v2?.matches[0].prune({
     canIssue: (capabality, issuer) =>
-      capabality.uri.href.startsWith(`file:///${issuer}`),
+      capabality.with.startsWith(`file:///${issuer}`),
   })
 
   assert.equal(none, null)
@@ -1102,20 +1098,16 @@ test('toString methods', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
-      new Failure(
-        `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
-      ),
+      claimed.with.startsWith(delegated.with) ||
+      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   assert.equal(read.toString(), '{"can":"file/read"}')
@@ -1172,19 +1164,19 @@ test('toString methods', () => {
       can: 'file/read+write',
       with: URI.match({ protocol: 'file:' }),
       derives: (claimed, delegated) =>
-        claimed.uri.pathname.startsWith(delegated.uri.pathname) ||
+        claimed.with.startsWith(delegated.with) ||
         new Failure(
-          `'${claimed.uri.href}' is not contained in '${delegated.uri.href}'`
+          `'${claimed.with}' is not contained in '${delegated.with}'`
         ),
     }),
     derives: (claimed, [read, write]) => {
-      if (!claimed.uri.pathname.startsWith(read.uri.pathname)) {
+      if (!claimed.with.startsWith(read.with)) {
         return new Failure(
-          `'${claimed.uri.href}' is not contained in '${read.uri.href}'`
+          `'${claimed.with}' is not contained in '${read.with}'`
         )
-      } else if (!claimed.uri.pathname.startsWith(write.uri.pathname)) {
+      } else if (!claimed.with.startsWith(write.with)) {
         return new Failure(
-          `'${claimed.uri.href}' is not contained in '${write.uri.href}'`
+          `'${claimed.with}' is not contained in '${write.with}'`
         )
       } else {
         return true
@@ -1209,12 +1201,12 @@ test('toString methods', () => {
   }
 })
 
-test('capability create with caveats', () => {
+test('capability create with nb', () => {
   const echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
-    caveats: {
-      message: URI.string({ protocol: 'data:' }),
+    nb: {
+      message: URI.match({ protocol: 'data:' }),
     },
   })
 
@@ -1222,9 +1214,10 @@ test('capability create with caveats', () => {
     echo.create({
       // @ts-expect-error - not assignable to did:
       with: 'file://gozala/path',
-      caveats: {
+      nb: {
         message: 'data:hello',
       },
+      bar: 1,
     })
   }, /Invalid 'with' - Expected did: URI/)
 
@@ -1233,24 +1226,26 @@ test('capability create with caveats', () => {
     echo.create({
       with: alice.did(),
     })
-  }, /Invalid 'caveats.message' - Expected URI but got undefined/)
+  }, /Invalid 'nb.message' - Expected URI but got undefined/)
 
   assert.throws(() => {
     echo.create({
       with: alice.did(),
-      caveats: {
+      nb: {
         // @ts-expect-error
         message: 'echo:foo',
       },
     })
-  }, /Invalid 'caveats.message' - Expected data: URI instead got echo:foo/)
+  }, /Invalid 'nb.message' - Expected data: URI instead got echo:foo/)
 
   assert.deepEqual(
-    echo.create({ with: alice.did(), caveats: { message: 'data:hello' } }),
+    echo.create({ with: alice.did(), nb: { message: 'data:hello' } }),
     {
       can: 'test/echo',
       with: alice.did(),
-      message: 'data:hello',
+      nb: {
+        message: 'data:hello',
+      },
     }
   )
 
@@ -1258,17 +1253,19 @@ test('capability create with caveats', () => {
     echo.create({
       // @ts-expect-error - must be a string
       with: new URL(alice.did()),
-      caveats: { message: 'data:hello' },
+      nb: { message: 'data:hello' },
     }),
     {
       can: 'test/echo',
       with: alice.did(),
-      message: 'data:hello',
+      nb: {
+        message: 'data:hello',
+      },
     }
   )
 })
 
-test('capability create without caveats', () => {
+test('capability create without nb', () => {
   const ping = capability({
     can: 'test/ping',
     with: URI.match({ protocol: 'did:' }),
@@ -1294,8 +1291,8 @@ test('capability create without caveats', () => {
   assert.deepEqual(
     ping.create({
       with: alice.did(),
-      // @ts-expect-error - no caveats expected
-      caveats: { x: 1 },
+      // @ts-expect-error - no nb expected
+      nb: { x: 1 },
     }),
     {
       can: 'test/ping',
@@ -1306,8 +1303,6 @@ test('capability create without caveats', () => {
   assert.deepEqual(
     ping.create({
       with: alice.did(),
-      // @ts-expect-error - no caveats expected
-      caveats: {},
     }),
     {
       can: 'test/ping',
@@ -1316,7 +1311,7 @@ test('capability create without caveats', () => {
   )
 })
 
-test('invoke capability (without caveats)', () => {
+test('invoke capability (without nb)', () => {
   const ping = capability({
     can: 'test/ping',
     with: URI.match({ protocol: 'did:' }),
@@ -1325,21 +1320,30 @@ test('invoke capability (without caveats)', () => {
   assert.throws(() => {
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       // @ts-expect-error - not assignable to did:
       with: 'file://gozala/path',
     })
   }, /Invalid 'with' - Expected did: URI/)
 
+  const a = invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'test/ping',
+      with: alice.did(),
+    },
+  })
+
   assert.deepEqual(
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/ping',
         with: alice.did(),
@@ -1350,14 +1354,14 @@ test('invoke capability (without caveats)', () => {
   assert.deepEqual(
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
-      // @ts-expect-error - no caveats expected
-      caveats: { x: 1 },
+      // @ts-expect-error - no nb expected
+      nb: { x: 1 },
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/ping',
         with: alice.did(),
@@ -1368,14 +1372,47 @@ test('invoke capability (without caveats)', () => {
   assert.deepEqual(
     ping.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
-      // @ts-expect-error - no caveats expected
-      caveats: {},
+      nb: undefined,
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
+      capability: {
+        can: 'test/ping',
+        with: alice.did(),
+      },
+    })
+  )
+
+  assert.deepEqual(
+    ping.invoke({
+      issuer: alice,
+      audience: w3,
+      with: alice.did(),
+      // @ts-expect-error - no nb expected
+      nb: {},
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3,
+      capability: {
+        can: 'test/ping',
+        with: alice.did(),
+      },
+    })
+  )
+
+  assert.deepEqual(
+    ping.invoke({
+      issuer: alice,
+      audience: w3,
+      with: alice.did(),
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3,
       capability: {
         can: 'test/ping',
         with: alice.did(),
@@ -1384,22 +1421,22 @@ test('invoke capability (without caveats)', () => {
   )
 })
 
-test('invoke capability (with caveats)', () => {
+test('invoke capability (with nb)', () => {
   const echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
-    caveats: {
-      message: URI.string({ protocol: 'data:' }),
+    nb: {
+      message: URI.match({ protocol: 'data:' }),
     },
   })
 
   assert.throws(() => {
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       // @ts-expect-error - not assignable to did:
       with: 'file://gozala/path',
-      caveats: {
+      nb: {
         message: 'data:hello',
       },
     })
@@ -1409,35 +1446,37 @@ test('invoke capability (with caveats)', () => {
     // @ts-expect-error
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
     })
-  }, /Invalid 'caveats.message' - Expected URI but got undefined/)
+  }, /Invalid 'nb.message' - Expected URI but got undefined/)
 
   assert.throws(() => {
     echo.create({
       with: alice.did(),
-      caveats: {
+      nb: {
         // @ts-expect-error
         message: 'echo:foo',
       },
     })
-  }, /Invalid 'caveats.message' - Expected data: URI instead got echo:foo/)
+  }, /Invalid 'nb.message' - Expected data: URI instead got echo:foo/)
 
   assert.deepEqual(
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       with: alice.did(),
-      caveats: { message: 'data:hello' },
+      nb: { message: 'data:hello' },
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/echo',
         with: alice.did(),
-        message: /** @type {'data:hello'} */ ('data:hello'),
+        nb: {
+          message: /** @type {'data:hello'} */ ('data:hello'),
+        },
       },
     })
   )
@@ -1445,18 +1484,20 @@ test('invoke capability (with caveats)', () => {
   assert.deepEqual(
     echo.invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       // @ts-expect-error - must be a string
       with: new URL(alice.did()),
-      caveats: { message: 'data:hello' },
+      nb: { message: 'data:hello' },
     }),
     invoke({
       issuer: alice,
-      audience: w3.principal,
+      audience: w3,
       capability: {
         can: 'test/echo',
         with: alice.did(),
-        message: /** @type {'data:hello'} */ ('data:hello'),
+        nb: {
+          message: /** @type {'data:hello'} */ ('data:hello'),
+        },
       },
     })
   )

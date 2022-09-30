@@ -23,7 +23,7 @@ export interface StorageProvider {
     group: DID,
     link: Link,
     proof: Link
-  ): Result<AddStatus, UnknownDIDError | QuotaViolationError>
+  ): Result<AddStatus, UnknownIDError | QuotaViolationError>
   /**
    *
    * @param group - DID we received an invocation request from.
@@ -34,7 +34,7 @@ export interface StorageProvider {
     group: DID,
     link: Link,
     proof: Link
-  ): Result<null, UnknownDIDError | DoesNotHasError>
+  ): Result<null, UnknownIDError | DoesNotHasError>
 }
 
 export interface TokenStore {
@@ -133,16 +133,16 @@ export interface AccessProvider {
    * Associates a DID with another DID in the system. If there is no account
    * associated with a `to` DID will produce an error.
    */
-  link(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
+  link(member: DID, group: DID, proof: Link): Result<null, UnknownIDError>
 
-  unlink(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
+  unlink(member: DID, group: DID, proof: Link): Result<null, UnknownIDError>
 
   /**
    * Associates new child DID with an accound of the parent DID. If there is no
    * account associated with a parent it creates account with `parent` did first
    * and then associates child DID with it.
    */
-  register(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
+  register(member: DID, group: DID, proof: Link): Result<null, UnknownIDError>
 
   /**
    * Resolves account DID associated with a given DID. Returns either account
@@ -182,9 +182,9 @@ export interface DoesNotHasError extends RangeError {
   error: true
 }
 
-export interface UnknownDIDError extends RangeError {
-  readonly name: 'UnknownDIDError'
-  did: DID | null
+export interface UnknownIDError extends RangeError {
+  readonly name: 'UnknownIDError'
+  id: string | null
 
   error: true
 }

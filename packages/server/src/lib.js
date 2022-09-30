@@ -1,5 +1,4 @@
 export * from './server.js'
-export * from '@ucanto/principal'
 export * from '@ucanto/core'
 export { invoke } from '@ucanto/core'
 // @ts-ignore

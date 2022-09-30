@@ -15,7 +15,7 @@ export const isLink =
  * @param {API.Proof} proof
  * @return {proof is API.Delegation}
  */
-export const isDelegation = (proof) => !Link.isLink(proof)
+export const isDelegation = proof => !Link.isLink(proof)
 
 /**
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of
@@ -73,14 +73,14 @@ export class Delegation {
   }
 
   /**
-   * @type {API.UCAN.Principal}
+   * @type {API.Principal}
    */
   get issuer() {
     return this.data.issuer
   }
 
   /**
-   * @type {API.UCAN.Principal}
+   * @type {API.Principal}
    */
   get audience() {
     return this.data.audience
@@ -166,9 +166,8 @@ const decode = ({ bytes }) => {
  * not set it defaults to 30 seconds from now. Returns UCAN in primary - IPLD
  * representation.
  *
- * @template {number} A
  * @template {API.Capabilities} C
- * @param {API.DelegationOptions<C, A>} data
+ * @param {API.DelegationOptions<C>} data
  * @param {API.EncodeOptions} [options]
  * @returns {Promise<API.Delegation<C>>}
  */
@@ -230,7 +229,7 @@ const exportDAG = function* (root, blocks) {
  * @param {Iterable<API.Block>} dag
  * @returns {API.Delegation<C>}
  */
-export const importDAG = (dag) => {
+export const importDAG = dag => {
   /** @type {Array<[string, API.Block]>} */
   let entries = []
   for (const block of dag) {
@@ -262,7 +261,7 @@ export const create = ({ root, blocks }) => new Delegation(root, blocks)
 /**
  * @param {API.Delegation} delegation
  */
-const proofs = (delegation) => {
+const proofs = delegation => {
   /** @type {API.Proof[]} */
   const proofs = []
   const { root, blocks } = delegation

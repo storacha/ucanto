@@ -228,7 +228,7 @@ test('create delegation chain', async () => {
     })
   }
 
-  const data = await UCAN.issue({
+  const ucan = await UCAN.issue({
     issuer: mallory,
     audience: service,
     capabilities: [
@@ -240,8 +240,8 @@ test('create delegation chain', async () => {
     proofs: [delegation.cid],
   })
 
-  const { cid, bytes } = await UCAN.write(data)
-  const root = { cid, data, bytes }
+  const { cid, bytes } = await UCAN.write(ucan)
+  const root = { cid, data: ucan.model, bytes }
 
   {
     const invocation = Delegation.create({
@@ -346,7 +346,7 @@ test('import delegation', async () => {
   })
 
   const replica = Delegation.import(original.export())
-  assert.deepEqual(original, replica)
+  assert.deepEqual(replica, original)
 
   assert.equal(replica.issuer.did(), alice.did())
   assert.equal(replica.audience.did(), bob.did())
@@ -404,7 +404,7 @@ test('issue chained delegation', async () => {
     return assert.fail('must be a delegation')
   }
 
-  assert.deepEqual(proof.bytes, delegation.bytes)
+  assert.deepEqual(delegation.bytes, proof.bytes)
 
   assert.deepEqual([...proof.export()], [proof.root])
   assert.deepEqual([...delegation.export()], [proof.root])

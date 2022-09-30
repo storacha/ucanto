@@ -1,10 +1,10 @@
-import * as Lib from '../src/lib.js'
+import { ed25519 as Lib } from '../src/lib.js'
 import { assert } from 'chai'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { varint } from 'multiformats'
 
 describe('signing principal', () => {
-  const { SigningPrincipal } = Lib
+  const { Signer } = Lib
 
   it('exports', () => {
     assert.equal(Lib.name, 'Ed25519')
@@ -12,27 +12,26 @@ describe('signing principal', () => {
     assert.equal(typeof Lib.derive, 'function')
     assert.equal(typeof Lib.generate, 'function')
 
-    assert.equal(typeof Lib.Principal, 'object')
-    assert.equal(typeof Lib.SigningPrincipal, 'object')
+    assert.equal(typeof Lib.Verifier, 'object')
+    assert.equal(typeof Lib.Signer, 'object')
   })
 
   it('generate', async () => {
     const signer = await Lib.generate()
     assert.ok(signer.did().startsWith('did:key'))
-    assert.equal(signer.did(), signer.principal.did())
-    assert.ok(signer.bytes instanceof Uint8Array)
-    assert.ok(signer.buffer instanceof ArrayBuffer)
+    assert.ok(signer instanceof Uint8Array)
 
     const payload = await sha256.encode(new TextEncoder().encode('hello world'))
     const signature = await signer.sign(payload)
+
+    const verifier = Lib.Verifier.parse(signer.did())
     assert.ok(
-      await signer.verify(payload, signature),
+      await verifier.verify(payload, signature),
       'signer can verify signature'
     )
-    assert.ok(
-      await signer.principal.verify(payload, signature),
-      'principal can verify signature'
-    )
+
+    assert.equal(signer.signatureAlgorithm, 'EdDSA')
+    assert.equal(signer.signatureCode, 0xd0ed)
   })
 
   it('derive', async () => {
@@ -58,46 +57,36 @@ describe('signing principal', () => {
 
   it('SigningPrincipal.decode', async () => {
     const signer = await Lib.generate()
+    const bytes = Signer.encode(signer)
 
-    assert.deepEqual(SigningPrincipal.decode(signer.bytes), signer)
+    assert.deepEqual(Signer.decode(signer), signer)
 
-    const invalid = new Uint8Array(signer.bytes)
+    const invalid = new Uint8Array(signer)
     varint.encodeTo(4, invalid, 0)
-    assert.throws(
-      () => SigningPrincipal.decode(invalid),
-      /must be a multiformat with/
-    )
+    assert.throws(() => Signer.decode(invalid), /must be a multiformat with/)
 
     assert.throws(
-      () => SigningPrincipal.decode(signer.bytes.slice(0, 32)),
+      () => Signer.decode(signer.slice(0, 32)),
       /Expected Uint8Array with byteLength/
     )
 
-    const malformed = new Uint8Array(signer.bytes)
-    varint.encodeTo(4, malformed, signer.principal.byteOffset)
+    const malformed = new Uint8Array(signer)
+    // @ts-ignore
+    varint.encodeTo(4, malformed, Signer.PUB_KEY_OFFSET)
 
-    assert.throws(
-      () => SigningPrincipal.decode(malformed),
-      /must contain public key/
-    )
+    assert.throws(() => Signer.decode(malformed), /must contain public key/)
   })
 
   it('SigningPrincipal decode encode roundtrip', async () => {
     const signer = await Lib.generate()
 
-    assert.deepEqual(
-      SigningPrincipal.decode(SigningPrincipal.encode(signer)),
-      signer
-    )
+    assert.deepEqual(Signer.decode(Signer.encode(signer)), signer)
   })
 
   it('SigningPrincipal.format', async () => {
     const signer = await Lib.generate()
 
-    assert.deepEqual(
-      SigningPrincipal.parse(SigningPrincipal.format(signer)),
-      signer
-    )
+    assert.deepEqual(Signer.parse(Signer.format(signer)), signer)
   })
 
   it('SigningPrincipal.did', async () => {
@@ -108,49 +97,52 @@ describe('signing principal', () => {
 })
 
 describe('principal', () => {
-  const { Principal } = Lib
+  const { Verifier, Signer } = Lib
 
   it('exports', async () => {
-    assert.equal(Principal, await import('../src/principal.js'))
-    assert.equal(Principal.code, 0xed)
-    assert.equal(Principal.name, 'Ed25519')
+    assert.equal(Verifier, await import('../src/ed25519/verifier.js'))
+    assert.equal(Verifier.code, 0xed)
+    assert.equal(Verifier.name, 'Ed25519')
   })
 
-  it('Principal.parse', async () => {
+  it('Verifier.parse', async () => {
     const signer = await Lib.generate()
-    const principal = Principal.parse(signer.did())
+    const verifier = Verifier.parse(signer.did())
 
-    assert.deepEqual(principal.bytes, signer.principal.bytes)
-    assert.equal(principal.did(), signer.did())
-  })
-
-  it('Principal.decode', async () => {
-    const signer = await Lib.generate()
-
-    assert.deepEqual(Principal.decode(signer.principal.bytes), signer.principal)
-    assert.throws(
-      () => Principal.decode(signer.bytes),
-      /key algorithm with multicode/
+    assert.deepEqual(
+      new Uint8Array(signer.buffer, signer.byteOffset + Signer.PUB_KEY_OFFSET),
+      verifier
     )
+    assert.equal(verifier.did(), signer.did())
+  })
+
+  it('Verifier.decode', async () => {
+    const signer = await Lib.generate()
+
+    const verifier = new Uint8Array(
+      signer.buffer,
+      signer.byteOffset + Signer.PUB_KEY_OFFSET
+    )
+    assert.deepEqual(Verifier.decode(verifier), verifier)
+    assert.throws(() => Verifier.decode(signer), /key algorithm with multicode/)
 
     assert.throws(
-      () => Principal.decode(signer.principal.bytes.slice(0, 32)),
+      () => Verifier.decode(verifier.slice(0, 32)),
       /Expected Uint8Array with byteLength/
     )
   })
 
-  it('Principal.format', async () => {
-    const principal = await Lib.generate()
+  it('Verifier.format', async () => {
+    const signer = await Lib.generate()
+    const verifier = Verifier.parse(signer.did())
 
-    assert.deepEqual(Principal.format(principal.principal), principal.did())
+    assert.deepEqual(Verifier.format(verifier), signer.did())
   })
 
-  it('Principal.encode', async () => {
-    const principal = await Lib.generate()
+  it('Verifier.encode', async () => {
+    const { verifier } = await Lib.generate()
 
-    assert.deepEqual(
-      [...Principal.encode(principal.principal)],
-      [...principal.principal.bytes]
-    )
+    const bytes = Verifier.encode(verifier)
+    assert.deepEqual(Verifier.decode(bytes), verifier)
   })
 })

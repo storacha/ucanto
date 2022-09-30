@@ -65,10 +65,10 @@ export const match = options => ({
  * @template {number} Code
  * @template {number} Alg
  * @template {1|0} Version
- * @param {{code?:Code, algorithm?:Alg, version?:Version}} [options]
+ * @param {{code?:Code, algorithm?:Alg, version?:Version}} options
  * @returns {API.Decoder<unknown, undefined|API.Link<unknown, Code, Alg, Version>, API.Failure>}
  */
-export const optional = options => ({
+export const optional = (options = {}) => ({
   decode: input => {
     if (input === undefined) {
       return undefined

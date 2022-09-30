@@ -5,7 +5,7 @@ import {
   Result,
   Failure,
   PrincipalParser,
-  SigningPrincipal,
+  Signer,
   URI,
   Await,
   IssuedInvocationView,
@@ -132,26 +132,31 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   readonly can: M['value']['can']
 
   create(
-    input: InferCreateOptions<M['value']['with'], M['value']['caveats']>
-  ): Capability<M['value']['can'], M['value']['uri']['href']> &
-    M['value']['caveats']
+    input: InferCreateOptions<M['value']['with'], M['value']['nb']>
+  ): M['value']
 
   invoke(
-    options: InvokeCapabilityOptions<M['value']['with'], M['value']['caveats']>
-  ): IssuedInvocationView<
-    Capability<M['value']['can'], M['value']['uri']['href']> &
-      M['value']['caveats']
-  >
+    options: InferInvokeOptions<M['value']['with'], M['value']['nb']>
+  ): IssuedInvocationView<M['value']>
 }
 
-export type InferCreateOptions<R extends Resource, C extends {}> = {
-  with: Resource
-  caveats?: {}
-} & Optionalize<{
-  with: R
-  caveats: InferCaveatParams<C>
-}>
+export type InferInvokedCapability<C extends Capability> = C
+// keyof C['nb'] extends never
+//   ? { can: C['can']; with: C['with']; nb?: never }
+//   : { can: C['can']; with: C['with']; nb: C['nb'] }
 
+export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
+  // If capability has no NB we want to prevent passing it into
+  // .create funciton so we make `nb` as optional `never` type so
+  // it can not be satisfied
+  keyof C extends never ? { with: R; nb?: never } : { with: R; nb: C }
+
+export type InferInvokeOptions<
+  R extends Resource,
+  C extends {} | undefined
+> = UCANOptions & { issuer: Signer } & InferCreateOptions<R, C>
+
+export type EmptyObject = { [key: string | number | symbol]: never }
 type Optionalize<T> = InferRequried<T> & InferOptional<T>
 
 type InferOptional<T> = {
@@ -161,14 +166,6 @@ type InferOptional<T> = {
 type InferRequried<T> = {
   [K in keyof T as T[K] | undefined extends T[K] ? never : K]: T[K]
 }
-
-export type InvokeCapabilityOptions<
-  R extends Resource,
-  C extends {}
-> = UCANOptions &
-  InferCreateOptions<R, C> & {
-    issuer: SigningPrincipal
-  }
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
   /**
@@ -180,7 +177,6 @@ export interface CapabilityParser<M extends Match = Match> extends View<M> {
    * other.
    */
   or<W extends Match>(other: MatchSelector<W>): CapabilityParser<M | W>
-
   /**
    * Combines this capability and the other into a capability group. This allows
    * you to define right amplifications e.g `file/read+write` could be derived
@@ -260,16 +256,13 @@ export type InferMatch<Members extends unknown[]> = Members extends []
   ? [M, ...InferMatch<Rest>]
   : never
 
-export interface ParsedCapability<
+export type ParsedCapability<
   Can extends Ability = Ability,
   Resource extends URI = URI,
   C extends object = {}
-> {
-  can: Can
-  with: Resource['href']
-  uri: Resource
-  caveats: C
-}
+> = keyof C extends never
+  ? { can: Can; with: Resource; nb?: C }
+  : { can: Can; with: Resource; nb: C }
 
 export type InferCaveats<C> = Optionalize<{
   [K in keyof C]: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
@@ -282,7 +275,8 @@ export interface Descriptor<
 > {
   can: A
   with: Decoder<Resource, R, Failure>
-  caveats?: C
+
+  nb?: C
 
   derives?: Derives<
     ParsedCapability<A, R, InferCaveats<C>>,

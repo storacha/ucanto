@@ -15,7 +15,7 @@ const HEADERS = Object.freeze({
  * @param {I} batch
  * @returns {Promise<API.HTTPRequest<I>>}
  */
-export const encode = async (batch) => {
+export const encode = async batch => {
   /** @type {Record<string, string>} */
   const headers = { ...HEADERS }
   /** @type {string[]} */

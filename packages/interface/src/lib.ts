@@ -13,13 +13,11 @@ import {
   Phantom,
   Resource,
   Signature,
+  Principal,
+  Verifier,
+  Signer,
 } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
-import type {
-  Principal,
-  PrincipalParser,
-  SigningPrincipal,
-} from './principal.js'
 import {
   CanIssue,
   InvalidAudience,
@@ -33,14 +31,13 @@ export type {
   MultibaseDecoder,
   MultibaseEncoder,
 } from 'multiformats/bases/interface'
-export * from './principal.js'
 export * from './capability.js'
 export * from './transport.js'
 export type {
   Transport,
   Principal,
-  PrincipalParser,
-  SigningPrincipal,
+  Verifier,
+  Signer,
   Phantom,
   Tuple,
   DID,
@@ -80,11 +77,8 @@ export interface UCANOptions {
   proofs?: Proof[]
 }
 
-export interface DelegationOptions<
-  C extends Capabilities,
-  A extends number = number
-> extends UCANOptions {
-  issuer: SigningPrincipal<A>
+export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
+  issuer: Signer
   audience: Principal
   capabilities: C
   proofs?: Proof[]
@@ -93,17 +87,17 @@ export interface DelegationOptions<
 export interface Delegation<C extends Capabilities = Capabilities> {
   readonly root: UCANBlock<C>
   /**
-    * Map of all the IPLD blocks that where included with this delegation DAG.
-    * Usually this would be blocks corresponding to proofs, however it may
-    * also contain other blocks e.g. things that `capabilities` or `facts` may
-    * link.
-    * It is not guaranteed to include all the blocks of this DAG, as it represents
-    * a partial DAG of the delegation desired for transporting.
-    *
-    * Also note that map may contain blocks that are not part of this
-    * delegation DAG. That is because `Delegation` is usually constructed as
-    * view / selection over the CAR which may contain bunch of other blocks.
-    */
+   * Map of all the IPLD blocks that where included with this delegation DAG.
+   * Usually this would be blocks corresponding to proofs, however it may
+   * also contain other blocks e.g. things that `capabilities` or `facts` may
+   * link.
+   * It is not guaranteed to include all the blocks of this DAG, as it represents
+   * a partial DAG of the delegation desired for transporting.
+   *
+   * Also note that map may contain blocks that are not part of this
+   * delegation DAG. That is because `Delegation` is usually constructed as
+   * view / selection over the CAR which may contain bunch of other blocks.
+   */
   readonly blocks: Map<string, Block>
 
   readonly cid: UCANLink<C>
@@ -132,13 +126,13 @@ export interface Invocation<C extends Capability = Capability>
 
 export interface InvocationOptions<C extends Capability = Capability>
   extends UCANOptions {
-  issuer: SigningPrincipal
+  issuer: Signer
   capability: C
 }
 
 export interface IssuedInvocation<C extends Capability = Capability>
   extends DelegationOptions<[C]> {
-  readonly issuer: SigningPrincipal
+  readonly issuer: Signer
   readonly audience: Principal
   readonly capabilities: [C]
 
@@ -382,11 +376,14 @@ export type Service = Record<
 export type Await<T> = T | PromiseLike<T> | Promise<T>
 
 export type Protocol<Scheme extends string = string> = `${Scheme}:`
-export interface URI<P extends Protocol = Protocol> extends URL {
-  protocol: P
-  href: `${P}${string}`
-}
 
-export type URIString<P extends URI> = `${URI['protocol']}${string}` & {
-  protocol?: Protocol
+export type URI<P extends Protocol = Protocol> = `${P}${string}` &
+  // ⚠️ Without phantom type TS does not seem to retain `P` type
+  // resulting in `${string}${string}` instead.
+  Phantom<{
+    protocol: P
+  }>
+
+export interface PrincipalParser {
+  parse(did: UCAN.DID): UCAN.Verifier
 }
