@@ -92,7 +92,7 @@ class Ed25519Verifier extends Uint8Array {
   }
   /**
    * DID of the Principal in `did:key` format.
-   * @returns {API.DID<"key"><"key">}
+   * @returns {API.DID<"key">}
    */
   did() {
     return `did:key:${base58btc.encode(this)}`
