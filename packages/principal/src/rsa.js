@@ -1,5 +1,4 @@
 import { webcrypto } from 'one-webcrypto'
-import { bytes, varint } from 'multiformats'
 import { base58btc } from 'multiformats/bases/base58'
 import * as API from './rsa/type.js'
 import * as DID from '@ipld/dag-ucan/did'
@@ -308,17 +307,14 @@ export const Verifier = {
    * @param {API.DID} did
    * @returns {API.RSAVerifier}
    */
-  parse: did => {
-    return new RSAVerifier({
-      bytes: /** @type {Uint8Array} */ (DID.parse(did)),
-      key: null,
-    })
-  },
+  parse: did => Verifier.decode(/** @type {Uint8Array} */ (DID.parse(did))),
+
   /**
    * @param {API.ByteView<API.RSAVerifier>} bytes
    * @returns {API.RSAVerifier}
    */
   decode: bytes => {
+    untagWith(verifierCode, bytes)
     return new RSAVerifier({ bytes })
   },
 }

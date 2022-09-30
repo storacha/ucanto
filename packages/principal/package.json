@@ -53,6 +53,9 @@
       ],
       "ed25519": [
         "dist/src/ed25519.d.ts"
+      ],
+      "rsa": [
+        "dist/src/rsa.d.ts"
       ]
     }
   },
@@ -60,6 +63,10 @@
     "./ed25519": {
       "types": "./dist/src/ed25519.d.ts",
       "import": "./src/ed25519.js"
+    },
+    "./rsa": {
+      "types": "./dist/src/rsa.d.ts",
+      "import": "./src/rsa.js"
     }
   },
   "c8": {

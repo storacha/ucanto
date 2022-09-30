@@ -386,7 +386,11 @@ export type URI<P extends Protocol = Protocol> = `${P}${string}` &
   }>
 
 export interface PrincipalParser {
-  parse(did: UCAN.DID): UCAN.Verifier
+  parse(did: UCAN.DID): Verifier
+}
+
+export interface IntoSigner {
+  decode: (bytes: Uint8Array) => Signer
 }
 
 export interface Signer<M extends string = string, A extends number = number>
