@@ -140,7 +140,7 @@ class Capability extends Unit {
           new Error(`Invalid 'nb.${key}' - ${value.message}`),
           { cause: value }
         )
-      } else {
+      } else if (value !== undefined) {
         const nb =
           capabality.nb ||
           (capabality.nb = /** @type {API.InferCaveats<C>} */ ({}))
