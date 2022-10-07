@@ -3,9 +3,11 @@ import * as Schema from './type.js'
 export * from './type.js'
 
 /**
+ * @abstract
  * @template [T=any]
  * @template [I=unknown]
  * @template [Settings=void]
+ * @extends {Schema.Base<T, I, Settings>}
  * @implements {Schema.Schema<T, I>}
  */
 export class API {
@@ -21,17 +23,17 @@ export class API {
     return `new ${this.constructor.name}()`
   }
   /**
-   * @param {I} _input
-   * @param {Settings} _settings
-   * @returns {Schema.Read<T>}
    * @abstract
+   * @param {I} input
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<T>}
    */
-  readWith(_input, _settings) {
+  readWith(input, settings) {
     throw new Error(`Abstract method readWith must be implemented by subclass`)
   }
   /**
    * @param {I} input
-   * @returns {Schema.Read<T>}
+   * @returns {Schema.ReadResult<T>}
    */
   read(input) {
     return this.readWith(input, this.settings)
@@ -137,7 +139,7 @@ class Never extends API {
   }
   /**
    * @param {I} input
-   * @returns {Schema.Read<never>}
+   * @returns {Schema.ReadResult<never>}
    */
   read(input) {
     return new TypeError({ expect: 'never', actual: input })
@@ -168,8 +170,8 @@ class Unknown extends API {
   /**
    * @param {I} input
    */
-  readWith(input) {
-    return /** @type {Schema.Read<unknown>}*/ (input)
+  read(input) {
+    return /** @type {Schema.ReadResult<unknown>}*/ (input)
   }
   toString() {
     return 'unknown()'
@@ -231,7 +233,7 @@ class Optional extends API {
   /**
    * @param {I} input
    * @param {Schema.Reader<O, I>} reader
-   * @returns {Schema.Read<O|undefined>}
+   * @returns {Schema.ReadResult<O|undefined>}
    */
   readWith(input, reader) {
     const result = reader.read(input)
@@ -261,12 +263,12 @@ class Default extends API {
    * @param {object} options
    * @param {Schema.Reader<O, I>} options.reader
    * @param {O} options.value
-   * @returns {Schema.Read<O>}
+   * @returns {Schema.ReadResult<O>}
    */
   readWith(input, { reader, value }) {
     const result = reader.read(input)
     return result?.error && input === undefined
-      ? /** @type {Schema.Read<O>} */ (value)
+      ? /** @type {Schema.ReadResult<O>} */ (value)
       : result
   }
   toString() {
@@ -288,7 +290,7 @@ export const optional = schema => new Optional(schema)
  * @template O
  * @template [I=unknown]
  * @extends {API<O[], I, Schema.Reader<O, I>>}
- * @implements {Schema.Schema<O[], I>}
+ * @implements {Schema.ArraySchema<O, I>}
  */
 class ArrayOf extends API {
   /**
@@ -323,7 +325,7 @@ class ArrayOf extends API {
  * @template O
  * @template [I=unknown]
  * @param {Schema.Reader<O, I>} schema
- * @returns {Schema.Schema<O[], I>}
+ * @returns {Schema.ArraySchema<O, I>}
  */
 export const array = schema => new ArrayOf(schema)
 
@@ -338,11 +340,16 @@ class Tuple extends API {
   /**
    * @param {I} input
    * @param {U} shape
-   * @returns {Schema.Read<Schema.InferTuple<U>>}
+   * @returns {Schema.ReadResult<Schema.InferTuple<U>>}
    */
   readWith(input, shape) {
     if (!Array.isArray(input)) {
       return new TypeError({ expect: 'array', actual: input })
+    }
+    if (input.length !== this.shape.length) {
+      return new SchemaError(
+        `Array must contain exactly ${this.shape.length} elements`
+      )
     }
 
     const results = []
@@ -387,11 +394,11 @@ class Enum extends API {
   /**
    * @param {I} input
    * @param {{type:string, variants:Set<T[number]>}} settings
-   * @returns {Schema.Read<T[number]>}
+   * @returns {Schema.ReadResult<T[number]>}
    */
   readWith(input, { variants, type }) {
     if (variants.has(input)) {
-      return /** @type {Schema.Read<T[number]>} */ (input)
+      return /** @type {Schema.ReadResult<T[number]>} */ (input)
     } else {
       return new TypeError({ expect: type, actual: input })
     }
@@ -477,7 +484,7 @@ class Intersection extends API {
   /**
    * @param {I} input
    * @param {U} schemas
-   * @returns {Schema.Read<Schema.InferIntesection<U>>}
+   * @returns {Schema.ReadResult<Schema.InferIntesection<U>>}
    */
   readWith(input, schemas) {
     const causes = []
@@ -490,7 +497,7 @@ class Intersection extends API {
 
     return causes.length > 0
       ? new IntersectionError({ causes })
-      : /** @type {Schema.Read<Schema.InferIntesection<U>>} */ (input)
+      : /** @type {Schema.ReadResult<Schema.InferIntesection<U>>} */ (input)
   }
   toString() {
     return `intersection([${this.settings
@@ -586,7 +593,7 @@ class UnknownNumber extends API {
 class AnyNumber extends UnknownNumber {
   /**
    * @param {I} input
-   * @returns {Schema.Read<number>}
+   * @returns {Schema.ReadResult<number>}
    */
   readWith(input) {
     return typeof input === 'number'
@@ -612,7 +619,7 @@ class RefinedNumber extends UnknownNumber {
   /**
    * @param {I} input
    * @param {{base:Schema.Reader<T, I>, schema:Schema.Reader<O, T>}} settings
-   * @returns {Schema.Read<O>}
+   * @returns {Schema.ReadResult<O>}
    */
   readWith(input, { base, schema }) {
     const result = base.read(input)
@@ -631,7 +638,7 @@ class LessThan extends API {
   /**
    * @param {T} input
    * @param {number} number
-   * @returns {Schema.Read<T>}
+   * @returns {Schema.ReadResult<T>}
    */
   readWith(input, number) {
     if (input < number) {
@@ -660,7 +667,7 @@ class GreaterThan extends API {
   /**
    * @param {T} input
    * @param {number} number
-   * @returns {Schema.Read<T>}
+   * @returns {Schema.ReadResult<T>}
    */
   readWith(input, number) {
     if (input > number) {
@@ -684,7 +691,7 @@ export const greaterThan = n => new GreaterThan(n)
 const Integer = {
   /**
    * @param {number} input
-   * @returns {Schema.Read<Schema.Integer>}
+   * @returns {Schema.ReadResult<Schema.Integer>}
    */
   read(input) {
     return Number.isInteger(input)
@@ -704,7 +711,7 @@ export const integer = () => anyNumber.refine(Integer)
 const Float = {
   /**
    * @param {number} number
-   * @returns {Schema.Read<Schema.Float>}
+   * @returns {Schema.ReadResult<Schema.Float>}
    */
   read(number) {
     return Number.isFinite(number)
@@ -771,13 +778,13 @@ class RefinedString extends UnknownString {
   /**
    * @param {I} input
    * @param {{base:Schema.Reader<T, I>, schema:Schema.Reader<O, T>}} settings
-   * @returns {Schema.Read<T & O>}
+   * @returns {Schema.ReadResult<T & O>}
    */
   readWith(input, { base, schema }) {
     const result = base.read(input)
     return result?.error
       ? result
-      : /** @type {Schema.Read<T & O>} */ (schema.read(result))
+      : /** @type {Schema.ReadResult<T & O>} */ (schema.read(result))
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
@@ -792,7 +799,7 @@ class RefinedString extends UnknownString {
 class AnyString extends UnknownString {
   /**
    * @param {I} input
-   * @returns {Schema.Read<string>}
+   * @returns {Schema.ReadResult<string>}
    */
   readWith(input) {
     return typeof input === 'string'
@@ -819,7 +826,7 @@ class StratsWith extends API {
    */
   readWith(input, prefix) {
     return input.startsWith(prefix)
-      ? /** @type {Schema.Read<Body & `${Prefix}${string}`>} */ (input)
+      ? /** @type {Schema.ReadResult<Body & `${Prefix}${string}`>} */ (input)
       : error(`Expect string to start with "${prefix}" instead got "${input}"`)
   }
   get prefix() {
@@ -850,7 +857,7 @@ class EndsWith extends API {
    */
   readWith(input, suffix) {
     return input.endsWith(suffix)
-      ? /** @type {Schema.Read<Body & `${string}${Suffix}`>} */ (input)
+      ? /** @type {Schema.ReadResult<Body & `${string}${Suffix}`>} */ (input)
       : error(`Expect string to end with "${suffix}" instead got "${input}"`)
   }
   get suffix() {
@@ -905,13 +912,13 @@ export const refine = (base, schema) => new Refine({ base, schema })
  * @template {null|boolean|string|number} T
  * @template [I=unknown]
  * @extends {API<T, I, T>}
- * @implements {Schema.Schema<T, I>}
+ * @implements {Schema.LiteralSchema<T, I>}
  */
 class Literal extends API {
   /**
    * @param {I} input
    * @param {T} expect
-   * @returns {Schema.Read<T>}
+   * @returns {Schema.ReadResult<T>}
    */
   readWith(input, expect) {
     return input !== /** @type {unknown} */ (expect)
@@ -920,6 +927,16 @@ class Literal extends API {
   }
   get value() {
     return this.settings
+  }
+  /**
+   * @param {T} value
+   */
+  default(value = this.value) {
+    if (value === this.value) {
+      return new Default({ reader: this, value })
+    } else {
+      throw new Error(`Provided default does not match this literal`)
+    }
   }
   toString() {
     return `literal(${displayTypeName(this.value)})`
@@ -930,7 +947,7 @@ class Literal extends API {
  * @template {null|boolean|string|number} T
  * @template [I=unknown]
  * @param {T} value
- * @returns {Schema.Schema<T, I>}
+ * @returns {Schema.LiteralSchema<T, I>}
  */
 export const literal = value => new Literal(value)
 
@@ -944,7 +961,7 @@ class Struct extends API {
   /**
    * @param {I} input
    * @param {U} shape
-   * @returns {Schema.Read<Schema.InferStruct<U>>}
+   * @returns {Schema.ReadResult<Schema.InferStruct<U>>}
    */
   readWith(input, shape) {
     if (typeof input === 'object' && input !== null) {
@@ -1024,7 +1041,7 @@ export const struct = fields => {
 
 /**
  * @param {string} message
- * @returns {Schema.ReadError}
+ * @returns {Schema.Error}
  */
 export const error = message => new SchemaError(message)
 
@@ -1071,7 +1088,7 @@ class TypeError extends SchemaError {
 /**
  * @param {string} expect
  * @param {unknown} actual
- * @returns {Schema.ReadError}
+ * @returns {Schema.Error}
  */
 export const typeError = (expect, actual) => new TypeError({ expect, actual })
 
@@ -1115,15 +1132,15 @@ class LiteralError extends SchemaError {
     return 'LiteralError'
   }
   describe() {
-    return `Expected value ${JSON.stringify(
+    return `Expected literal ${displayTypeName(
       this.expect
-    )} instead got ${JSON.stringify(this.actual)}`
+    )} instead got ${displayTypeName(this.actual)}`
   }
 }
 
 class ElementError extends SchemaError {
   /**
-   * @param {{at:number, cause:Schema.ReadError}} data
+   * @param {{at:number, cause:Schema.Error}} data
    */
   constructor({ at, cause }) {
     super()
@@ -1143,7 +1160,7 @@ class ElementError extends SchemaError {
 
 class FieldError extends SchemaError {
   /**
-   * @param {{at:string, cause:Schema.ReadError}} data
+   * @param {{at:string, cause:Schema.Error}} data
    */
   constructor({ at, cause }) {
     super()
@@ -1160,8 +1177,8 @@ class FieldError extends SchemaError {
 
 /**
  * @param {string|number} at
- * @param {Schema.ReadError} cause
- * @returns {Schema.ReadError}
+ * @param {Schema.Error} cause
+ * @returns {Schema.Error}
  */
 export const memberError = (at, cause) =>
   typeof at === 'string'
@@ -1170,7 +1187,7 @@ export const memberError = (at, cause) =>
 
 class UnionError extends SchemaError {
   /**
-   * @param {{causes: Schema.ReadError[]}} data
+   * @param {{causes: Schema.Error[]}} data
    */
   constructor({ causes }) {
     super()
@@ -1190,7 +1207,7 @@ class UnionError extends SchemaError {
 
 class IntersectionError extends SchemaError {
   /**
-   * @param {{causes: Schema.ReadError[]}} data
+   * @param {{causes: Schema.Error[]}} data
    */
   constructor({ causes }) {
     super()

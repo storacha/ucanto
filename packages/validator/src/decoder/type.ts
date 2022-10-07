@@ -1,17 +1,16 @@
-import { Failure as ReadError, Result, Phantom } from '@ucanto/interface'
+import { Failure as Error, Result, Phantom } from '@ucanto/interface'
 
 export interface Reader<
   O = unknown,
   I = unknown,
-  Context = void,
-  X extends { error: true } = ReadError
+  X extends { error: true } = Error
 > {
-  read(input: I, context: Context): Read<O, X>
+  read(input: I): ReadResult<O, X>
 }
 
-export { ReadError }
+export type { Error }
 
-export type Read<T, X extends { error: true } = ReadError> = Result<T, X>
+export type ReadResult<T, X extends { error: true } = Error> = Result<T, X>
 
 export interface Schema<O, I = unknown> extends Reader<O, I> {
   optional(): Schema<O | undefined, I>
@@ -26,6 +25,18 @@ export interface Schema<O, I = unknown> extends Reader<O, I> {
 
   is(value: unknown): value is O
   from(value: I): O
+}
+
+export interface ArraySchema<T, I = unknown> extends Schema<T[], I> {
+  element: Reader<T, I>
+}
+
+export interface LiteralSchema<
+  T extends string | number | boolean | null,
+  I = unknown
+> extends Schema<T> {
+  default(value?: T): Schema<T, I>
+  readonly value: T
 }
 
 export interface StringSchema<O extends string, I = unknown>

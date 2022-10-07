@@ -10,20 +10,26 @@ export const pass = value => ({ value })
 const fail = Object.assign(
   /**
    * @param {object} options
-   * @param {unknown} options.got
+   * @param {unknown} [options.got]
    * @param {string} [options.expect]
    */
-  ({ got, expect = '.*' }) => ({
+  ({ got = '.*', expect = '.*' }) => ({
     error: new RegExp(`expect.*${expect}.* got ${got}`, 'is'),
   }),
   {
     /**
+     * @param {string} pattern
+     */
+    as: pattern => ({
+      error: new RegExp(pattern, 'is'),
+    }),
+    /**
      * @param {number} at
      * @param {object} options
-     * @param {unknown} options.got
+     * @param {unknown} [options.got]
      * @param {unknown} [options.expect]
      */
-    at: (at, { got, expect = [] }) => {
+    at: (at, { got = '.*', expect = [] }) => {
       const variants = Array.isArray(expect)
         ? expect.join(`.* expect.*`)
         : expect
@@ -70,249 +76,390 @@ const display = source => {
 }
 
 /**
+ * @param {Partial<Fixture>} source
+ * @returns {Fixture}
+ */
+
+const fixture = ({ in: input, got = input, array, ...expect }) => {
+  return {
+    in: input,
+    got,
+    any: fail({ got }),
+    unknown: { any: fail({ expect: 'unknown', got }), ...expect.unknown },
+    never: { any: fail({ expect: 'never', got }), ...expect.never },
+    string: { any: fail({ expect: 'string', got }), ...expect.string },
+    number: { any: fail({ expect: 'number', got }), ...expect.number },
+    integer: { any: fail({ expect: 'number', got }), ...expect.integer },
+    float: { any: fail({ expect: 'number', got }), ...expect.float },
+    literal: {
+      any: { any: fail({ expect: 'literal', got }) },
+      ...Object.fromEntries(
+        Object.entries(expect.literal || {}).map(([key, value]) => {
+          return [
+            key,
+            {
+              any: fail({ expect: 'literal', got }),
+              ...value,
+            },
+          ]
+        })
+      ),
+    },
+    array: {
+      any: array?.any || fail({ expect: 'array', got }),
+      string: {
+        ...array?.string,
+      },
+      number: {
+        ...array?.number,
+      },
+      never: {
+        ...array?.never,
+      },
+      unknown: {
+        ...array?.unknown,
+      },
+    },
+    tuple: {
+      any: expect.tuple?.any || fail({ expect: 'array', got }),
+      strNstr: {
+        any: fail({ expect: 'array', got }),
+        ...expect.tuple?.strNstr,
+      },
+      strNfloat: {
+        any: fail({ expect: 'array', got }),
+        ...expect.tuple?.strNstr,
+      },
+    },
+  }
+}
+/**
  * @typedef {{error?:undefined, value:unknown}|{error:RegExp}} Expect
  * @typedef {{
- * in:unknown
- * unknown: {
- *   any: Expect
+ *   any?: Expect
  *   nullable?: Expect
  *   optional?: Expect
  *   default?: (input:unknown) => Expect
- * },
- * never: {
- *   any: Expect
- *   nullable?: Expect
- *   optional?: Expect
- *   default?: (input:unknown) => Expect
- * }
- * string: {
- *   any: Expect,
- *   optional?: Expect,
- *   nullable?: Expect,
- *   default?: (input:unknown) => Expect
+ * }} ExpectGroup
+ * @typedef {{
+ * in:any
+ * got: unknown
+ * any: Expect
+ * unknown: ExpectGroup,
+ * never: ExpectGroup
+ * string: ExpectGroup,
+ * number: ExpectGroup,
+ * integer: ExpectGroup,
+ * float: ExpectGroup,
+ * literal: {
+ *   any?: ExpectGroup,
+ *   [key:string]: ExpectGroup|undefined
  * },
  * array: {
- *   any: Expect
- *   string?:Expect
- *   optionalString?:Expect
- *   nullableString?:Expect
- *   defaultString?: (input:unknown) => Expect
- *   number?:Expect
+ *   any?: Expect
+ *   string?: ExpectGroup
+ *   number?: ExpectGroup
+ *   unknown?: ExpectGroup
+ *   never?: ExpectGroup
+ * }
+ * tuple: {
+ *   any?: Expect
+ *   strNstr?: ExpectGroup
+ *   strNfloat?: ExpectGroup
  * }
  * }} Fixture
- * @type {Fixture[]}
+ *
+ * @type {Partial<Fixture>[]}
  */
-const fixtures = [
+const source = [
   {
     in: 'hello',
-    array: { any: fail({ expect: 'array', got: '"hello"' }) },
+    got: '"hello"',
     string: { any: pass() },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: '"hello"' }) },
+    literal: { hello: { any: pass() } },
   },
   {
     in: new String('hello'),
-    array: { any: fail({ expect: 'array', got: 'object' }) },
-    string: { any: fail({ expect: 'string', got: 'object' }) },
+    got: 'object',
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'object' }) },
   },
   {
     in: null,
-    array: { any: fail({ expect: 'array', got: 'null' }) },
+    got: 'null',
     string: {
-      any: fail({ expect: 'string', got: 'null' }),
       nullable: pass(null),
+    },
+    number: {
+      nullable: pass(),
+    },
+    integer: {
+      nullable: pass(),
+    },
+    float: {
+      nullable: pass(),
     },
     unknown: { any: pass() },
     never: {
-      any: fail({ expect: 'never', got: 'null' }),
       nullable: pass(),
+    },
+    literal: {
+      hello: {
+        nullable: pass(),
+      },
     },
   },
   {
     in: undefined,
-    array: { any: fail({ expect: 'array', got: undefined }) },
     string: {
-      any: fail({ expect: 'string', got: undefined }),
+      optional: pass(),
+      default: value => pass(value),
+    },
+    number: {
+      optional: pass(),
+      default: value => pass(value),
+    },
+    integer: {
+      optional: pass(),
+      default: value => pass(value),
+    },
+    float: {
       optional: pass(),
       default: value => pass(value),
     },
     unknown: { any: pass() },
     never: {
-      any: fail({ expect: 'never', got: undefined }),
       optional: pass(),
     },
+    literal: {
+      hello: {
+        optional: pass(),
+        default: pass,
+      },
+    },
+  },
+  {
+    in: Infinity,
+    got: 'Infinity',
+    number: { any: pass() },
+    integer: { any: fail({ expect: 'integer', got: 'Infinity' }) },
+    float: { any: fail({ expect: 'float', got: 'Infinity' }) },
+    unknown: { any: pass() },
+  },
+  {
+    in: NaN,
+    got: 'NaN',
+    number: { any: pass() },
+    integer: { any: fail({ expect: 'integer', got: 'NaN' }) },
+    float: { any: fail({ expect: 'float', got: 'NaN' }) },
+    unknown: { any: pass() },
   },
   {
     in: 101,
-    array: { any: fail({ expect: 'array', got: 101 }) },
-    string: { any: fail({ expect: 'string', got: 101 }) },
+    number: { any: pass() },
+    integer: { any: pass() },
+    float: { any: pass() },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 101 }) },
   },
   {
     in: 9.8,
-    array: { any: fail({ expect: 'array', got: 9.8 }) },
-    string: { any: fail({ expect: 'string', got: 9.8 }) },
+    number: { any: pass() },
+    integer: { any: fail({ expect: 'integer', got: '9.8' }) },
+    float: { any: pass() },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 9.8 }) },
   },
   {
     in: true,
-    array: { any: fail({ expect: 'array', got: true }) },
-    string: { any: fail({ expect: 'string', got: true }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: true }) },
   },
   {
     in: false,
-    array: { any: fail({ expect: 'array', got: false }) },
-    string: { any: fail({ expect: 'string', got: false }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: false }) },
   },
   {
     in: Symbol.for('bye'),
-    array: { any: fail({ expect: 'array', got: 'Symbol\\(bye\\)' }) },
-    string: { any: fail({ expect: 'string', got: 'Symbol\\(bye\\)' }) },
+    got: 'Symbol\\(bye\\)',
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'Symbol\\(bye\\)' }) },
   },
   {
     in: () => 'hello',
-    array: { any: fail({ expect: 'array', got: 'function' }) },
-    string: { any: fail({ expect: 'string', got: 'function' }) },
+    got: 'function',
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'function' }) },
-  },
-  {
-    in: 'hello',
-    array: { any: fail({ expect: 'array', got: '"hello"' }) },
-    string: { any: pass() },
-    unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: '"hello"' }) },
   },
   {
     in: {},
-    array: { any: fail({ expect: 'array', got: 'object' }) },
-    string: { any: fail({ expect: 'string', got: 'object' }) },
+    got: 'object',
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'object' }) },
   },
   {
     in: [],
-    array: {
-      any: pass(),
-    },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
+    got: 'array',
+    array: { any: pass() },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: {
+        any: fail.as('Array must contain exactly 2 elements'),
+      },
+    },
   },
   {
     in: [, undefined],
+    got: 'array',
     array: {
       any: fail.at(0, { got: undefined }),
-      optionalString: pass(),
-      nullableString: fail.at(0, { got: undefined, expect: 'null' }),
-      defaultString: v => pass([v, v]),
+      string: {
+        optional: pass(),
+        nullable: fail.at(0, { got: undefined, expect: 'null' }),
+        default: v => pass([v, v]),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: {
+        any: fail.at(0, { got: undefined, expect: 'string' }),
+      },
+    },
   },
   {
     in: ['hello', 'world', 1, '?'],
+    got: 'array',
     array: {
       any: fail.at(0, { got: '"hello"' }),
-      string: fail.at(2, { got: 1, expect: 'string' }),
-      nullableString: fail.at(2, {
-        expect: ['string', 'null'],
-        got: 1,
-      }),
+      string: {
+        any: fail.at(2, { got: 1, expect: 'string' }),
+        nullable: fail.at(2, {
+          expect: ['string', 'null'],
+          got: 1,
+        }),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: { any: fail.as('Array must contain exactly 2 elements') },
+    },
   },
   {
     in: ['hello', , 'world'],
+    got: 'array',
     array: {
       any: fail.at(0, { got: '"hello"' }),
-      string: fail.at(1, { expect: 'string', got: undefined }),
-      nullableString: fail.at(1, {
-        expect: ['string', 'null'],
-        got: undefined,
-      }),
-      defaultString: v => pass(['hello', v, 'world']),
-      optionalString: pass(),
+      string: {
+        any: fail.at(1, { expect: 'string', got: undefined }),
+        nullable: fail.at(1, {
+          expect: ['string', 'null'],
+          got: undefined,
+        }),
+        default: v => pass(['hello', v, 'world']),
+        optional: pass(),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: {
+        any: fail.as('Array must contain exactly 2 elements'),
+      },
+    },
   },
   {
     in: ['h', 'e', 'l', null, 'l', 'o'],
+    got: 'array',
     array: {
       any: fail.at(0, { got: '"h"' }),
-      string: fail.at(3, { expect: 'string', got: 'null' }),
-      nullableString: pass(),
+      string: {
+        any: fail.at(3, { expect: 'string', got: 'null' }),
+        nullable: pass(),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: { any: fail.as('Array must contain exactly 2 elements') },
+    },
   },
   {
     in: ['hello', new String('world')],
+    got: 'array',
     array: {
       any: fail.at(0, { got: '"hello"' }),
-      string: fail.at(1, { expect: 'string', got: 'object' }),
+      string: {
+        any: fail.at(1, { expect: 'string', got: 'object' }),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: {
+        any: fail.at(1, { got: 'object' }),
+      },
+    },
   },
   {
     in: ['1', 2.1],
+    got: 'array',
     array: {
       any: fail.at(0, { got: 1 }),
-      string: fail.at(1, { expect: 'string', got: 2.1 }),
+      string: {
+        any: fail.at(1, { expect: 'string', got: 2.1 }),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: {
+        any: fail.at(1, { got: 2.1 }),
+      },
+      strNfloat: {
+        any: pass(),
+      },
+    },
   },
   {
     in: ['true', 'false', true],
+    got: 'array',
     array: {
       any: fail.at(0, { got: '"true"' }),
-      string: fail.at(2, { expect: 'string', got: true }),
+      string: {
+        any: fail.at(2, { expect: 'string', got: true }),
+      },
     },
     string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
     never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: { any: fail.as('Array must contain exactly 2 elements') },
+    },
   },
   {
     in: ['hello', Symbol.for('world')],
+    got: 'array',
     array: {
       any: fail.at(0, { got: '"hello"' }),
-      string: fail.at(1, { expect: 'string', got: 'Symbol\\(world\\)' }),
+      string: {
+        any: fail.at(1, { expect: 'string', got: 'Symbol\\(world\\)' }),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: {
+        any: fail.at(1, { got: 'Symbol\\(world\\)' }),
+      },
+    },
   },
   {
     in: ['hello', () => 'world'],
+    got: 'array',
     array: {
       any: fail.at(0, { got: '"hello"' }),
-      string: fail.at(1, { got: 'function' }),
+      string: {
+        any: fail.at(1, { got: 'function' }),
+      },
     },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
     unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
+    tuple: {
+      strNstr: {
+        any: fail.at(1, { got: 'function' }),
+      },
+    },
   },
 ]
+const fixtures = source.map(fixture)
 
 for (const fixture of fixtures) {
   const label = `${fixture.in === null ? 'null' : typeof fixture.in}`
@@ -320,77 +467,180 @@ for (const fixture of fixtures) {
   for (const { schema, expect } of [
     {
       schema: Schema.never(),
-      expect: fixture.never.any,
+      expect: fixture.never.any || fixture.any,
     },
     {
       schema: Schema.never().nullable(),
-      expect: fixture.never.nullable || fixture.never.any,
+      expect: fixture.never.nullable || fixture.never.any || fixture.any,
     },
     {
       schema: Schema.never().optional(),
-      expect: fixture.never.optional || fixture.never.any,
+      expect: fixture.never.optional || fixture.never.any || fixture.any,
     },
     {
       schema: Schema.unknown(),
-      expect: fixture.unknown.any,
+      expect: fixture.unknown.any || fixture.any,
     },
     {
       schema: Schema.unknown().optional(),
-      expect: fixture.unknown.any,
+      expect: fixture.unknown.any || fixture.any,
     },
     {
       schema: Schema.unknown().nullable(),
-      expect: fixture.unknown.any,
+      expect: fixture.unknown.any || fixture.any,
     },
     {
       schema: Schema.unknown().default('DEFAULT'),
-      expect: fixture.unknown.any,
+      expect: fixture.unknown.any || fixture.any,
     },
     {
       schema: Schema.string(),
-      expect: fixture.string.any,
+      expect: fixture.string.any || fixture.any,
     },
     {
       schema: Schema.string().optional(),
-      expect: fixture.string.optional || fixture.string.any,
+      expect: fixture.string.optional || fixture.string.any || fixture.any,
     },
     {
       schema: Schema.string().nullable(),
-      expect: fixture.string.nullable || fixture.string.any,
+      expect: fixture.string.nullable || fixture.string.any || fixture.any,
     },
     {
       schema: Schema.string().default('DEFAULT'),
       expect:
         (fixture.string.default && fixture.string.default('DEFAULT')) ||
-        fixture.string.any,
+        fixture.string.any ||
+        fixture.any,
+    },
+    {
+      schema: Schema.number(),
+      expect: fixture.number.any || fixture.any,
+    },
+    {
+      schema: Schema.number().optional(),
+      expect: fixture.number.optional || fixture.number.any || fixture.any,
+    },
+    {
+      schema: Schema.number().nullable(),
+      expect: fixture.number.nullable || fixture.number.any || fixture.any,
+    },
+    {
+      schema: Schema.number().default(17),
+      expect:
+        (fixture.number.default && fixture.number.default(17)) ||
+        fixture.number.any ||
+        fixture.any,
+    },
+    {
+      schema: Schema.integer(),
+      expect: fixture.integer.any || fixture.any,
+    },
+    {
+      schema: Schema.integer().optional(),
+      expect: fixture.integer.optional || fixture.integer.any || fixture.any,
+    },
+    {
+      schema: Schema.integer().nullable(),
+      expect: fixture.integer.nullable || fixture.integer.any || fixture.any,
+    },
+    {
+      schema: Schema.integer().default(17),
+      expect:
+        (fixture.integer.default && fixture.integer.default(17)) ||
+        fixture.integer.any ||
+        fixture.any,
+    },
+    {
+      schema: Schema.float(),
+      expect: fixture.float.any || fixture.any,
+    },
+    {
+      schema: Schema.float().optional(),
+      expect: fixture.float.optional || fixture.float.any || fixture.any,
+    },
+    {
+      schema: Schema.float().nullable(),
+      expect: fixture.float.nullable || fixture.float.any || fixture.any,
+    },
+    {
+      schema: Schema.float().default(1.7),
+      expect:
+        (fixture.float.default && fixture.float.default(1.7)) ||
+        fixture.float.any ||
+        fixture.any,
     },
     {
       schema: Schema.array(Schema.string()),
-      expect: fixture.array.string || fixture.array.any,
+      expect: fixture.array.string?.any || fixture.array.any || fixture.any,
     },
     {
       schema: Schema.array(Schema.string().optional()),
       expect:
-        fixture.array.optionalString ||
-        fixture.array.string ||
-        fixture.array.any,
+        fixture.array.string?.optional ||
+        fixture.array.string?.any ||
+        fixture.array.any ||
+        fixture.any,
     },
     {
       schema: Schema.array(Schema.string().nullable()),
       expect:
-        fixture.array.nullableString ||
-        fixture.array.string ||
-        fixture.array.any,
+        fixture.array.string?.nullable ||
+        fixture.array.string?.any ||
+        fixture.array.any ||
+        fixture.any,
     },
     {
       schema: Schema.array(Schema.string().default('DEFAULT')),
       expect:
-        (fixture.array.defaultString &&
-          fixture.array.defaultString('DEFAULT')) ||
-        fixture.array.string ||
-        fixture.array.any,
+        (fixture.array.string?.default &&
+          fixture.array.string?.default('DEFAULT')) ||
+        fixture.array.string?.any ||
+        fixture.array.any ||
+        fixture.any,
     },
-    // ['number', Schema.number()],
+    {
+      schema: Schema.literal('foo'),
+      expect:
+        fixture.literal?.foo?.any || fixture.literal.any?.any || fixture.any,
+    },
+    {
+      schema: Schema.literal('hello'),
+      expect:
+        fixture.literal?.hello?.any || fixture.literal.any?.any || fixture.any,
+    },
+    {
+      schema: Schema.literal('hello').optional(),
+      expect:
+        fixture.literal?.hello?.optional ||
+        fixture.literal?.hello?.any ||
+        fixture.literal.any?.any ||
+        fixture.any,
+    },
+    {
+      schema: Schema.literal('hello').nullable(),
+      expect:
+        fixture.literal?.hello?.nullable ||
+        fixture.literal?.hello?.any ||
+        fixture.literal.any?.any ||
+        fixture.any,
+    },
+    {
+      schema: Schema.literal('hello').default('hello'),
+      expect:
+        (fixture.literal?.hello?.default &&
+          fixture.literal?.hello?.default('hello')) ||
+        fixture.literal?.hello?.any ||
+        fixture.literal.any?.any ||
+        fixture.any,
+    },
+    {
+      schema: Schema.tuple([Schema.string(), Schema.string()]),
+      expect: fixture.tuple.strNstr?.any || fixture.tuple.any || fixture.any,
+    },
+    {
+      schema: Schema.tuple([Schema.string(), Schema.integer()]),
+      expect: fixture.tuple.strNfloat?.any || fixture.tuple.any || fixture.any,
+    },
   ]) {
     test(`${schema}.read(${display(fixture.in)})`, () => {
       const result = schema.read(fixture.in)
@@ -597,4 +847,38 @@ test('never().default()', () => {
         .default('hello'),
     /Can not call never\(\).default\(value\)/
   )
+})
+
+test('literal("foo").default("bar") throws', () => {
+  assert.throws(
+    () =>
+      Schema.literal('foo')
+        // @ts-expect-error - no value satisfies default
+        .default('bar'),
+    /Provided default does not match this literal/
+  )
+})
+
+test('default on litral has default', () => {
+  const schema = Schema.literal('foo').default()
+  assert.equal(schema.read(undefined), 'foo')
+})
+
+test('literal has value field', () => {
+  assert.equal(Schema.literal('foo').value, 'foo')
+})
+
+test('.default().optional() is noop', () => {
+  const schema = Schema.string().default('hello')
+  assert.equal(schema.optional(), schema)
+})
+
+test('optional().optional() is noop', () => {
+  const schema = Schema.string().optional()
+  assert.equal(schema.optional(), schema)
+})
+
+test('.element of array', () => {
+  const schema = Schema.string()
+  assert.equal(Schema.array(schema).element, schema)
 })
