@@ -1,683 +1,49 @@
 import { test, assert } from './test.js'
 import * as Schema from '../src/decoder/core.js'
+import fixtures from './schema/fixtures.js'
 
-/**
- * @param {unknown} [value]
- * @return {Expect}
- */
-export const pass = value => ({ value })
+for (const { input, schema, expect, inputLabel, skip, only } of fixtures()) {
+  const unit = skip ? test.skip : only ? test.only : test
+  unit(`${schema}.read(${inputLabel})`, () => {
+    const result = schema.read(input)
 
-const fail = Object.assign(
-  /**
-   * @param {object} options
-   * @param {unknown} [options.got]
-   * @param {string} [options.expect]
-   */
-  ({ got = '.*', expect = '.*' }) => ({
-    error: new RegExp(`expect.*${expect}.* got ${got}`, 'is'),
-  }),
-  {
-    /**
-     * @param {string} pattern
-     */
-    as: pattern => ({
-      error: new RegExp(pattern, 'is'),
-    }),
-    /**
-     * @param {number} at
-     * @param {object} options
-     * @param {unknown} [options.got]
-     * @param {unknown} [options.expect]
-     */
-    at: (at, { got = '.*', expect = [] }) => {
-      const variants = Array.isArray(expect)
-        ? expect.join(`.* expect.*`)
-        : expect
-      return {
-        error: new RegExp(`at ${at}.* expect.*${variants} .* got ${got}`, 'is'),
-      }
-    },
-  }
-)
-
-/**
- * @param {unknown} source
- * @returns {string}
- */
-const display = source => {
-  const type = typeof source
-  switch (type) {
-    case 'boolean':
-    case 'string':
-      return JSON.stringify(source)
-    // if these types we do not want JSON.stringify as it may mess things up
-    // eg turn NaN and Infinity to null
-    case 'bigint':
-    case 'number':
-    case 'symbol':
-    case 'undefined':
-      return String(source)
-    case 'object': {
-      if (source === null) {
-        return 'null'
-      }
-
-      if (Array.isArray(source)) {
-        return `[${source.map(display).join(', ')}]`
-      }
-
-      return `{${Object.entries(Object(source)).map(
-        ([key, value]) => `${key}:${display(value)}`
-      )}}`
+    if (expect.error) {
+      assert.match(String(result), expect.error)
+    } else {
+      assert.deepEqual(
+        result,
+        // if expcted value is set to undefined use input
+        expect.value === undefined ? input : expect.value
+      )
     }
-    default:
-      return String(source)
-  }
-}
+  })
 
-/**
- * @param {Partial<Fixture>} source
- * @returns {Fixture}
- */
+  unit(`${schema}.from(${inputLabel})`, () => {
+    if (expect.error) {
+      assert.throws(() => schema.from(input), expect.error)
+    } else {
+      assert.deepEqual(
+        schema.from(input),
+        // if expcted value is set to undefined use input
+        expect.value === undefined ? input : expect.value
+      )
+    }
+  })
 
-const fixture = ({ in: input, got = input, array, ...expect }) => {
-  return {
-    in: input,
-    got,
-    any: fail({ got }),
-    unknown: { any: fail({ expect: 'unknown', got }), ...expect.unknown },
-    never: { any: fail({ expect: 'never', got }), ...expect.never },
-    string: { any: fail({ expect: 'string', got }), ...expect.string },
-    number: { any: fail({ expect: 'number', got }), ...expect.number },
-    integer: { any: fail({ expect: 'number', got }), ...expect.integer },
-    float: { any: fail({ expect: 'number', got }), ...expect.float },
-    literal: {
-      any: { any: fail({ expect: 'literal', got }) },
-      ...Object.fromEntries(
-        Object.entries(expect.literal || {}).map(([key, value]) => {
-          return [
-            key,
-            {
-              any: fail({ expect: 'literal', got }),
-              ...value,
-            },
-          ]
-        })
-      ),
-    },
-    array: {
-      any: array?.any || fail({ expect: 'array', got }),
-      string: {
-        ...array?.string,
-      },
-      number: {
-        ...array?.number,
-      },
-      never: {
-        ...array?.never,
-      },
-      unknown: {
-        ...array?.unknown,
-      },
-    },
-    tuple: {
-      any: expect.tuple?.any || fail({ expect: 'array', got }),
-      strNstr: {
-        any: fail({ expect: 'array', got }),
-        ...expect.tuple?.strNstr,
-      },
-      strNfloat: {
-        any: fail({ expect: 'array', got }),
-        ...expect.tuple?.strNstr,
-      },
-    },
-  }
-}
-/**
- * @typedef {{error?:undefined, value:unknown}|{error:RegExp}} Expect
- * @typedef {{
- *   any?: Expect
- *   nullable?: Expect
- *   optional?: Expect
- *   default?: (input:unknown) => Expect
- * }} ExpectGroup
- * @typedef {{
- * in:any
- * got: unknown
- * any: Expect
- * unknown: ExpectGroup,
- * never: ExpectGroup
- * string: ExpectGroup,
- * number: ExpectGroup,
- * integer: ExpectGroup,
- * float: ExpectGroup,
- * literal: {
- *   any?: ExpectGroup,
- *   [key:string]: ExpectGroup|undefined
- * },
- * array: {
- *   any?: Expect
- *   string?: ExpectGroup
- *   number?: ExpectGroup
- *   unknown?: ExpectGroup
- *   never?: ExpectGroup
- * }
- * tuple: {
- *   any?: Expect
- *   strNstr?: ExpectGroup
- *   strNfloat?: ExpectGroup
- * }
- * }} Fixture
- *
- * @type {Partial<Fixture>[]}
- */
-const source = [
-  {
-    in: 'hello',
-    got: '"hello"',
-    string: { any: pass() },
-    unknown: { any: pass() },
-    literal: { hello: { any: pass() } },
-  },
-  {
-    in: new String('hello'),
-    got: 'object',
-    unknown: { any: pass() },
-  },
-  {
-    in: null,
-    got: 'null',
-    string: {
-      nullable: pass(null),
-    },
-    number: {
-      nullable: pass(),
-    },
-    integer: {
-      nullable: pass(),
-    },
-    float: {
-      nullable: pass(),
-    },
-    unknown: { any: pass() },
-    never: {
-      nullable: pass(),
-    },
-    literal: {
-      hello: {
-        nullable: pass(),
-      },
-    },
-  },
-  {
-    in: undefined,
-    string: {
-      optional: pass(),
-      default: value => pass(value),
-    },
-    number: {
-      optional: pass(),
-      default: value => pass(value),
-    },
-    integer: {
-      optional: pass(),
-      default: value => pass(value),
-    },
-    float: {
-      optional: pass(),
-      default: value => pass(value),
-    },
-    unknown: { any: pass() },
-    never: {
-      optional: pass(),
-    },
-    literal: {
-      hello: {
-        optional: pass(),
-        default: pass,
-      },
-    },
-  },
-  {
-    in: Infinity,
-    got: 'Infinity',
-    number: { any: pass() },
-    integer: { any: fail({ expect: 'integer', got: 'Infinity' }) },
-    float: { any: fail({ expect: 'float', got: 'Infinity' }) },
-    unknown: { any: pass() },
-  },
-  {
-    in: NaN,
-    got: 'NaN',
-    number: { any: pass() },
-    integer: { any: fail({ expect: 'integer', got: 'NaN' }) },
-    float: { any: fail({ expect: 'float', got: 'NaN' }) },
-    unknown: { any: pass() },
-  },
-  {
-    in: 101,
-    number: { any: pass() },
-    integer: { any: pass() },
-    float: { any: pass() },
-    unknown: { any: pass() },
-  },
-  {
-    in: 9.8,
-    number: { any: pass() },
-    integer: { any: fail({ expect: 'integer', got: '9.8' }) },
-    float: { any: pass() },
-    unknown: { any: pass() },
-  },
-  {
-    in: true,
-    unknown: { any: pass() },
-  },
-  {
-    in: false,
-    unknown: { any: pass() },
-  },
-  {
-    in: Symbol.for('bye'),
-    got: 'Symbol\\(bye\\)',
-    unknown: { any: pass() },
-  },
-  {
-    in: () => 'hello',
-    got: 'function',
-    unknown: { any: pass() },
-  },
-  {
-    in: {},
-    got: 'object',
-    unknown: { any: pass() },
-  },
-  {
-    in: [],
-    got: 'array',
-    array: { any: pass() },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: {
-        any: fail.as('Array must contain exactly 2 elements'),
-      },
-    },
-  },
-  {
-    in: [, undefined],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: undefined }),
-      string: {
-        optional: pass(),
-        nullable: fail.at(0, { got: undefined, expect: 'null' }),
-        default: v => pass([v, v]),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: {
-        any: fail.at(0, { got: undefined, expect: 'string' }),
-      },
-    },
-  },
-  {
-    in: ['hello', 'world', 1, '?'],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: '"hello"' }),
-      string: {
-        any: fail.at(2, { got: 1, expect: 'string' }),
-        nullable: fail.at(2, {
-          expect: ['string', 'null'],
-          got: 1,
-        }),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: { any: fail.as('Array must contain exactly 2 elements') },
-    },
-  },
-  {
-    in: ['hello', , 'world'],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: '"hello"' }),
-      string: {
-        any: fail.at(1, { expect: 'string', got: undefined }),
-        nullable: fail.at(1, {
-          expect: ['string', 'null'],
-          got: undefined,
-        }),
-        default: v => pass(['hello', v, 'world']),
-        optional: pass(),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: {
-        any: fail.as('Array must contain exactly 2 elements'),
-      },
-    },
-  },
-  {
-    in: ['h', 'e', 'l', null, 'l', 'o'],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: '"h"' }),
-      string: {
-        any: fail.at(3, { expect: 'string', got: 'null' }),
-        nullable: pass(),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: { any: fail.as('Array must contain exactly 2 elements') },
-    },
-  },
-  {
-    in: ['hello', new String('world')],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: '"hello"' }),
-      string: {
-        any: fail.at(1, { expect: 'string', got: 'object' }),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: {
-        any: fail.at(1, { got: 'object' }),
-      },
-    },
-  },
-  {
-    in: ['1', 2.1],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: 1 }),
-      string: {
-        any: fail.at(1, { expect: 'string', got: 2.1 }),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: {
-        any: fail.at(1, { got: 2.1 }),
-      },
-      strNfloat: {
-        any: pass(),
-      },
-    },
-  },
-  {
-    in: ['true', 'false', true],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: '"true"' }),
-      string: {
-        any: fail.at(2, { expect: 'string', got: true }),
-      },
-    },
-    string: { any: fail({ expect: 'string', got: 'array' }) },
-    unknown: { any: pass() },
-    never: { any: fail({ expect: 'never', got: 'array' }) },
-    tuple: {
-      strNstr: { any: fail.as('Array must contain exactly 2 elements') },
-    },
-  },
-  {
-    in: ['hello', Symbol.for('world')],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: '"hello"' }),
-      string: {
-        any: fail.at(1, { expect: 'string', got: 'Symbol\\(world\\)' }),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: {
-        any: fail.at(1, { got: 'Symbol\\(world\\)' }),
-      },
-    },
-  },
-  {
-    in: ['hello', () => 'world'],
-    got: 'array',
-    array: {
-      any: fail.at(0, { got: '"hello"' }),
-      string: {
-        any: fail.at(1, { got: 'function' }),
-      },
-    },
-    unknown: { any: pass() },
-    tuple: {
-      strNstr: {
-        any: fail.at(1, { got: 'function' }),
-      },
-    },
-  },
-]
-const fixtures = source.map(fixture)
-
-for (const fixture of fixtures) {
-  const label = `${fixture.in === null ? 'null' : typeof fixture.in}`
-
-  for (const { schema, expect } of [
-    {
-      schema: Schema.never(),
-      expect: fixture.never.any || fixture.any,
-    },
-    {
-      schema: Schema.never().nullable(),
-      expect: fixture.never.nullable || fixture.never.any || fixture.any,
-    },
-    {
-      schema: Schema.never().optional(),
-      expect: fixture.never.optional || fixture.never.any || fixture.any,
-    },
-    {
-      schema: Schema.unknown(),
-      expect: fixture.unknown.any || fixture.any,
-    },
-    {
-      schema: Schema.unknown().optional(),
-      expect: fixture.unknown.any || fixture.any,
-    },
-    {
-      schema: Schema.unknown().nullable(),
-      expect: fixture.unknown.any || fixture.any,
-    },
-    {
-      schema: Schema.unknown().default('DEFAULT'),
-      expect: fixture.unknown.any || fixture.any,
-    },
-    {
-      schema: Schema.string(),
-      expect: fixture.string.any || fixture.any,
-    },
-    {
-      schema: Schema.string().optional(),
-      expect: fixture.string.optional || fixture.string.any || fixture.any,
-    },
-    {
-      schema: Schema.string().nullable(),
-      expect: fixture.string.nullable || fixture.string.any || fixture.any,
-    },
-    {
-      schema: Schema.string().default('DEFAULT'),
-      expect:
-        (fixture.string.default && fixture.string.default('DEFAULT')) ||
-        fixture.string.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.number(),
-      expect: fixture.number.any || fixture.any,
-    },
-    {
-      schema: Schema.number().optional(),
-      expect: fixture.number.optional || fixture.number.any || fixture.any,
-    },
-    {
-      schema: Schema.number().nullable(),
-      expect: fixture.number.nullable || fixture.number.any || fixture.any,
-    },
-    {
-      schema: Schema.number().default(17),
-      expect:
-        (fixture.number.default && fixture.number.default(17)) ||
-        fixture.number.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.integer(),
-      expect: fixture.integer.any || fixture.any,
-    },
-    {
-      schema: Schema.integer().optional(),
-      expect: fixture.integer.optional || fixture.integer.any || fixture.any,
-    },
-    {
-      schema: Schema.integer().nullable(),
-      expect: fixture.integer.nullable || fixture.integer.any || fixture.any,
-    },
-    {
-      schema: Schema.integer().default(17),
-      expect:
-        (fixture.integer.default && fixture.integer.default(17)) ||
-        fixture.integer.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.float(),
-      expect: fixture.float.any || fixture.any,
-    },
-    {
-      schema: Schema.float().optional(),
-      expect: fixture.float.optional || fixture.float.any || fixture.any,
-    },
-    {
-      schema: Schema.float().nullable(),
-      expect: fixture.float.nullable || fixture.float.any || fixture.any,
-    },
-    {
-      schema: Schema.float().default(1.7),
-      expect:
-        (fixture.float.default && fixture.float.default(1.7)) ||
-        fixture.float.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.array(Schema.string()),
-      expect: fixture.array.string?.any || fixture.array.any || fixture.any,
-    },
-    {
-      schema: Schema.array(Schema.string().optional()),
-      expect:
-        fixture.array.string?.optional ||
-        fixture.array.string?.any ||
-        fixture.array.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.array(Schema.string().nullable()),
-      expect:
-        fixture.array.string?.nullable ||
-        fixture.array.string?.any ||
-        fixture.array.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.array(Schema.string().default('DEFAULT')),
-      expect:
-        (fixture.array.string?.default &&
-          fixture.array.string?.default('DEFAULT')) ||
-        fixture.array.string?.any ||
-        fixture.array.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.literal('foo'),
-      expect:
-        fixture.literal?.foo?.any || fixture.literal.any?.any || fixture.any,
-    },
-    {
-      schema: Schema.literal('hello'),
-      expect:
-        fixture.literal?.hello?.any || fixture.literal.any?.any || fixture.any,
-    },
-    {
-      schema: Schema.literal('hello').optional(),
-      expect:
-        fixture.literal?.hello?.optional ||
-        fixture.literal?.hello?.any ||
-        fixture.literal.any?.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.literal('hello').nullable(),
-      expect:
-        fixture.literal?.hello?.nullable ||
-        fixture.literal?.hello?.any ||
-        fixture.literal.any?.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.literal('hello').default('hello'),
-      expect:
-        (fixture.literal?.hello?.default &&
-          fixture.literal?.hello?.default('hello')) ||
-        fixture.literal?.hello?.any ||
-        fixture.literal.any?.any ||
-        fixture.any,
-    },
-    {
-      schema: Schema.tuple([Schema.string(), Schema.string()]),
-      expect: fixture.tuple.strNstr?.any || fixture.tuple.any || fixture.any,
-    },
-    {
-      schema: Schema.tuple([Schema.string(), Schema.integer()]),
-      expect: fixture.tuple.strNfloat?.any || fixture.tuple.any || fixture.any,
-    },
-  ]) {
-    test(`${schema}.read(${display(fixture.in)})`, () => {
-      const result = schema.read(fixture.in)
-
-      if (expect.error) {
-        assert.match(String(result), expect.error)
-      } else {
-        assert.deepEqual(
-          result,
-          // if expcted value is set to undefined use input
-          expect.value === undefined ? fixture.in : expect.value
-        )
-      }
-    })
-
-    test(`${schema}.from(${display(fixture.in)})`, () => {
-      if (expect.error) {
-        assert.throws(() => schema.from(fixture.in), expect.error)
-      } else {
-        assert.deepEqual(
-          schema.from(fixture.in),
-          // if expcted value is set to undefined use input
-          expect.value === undefined ? fixture.in : expect.value
-        )
-      }
-    })
-
-    test(`${schema}.is(${display(fixture.in)})`, () => {
-      assert.equal(schema.is(fixture.in), !expect.error)
-    })
-  }
+  unit(`${schema}.is(${inputLabel})`, () => {
+    assert.equal(schema.is(input), !expect.error)
+  })
 }
 
 test('string startsWith & endsWith', () => {
   const impossible = Schema.string().startsWith('hello').startsWith('hi')
   /** @type {Schema.StringSchema<`hello${string}` & `hi${string}`>} */
   const typeofImpossible = impossible
+
+  assert.equal(
+    impossible.toString(),
+    'string().refine(startsWith("hello")).refine(startsWith("hi"))'
+  )
 
   assert.deepInclude(impossible.read('hello world'), {
     error: true,
@@ -738,6 +104,15 @@ test('string startsWith/endsWith', () => {
   const hello1 = Schema.string().startsWith('hello').endsWith('!')
   /** @type {Schema.StringSchema<`hello${string}` & `${string}!`>} */
   const hello2 = Schema.string().endsWith('!').startsWith('hello')
+
+  assert.equal(
+    hello1.toString(),
+    `string().refine(startsWith("hello")).refine(endsWith("!"))`
+  )
+  assert.equal(
+    hello2.toString(),
+    `string().refine(endsWith("!")).refine(startsWith("hello"))`
+  )
 
   assert.equal(hello1.read('hello world!'), 'hello world!')
   assert.equal(hello2.read('hello world!'), 'hello world!')
@@ -813,9 +188,13 @@ test('string().refine', () => {
   assert.equal(hello.read('hello world'), 'hello world')
 
   const greet = hello.refine({
+    /**
+     * @template {string} In
+     * @param {In} hello
+     */
     read(hello) {
       if (hello.length === 11) {
-        return /** @type {string & {length: 11}} */ (hello)
+        return /** @type {In & {length: 11}} */ (hello)
       } else {
         return Schema.error(`Expected string with 11 chars`)
       }
@@ -845,7 +224,7 @@ test('never().default()', () => {
       Schema.never()
         // @ts-expect-error - no value satisfies default
         .default('hello'),
-    /Can not call never\(\).default\(value\)/
+    /Expected value of type never instead got "hello"/
   )
 })
 
@@ -855,7 +234,7 @@ test('literal("foo").default("bar") throws', () => {
       Schema.literal('foo')
         // @ts-expect-error - no value satisfies default
         .default('bar'),
-    /Provided default does not match this literal/
+    /Expected literal "foo" instead got "bar"/
   )
 })
 
@@ -881,4 +260,384 @@ test('optional().optional() is noop', () => {
 test('.element of array', () => {
   const schema = Schema.string()
   assert.equal(Schema.array(schema).element, schema)
+})
+
+test('struct', () => {
+  const Point = Schema.struct({
+    type: 'Point',
+    x: Schema.integer(),
+    y: Schema.integer(),
+  })
+
+  const p1 = Point.read({
+    x: 1,
+    y: 2,
+  })
+  assert.equal(p1.error, true)
+
+  assert.match(String(p1), /field "type".*expect.*"Point".*got undefined/is)
+
+  const p2 = Point.read({
+    type: 'Point',
+    x: 1,
+    y: 1,
+  })
+  assert.deepEqual(p2, {
+    type: 'Point',
+    x: Schema.integer().from(1),
+    y: Schema.integer().from(1),
+  })
+
+  const p3 = Point.read({
+    type: 'Point',
+    x: 1,
+    y: 1.1,
+  })
+
+  assert.equal(p3.error, true)
+  assert.match(String(p3), /field "y".*expect.*integer.*got 1.1/is)
+
+  assert.match(
+    String(Point.read(['h', 'e', 'l', null, 'l', 'o'])),
+    /Expected value of type object instead got array/
+  )
+})
+
+test('struct with defaults', () => {
+  const Point = Schema.struct({
+    x: Schema.number().default(0),
+    y: Schema.number().default(0),
+  })
+
+  assert.deepEqual(Point.read({}), { x: 0, y: 0 })
+  assert.deepEqual(Point.read({ x: 2 }), { x: 2, y: 0 })
+  assert.deepEqual(Point.read({ x: 2, y: 7 }), { x: 2, y: 7 })
+  assert.deepEqual(Point.read({ y: 7 }), { x: 0, y: 7 })
+})
+
+test('struct with literals', () => {
+  const Point = Schema.struct({
+    z: 0,
+    x: Schema.number(),
+    y: Schema.number(),
+  })
+
+  assert.deepEqual(Point.read({ x: 0, y: 0, z: 0 }), { x: 0, y: 0, z: 0 })
+  assert.match(
+    String(Point.read({ x: 1, y: 1, z: 1 })),
+    /"z".*expect.* 0 .* got 1/is
+  )
+})
+
+test('bad struct def', () => {
+  assert.throws(
+    () =>
+      Schema.struct({
+        name: Schema.string(),
+        // @ts-expect-error
+        toString: () => 'hello',
+      }),
+    /Invalid struct field "toString", expected schema or literal, instead got function/
+  )
+})
+
+test('struct with null literal', () => {
+  const schema = Schema.struct({ a: null, b: true, c: Schema.string() })
+
+  assert.deepEqual(schema.read({ a: null, b: true, c: 'hi' }), {
+    a: null,
+    b: true,
+    c: 'hi',
+  })
+
+  assert.match(
+    String(schema.read({ a: null, b: false, c: '' })),
+    /"b".*expect.* true .* got false/is
+  )
+
+  assert.match(
+    String(schema.read({ b: true, c: '' })),
+    /"a".*expect.* null .* got undefined/is
+  )
+})
+
+test('lessThan', () => {
+  const schema = Schema.number().lessThan(100)
+
+  assert.deepEqual(schema.read(10), 10)
+  assert.match(String(schema.read(127)), /127 < 100/)
+  assert.match(String(schema.read(Infinity)), /Infinity < 100/)
+  assert.match(String(schema.read(NaN)), /NaN < 100/)
+})
+
+test('greaterThan', () => {
+  const schema = Schema.number().greaterThan(100)
+
+  assert.deepEqual(schema.read(127), 127)
+  assert.match(String(schema.read(12)), /12 > 100/)
+  assert.equal(schema.read(Infinity), Infinity)
+  assert.match(String(schema.read(NaN)), /NaN > 100/)
+})
+
+test('number().greaterThan().lessThan()', () => {
+  const schema = Schema.number().greaterThan(3).lessThan(117)
+
+  assert.equal(schema.read(4), 4)
+  assert.equal(schema.read(116), 116)
+  assert.match(String(schema.read(117)), /117 < 117/)
+  assert.match(String(schema.read(3)), /3 > 3/)
+  assert.match(String(schema.read(127)), /127 < 117/)
+  assert.match(String(schema.read(0)), /0 > 3/)
+  assert.match(String(schema.read(Infinity)), /Infinity < 117/)
+  assert.match(String(schema.read(NaN)), /NaN > 3/)
+})
+
+test('enum', () => {
+  const schema = Schema.enum(['Red', 'Green', 'Blue'])
+  assert.equal(schema.toString(), 'Red|Green|Blue')
+  assert.equal(schema.read('Red'), 'Red')
+  assert.equal(schema.read('Blue'), 'Blue')
+  assert.equal(schema.read('Green'), 'Green')
+
+  assert.match(
+    String(schema.read('red')),
+    /expect.* Red\|Green\|Blue .* got "red"/is
+  )
+  assert.match(String(schema.read(5)), /expect.* Red\|Green\|Blue .* got 5/is)
+})
+
+test('tuple', () => {
+  const schema = Schema.tuple([Schema.string(), Schema.integer()])
+  assert.match(
+    String(schema.read([, undefined])),
+    /invalid element at 0.*expect.*string.*got undefined/is
+  )
+  assert.match(
+    String(schema.read([0, 'hello'])),
+    /invalid element at 0.*expect.*string.*got 0/is
+  )
+  assert.match(
+    String(schema.read(['0', '1'])),
+    /invalid element at 1.*expect.*number.*got "1"/is
+  )
+  assert.match(
+    String(schema.read(['0', Infinity])),
+    /invalid element at 1.*expect.*integer.*got Infinity/is
+  )
+  assert.match(
+    String(schema.read(['0', NaN])),
+    /invalid element at 1.*expect.*integer.*got NaN/is
+  )
+  assert.match(
+    String(schema.read(['0', 0.2])),
+    /invalid element at 1.*expect.*integer.*got 0.2/is
+  )
+
+  assert.deepEqual(schema.read(['x', 0]), ['x', 0])
+})
+
+test('extend API', () => {
+  /**
+   * @template {string} M
+   * @implements {Schema.Schema<`did:${M}:${string}`, string>}
+   * @extends {Schema.API<`did:${M}:${string}`, string, M>}
+   */
+  class DID extends Schema.API {
+    /**
+     * @param {string} source
+     * @param {M} method
+     */
+    readWith(source, method) {
+      const string = String(source)
+      if (string.startsWith(`did:${method}:`)) {
+        return /** @type {`did:${M}:${string}`} */ (method)
+      } else {
+        return Schema.error(`Expected did:${method} URI instead got ${string}`)
+      }
+    }
+  }
+
+  const schema = new DID('key')
+  assert.equal(schema.toString(), 'new DID()')
+  assert.match(
+    String(
+      // @ts-expect-error
+      schema.read(54)
+    ),
+    /Expected did:key URI/
+  )
+
+  assert.match(
+    String(schema.read('did:echo:foo')),
+    /Expected did:key URI instead got did:echo:foo/
+  )
+
+  const didKey = Schema.string().refine(new DID('key'))
+  assert.match(String(didKey.read(54)), /Expect.* string instead got 54/is)
+})
+
+test('errors', () => {
+  const error = Schema.error('boom!')
+  const json = JSON.parse(JSON.stringify(error))
+  assert.deepInclude(json, {
+    name: 'SchemaError',
+    message: 'boom!',
+    error: true,
+    stack: error.stack,
+  })
+
+  assert.equal(error instanceof Error, true)
+})
+
+test('refine', () => {
+  /**
+   * @template T
+   */
+  class NonEmpty extends Schema.API {
+    /**
+     * @param {T[]} array
+     */
+    read(array) {
+      return array.length > 0
+        ? array
+        : Schema.error('Array expected to have elements')
+    }
+  }
+
+  const schema = Schema.array(Schema.string()).refine(new NonEmpty())
+
+  assert.equal(schema.toString(), 'array(string()).refine(new NonEmpty())')
+  assert.match(String(schema.read([])), /Array expected to have elements/)
+  assert.deepEqual(schema.read(['hello', 'world']), ['hello', 'world'])
+  assert.match(String(schema.read(null)), /expect.* array .*got null/is)
+})
+
+test('brand', () => {
+  const digit = Schema.integer()
+    .refine({
+      read(n) {
+        return n >= 0 && n <= 9
+          ? n
+          : Schema.error(`Expected digit but got ${n}`)
+      },
+    })
+    .brand('digit')
+
+  assert.match(String(digit.read(10)), /Expected digit but got 10/)
+  assert.match(String(digit.read(2.7)), /Expected value of type integer/)
+  assert.equal(digit.from(2), 2)
+
+  /** @param {Schema.Infer<typeof digit>} n */
+  const fromDigit = n => n
+
+  const three = digit.from(3)
+
+  // @ts-expect-error - 3 is not known to be digit
+  fromDigit(3)
+  fromDigit(three)
+
+  /** @type {Schema.Integer} */
+  const is_int = three
+  /** @type {Schema.Branded<number, "digit">} */
+  const is_digit = three
+  /** @type {Schema.Branded<Schema.Integer, "digit">} */
+  const is_int_digit = three
+})
+
+test('optional.default removes undefined from type', () => {
+  const schema1 = Schema.string().optional()
+
+  /** @type {Schema.Schema<string>} */
+  // @ts-expect-error - Schema<string | undefined> is not assignable
+  const castError = schema1
+
+  const schema2 = schema1.default('')
+  /** @type {Schema.Schema<string>} */
+  const castOk = schema2
+
+  assert.equal(schema1.read(undefined), undefined)
+  assert.equal(schema2.read(undefined), '')
+})
+
+test('.default("one").default("two")', () => {
+  const schema = Schema.string().default('one').default('two')
+
+  assert.equal(schema.value, 'two')
+  assert.deepEqual(schema.read(undefined), 'two')
+  assert.deepEqual(schema.read('three'), 'three')
+})
+
+test('default throws on invalid default', () => {
+  assert.throws(
+    () =>
+      Schema.string().default(
+        // @ts-expect-error - number is not assignable to string
+        101
+      ),
+    /expect.* string .* got 101/is
+  )
+})
+
+test('unknown with default', () => {
+  assert.throws(
+    () => Schema.unknown().default(undefined),
+    /undefined is not a vaild default/
+  )
+})
+
+test('default swaps undefined even if decodes to undefined', () => {
+  /** @type {Schema.Schema} */
+  const schema = Schema.unknown().refine({
+    read(value) {
+      return value === null ? undefined : value
+    },
+  })
+
+  assert.equal(schema.default('X').read(null), 'X')
+})
+
+test('record defaults', () => {
+  const Point = Schema.struct({
+    x: Schema.integer().default(1),
+    y: Schema.integer().optional(),
+  })
+
+  const Point3D = Point.extend({
+    z: Schema.integer(),
+  })
+
+  assert.match(
+    String(Point.read(undefined)),
+    /expect.* object .* got undefined/is
+  )
+  assert.deepEqual(Point.create(), {
+    x: 1,
+  })
+  assert.deepEqual(Point.create(undefined), {
+    x: 1,
+  })
+
+  assert.deepEqual(Point.read({}), {
+    x: 1,
+  })
+
+  assert.deepEqual(Point.read({ y: 2 }), {
+    x: 1,
+    y: 2,
+  })
+
+  assert.deepEqual(Point.read({ x: 2, y: 2 }), {
+    x: 2,
+    y: 2,
+  })
+
+  const Line = Schema.struct({
+    start: Point.default({ x: 0 }),
+    end: Point.default({ x: 1, y: 3 }),
+  })
+
+  assert.deepEqual(Line.create(), {
+    start: { x: 0 },
+    end: { x: 1, y: 3 },
+  })
 })
