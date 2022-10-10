@@ -59,7 +59,7 @@ export interface NumberSchema<
   greaterThan(n: number): NumberSchema<N, I>
   lessThan(n: number): NumberSchema<N, I>
 
-  refine<T extends N>(schema: Reader<N & T, N>): NumberSchema<T, I>
+  refine<T extends N>(schema: Reader<T, N>): NumberSchema<T & N, I>
 }
 
 export interface StructSchema<
@@ -139,8 +139,4 @@ type RequiredKeys<T extends object> = {
 
 type OptionalKeys<T extends object> = {
   [k in keyof T]: undefined extends T[k] ? k : never
-}[keyof T] & {}
-
-type RequiredKeys2<T extends object> = {
-  [k in keyof T]: undefined extends T[k] ? never : k
 }[keyof T] & {}

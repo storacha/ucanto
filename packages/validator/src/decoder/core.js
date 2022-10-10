@@ -565,11 +565,10 @@ class Boolean extends API {
   }
 }
 
-/**
- * @template {unknown} I
- * @returns {Schema.Schema<boolean, I>}
- */
-export const boolean = () => new Boolean()
+/** @type {Schema.Schema<boolean, unknown>} */
+const anyBoolean = new Boolean()
+
+export const boolean = () => anyBoolean
 
 /**
  * @template {number} [O=number]
@@ -622,11 +621,8 @@ class AnyNumber extends UnknownNumber {
   }
 }
 
+/** @type {Schema.NumberSchema<number, unknown>} */
 const anyNumber = new AnyNumber()
-
-/**
- * @returns {Schema.NumberSchema<number, unknown>}
- */
 export const number = () => anyNumber
 
 /**
@@ -727,7 +723,8 @@ const Integer = {
   },
 }
 
-export const integer = () => anyNumber.refine(Integer)
+const anyInteger = anyNumber.refine(Integer)
+export const integer = () => anyInteger
 
 const Float = {
   /**
@@ -746,7 +743,9 @@ const Float = {
     return 'Float'
   },
 }
-export const float = () => anyNumber.refine(Float)
+
+const anyFloat = anyNumber.refine(Float)
+export const float = () => anyFloat
 
 /**
  * @template {string} [O=string]
@@ -831,7 +830,6 @@ class AnyString extends UnknownString {
 
 /** @type {Schema.StringSchema<string, unknown>} */
 const anyString = new AnyString()
-
 export const string = () => anyString
 
 /**
