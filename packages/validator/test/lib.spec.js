@@ -14,7 +14,7 @@ const storeAdd = capability({
   can: 'store/add',
   with: URI.match({ protocol: 'did:' }),
   nb: {
-    link: Link.optional(),
+    link: Link.match().optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
@@ -111,7 +111,9 @@ test('expired invocation', async () => {
         name: 'Expired',
         message: `Expired on ${new Date(expiration * 1000)}`,
         expiredAt: expiration,
+        stack: result.error ? result.cause.stack : undefined,
       },
+      stack: result.error ? result.stack : undefined,
     })
   )
 })
@@ -177,6 +179,8 @@ test('invalid signature', async () => {
     cause: {
       name: 'InvalidSignature',
       message: `Signature is invalid`,
+      issuer: invocation.issuer,
+      audience: invocation.audience,
     },
   })
 })
@@ -835,6 +839,17 @@ test('delegate with my:*', async () => {
       },
     ],
   })
+
+  assert.containSubset(
+    await access(invocation, {
+      principal: ed25519.Verifier,
+      canIssue: (claim, issuer) => claim.with === issuer,
+      capability: storeAdd,
+    }),
+    {
+      error: true,
+    }
+  )
 })
 
 test('delegate with my:did', async () => {

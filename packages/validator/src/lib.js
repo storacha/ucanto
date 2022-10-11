@@ -330,8 +330,8 @@ class Unauthorized extends Failure {
     return this.cause.message
   }
   toJSON() {
-    const { error, name, message, cause } = this
-    return { error, name, message, cause }
+    const { error, name, message, cause, stack } = this
+    return { error, name, message, cause, stack }
   }
 }
 const ALL = '*'
