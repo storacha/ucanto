@@ -437,43 +437,47 @@ test('tuple', () => {
 })
 
 test('extend API', () => {
-  /**
-   * @template {string} M
-   * @implements {Schema.Schema<`did:${M}:${string}`, string>}
-   * @extends {Schema.API<`did:${M}:${string}`, string, M>}
-   */
-  class DID extends Schema.API {
+  {
     /**
-     * @param {string} source
-     * @param {M} method
+     * @template {string} M
+     * @implements {Schema.Schema<`did:${M}:${string}`, string>}
+     * @extends {Schema.API<`did:${M}:${string}`, string, M>}
      */
-    readWith(source, method) {
-      const string = String(source)
-      if (string.startsWith(`did:${method}:`)) {
-        return /** @type {`did:${M}:${string}`} */ (method)
-      } else {
-        return Schema.error(`Expected did:${method} URI instead got ${string}`)
+    class DIDString extends Schema.API {
+      /**
+       * @param {string} source
+       * @param {M} method
+       */
+      readWith(source, method) {
+        const string = String(source)
+        if (string.startsWith(`did:${method}:`)) {
+          return /** @type {`did:${M}:${string}`} */ (method)
+        } else {
+          return Schema.error(
+            `Expected did:${method} URI instead got ${string}`
+          )
+        }
       }
     }
+
+    const schema = new DIDString('key')
+    assert.equal(schema.toString(), 'new DIDString()')
+    assert.match(
+      String(
+        // @ts-expect-error
+        schema.read(54)
+      ),
+      /Expected did:key URI/
+    )
+
+    assert.match(
+      String(schema.read('did:echo:foo')),
+      /Expected did:key URI instead got did:echo:foo/
+    )
+
+    const didKey = Schema.string().refine(new DIDString('key'))
+    assert.match(String(didKey.read(54)), /Expect.* string instead got 54/is)
   }
-
-  const schema = new DID('key')
-  assert.equal(schema.toString(), 'new DID()')
-  assert.match(
-    String(
-      // @ts-expect-error
-      schema.read(54)
-    ),
-    /Expected did:key URI/
-  )
-
-  assert.match(
-    String(schema.read('did:echo:foo')),
-    /Expected did:key URI instead got did:echo:foo/
-  )
-
-  const didKey = Schema.string().refine(new DID('key'))
-  assert.match(String(didKey.read(54)), /Expect.* string instead got 54/is)
 })
 
 test('errors', () => {
