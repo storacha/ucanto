@@ -7,7 +7,7 @@ import {
   DelegationError as MatchError,
   Failure,
 } from './error.js'
-import { invoke } from '@ucanto/core'
+import { invoke, delegate } from '@ucanto/core'
 
 /**
  * @template {API.Ability} A
@@ -167,6 +167,25 @@ class Capability extends Unit {
     })
   }
 
+  /**
+   * @param {API.InferDelegationOptions<R, API.InferCaveats<C>>} options
+   */
+  async delegate({ with: with_, nb, ...options }) {
+    const capabality =
+      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */ ({
+        can: this.can,
+        with: with_,
+        ...(nb && { nb }),
+      })
+
+    const delegation = await delegate({
+      capabilities: [capabality],
+      ...options,
+    })
+
+    return delegation
+  }
+
   get can() {
     return this.descriptor.can
   }
@@ -310,6 +329,12 @@ class Derive extends Unit {
    */
   invoke(options) {
     return this.to.invoke(options)
+  }
+  /**
+   * @type {typeof this.to['delegate']}
+   */
+  delegate(options) {
+    return this.to.delegate(options)
   }
   get can() {
     return this.to.can
