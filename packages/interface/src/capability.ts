@@ -298,17 +298,7 @@ export interface PrincipalOptions {
   principal: PrincipalParser
 }
 
-export interface IssuingOptions {
-  /**
-   * You can provide default set of capabilities per did, which is used to
-   * validate whether claim is satisfied by `{ with: my:*, can: "*" }`. If
-   * not provided resolves to `[]`.
-   */
-
-  my?: (issuer: DID) => Capability[]
-}
-
-export interface ProofResolver extends PrincipalOptions, IssuingOptions {
+export interface ProofResolver extends PrincipalOptions {
   /**
    * You can provide a proof resolver that validator will call when UCAN
    * links to external proof. If resolver is not provided validator may not
@@ -318,8 +308,7 @@ export interface ProofResolver extends PrincipalOptions, IssuingOptions {
 }
 
 export interface ValidationOptions<C extends ParsedCapability>
-  extends CanIssue,
-    IssuingOptions,
+  extends Partial<CanIssue>,
     PrincipalOptions,
     ProofResolver {
   capability: CapabilityParser<Match<C, any>>
