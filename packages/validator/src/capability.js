@@ -171,19 +171,45 @@ class Capability extends Unit {
    * @param {API.InferDelegationOptions<R, API.InferCaveats<C>>} options
    */
   async delegate({ with: with_, nb, ...options }) {
-    const capabality =
-      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */ ({
-        can: this.can,
-        with: with_,
-        ...(nb && { nb }),
-      })
+    const { descriptor, can } = this
+    const readers = descriptor.nb
+    const data = /** @type {API.InferCaveats<C>} */ (nb || {})
 
-    const delegation = await delegate({
+    const resource = descriptor.with.read(with_)
+    if (resource.error) {
+      throw Object.assign(new Error(`Invalid 'with' - ${resource.message}`), {
+        cause: resource,
+      })
+    }
+
+    const capabality =
+      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */
+      ({ can, with: resource })
+
+    for (const [name, reader] of Object.entries(readers || {})) {
+      const key = /** @type {keyof data & string} */ (name)
+      const source = data[key]
+      // omit undefined fields in the delegation
+      const value = source === undefined ? source : reader.read(data[key])
+      if (value?.error) {
+        throw Object.assign(
+          new Error(`Invalid 'nb.${key}' - ${value.message}`),
+          { cause: value }
+        )
+      } else if (value !== undefined) {
+        const nb =
+          capabality.nb ||
+          (capabality.nb = /** @type {API.InferCaveats<C>} */ ({}))
+
+        const key = /** @type {keyof nb} */ (name)
+        nb[key] = /** @type {typeof nb[key]} */ (value)
+      }
+    }
+
+    return await delegate({
       capabilities: [capabality],
       ...options,
     })
-
-    return delegation
   }
 
   get can() {
