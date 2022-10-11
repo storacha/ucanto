@@ -50,6 +50,7 @@ export class API {
 
   /**
    * @param {unknown} value
+   * @return {T}
    */
   from(value) {
     const result = this.read(/** @type {I} */ (value))

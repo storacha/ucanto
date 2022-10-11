@@ -1,5 +1,5 @@
 import { test, assert } from './test.js'
-import * as Schema from '../src/decoder/core.js'
+import * as Schema from '../src/schema.js'
 import fixtures from './schema/fixtures.js'
 
 for (const { input, schema, expect, inputLabel, skip, only } of fixtures()) {

@@ -1,5 +1,5 @@
 import { pass, fail, display } from './util.js'
-import * as Schema from '../../src/decoder/core.js'
+import * as Schema from '../../src/schema.js'
 
 /**
  * @typedef {import('./util.js').Expect} Expect

@@ -1,4 +1,4 @@
-import { URI, Link, Text, DID } from '../src/lib.js'
+import { URI, Link, Text, DID } from '../src/schema.js'
 import { test, assert } from './test.js'
 import { CID } from 'multiformats'
 
@@ -12,7 +12,7 @@ import { CID } from 'multiformats'
 
   for (const [input, expect] of dataset) {
     test(`URI.decode(${JSON.stringify(input)}}`, () => {
-      assert.containSubset(URI.decode(input), expect)
+      assert.containSubset(URI.read(input), expect)
     })
   }
 }
@@ -40,8 +40,8 @@ import { CID } from 'multiformats'
   for (const [input, protocol, expect] of dataset) {
     test(`URI.match(${JSON.stringify({
       protocol,
-    })}).decode(${JSON.stringify(input)})}}`, () => {
-      assert.containSubset(URI.match({ protocol }).decode(input), expect)
+    })}).read(${JSON.stringify(input)})}}`, () => {
+      assert.containSubset(URI.match({ protocol }).read(input), expect)
     })
   }
 }
@@ -67,10 +67,13 @@ import { CID } from 'multiformats'
   ]
 
   for (const [input, protocol, expect] of dataset) {
-    test(`URI.optional(${JSON.stringify({
+    test(`URI.match(${JSON.stringify({
       protocol,
-    })}).decode(${JSON.stringify(input)})}}`, () => {
-      assert.containSubset(URI.optional({ protocol }).decode(input), expect)
+    })}).optional().decode(${JSON.stringify(input)})}}`, () => {
+      assert.containSubset(
+        URI.match({ protocol }).optional().read(input),
+        expect
+      )
     })
   }
 }
@@ -128,28 +131,28 @@ import { CID } from 'multiformats'
   ]
 
   for (const [input, out1, out2, out3, out4, out5] of dataset) {
-    test(`Link.decode(${input})`, () => {
-      assert.containSubset(Link.decode(input), out1 || input)
+    test(`Link.read(${input})`, () => {
+      assert.containSubset(Link.read(input), out1 || input)
     })
 
-    test(`Link.match({ code: 0x70 }).decode(${input})`, () => {
+    test(`Link.match({ code: 0x70 }).read(${input})`, () => {
       const link = Link.match({ code: 0x70 })
-      assert.containSubset(link.decode(input), out2 || input)
+      assert.containSubset(link.read(input), out2 || input)
     })
 
-    test(`Link.match({ algorithm: 0x12 }).decode(${input})`, () => {
+    test(`Link.match({ algorithm: 0x12 }).read(${input})`, () => {
       const link = Link.match({ algorithm: 0x12 })
-      assert.containSubset(link.decode(input), out3 || input)
+      assert.containSubset(link.read(input), out3 || input)
     })
 
-    test(`Link.match({ version: 1 }).decode(${input})`, () => {
+    test(`Link.match({ version: 1 }).read(${input})`, () => {
       const link = Link.match({ version: 1 })
-      assert.containSubset(link.decode(input), out4 || input)
+      assert.containSubset(link.read(input), out4 || input)
     })
 
-    test(`Link.optional().decode(${input})`, () => {
-      const link = Link.optional()
-      assert.containSubset(link.decode(input), out5 || input)
+    test(`Link.optional().read(${input})`, () => {
+      const link = Link.match().optional()
+      assert.containSubset(link.read(input), out5 || input)
     })
   }
 }
@@ -157,18 +160,21 @@ import { CID } from 'multiformats'
 {
   /** @type {unknown[][]} */
   const dataset = [
-    [undefined, { message: 'Expected a string but got undefined instead' }],
-    [null, { message: 'Expected a string but got null instead' }],
+    [
+      undefined,
+      { message: 'Expected value of type string instead got undefined' },
+    ],
+    [null, { message: 'Expected value of type string instead got null' }],
     ['hello', 'hello'],
     [
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      { message: 'Expected value of type string instead got object' },
     ],
   ]
 
   for (const [input, out] of dataset) {
-    test(`Text.decode(${input})`, () => {
-      assert.containSubset(Text.decode(input), out)
+    test(`Text.read(${input})`, () => {
+      assert.containSubset(Text.read(input), out)
     })
   }
 }
@@ -179,12 +185,14 @@ import { CID } from 'multiformats'
     [
       { pattern: /hello .*/ },
       undefined,
-      { message: 'Expected a string but got undefined instead' },
+      {
+        message: 'Expected value of type string instead got undefined',
+      },
     ],
     [
       { pattern: /hello .*/ },
       null,
-      { message: 'Expected a string but got null instead' },
+      { message: 'Expected value of type string instead got null' },
     ],
     [
       { pattern: /hello .*/ },
@@ -195,34 +203,40 @@ import { CID } from 'multiformats'
     [
       { pattern: /hello .*/ },
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      { message: 'Expected value of type string instead got object' },
     ],
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`Text.match({ pattern: ${options.pattern} }).decode(${input})`, () => {
-      assert.containSubset(Text.match(options).decode(input), out)
+    test(`Text.match({ pattern: ${options.pattern} }).read(${input})`, () => {
+      assert.containSubset(Text.match(options).read(input), out)
     })
   }
 }
 
 {
-  /** @type {[{pattern?:RegExp}, unknown, unknown][]} */
+  /** @type {[{pattern:RegExp}, unknown, unknown][]} */
   const dataset = [
-    [{}, undefined, undefined],
-    [{}, null, { message: 'Expected a string but got null instead' }],
-    [{}, 'hello', 'hello'],
+    [{ pattern: /./ }, undefined, undefined],
     [
-      {},
+      { pattern: /./ },
+      null,
+      { message: 'Expected value of type string instead got null' },
+    ],
+    [{ pattern: /./ }, 'hello', 'hello'],
+    [
+      { pattern: /./ },
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      { message: 'Expected value of type string instead got object' },
     ],
 
     [{ pattern: /hello .*/ }, undefined, undefined],
     [
       { pattern: /hello .*/ },
       null,
-      { message: 'Expected a string but got null instead' },
+      {
+        message: 'Expected value of type string instead got null',
+      },
     ],
     [
       { pattern: /hello .*/ },
@@ -233,13 +247,15 @@ import { CID } from 'multiformats'
     [
       { pattern: /hello .*/ },
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      {
+        message: 'Expected value of type string instead got object',
+      },
     ],
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`Text.match({ pattern: ${options.pattern} }).decode(${input})`, () => {
-      assert.containSubset(Text.optional(options).decode(input), out)
+    test(`Text.match({ pattern: ${options.pattern} }).read(${input})`, () => {
+      assert.containSubset(Text.match(options).optional().read(input), out)
     })
   }
 }
@@ -247,19 +263,24 @@ import { CID } from 'multiformats'
 {
   /** @type {unknown[][]} */
   const dataset = [
-    [undefined, { message: 'Expected a string but got undefined instead' }],
-    [null, { message: 'Expected a string but got null instead' }],
+    [
+      undefined,
+      { message: 'Expected value of type string instead got undefined' },
+    ],
+    [null, { message: 'Expected value of type string instead got null' }],
     ['hello', { message: 'Expected a did: but got "hello" instead' }],
     [
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      {
+        message: 'Expected value of type string instead got object',
+      },
     ],
     ['did:echo:1', 'did:echo:1'],
   ]
 
   for (const [input, out] of dataset) {
-    test(`DID.decode(${input})`, () => {
-      assert.containSubset(DID.decode(input), out)
+    test(`DID.read(${input})`, () => {
+      assert.containSubset(DID.read(input), out)
     })
   }
 }
@@ -270,12 +291,12 @@ import { CID } from 'multiformats'
     [
       { method: 'echo' },
       undefined,
-      { message: 'Expected a string but got undefined instead' },
+      { message: 'Expected value of type string instead got undefined' },
     ],
     [
       { method: 'echo' },
       null,
-      { message: 'Expected a string but got null instead' },
+      { message: 'Expected value of type string instead got null' },
     ],
     [
       { method: 'echo' },
@@ -291,13 +312,13 @@ import { CID } from 'multiformats'
     [
       { method: 'echo' },
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      { message: 'Expected value of type string instead got object' },
     ],
   ]
 
   for (const [options, input, out] of dataset) {
     test(`DID.match({ method: ${options.method} }).decode(${input})`, () => {
-      assert.containSubset(DID.match(options).decode(input), out)
+      assert.containSubset(DID.match(options).read(input), out)
     })
   }
 }
@@ -306,19 +327,19 @@ import { CID } from 'multiformats'
   /** @type {[{method?:string}, unknown, unknown][]} */
   const dataset = [
     [{}, undefined, undefined],
-    [{}, null, { message: 'Expected a string but got null instead' }],
+    [{}, null, { message: 'Expected value of type string instead got null' }],
     [{}, 'did:echo:bar', 'did:echo:bar'],
     [
       {},
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      { message: 'Expected value of type string instead got object' },
     ],
 
     [{ method: 'echo' }, undefined, undefined],
     [
       { method: 'echo' },
       null,
-      { message: 'Expected a string but got null instead' },
+      { message: 'Expected value of type string instead got null' },
     ],
     [
       { method: 'echo' },
@@ -333,13 +354,13 @@ import { CID } from 'multiformats'
     [
       { method: 'echo' },
       new String('hello'),
-      { message: 'Expected a string but got object instead' },
+      { message: 'Expected value of type string instead got object' },
     ],
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`DID.optional({ method: "${options.method}" }).decode(${input})`, () => {
-      assert.containSubset(DID.optional(options).decode(input), out)
+    test(`DID.match({ method: "${options.method}" }).optional().decode(${input})`, () => {
+      assert.containSubset(DID.match(options).optional().read(input), out)
     })
   }
 }
