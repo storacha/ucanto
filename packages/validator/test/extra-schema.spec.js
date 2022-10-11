@@ -1,6 +1,7 @@
 import { URI, Link, Text, DID } from '../src/schema.js'
 import { test, assert } from './test.js'
 import { CID } from 'multiformats'
+import * as API from '@ucanto/interface'
 
 {
   /** @type {[string, string|{message:string}][]} */
@@ -13,9 +14,21 @@ import { CID } from 'multiformats'
   for (const [input, expect] of dataset) {
     test(`URI.decode(${JSON.stringify(input)}}`, () => {
       assert.containSubset(URI.read(input), expect)
+      assert.containSubset(URI.uri().read(input), expect)
     })
   }
 }
+
+test('URI.from', () => {
+  /** @type {API.URI<`did:`>} */
+  // @ts-expect-error - URI<"data:"> not assignable to URI<"did:">
+  const data = URI.from('data:text/html,1')
+  assert.equal(data, 'data:text/html,1')
+
+  /** @type {API.URI<`did:`>} */
+  const key = URI.from('did:key:zAlice')
+  assert.equal(key, 'did:key:zAlice')
+})
 
 {
   /** @type {[unknown, `${string}:`, {message:string}|string][]} */
@@ -151,7 +164,7 @@ import { CID } from 'multiformats'
     })
 
     test(`Link.optional().read(${input})`, () => {
-      const link = Link.match().optional()
+      const link = Link.link().optional()
       assert.containSubset(link.read(input), out5 || input)
     })
   }
@@ -215,17 +228,13 @@ import { CID } from 'multiformats'
 }
 
 {
-  /** @type {[{pattern:RegExp}, unknown, unknown][]} */
+  /** @type {[{pattern?:RegExp}, unknown, unknown][]} */
   const dataset = [
-    [{ pattern: /./ }, undefined, undefined],
+    [{}, undefined, undefined],
+    [{}, null, { message: 'Expected value of type string instead got null' }],
+    [{}, 'hello', 'hello'],
     [
-      { pattern: /./ },
-      null,
-      { message: 'Expected value of type string instead got null' },
-    ],
-    [{ pattern: /./ }, 'hello', 'hello'],
-    [
-      { pattern: /./ },
+      {},
       new String('hello'),
       { message: 'Expected value of type string instead got object' },
     ],
@@ -255,7 +264,10 @@ import { CID } from 'multiformats'
 
   for (const [options, input, out] of dataset) {
     test(`Text.match({ pattern: ${options.pattern} }).read(${input})`, () => {
-      assert.containSubset(Text.match(options).optional().read(input), out)
+      const schema = options.pattern
+        ? Text.match({ pattern: options.pattern })
+        : Text.text()
+      assert.containSubset(schema.optional().read(input), out)
     })
   }
 }
@@ -360,7 +372,8 @@ import { CID } from 'multiformats'
 
   for (const [options, input, out] of dataset) {
     test(`DID.match({ method: "${options.method}" }).optional().decode(${input})`, () => {
-      assert.containSubset(DID.match(options).optional().read(input), out)
+      const schema = options.method ? DID.match(options) : DID.did()
+      assert.containSubset(schema.optional().read(input), out)
     })
   }
 }

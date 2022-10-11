@@ -2,18 +2,19 @@ import * as API from '@ucanto/interface'
 import * as Schema from './schema.js'
 
 /**
- * @template {API.Protocol} P
- * @typedef {{protocol?: P}} Options
+ * @template {API.Protocol} [P=API.Protocol]
+ * @typedef {{protocol: P}} Options
  */
 
 /**
- * @template {API.Protocol} P
- * @extends {Schema.API<API.URI<P>, unknown, Options<P>>}
+ * @template {Options} O
+ * @extends {Schema.API<API.URI<O['protocol']>, unknown, Partial<O>>}
  */
 class URISchema extends Schema.API {
   /**
    * @param {unknown} input
-   * @param {{protocol?: P}} options
+   * @param {Partial<O>} options
+   * @returns {Schema.ReadResult<API.URI<O['protocol']>>}
    */
   readWith(input, { protocol } = {}) {
     if (typeof input !== 'string' && !(input instanceof URL)) {
@@ -27,7 +28,7 @@ class URISchema extends Schema.API {
       if (protocol != null && url.protocol !== protocol) {
         return Schema.error(`Expected ${protocol} URI instead got ${url.href}`)
       } else {
-        return /** @type {API.URI<P>} */ (url.href)
+        return /** @type {API.URI<O['protocol']>} */ (url.href)
       }
     } catch (_) {
       return Schema.error(`Invalid URI`)
@@ -45,7 +46,16 @@ export const uri = () => schema
 export const read = input => schema.read(input)
 
 /**
- * @template {API.Protocol} U
- * @param {Options<U>} options
+ * @template {API.Protocol} P
+ * @template {Options<P>} O
+ * @param {O} options
+ * @returns {Schema.Schema<API.URI<O['protocol']>, unknown>}
  */
-export const match = (options = {}) => new URISchema(options)
+export const match = options => new URISchema(options)
+
+/**
+ * @template {string} [Scheme=string]
+ * @param {`${Scheme}:${string}`} input
+ */
+export const from = input =>
+  /** @type {API.URI<`${Scheme}:`>} */ (schema.from(input))

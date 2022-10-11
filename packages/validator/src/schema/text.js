@@ -2,7 +2,7 @@ import * as Schema from './schema.js'
 
 const schema = Schema.string()
 
-export const text = () => Text
+export const text = () => schema
 
 /**
  * @param {{pattern: RegExp}} options

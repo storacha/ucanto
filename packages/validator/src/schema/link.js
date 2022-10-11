@@ -58,7 +58,8 @@ class LinkSchema extends Schema.API {
   }
 }
 
-const schema = new LinkSchema({})
+/** @type {Schema.Schema<API.Link<unknown, number, number, 0|1>, unknown>}  */
+export const schema = new LinkSchema({})
 
 export const link = () => schema
 

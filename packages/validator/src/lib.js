@@ -16,6 +16,7 @@ export { Failure, UnavailableProof, MalformedCapability }
 
 export { capability } from './capability.js'
 export * from './schema.js'
+export * as Schema from './schema.js'
 
 const empty = () => []
 
