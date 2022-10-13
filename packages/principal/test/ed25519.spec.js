@@ -1,4 +1,4 @@
-import { ed25519 as Lib } from '../src/lib.js'
+import { ed25519, ed25519 as Lib } from '../src/lib.js'
 import { assert } from 'chai'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { varint } from 'multiformats'
@@ -166,5 +166,21 @@ describe('principal', () => {
     const signer = await Lib.generate()
 
     assert.equal(signer.toArchive(), Signer.encode(signer))
+  })
+
+  it('can parse keys with forward slash', async () => {
+    // @see https://github.com/web3-storage/ucanto/issues/85
+    const key =
+      'MgCYY9lYduqC9rrtD1YvZzcEfPCFBaYsTe0T+8RLLBawPWu0BAaNqeI86jQPsOeSaZ7p+ZPWGFqggfvSMFw+AJ7BH8/U='
+    const ed = ed25519.parse(key)
+    assert.equal(
+      ed.did(),
+      'did:key:z6MkeZeyji49ZVbinyPENzhZMVML7s79bbjN9K4iNFBsFkdr'
+    )
+
+    assert.equal(ed25519.format(ed), key)
+
+    const payload = new TextEncoder().encode('hello world')
+    assert.equal(await ed.verify(payload, await ed.sign(payload)), true)
   })
 })
