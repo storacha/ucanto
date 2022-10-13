@@ -30,7 +30,8 @@
     "@ipld/dag-ucan": "^4.0.0-beta",
     "@noble/ed25519": "^1.7.0",
     "@ucanto/interface": "^1.0.0",
-    "multiformats": "^9.8.1"
+    "multiformats": "^9.8.1",
+    "one-webcrypto": "^1.0.3"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
@@ -52,6 +53,9 @@
       ],
       "ed25519": [
         "dist/src/ed25519.d.ts"
+      ],
+      "rsa": [
+        "dist/src/rsa.d.ts"
       ]
     }
   },
@@ -59,6 +63,10 @@
     "./ed25519": {
       "types": "./dist/src/ed25519.d.ts",
       "import": "./src/ed25519.js"
+    },
+    "./rsa": {
+      "types": "./dist/src/rsa.d.ts",
+      "import": "./src/rsa.js"
     }
   },
   "c8": {
