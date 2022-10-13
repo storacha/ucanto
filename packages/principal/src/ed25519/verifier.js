@@ -110,8 +110,8 @@ class Ed25519Verifier extends Uint8Array {
     )
   }
 
-  export() {
-    return this
+  format() {
+    return this.did()
   }
   encode() {
     return this

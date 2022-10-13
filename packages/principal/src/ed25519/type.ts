@@ -13,7 +13,7 @@ export interface EdSigner<M extends string = 'key'>
   readonly verifier: EdVerifier<M>
 
   readonly code: 0x1300
-  encode(): ByteView<EdSigner<M>>
+  toArchive(): ByteView<EdSigner<M>>
 }
 
 export interface EdVerifier<M extends string = 'key'>

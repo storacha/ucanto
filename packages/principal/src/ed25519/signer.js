@@ -2,7 +2,7 @@ import * as ED25519 from '@noble/ed25519'
 import { varint } from 'multiformats'
 import * as API from './type.js'
 import * as Verifier from './verifier.js'
-import { base64pad, base64url } from 'multiformats/bases/base64'
+import { base64pad } from 'multiformats/bases/base64'
 import * as Signature from '@ipld/dag-ucan/signature'
 
 export const code = 0x1300
@@ -48,6 +48,18 @@ export const derive = async secret => {
 }
 
 /**
+ * @param {API.SignerArchive<API.Signer<"key", typeof signatureCode>>} archive
+ * @returns {API.EdSigner}
+ */
+export const from = archive => {
+  if (archive instanceof Uint8Array) {
+    return decode(archive)
+  } else {
+    throw new Error(`Unsupported archive format`)
+  }
+}
+
+/**
  * @param {Uint8Array} bytes
  * @returns {API.EdSigner}
  */
@@ -81,7 +93,7 @@ export const decode = bytes => {
  * @param {API.EdSigner} signer
  * @return {API.ByteView<API.EdSigner>}
  */
-export const encode = signer => signer.encode()
+export const encode = signer => signer.toArchive()
 
 /**
  * @template {string} Prefix
@@ -89,7 +101,7 @@ export const encode = signer => signer.encode()
  * @param {API.MultibaseEncoder<Prefix>} [encoder]
  */
 export const format = (signer, encoder) =>
-  (encoder || base64pad).encode(signer.encode())
+  (encoder || base64pad).encode(encode(signer))
 
 /**
  * @template {string} Prefix
@@ -173,10 +185,7 @@ class Ed25519Signer extends Uint8Array {
     return Signature.EdDSA
   }
 
-  export() {
-    return this
-  }
-  encode() {
+  toArchive() {
     return this
   }
 }

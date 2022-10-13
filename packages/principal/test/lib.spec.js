@@ -27,15 +27,22 @@ describe('PrincipalParser', () => {
     )
   })
 
+  it('throws on invalid ed archive', async () => {
+    const ed = await ed25519.generate()
+    const rsa = await RSA.generate()
+
+    const { key } = /** @type {API.SignerInfo} */ (rsa.toArchive())
+
+    const archive = { did: ed.did(), key }
+
+    assert.throws(() => Signer.from(archive), /Unsupported signer/)
+  })
+
   it('ed decode & sign', async () => {
     const ed = await ed25519.generate()
 
-    if (!ed.export) {
-      assert.fail('expect to have export method')
-    }
-
-    const bytes = await ed.export()
-    const signer = Signer.decode(bytes)
+    const bytes = ed.toArchive()
+    const signer = Signer.from(bytes)
     const payload = utf8.encode('hello ed')
 
     const signature = await signer.sign(payload)
@@ -50,15 +57,10 @@ describe('PrincipalParser', () => {
     )
   })
 
-  it('ed decode & sign', async () => {
+  it('rsa decode & sign', async () => {
     const rsa = await RSA.generate({ extractable: true })
 
-    if (!rsa.export) {
-      assert.fail('expect to have export method')
-    }
-
-    const bytes = await rsa.export()
-    const signer = Signer.decode(bytes)
+    const signer = Signer.from(rsa.toArchive())
     const payload = utf8.encode('hello ed')
 
     const signature = await signer.sign(payload)
@@ -75,7 +77,7 @@ describe('PrincipalParser', () => {
 
   it('throws on unknown signer', () => {
     assert.throws(
-      () => Signer.decode(new Uint8Array([1, 1, 1])),
+      () => Signer.from(new Uint8Array([1, 1, 1])),
       /Unsupported signer/
     )
   })

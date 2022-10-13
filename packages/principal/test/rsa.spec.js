@@ -16,75 +16,121 @@ describe('RSA', () => {
     assert.equal(signer.signatureCode, 0xd01205)
     assert.equal(signer.signatureAlgorithm, 'RS256')
     assert.match(signer.did(), /did:key:/)
-    assert.equal(signer, signer.signer)
-
-    assert.equal(typeof signer.toCryptoKey, 'function')
-    assert.equal(typeof signer.export, 'undefined')
+    assert.equal(typeof signer.toArchive, 'function')
     assert.equal(typeof signer.verify, 'function')
-    assert.equal(typeof signer.verifier.verify, 'function')
-    assert.equal(signer.verifier.code, 0x1205)
-    assert.equal(signer.verifier.signatureCode, 0xd01205)
-    assert.equal(signer.verifier.signatureAlgorithm, 'RS256')
-    assert.equal(signer.did(), signer.verifier.did())
+    assert.equal(typeof signer.sign, 'function')
 
-    if (signer.toCryptoKey) {
-      const key = await signer.toCryptoKey()
-      assert.equal(key.algorithm.name, 'RSASSA-PKCS1-v1_5')
-      assert.equal(key.extractable, false)
-      assert.equal(key.type, 'private')
-      assert.deepEqual(key.usages, ['sign'])
-    }
+    assert.equal(signer.signer, signer)
+
+    const { verifier } = signer
+    assert.equal(typeof verifier.verify, 'function')
+    assert.equal(verifier.code, 0x1205)
+    assert.equal(verifier.signatureCode, 0xd01205)
+    assert.equal(verifier.signatureAlgorithm, 'RS256')
+    assert.equal(verifier.did(), signer.did())
+    assert.equal(verifier.format(), signer.did())
+
+    const { key, did } = /** @type {RSA.SignerInfo} */ (signer.toArchive())
+    assert.equal(did, signer.did())
+    assert.equal(key.type, 'private')
+    assert.deepEqual(Object(key.algorithm), {
+      name: 'RSASSA-PKCS1-v1_5',
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: {
+        name: 'SHA-256',
+      },
+    })
+    assert.equal(key.extractable, false)
+    assert.deepEqual(key.usages, ['sign'])
+  })
+
+  it('can archive 🔁 restore unextractable', async () => {
+    const original = await RSA.generate()
+    const bytes = original.toArchive()
+    const restored = RSA.from(bytes)
+    const payload = utf8.encode('hello world')
+
+    assert.equal(
+      await restored.verify(payload, await original.sign(payload)),
+      true
+    )
+
+    assert.equal(
+      await original.verify(payload, await restored.sign(payload)),
+      true
+    )
   })
 
   it('can generate extractable keypair', async () => {
-    const principal = await RSA.generate({ extractable: true })
-    assert.equal(principal.signatureCode, 0xd01205)
-    assert.equal(principal.signatureAlgorithm, 'RS256')
-    assert.match(principal.did(), /did:key:/)
-    assert.equal(principal, principal.signer)
+    const signer = await RSA.generate({ extractable: true })
+    assert.equal(signer.signatureCode, 0xd01205)
+    assert.equal(signer.signatureAlgorithm, 'RS256')
+    assert.match(signer.did(), /did:key:/)
+    assert.equal(signer, signer.signer)
+    assert.equal(typeof signer.toArchive, 'function')
+    assert.equal(typeof signer.sign, 'function')
+    assert.equal(typeof signer.verify, 'function')
 
-    assert.equal(typeof principal.toCryptoKey, 'function')
-    assert.equal(typeof principal.export, 'function')
-    assert.equal(typeof principal.verify, 'function')
-    assert.equal(typeof principal.verifier.verify, 'function')
-    assert.equal(principal.did(), principal.verifier.did())
+    assert.equal(signer.signer, signer)
 
-    if (!principal.toCryptoKey) {
-      return assert.fail('expected to have toCryptoKey')
+    const { verifier } = signer
+    assert.equal(typeof verifier.verify, 'function')
+    assert.equal(verifier.code, 0x1205)
+    assert.equal(verifier.signatureCode, 0xd01205)
+    assert.equal(verifier.signatureAlgorithm, 'RS256')
+    assert.equal(verifier.did(), signer.did())
+    assert.equal(verifier.format(), signer.did())
+
+    const bytes = signer.toArchive()
+    if (!(bytes instanceof Uint8Array)) {
+      return assert.fail()
     }
-
-    const key = await principal.toCryptoKey()
-    assert.equal(key.algorithm.name, 'RSASSA-PKCS1-v1_5')
-    assert.equal(key.extractable, true)
-    assert.equal(key.type, 'private')
-    assert.deepEqual(key.usages, ['sign'])
-
-    if (!principal.export) {
-      return assert.fail(`Expect key to be exportable`)
-    }
-
-    const bytes = await principal.export()
-    assert.equal(bytes instanceof Uint8Array, true)
     assert.deepEqual([0x1305, 2], varint.decode(bytes))
 
-    const signer = RSA.decode(bytes)
+    /** @type {CryptoKey} */
+    // @ts-expect-error - field is private
+    const privateKey = signer.privateKey
+    assert.equal(privateKey.type, 'private')
+    assert.deepEqual(Object(privateKey.algorithm), {
+      name: 'RSASSA-PKCS1-v1_5',
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: {
+        name: 'SHA-256',
+      },
+    })
+    assert.equal(privateKey.extractable, true)
+    assert.deepEqual(privateKey.usages, ['sign'])
+  })
+
+  it('can archive 🔁 restore extractable', async () => {
+    const original = await RSA.generate({ extractable: true })
+    const restored = RSA.from(original.toArchive())
     const payload = utf8.encode('hello world')
-    const signature = await signer.sign(payload)
-    assert.equal(await principal.verify(payload, signature), true)
+
+    assert.equal(
+      await restored.verify(payload, await original.sign(payload)),
+      true
+    )
+
+    assert.equal(
+      await original.verify(payload, await restored.sign(payload)),
+      true
+    )
   })
 
   it('can sign & verify', async () => {
-    const principal = await RSA.generate()
+    const signer = await RSA.generate()
     const payload = utf8.encode('hello world')
 
-    const signature = await principal.sign(payload)
-    assert.equal(signature.code, principal.signatureCode)
-    assert.equal(signature.algorithm, principal.signatureAlgorithm)
+    const signature = await signer.sign(payload)
+    assert.equal(signature.code, signer.signatureCode)
+    assert.equal(signature.algorithm, signer.signatureAlgorithm)
 
-    const { verifier } = principal
+    const { verifier } = signer
     assert.equal(await verifier.verify(payload, signature), true)
-
-    assert.equal(await principal.verify(payload, signature), true)
+    assert.equal(await signer.verify(payload, signature), true)
   })
 
   it('can parse verifier', async () => {
@@ -96,43 +142,17 @@ describe('RSA', () => {
     assert.equal(await verifier.verify(payload, signature), true)
   })
 
-  it('can export / import signer', async () => {
-    const original = await RSA.generate({ extractable: true })
-    if (!original.export) {
-      assert.fail('must have export')
-    }
-
-    const bytes = await original.export()
-    const imported = RSA.decode(bytes)
-    const payload = utf8.encode('hello world')
-
-    {
-      const signature = await original.sign(payload)
-      assert.equal(await imported.verifier.verify(payload, signature), true)
-    }
-
-    {
-      const signature = await imported.sign(payload)
-      assert.equal(await original.verifier.verify(payload, signature), true)
-    }
-
-    if (!imported.export) {
-      assert.fail('should have export')
-    }
-    assert.deepEqual(bytes, await imported.export())
-  })
-
-  it('can export / import verifier', async () => {
+  it('can format / parse verifier', async () => {
     const { signer, verifier: original } = await RSA.generate()
 
-    const bytes = await original.export()
-    const imported = RSA.Verifier.decode(bytes)
+    const did = await original.format()
+    const parsed = RSA.Verifier.parse(did)
     const payload = utf8.encode('hello world')
 
     const signature = await signer.sign(payload)
     assert.equal(await original.verify(payload, signature), true)
-    assert.equal(await imported.verify(payload, signature), true)
-    assert.deepEqual(bytes, await imported.export())
+    assert.equal(await parsed.verify(payload, signature), true)
+    assert.deepEqual(did, await parsed.format())
   })
 
   it('can parse', async () => {
@@ -169,13 +189,11 @@ describe('RSA', () => {
 
 /**
  * @param {Exclude<KeyFormat, "jwk">} format
- * @param {{toCryptoKey?: () => PromiseLike<CryptoKey>|CryptoKey}} key
+ * @param {RSA.RSASigner|RSA.RSAVerifier} principal
  */
-const exportKey = async (format, key) => {
-  if (!key.toCryptoKey) {
-    assert.fail()
-  }
-  const cryptoKey = await key.toCryptoKey()
+const exportKey = async (format, principal) => {
+  // @ts-expect-error - accessing private keys
+  const cryptoKey = principal.privateKey || principal.publicKey
   return webcrypto.subtle.exportKey(format, cryptoKey)
 }
 
@@ -259,19 +277,23 @@ it('multiformat', () => {
 })
 
 it('toJWK 🔁 fromJWK', async () => {
-  const signer = await RSA.generate({ extractable: true })
+  const { signer, verifier } = await RSA.generate({ extractable: true })
 
-  if (!signer.export) {
-    assert.fail()
+  /** @type {CryptoKeyPair} */
+  const keyPair = {
+    // @ts-expect-error - accessing private field
+    privateKey: signer.privateKey,
+    // @ts-expect-error - accessing private field
+    publicKey: verifier.publicKey,
   }
 
-  const jwk = await webcrypto.subtle.exportKey(
-    'jwk',
-    await signer.toCryptoKey()
-  )
+  const jwk = await webcrypto.subtle.exportKey('jwk', keyPair.privateKey)
 
   const privateKey = PrivateKey.decode(
-    multiformat.untagWith(RSA.code, await signer.export())
+    multiformat.untagWith(
+      RSA.code,
+      /** @type {Uint8Array} */ (signer.toArchive())
+    )
   )
 
   assert.deepEqual(PrivateKey.fromJWK(jwk), privateKey)
@@ -279,11 +301,15 @@ it('toJWK 🔁 fromJWK', async () => {
 
   assert.deepEqual(
     PublicKey.toJWK(privateKey),
-    await webcrypto.subtle.exportKey('jwk', await signer.verifier.toCryptoKey())
+    await webcrypto.subtle.exportKey('jwk', keyPair.publicKey)
   )
 
   const publicKey = PublicKey.decode(
-    multiformat.untagWith(signer.verifier.code, await signer.verifier.export())
+    multiformat.untagWith(
+      signer.verifier.code,
+      // @ts-expect-error - accessing private property
+      signer.verifier.bytes
+    )
   )
 
   assert.deepEqual(PublicKey.fromJWK(jwk), publicKey)
@@ -293,20 +319,13 @@ it('toJWK 🔁 fromJWK', async () => {
 
 it('toSPKI 🔁 fromSPKI', async () => {
   const signer = await RSA.generate({ extractable: true })
-
-  if (!signer.export) {
-    assert.fail()
-  }
-
-  const spki = new Uint8Array(
-    await webcrypto.subtle.exportKey(
-      'spki',
-      await signer.verifier.toCryptoKey()
-    )
-  )
+  const spki = new Uint8Array(await exportKey('spki', signer.verifier))
 
   const privateKey = PrivateKey.decode(
-    multiformat.untagWith(RSA.code, await signer.export())
+    multiformat.untagWith(
+      RSA.code,
+      /** @type {Uint8Array} */ (signer.toArchive())
+    )
   )
 
   assert.deepEqual(PrivateKey.toSPKI(privateKey), spki)

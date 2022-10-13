@@ -42,6 +42,8 @@ describe('signing principal', () => {
 
     assert.equal(signer.signatureAlgorithm, 'EdDSA')
     assert.equal(signer.signatureCode, 0xd0ed)
+    assert.equal(signer.did(), verifier.did())
+    assert.equal(verifier.format(), verifier.did())
   })
 
   it('derive', async () => {
@@ -69,18 +71,18 @@ describe('signing principal', () => {
     const signer = await Lib.generate()
     const bytes = Signer.encode(signer)
 
-    assert.deepEqual(Signer.decode(signer.encode()), signer)
+    assert.deepEqual(Signer.decode(signer.toArchive()), signer)
 
-    const invalid = new Uint8Array(signer.encode())
+    const invalid = new Uint8Array(signer.toArchive())
     varint.encodeTo(4, invalid, 0)
     assert.throws(() => Signer.decode(invalid), /must be a multiformat with/)
 
     assert.throws(
-      () => Signer.decode(signer.encode().slice(0, 32)),
+      () => Signer.decode(signer.toArchive().slice(0, 32)),
       /Expected Uint8Array with byteLength/
     )
 
-    const malformed = new Uint8Array(signer.encode())
+    const malformed = new Uint8Array(signer.toArchive())
     // @ts-ignore
     varint.encodeTo(4, malformed, Signer.PUB_KEY_OFFSET)
 
@@ -118,7 +120,7 @@ describe('principal', () => {
   it('Verifier.parse', async () => {
     const signer = await Lib.generate()
     const verifier = Verifier.parse(signer.did())
-    const bytes = signer.encode()
+    const bytes = signer.toArchive()
 
     assert.deepEqual(
       new Uint8Array(bytes.buffer, bytes.byteOffset + Signer.PUB_KEY_OFFSET),
@@ -129,7 +131,7 @@ describe('principal', () => {
 
   it('Verifier.decode', async () => {
     const signer = await Lib.generate()
-    const bytes = signer.encode()
+    const bytes = signer.toArchive()
 
     const verifier = new Uint8Array(
       bytes.buffer,
@@ -137,7 +139,7 @@ describe('principal', () => {
     )
     assert.deepEqual(Verifier.decode(verifier).encode(), verifier)
     assert.throws(
-      () => Verifier.decode(signer.encode()),
+      () => Verifier.decode(signer.toArchive()),
       /key algorithm with multicode/
     )
 
@@ -161,21 +163,9 @@ describe('principal', () => {
     assert.deepEqual(Verifier.decode(bytes), verifier)
   })
 
-  it('verifier export', async () => {
-    const { verifier } = await Lib.generate()
-    if (!verifier.export) {
-      assert.fail()
-    }
-
-    assert.equal(verifier.export(), verifier.encode())
-  })
-
-  it('signer export', async () => {
+  it('signer toArchive', async () => {
     const signer = await Lib.generate()
-    if (!signer.export) {
-      assert.fail()
-    }
 
-    assert.equal(signer.export(), signer.encode())
+    assert.equal(signer.toArchive(), Signer.encode(signer))
   })
 })

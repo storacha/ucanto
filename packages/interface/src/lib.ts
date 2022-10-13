@@ -389,22 +389,61 @@ export interface PrincipalParser {
   parse(did: UCAN.DID): Verifier
 }
 
-export interface IntoSigner {
-  decode: (bytes: Uint8Array) => Signer
+/**
+ * Represents component that can create a signer from it's archive. Usually
+ * signer module would provide `from` function and therefor be implementation
+ * of this interface.
+ * Library also provides utility functions for combining multiple
+ * SignerImporters into one.
+ */
+export interface SignerImporter<Self extends Signer = Signer> {
+  from(archive: SignerArchive<Self>): Self
 }
 
 export interface Signer<M extends string = string, A extends number = number>
   extends UCANSigner<M, A> {
-  export?: () => Await<ByteView<Signer<M, A>>>
-  toCryptoKey?: () => Await<CryptoKey>
+  /**
+   * Returns archive of this signer which is byte encoded form when signer key
+   * is extractable and is {@link SignerInfo} form otherwise. This allows a user
+   * to store non extractable archives in indexedDB and store extractable
+   * archives on disk, which matches general expectation that in browsers
+   * unextratable keys should be used and extractable keys in node.
+   *
+   * @example
+   * ```ts
+   * const save = async (signer: Signer) => {
+   *   const archive = signer.toAchive()
+   *   if (archive instanceof Uint8Array) {
+   *     await fs.writeFile(KEY_PATH, archive)
+   *   } else (signer.exportKey) {
+   *     await IDB_OBJECT_STORE.add(archive)
+   *   }
+   * }
+   * ```
+   */
+  toArchive(): SignerArchive<Signer<M, A>>
 }
+
+export interface SignerInfo<Self extends Signer = Signer> {
+  readonly did: ReturnType<Self['did']>
+  readonly key: CryptoKey
+}
+
+export type SignerArchive<Self extends Signer = Signer> =
+  | ByteView<Self>
+  | SignerInfo<Self>
 
 export interface Verifier<M extends string = string, A extends number = number>
   extends UCANVerifier<M, A> {
-  export?: () => Await<ByteView<Verifier<M, A>>>
-  toCryptoKey?: () => Await<CryptoKey>
+  format(): DID<M>
 }
 
 export type InferInvokedCapability<
   C extends CapabilityParser<Match<ParsedCapability>>
 > = C extends CapabilityParser<Match<infer T>> ? T : never
+
+export type Intersection<T> = (T extends any ? (i: T) => void : never) extends (
+  i: infer I
+) => void
+  ? I
+  : never
