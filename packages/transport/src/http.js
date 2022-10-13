@@ -62,7 +62,10 @@ class Channel {
       : HTTPError.throw('HTTP Request failed', response)
 
     return {
-      headers: response.headers.entries ? Object.fromEntries(response.headers.entries()): {},
+      headers: response.headers.entries
+        ? Object.fromEntries(response.headers.entries())
+        /* c8 ignore next */
+        : {},
       body: new Uint8Array(buffer),
     }
   }
