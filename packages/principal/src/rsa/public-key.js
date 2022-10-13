@@ -60,13 +60,11 @@ export const toJWK = ({ n, e }) => ({
  * @returns {RSAPublicKey}
  */
 export const fromJWK = ({ n, e }) => ({
-  n: base6urlDecode(n),
-  e: base6urlDecode(e),
+  n: base64urlDecode(n),
+  e: base64urlDecode(e),
 })
 
 /**
- *
  * @param {string|undefined} input
- * @returns
  */
-const base6urlDecode = (input = '') => base64url.baseDecode(input)
+const base64urlDecode = (input = '') => base64url.baseDecode(input)

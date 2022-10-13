@@ -94,14 +94,14 @@ export const toJWK = ({ n, e, d, p, q, dp, dq, qi }) => ({
  */
 export const fromJWK = ({ n, e, d, p, q, dp, dq, qi }) => ({
   v: VERSION,
-  n: base6urlDecode(n),
-  e: base6urlDecode(e),
-  d: base6urlDecode(d),
-  p: base6urlDecode(p),
-  q: base6urlDecode(q),
-  dp: base6urlDecode(dp),
-  dq: base6urlDecode(dq),
-  qi: base6urlDecode(qi),
+  n: base64urlDecode(n),
+  e: base64urlDecode(e),
+  d: base64urlDecode(d),
+  p: base64urlDecode(p),
+  q: base64urlDecode(q),
+  dp: base64urlDecode(dp),
+  dq: base64urlDecode(dq),
+  qi: base64urlDecode(qi),
 })
 
 /**
@@ -124,4 +124,4 @@ export const toSPKI = key => SPKI.encode(PublicKey.encode(key))
  * @param {string|undefined} input
  * @returns
  */
-const base6urlDecode = (input = '') => base64url.baseDecode(input)
+const base64urlDecode = (input = '') => base64url.baseDecode(input)
