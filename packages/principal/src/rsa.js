@@ -188,9 +188,6 @@ class RSAVerifier {
   did() {
     return `did:key:${base58btc.encode(this.bytes)}`
   }
-  format() {
-    return this.did()
-  }
 
   /**
    * @template T

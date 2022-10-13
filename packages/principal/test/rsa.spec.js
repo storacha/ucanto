@@ -28,7 +28,6 @@ describe('RSA', () => {
     assert.equal(verifier.signatureCode, 0xd01205)
     assert.equal(verifier.signatureAlgorithm, 'RS256')
     assert.equal(verifier.did(), signer.did())
-    assert.equal(verifier.format(), signer.did())
 
     const { key, did } = /** @type {RSA.SignerInfo} */ (signer.toArchive())
     assert.equal(did, signer.did())
@@ -80,7 +79,6 @@ describe('RSA', () => {
     assert.equal(verifier.signatureCode, 0xd01205)
     assert.equal(verifier.signatureAlgorithm, 'RS256')
     assert.equal(verifier.did(), signer.did())
-    assert.equal(verifier.format(), signer.did())
 
     const bytes = signer.toArchive()
     if (!(bytes instanceof Uint8Array)) {
@@ -145,14 +143,14 @@ describe('RSA', () => {
   it('can format / parse verifier', async () => {
     const { signer, verifier: original } = await RSA.generate()
 
-    const did = await original.format()
+    const did = await original.did()
     const parsed = RSA.Verifier.parse(did)
     const payload = utf8.encode('hello world')
 
     const signature = await signer.sign(payload)
     assert.equal(await original.verify(payload, signature), true)
     assert.equal(await parsed.verify(payload, signature), true)
-    assert.deepEqual(did, await parsed.format())
+    assert.deepEqual(did, await parsed.did())
   })
 
   it('can parse', async () => {

@@ -43,7 +43,6 @@ describe('signing principal', () => {
     assert.equal(signer.signatureAlgorithm, 'EdDSA')
     assert.equal(signer.signatureCode, 0xd0ed)
     assert.equal(signer.did(), verifier.did())
-    assert.equal(verifier.format(), verifier.did())
   })
 
   it('derive', async () => {
@@ -124,7 +123,7 @@ describe('principal', () => {
 
     assert.deepEqual(
       new Uint8Array(bytes.buffer, bytes.byteOffset + Signer.PUB_KEY_OFFSET),
-      verifier.encode()
+      Object(verifier)
     )
     assert.equal(verifier.did(), signer.did())
   })
@@ -137,7 +136,7 @@ describe('principal', () => {
       bytes.buffer,
       bytes.byteOffset + Signer.PUB_KEY_OFFSET
     )
-    assert.deepEqual(Verifier.decode(verifier).encode(), verifier)
+    assert.deepEqual(Object(Verifier.decode(verifier)), verifier)
     assert.throws(
       () => Verifier.decode(signer.toArchive()),
       /key algorithm with multicode/

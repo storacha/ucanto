@@ -21,6 +21,4 @@ export interface EdVerifier<M extends string = 'key'>
   readonly code: 0xed
   readonly signatureCode: CODE
   readonly signatureAlgorithm: ALG
-
-  encode: () => ByteView<EdVerifier<M>>
 }

@@ -109,11 +109,4 @@ class Ed25519Verifier extends Uint8Array {
       ED25519.verify(signature.raw, payload, this.publicKey)
     )
   }
-
-  format() {
-    return this.did()
-  }
-  encode() {
-    return this
-  }
 }

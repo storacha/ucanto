@@ -14,7 +14,7 @@ import {
   Resource,
   Signature,
   Principal,
-  Verifier as UCANVerifier,
+  Verifier,
   Signer as UCANSigner,
 } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
@@ -433,10 +433,7 @@ export type SignerArchive<Self extends Signer = Signer> =
   | ByteView<Self>
   | SignerInfo<Self>
 
-export interface Verifier<M extends string = string, A extends number = number>
-  extends UCANVerifier<M, A> {
-  format(): DID<M>
-}
+export { Verifier }
 
 export type InferInvokedCapability<
   C extends CapabilityParser<Match<ParsedCapability>>
