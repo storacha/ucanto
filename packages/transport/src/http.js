@@ -5,8 +5,8 @@ import * as API from '@ucanto/interface'
  * ok: boolean
  * arrayBuffer():API.Await<ArrayBuffer>
  * headers: {
- *  entries():Iterable<[string, string]>
- * }
+ *  entries?: () => Iterable<[string, string]>
+ * } | Headers
  * status?: number
  * statusText?: string
  * url?: string
@@ -62,7 +62,10 @@ class Channel {
       : HTTPError.throw('HTTP Request failed', response)
 
     return {
-      headers: Object.fromEntries(response.headers.entries()),
+      headers: response.headers.entries
+        ? Object.fromEntries(response.headers.entries())
+        /* c8 ignore next */
+        : {},
       body: new Uint8Array(buffer),
     }
   }
