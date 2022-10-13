@@ -20,11 +20,12 @@
   "homepage": "https://github.com/web3-storage/ucanto",
   "scripts": {
     "typecheck": "tsc --build",
+    "check": "tsc --build",
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^4.0.0-beta",
-    "multiformats": "^9.8.1"
+    "@ipld/dag-ucan": "^1.0.0",
+    "multiformats": "^10.0.0"
   },
   "devDependencies": {
     "typescript": "^4.8.3"
