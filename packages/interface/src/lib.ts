@@ -412,10 +412,10 @@ export interface Signer<M extends string = string, A extends number = number>
    * @example
    * ```ts
    * const save = async (signer: Signer) => {
-   *   const archive = signer.toAchive()
+   *   const archive = signer.toArchive()
    *   if (archive instanceof Uint8Array) {
    *     await fs.writeFile(KEY_PATH, archive)
-   *   } else (signer.exportKey) {
+   *   } else {
    *     await IDB_OBJECT_STORE.add(archive)
    *   }
    * }

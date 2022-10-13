@@ -270,7 +270,6 @@ class RSASigner {
    * @returns {Promise<API.Signature<T, typeof signatureCode>>}
    */
   async sign(payload) {
-    this.privateKey
     const buffer = await webcrypto.subtle.sign(
       { name: ALG, saltLength: SALT_LEGNTH },
       await this.privateKey,
