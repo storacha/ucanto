@@ -18,6 +18,10 @@ const SIZE = PRIVATE_TAG_SIZE + KEY_SIZE + PUBLIC_TAG_SIZE + KEY_SIZE
 export const PUB_KEY_OFFSET = PRIVATE_TAG_SIZE + KEY_SIZE
 
 /**
+ * @typedef {API.EdSigner  } EdSigner
+ */
+
+/**
  * Generates new issuer by generating underlying ED25519 keypair.
  * @returns {Promise<API.EdSigner>}
  */
