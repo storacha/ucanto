@@ -863,7 +863,7 @@ class StartsWith extends API {
  * @param {Prefix} prefix
  * @returns {Schema.Schema<`${Prefix}${string}`, string>}
  */
-export const startsWith = prefix => new StratsWith(prefix)
+export const startsWith = prefix => new StartsWith(prefix)
 
 /**
  * @template {string} Suffix

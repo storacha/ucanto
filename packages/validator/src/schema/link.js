@@ -76,3 +76,5 @@ export const match = (options = {}) => new LinkSchema(options)
  * @param {unknown} input
  */
 export const read = input => schema.read(input)
+
+export const optional = () => schema.optional()
