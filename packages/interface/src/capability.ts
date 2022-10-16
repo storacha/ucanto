@@ -54,16 +54,17 @@ export interface MatchSelector<M extends Match>
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
-export interface Decoder<
-  I extends unknown,
-  O extends unknown,
+export interface Reader<
+  O = unknown,
+  I = unknown,
   X extends { error: true } = Failure
 > {
-  decode: (input: I) => Result<O, X>
+  read: (input: I) => Result<O, X>
 }
 
-export interface Caveats
-  extends Record<string, Decoder<unknown, unknown, Failure>> {}
+export interface Caveats {
+  [key: string]: Reader<any, unknown>
+}
 
 export type MatchResult<M extends Match> = Result<M, InvalidCapability>
 
@@ -261,7 +262,7 @@ export type ParsedCapability<
   : { can: Can; with: Resource; nb: C }
 
 export type InferCaveats<C> = Optionalize<{
-  [K in keyof C]: C[K] extends Decoder<unknown, infer T, infer _> ? T : never
+  [K in keyof C]: C[K] extends Reader<infer T, unknown, infer _> ? T : never
 }>
 
 export interface Descriptor<
@@ -270,7 +271,7 @@ export interface Descriptor<
   C extends Caveats
 > {
   can: A
-  with: Decoder<Resource, R, Failure>
+  with: Reader<R, Resource, Failure>
 
   nb?: C
 

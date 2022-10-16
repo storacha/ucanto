@@ -9,6 +9,7 @@ export class Failure extends Error {
   get error() {
     return true
   }
+  /* c8 ignore next 3 */
   describe() {
     return this.name
   }
@@ -17,8 +18,8 @@ export class Failure extends Error {
   }
 
   toJSON() {
-    const { error, name, message } = this
-    return { error, name, message }
+    const { error, name, message, stack } = this
+    return { error, name, message, stack }
   }
 }
 
@@ -57,7 +58,7 @@ export class DelegationError extends Failure {
   describe() {
     return [
       `Can not derive ${this.context} from delegated capabilities:`,
-      ...this.causes.map((cause) => li(cause.message)),
+      ...this.causes.map(cause => li(cause.message)),
     ].join('\n')
   }
 
@@ -65,6 +66,7 @@ export class DelegationError extends Failure {
    * @type {API.InvalidCapability | API.EscalatedDelegation | API.DelegationError}
    */
   get cause() {
+    /* c8 ignore next 9 */
     if (this.causes.length !== 1) {
       return this
     } else {
@@ -141,13 +143,14 @@ export class InvalidAudience extends Failure {
     return `Delegates to '${this.delegation.audience.did()}' instead of '${this.audience.did()}'`
   }
   toJSON() {
-    const { error, name, audience, message } = this
+    const { error, name, audience, message, stack } = this
     return {
       error,
       name,
       audience: audience.did(),
       delegation: { audience: this.delegation.audience.did() },
       message,
+      stack,
     }
   }
 }
@@ -206,12 +209,13 @@ export class Expired extends Failure {
     return this.delegation.expiration
   }
   toJSON() {
-    const { error, name, expiredAt, message } = this
+    const { error, name, expiredAt, message, stack } = this
     return {
       error,
       name,
       message,
       expiredAt,
+      stack,
     }
   }
 }
@@ -242,6 +246,7 @@ const format = (capability, space) =>
   JSON.stringify(
     capability,
     (key, value) => {
+      /* c8 ignore next 2 */
       if (value && value.asCID === value) {
         return value.toString()
       } else {
@@ -260,4 +265,4 @@ export const indent = (message, indent = '  ') =>
 /**
  * @param {string} message
  */
-export const li = (message) => indent(`- ${message}`)
+export const li = message => indent(`- ${message}`)

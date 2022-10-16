@@ -13,7 +13,7 @@ const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 32 + PUBLIC_TAG_SIZE
 
 /**
- * @typedef {API.Verifier<"key", Signature.EdDSA> & Uint8Array} Verifier
+ * @typedef {API.EdVerifier} EdVerifier
  */
 
 /**

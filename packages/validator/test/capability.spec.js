@@ -1,10 +1,11 @@
-import { capability, URI, Link, access } from '../src/lib.js'
-import { invoke, parseLink, Delegation } from '@ucanto/core'
+import { capability, URI, Link, unknown, Schema } from '../src/lib.js'
+import { invoke, parseLink } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
+import { derive } from '../src/capability.js'
 
 /**
  * @template {API.Capabilities} C
@@ -19,6 +20,13 @@ const delegate = (capabilities, delegation = {}) =>
     delegation,
     index,
   }))
+
+/**
+ * @param {API.Capability} capability
+ * @param {object} delegation
+ */
+const source = (capability, delegation = {}) =>
+  delegate([capability], delegation)[0]
 
 test('capability selects matches', () => {
   const read = capability({
@@ -791,7 +799,7 @@ test('parse with nb', () => {
     can: 'store/add',
     with: URI.match({ protocol: 'did:' }),
     nb: {
-      link: Link.optional(),
+      link: Link.match().optional(),
     },
     derives: (claimed, delegated) => {
       if (claimed.with !== delegated.with) {
@@ -1190,6 +1198,7 @@ test('toString methods', () => {
 })
 
 test('capability create with nb', () => {
+  const data = URI.match({ protocol: 'data:' })
   const echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
@@ -1497,7 +1506,7 @@ test('capability with optional caveats', async () => {
     with: URI.match({ protocol: 'did:' }),
     nb: {
       message: URI.match({ protocol: 'data:' }),
-      meta: Link.optional(),
+      meta: Link.match().optional(),
     },
   })
 
@@ -1541,4 +1550,528 @@ test('capability with optional caveats', async () => {
       },
     },
   ])
+})
+
+test('and chain', () => {
+  const A = capability({
+    can: 'test/a',
+    with: URI,
+  })
+
+  const B = capability({
+    can: 'test/b',
+    with: URI,
+  })
+
+  const C = capability({
+    can: 'test/c',
+    with: URI,
+  })
+
+  const ABC = A.and(B).and(C)
+
+  const cap = ABC.derive({
+    to: capability({
+      can: 'test/abc',
+      with: URI,
+    }),
+    derives: (abc, [a, b, c]) => {
+      return abc.with !== a.with
+        ? new Failure(`${abc.with} != ${a.with}`)
+        : abc.with !== b.with
+        ? new Failure(`${abc.with} != ${b.with}`)
+        : abc.with !== c.with
+        ? new Failure(`${abc.with} != ${c.with}`)
+        : true
+    },
+  })
+
+  const d1 = delegate([{ can: 'test/abc', with: 'file:///test' }])
+
+  const d2 = delegate([
+    { can: 'test/c', with: 'file:///test' },
+    { can: 'test/a', with: 'file:///test' },
+    { can: 'test/b', with: 'file:///test' },
+  ])
+
+  assert.containSubset(
+    ABC.match(source({ can: 'test/c', with: 'file:///test' })),
+    {
+      error: true,
+    }
+  )
+
+  assert.containSubset(ABC.select(d2), {
+    unknown: [],
+    errors: [],
+    matches: [
+      {
+        matches: [
+          { value: { can: 'test/c', with: 'file:///test' } },
+          { value: { can: 'test/a', with: 'file:///test' } },
+          { value: { can: 'test/b', with: 'file:///test' } },
+        ],
+      },
+    ],
+  })
+})
+
+test('.and(...).match', () => {
+  const A = capability({
+    can: 'test/ab',
+    with: URI,
+    nb: {
+      a: Schema.Text,
+    },
+  })
+
+  const B = capability({
+    can: 'test/ab',
+    with: URI,
+    nb: {
+      b: Schema.Text,
+    },
+  })
+
+  const AB = A.and(B)
+  const m = AB.match(
+    source({
+      can: 'test/ab',
+      with: 'data:1',
+      nb: {
+        a: 'a',
+        b: 'b',
+      },
+    })
+  )
+
+  if (m.error) {
+    return assert.fail(m.message)
+  }
+
+  assert.containSubset(AB.select([]), {
+    unknown: [],
+    errors: [],
+    matches: [],
+  })
+
+  const src = delegate([
+    { can: 'test/ab', with: 'data:1', nb: { a: 'a' } },
+    { can: 'test/ab', with: 'data:1', nb: { a: 'A', b: 'b' } },
+  ])
+
+  assert.containSubset(m.select(src), {
+    unknown: [],
+    errors: [
+      {
+        name: 'InvalidClaim',
+        cause: {
+          name: 'EscalatedCapability',
+          message: 'Constraint violation: a: a violates A',
+        },
+      },
+      {
+        name: 'InvalidClaim',
+        cause: {
+          name: 'MalformedCapability',
+          cause: {
+            name: 'TypeError',
+            message: 'Expected value of type string instead got undefined',
+          },
+        },
+      },
+    ],
+    matches: [
+      {
+        matches: [
+          {
+            value: {
+              can: 'test/ab',
+              with: 'data:1',
+              nb: { a: 'a' },
+            },
+          },
+          {
+            value: {
+              can: 'test/ab',
+              with: 'data:1',
+              nb: { b: 'b' },
+            },
+          },
+        ],
+      },
+    ],
+  })
+})
+
+test('A.or(B).match', () => {
+  const A = capability({
+    can: 'test/a',
+    with: URI,
+  })
+
+  const B = capability({
+    can: 'test/b',
+    with: URI,
+  })
+
+  const AB = A.or(B)
+
+  const ab = AB.match(source({ can: 'test/c', with: 'data:0' }))
+  assert.containSubset(ab, {
+    error: true,
+    name: 'UnknownCapability',
+  })
+
+  assert.containSubset(
+    AB.match(
+      source({
+        can: 'test/b',
+        // @ts-expect-error - not a URI
+        with: 'hello',
+      })
+    ),
+    {
+      error: true,
+      name: 'MalformedCapability',
+    }
+  )
+})
+
+test('and with diff nb', () => {
+  const A = capability({
+    can: 'test/me',
+    with: URI,
+    nb: {
+      a: Schema.Text,
+    },
+  })
+
+  const B = capability({
+    can: 'test/me',
+    with: URI,
+    nb: {
+      b: Schema.Text,
+    },
+  })
+
+  const AB = A.and(B)
+
+  assert.containSubset(AB.match(source({ can: 'test/me', with: 'data:1' })), {
+    error: true,
+  })
+  assert.containSubset(
+    AB.match(source({ can: 'test/me', with: 'data:1', nb: { a: 'a' } })),
+    {
+      error: true,
+    }
+  )
+  assert.containSubset(
+    AB.match(source({ can: 'test/me', with: 'data:1', nb: { b: 'b' } })),
+    {
+      error: true,
+    }
+  )
+
+  const proof = { this: { is: 'proof' } }
+
+  assert.containSubset(
+    AB.match(
+      source({ can: 'test/me', with: 'data:1', nb: { a: 'a', b: 'b' } }, proof)
+    ),
+    {
+      proofs: [proof],
+      matches: [
+        { value: { can: 'test/me', with: 'data:1', nb: { a: 'a' } } },
+        { value: { can: 'test/me', with: 'data:1', nb: { b: 'b' } } },
+      ],
+    }
+  )
+})
+
+test('derived capability DSL', () => {
+  const A = capability({
+    can: 'invoke/a',
+    with: Schema.URI,
+  })
+
+  const AA = A.derive({
+    to: capability({
+      can: 'derive/a',
+      with: Schema.URI,
+    }),
+    derives: (b, a) =>
+      b.with === a.with ? true : new Failure(`with don't match`),
+  })
+
+  assert.equal(AA.can, 'derive/a')
+
+  assert.deepEqual(
+    AA.create({
+      with: 'data:a',
+    }),
+    {
+      can: 'derive/a',
+      with: 'data:a',
+    }
+  )
+
+  assert.deepEqual(
+    AA.invoke({
+      audience: w3,
+      issuer: alice,
+      with: alice.did(),
+    }),
+    invoke({
+      issuer: alice,
+      audience: w3,
+      capability: {
+        can: 'derive/a',
+        with: alice.did(),
+      },
+    })
+  )
+})
+
+test('capability match', () => {
+  const a = capability({ can: 'test/a', with: Schema.URI })
+
+  const proof = {
+    fake: { thing: 'thing' },
+  }
+
+  const m = a.match(source({ can: 'test/a', with: 'data:a' }, proof))
+  assert.containSubset(m, {
+    can: 'test/a',
+    proofs: [proof],
+  })
+
+  assert.equal(
+    m.toString(),
+    JSON.stringify({
+      can: 'test/a',
+      with: 'data:a',
+    })
+  )
+
+  const m2 = a.match(source({ can: 'test/a', with: 'data:a', nb: {} }, proof))
+  assert.equal(
+    m2.toString(),
+    JSON.stringify({
+      can: 'test/a',
+      with: 'data:a',
+    })
+  )
+
+  const echo = capability({
+    can: 'test/echo',
+    with: URI.match({ protocol: 'did:' }),
+    nb: {
+      message: URI.match({ protocol: 'data:' }),
+    },
+  })
+
+  const m3 = echo.match(
+    source(
+      {
+        can: 'test/echo',
+        with: alice.did(),
+        nb: { message: 'data:hello' },
+      },
+      proof
+    )
+  )
+
+  assert.containSubset(m3, {
+    can: 'test/echo',
+    value: {
+      can: 'test/echo',
+      with: alice.did(),
+      nb: { message: 'data:hello' },
+    },
+    proofs: [proof],
+  })
+
+  assert.equal(
+    m3.toString(),
+    JSON.stringify({
+      can: 'test/echo',
+      with: alice.did(),
+      nb: { message: 'data:hello' },
+    })
+  )
+})
+
+test('derived capability match & select', () => {
+  const A = capability({
+    can: 'invoke/a',
+    with: Schema.URI,
+  })
+
+  const AA = A.derive({
+    to: capability({
+      can: 'derive/a',
+      with: Schema.URI,
+    }),
+    derives: (b, a) =>
+      b.with === a.with ? true : new Failure(`with don't match`),
+  })
+
+  const proof = {
+    issuer: alice,
+    fake: { thing: 'thing' },
+  }
+  const src = source({ can: 'derive/a', with: 'data:a' }, proof)
+  const m = AA.match(src)
+
+  assert.containSubset(m, {
+    can: 'derive/a',
+    proofs: [proof],
+    value: { can: 'derive/a', with: 'data:a' },
+    source: [src],
+  })
+
+  if (m.error) {
+    return assert.fail(m.message)
+  }
+
+  assert.notEqual(m.prune({ canIssue: () => false }), null)
+  assert.equal(m.prune({ canIssue: () => true }), null)
+})
+
+test('default derive', () => {
+  const a = capability({
+    can: 'test/a',
+    with: Schema.URI.match({ protocol: 'file:' }),
+  })
+
+  const home = a.match(
+    source({ can: 'test/a', with: 'file:///home/bob/photo' })
+  )
+  if (home.error) {
+    return assert.fail(home.message)
+  }
+
+  assert.containSubset(
+    home.select(
+      delegate([
+        {
+          can: 'test/a',
+          with: 'file:///home/alice/*',
+        },
+      ])
+    ),
+    {
+      matches: [],
+      unknown: [],
+      errors: [
+        {
+          name: 'InvalidClaim',
+          cause: {
+            name: 'EscalatedCapability',
+            message:
+              'Constraint violation: Resource file:///home/bob/photo does not match delegated file:///home/alice/* ',
+          },
+        },
+      ],
+    }
+  )
+
+  assert.containSubset(
+    home.select(
+      delegate([
+        {
+          can: 'test/a',
+          with: 'file:///home/bob/*',
+        },
+      ])
+    ),
+    {
+      matches: [
+        {
+          can: 'test/a',
+          value: {
+            can: 'test/a',
+            with: 'file:///home/bob/*',
+            nb: {},
+          },
+        },
+      ],
+      unknown: [],
+      errors: [],
+    }
+  )
+
+  assert.containSubset(
+    home.select(
+      delegate([
+        {
+          can: 'test/a',
+          with: 'file:///home/alice/',
+        },
+      ])
+    ),
+    {
+      matches: [],
+      unknown: [],
+      errors: [
+        {
+          name: 'InvalidClaim',
+          cause: {
+            name: 'EscalatedCapability',
+            message:
+              'Constraint violation: Resource file:///home/bob/photo is not contained by file:///home/alice/',
+          },
+        },
+      ],
+    }
+  )
+})
+
+test('default derive with nb', () => {
+  const Profile = capability({
+    can: 'profile/set',
+    with: Schema.URI.match({ protocol: 'file:' }),
+    nb: {
+      mime: Schema.Text,
+    },
+  })
+
+  const pic = Profile.match(
+    source({
+      can: 'profile/set',
+      with: 'file:///home/alice/photo',
+      nb: { mime: 'image/png' },
+    })
+  )
+
+  if (pic.error) {
+    return assert.fail(pic.message)
+  }
+
+  assert.containSubset(
+    pic.select(
+      delegate([
+        {
+          can: 'profile/set',
+          with: 'file:///home/alice/photo',
+          nb: { mime: 'image/jpeg' },
+        },
+      ])
+    ),
+    {
+      matches: [],
+      unknown: [],
+      errors: [
+        {
+          name: 'InvalidClaim',
+          cause: {
+            name: 'EscalatedCapability',
+            message:
+              'Constraint violation: mime: image/png violates image/jpeg',
+          },
+        },
+      ],
+    }
+  )
 })
