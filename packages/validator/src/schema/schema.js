@@ -839,7 +839,7 @@ export const string = () => anyString
  * @extends {API<Body & `${Prefix}${Body}`, Body, Prefix>}
  * @implements {Schema.Schema<Body & `${Prefix}${Body}`, Body>}
  */
-class StratsWith extends API {
+class StartsWith extends API {
   /**
    * @param {Body} input
    * @param {Prefix} prefix
@@ -863,7 +863,7 @@ class StratsWith extends API {
  * @param {Prefix} prefix
  * @returns {Schema.Schema<`${Prefix}${string}`, string>}
  */
-export const startsWith = prefix => new StratsWith(prefix)
+export const startsWith = prefix => new StartsWith(prefix)
 
 /**
  * @template {string} Suffix
