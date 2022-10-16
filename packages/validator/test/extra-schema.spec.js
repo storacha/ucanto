@@ -169,7 +169,7 @@ test('URI.from', () => {
     })
 
     test(`Link.optional().read(${input})`, () => {
-      const link = Link.link().optional()
+      const link = Link.optional()
       assert.containSubset(link.read(input), out5 || input)
     })
   }
