@@ -265,7 +265,7 @@ export type ExecuteInvocation<
   ? Out
   : never
 
-export type Result<T, X extends { error: true }> =
+export type Result<T extends unknown, X extends { error: true }> =
   | (T extends null | undefined ? T : never)
   | (T & { error?: never })
   | X

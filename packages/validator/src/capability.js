@@ -7,7 +7,7 @@ import {
   DelegationError as MatchError,
   Failure,
 } from './error.js'
-import { invoke, delegate } from '@ucanto/core'
+import { invoke } from '@ucanto/core'
 
 /**
  * @template {API.Ability} A
@@ -51,6 +51,7 @@ class View {
    * @param {API.Source} source
    * @returns {API.MatchResult<M>}
    */
+  /* c8 ignore next 3 */
   match(source) {
     return new UnknownCapability(source.capability)
   }
@@ -121,7 +122,7 @@ class Capability extends Unit {
     const decoders = descriptor.nb
     const data = /** @type {API.InferCaveats<C>} */ (options.nb || {})
 
-    const resource = descriptor.with.decode(options.with)
+    const resource = descriptor.with.read(options.with)
     if (resource.error) {
       throw Object.assign(new Error(`Invalid 'with' - ${resource.message}`), {
         cause: resource,
@@ -134,7 +135,7 @@ class Capability extends Unit {
 
     for (const [name, decoder] of Object.entries(decoders || {})) {
       const key = /** @type {keyof data & string} */ (name)
-      const value = decoder.decode(data[key])
+      const value = decoder.read(data[key])
       if (value?.error) {
         throw Object.assign(
           new Error(`Invalid 'nb.${key}' - ${value.message}`),
@@ -209,7 +210,11 @@ class Or extends Unit {
     if (left.error) {
       const right = this.right.match(capability)
       if (right.error) {
-        return right.name === 'MalformedCapability' ? right : left
+        return right.name === 'MalformedCapability'
+          ? //
+            right
+          : //
+            left
       } else {
         return right
       }
@@ -404,11 +409,11 @@ class Match {
     return { matches, unknown, errors }
   }
   toString() {
+    const { nb } = this.value
     return JSON.stringify({
       can: this.descriptor.can,
       with: this.value.with,
-      nb:
-        Object.keys(this.value.nb || {}).length > 0 ? this.value.nb : undefined,
+      nb: nb && Object.keys(nb).length > 0 ? nb : undefined,
     })
   }
 }
@@ -552,7 +557,7 @@ class AndMatch {
       proofs.push(delegation)
     }
 
-    Object.defineProperties(this, { source: { value: proofs } })
+    Object.defineProperties(this, { proofs: { value: proofs } })
     return proofs
   }
   /**
@@ -588,7 +593,7 @@ class AndMatch {
  */
 
 const parse = (self, source) => {
-  const { can, with: withDecoder, nb: decoders } = self.descriptor
+  const { can, with: withReader, nb: readers } = self.descriptor
   const { delegation } = source
   const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
     source.capability
@@ -598,19 +603,19 @@ const parse = (self, source) => {
     return new UnknownCapability(capability)
   }
 
-  const uri = withDecoder.decode(capability.with)
+  const uri = withReader.read(capability.with)
   if (uri.error) {
     return new MalformedCapability(capability, uri)
   }
 
   const nb = /** @type {API.InferCaveats<C>} */ ({})
 
-  if (decoders) {
+  if (readers) {
     /** @type {Partial<API.InferCaveats<C>>} */
     const caveats = capability.nb || {}
-    for (const [name, decoder] of entries(decoders)) {
+    for (const [name, reader] of entries(readers)) {
       const key = /** @type {keyof caveats & keyof nb} */ (name)
-      const result = decoder.decode(caveats[key])
+      const result = reader.read(caveats[key])
       if (result?.error) {
         return new MalformedCapability(capability, result)
       } else if (result != null) {
@@ -697,7 +702,9 @@ const selectGroup = (self, capabilities) => {
   const matches = combine(data).map(group => new AndMatch(group))
 
   return {
-    unknown: unknown || [],
+    unknown:
+      /* c8 ignore next */
+      unknown || [],
     errors,
     matches,
   }
@@ -720,10 +727,11 @@ const derives = (claimed, delegated) => {
     }
   } else if (delegated.with !== claimed.with) {
     return new Failure(
-      `Resource ${claimed.with} does not contain ${delegated.with}`
+      `Resource ${claimed.with} is not contained by ${delegated.with}`
     )
   }
 
+  /* c8 ignore next 2 */
   const caveats = delegated.nb || {}
   const nb = claimed.nb || {}
   const kv = entries(caveats)

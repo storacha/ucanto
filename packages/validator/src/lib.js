@@ -15,11 +15,8 @@ import {
 export { Failure, UnavailableProof, MalformedCapability }
 
 export { capability } from './capability.js'
-
-export * as URI from './decoder/uri.js'
-export * as Link from './decoder/link.js'
-export * as Text from './decoder/text.js'
-export * as DID from './decoder/did.js'
+export * from './schema.js'
+export * as Schema from './schema.js'
 
 const empty = () => []
 
@@ -333,8 +330,8 @@ class Unauthorized extends Failure {
     return this.cause.message
   }
   toJSON() {
-    const { error, name, message, cause } = this
-    return { error, name, message, cause }
+    const { error, name, message, cause, stack } = this
+    return { error, name, message, cause, stack }
   }
 }
 const ALL = '*'
