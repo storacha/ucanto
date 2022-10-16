@@ -136,9 +136,23 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
     input: InferCreateOptions<M['value']['with'], M['value']['nb']>
   ): M['value']
 
+  /**
+   * Creates an invocation of this capability. Function throws exception if
+   * non-optional fields are omitted.
+   */
+
   invoke(
     options: InferInvokeOptions<M['value']['with'], M['value']['nb']>
   ): IssuedInvocationView<M['value']>
+
+  /**
+   * Creates a delegation of this capability. Please note that all the
+   * `nb` fields are optional in delegation and only provided ones will
+   * be validated.
+   */
+  delegate(
+    options: InferDelegationOptions<M['value']['with'], M['value']['nb']>
+  ): Promise<Delegation<[M['value']]>>
 }
 
 export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
@@ -151,6 +165,15 @@ export type InferInvokeOptions<
   R extends Resource,
   C extends {} | undefined
 > = UCANOptions & { issuer: Signer } & InferCreateOptions<R, C>
+
+export type InferDelegationOptions<
+  R extends Resource,
+  C extends {} | undefined
+> = UCANOptions & {
+  issuer: Signer
+  with: R
+  nb?: Partial<InferCreateOptions<R, C>['nb']>
+}
 
 export type EmptyObject = { [key: string | number | symbol]: never }
 type Optionalize<T> = InferRequried<T> & InferOptional<T>

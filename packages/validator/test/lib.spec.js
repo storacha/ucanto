@@ -13,7 +13,7 @@ const storeAdd = capability({
   can: 'store/add',
   with: URI.match({ protocol: 'did:' }),
   nb: {
-    link: Link.optional(),
+    link: Link.match().optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
