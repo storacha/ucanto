@@ -25,29 +25,27 @@
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
     "test": "npm run test:node",
     "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080",
-    "typecheck": "tsc --build",
+    "check": "tsc --build",
     "build": "tsc --build"
   },
   "dependencies": {
     "@ucanto/interface": "^1.0.0",
-    "multiformats": "^9.8.1"
+    "multiformats": "^10.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
-    "@types/chai-subset": "^1.3.3",
     "@types/mocha": "^9.1.0",
-    "@ucanto/principal": "^1.0.1",
     "@ucanto/core": "^1.0.1",
+    "@ucanto/principal": "^1.0.1",
     "@ucanto/transport": "^1.0.1",
     "@web-std/fetch": "^4.1.0",
     "@web-std/file": "^3.0.2",
     "c8": "^7.11.0",
     "chai": "^4.3.6",
-    "chai-subset": "^1.6.0",
-    "mocha": "^10.0.0",
+    "mocha": "^10.1.0",
     "nyc": "^15.1.0",
     "playwright-test": "^8.1.1",
-    "typescript": "^4.8.3"
+    "typescript": "^4.8.4"
   },
   "type": "module",
   "main": "src/lib.js",

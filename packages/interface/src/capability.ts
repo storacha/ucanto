@@ -7,6 +7,7 @@ import {
   PrincipalParser,
   Signer,
   URI,
+  UCANLink,
   Await,
   IssuedInvocationView,
   UCANOptions,
@@ -356,7 +357,7 @@ export interface InvalidAudience extends Failure {
 
 export interface UnavailableProof extends Failure {
   readonly name: 'UnavailableProof'
-  readonly link: Link
+  readonly link: UCANLink
 }
 
 export interface Expired extends Failure {

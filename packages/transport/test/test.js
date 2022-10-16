@@ -1,6 +1,4 @@
-import { assert, use } from 'chai'
-import subset from 'chai-subset'
-use(subset)
+import { assert } from 'chai'
 
 export const test = it
 export { assert }

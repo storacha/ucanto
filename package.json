@@ -16,12 +16,12 @@
     "format:check": "prettier --check '**/*.{js,ts,yml,json}' --ignore-path .gitignore",
     "test": "pnpm -r run --if-present test",
     "build": "pnpm -r run --if-present build",
-    "typecheck": "pnpm -r run --if-present typecheck",
+    "check": "pnpm -r run --if-present check",
     "test:node": "pnpm -r run --if-present test:node",
     "test:web": "pnpm -r run --if-present test:web"
   },
   "devDependencies": {
-    "mocha": "^10.0.0",
+    "mocha": "^10.1.0",
     "prettier": "2.7.1",
     "typescript": "4.8.3"
   },
@@ -31,5 +31,10 @@
     "semi": false,
     "singleQuote": true,
     "arrowParens": "avoid"
+  },
+  "pnpm": {
+    "overrides": {
+      "multiformats": "^10.0.0"
+    }
   }
 }

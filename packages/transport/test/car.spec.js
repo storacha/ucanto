@@ -1,7 +1,7 @@
 import { test, assert } from './test.js'
 import * as CAR from '../src/car.js'
 import * as CBOR from '../src/cbor.js'
-import { delegate, Delegation, UCAN, parseLink, asLink } from '@ucanto/core'
+import { delegate, Delegation, UCAN, parseLink, isLink } from '@ucanto/core'
 import * as UTF8 from '../src/utf8.js'
 import { alice, bob, mallory, service } from './fixtures.js'
 import { CarReader } from '@ipld/car/reader'
@@ -34,7 +34,11 @@ test('encode / decode', async () => {
   })
   const reader = await CarReader.fromBytes(request.body)
 
-  assert.deepEqual(await reader.getRoots(), [cid])
+  assert.deepEqual(
+    await reader.getRoots(),
+    // @ts-expect-error - CAR refers to old CID
+    [cid]
+  )
 
   const expect = await Delegation.delegate({
     issuer: alice,
@@ -48,9 +52,9 @@ test('encode / decode', async () => {
     expiration,
     proofs: [],
   })
-  const actual = assert.containSubset(
-    [expect],
-    await CAR.decode(request),
+  assert.deepNestedInclude(
+    { data: [expect] },
+    { data: await CAR.decode(request) },
     'roundtrips'
   )
 })
@@ -242,7 +246,7 @@ test('codec', async () => {
 
   const car = await CAR.codec.write({ roots: [root] })
   assert.deepEqual(car.bytes, bytes)
-  assert.ok(asLink(car.cid) === car.cid)
+  assert.equal(isLink(car.cid), true)
 
   const link = await CAR.codec.link(car.bytes)
   assert.deepEqual(car.cid, link)

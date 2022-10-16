@@ -2,7 +2,7 @@ import * as API from '@ucanto/interface'
 import * as CBOR from '@ipld/dag-cbor'
 export { code, decode } from '@ipld/dag-cbor'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { asLink, createLink } from '@ucanto/core'
+import { createLink, isLink } from '@ucanto/core'
 
 /**
  * @param {unknown} data
@@ -26,9 +26,8 @@ const prepare = (data, seen) => {
     return null
   }
 
-  const cid = asLink(data)
-  if (cid) {
-    return cid
+  if (isLink(data)) {
+    return data
   }
 
   if (ArrayBuffer.isView(data)) {
@@ -74,7 +73,8 @@ const prepare = (data, seen) => {
  * @param {T} data
  * @returns {CBOR.ByteView<T>}
  */
-export const encode = data => CBOR.encode(prepare(data, new Set()))
+export const encode = data =>
+  /** @type {CBOR.ByteView<T>} */ (CBOR.encode(prepare(data, new Set())))
 
 /**
  * @template T

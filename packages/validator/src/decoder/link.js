@@ -1,24 +1,23 @@
 import * as API from '@ucanto/interface'
 import { Failure } from '../error.js'
-import { create, createV0, isLink, asLink, parse } from '@ucanto/core/link'
+import { create, createLegacy, isLink, parse } from '@ucanto/core/link'
 
-export { create, createV0, isLink, asLink, parse }
+export { create, createLegacy, isLink, parse }
 
 /**
  * @template {number} Code
  * @template {number} Alg
  * @template {1|0} Version
- * @param {unknown} input
+ * @param {unknown} cid
  * @param {{code?:Code, algorithm?:Alg, version?:Version}} [options]
  * @returns {API.Result<API.Link<unknown, Code, Alg, Version>, API.Failure>}
  */
-export const decode = (input, options = {}) => {
-  if (input == null) {
-    return new Failure(`Expected link but got ${input} instead`)
+export const decode = (cid, options = {}) => {
+  if (cid == null) {
+    return new Failure(`Expected link but got ${cid} instead`)
   } else {
-    const cid = asLink(input)
-    if (cid == null) {
-      return new Failure(`Expected link to be a CID instead of ${input}`)
+    if (!isLink(cid)) {
+      return new Failure(`Expected link to be a CID instead of ${cid}`)
     } else {
       if (options.code != null && cid.code !== options.code) {
         return new Failure(
@@ -42,9 +41,8 @@ export const decode = (input, options = {}) => {
         )
       }
 
-      const link = /** @type {API.Link<unknown, Code, Alg, Version>} */ (cid)
-
-      return link
+      // @ts-expect-error - inference can deduce version
+      return cid
     }
   }
 }

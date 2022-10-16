@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/validator",
   "description": "UCAN RPC validators",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "keywords": [
     "UCAN",
     "ed25519",
@@ -23,29 +23,29 @@
     "test:node": "c8 --check-coverage --branches 96 --functions 85 --lines 93 mocha test/**/*.spec.js",
     "test": "npm run test:node",
     "coverage": "c8 --reporter=html mocha test/**/*.spec.js && npm_config_yes=true npx st -d coverage -p 8080",
-    "typecheck": "tsc --build",
+    "check": "tsc --build",
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/car": "^4.1.5",
+    "@ipld/car": "^4.1.6",
     "@ipld/dag-cbor": "^7.0.3",
     "@ucanto/core": "^1.0.1",
     "@ucanto/interface": "^1.0.0",
-    "multiformats": "^9.8.1"
+    "multiformats": "^10.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/chai-subset": "^1.3.3",
     "@types/mocha": "^9.1.0",
-    "@ucanto/principal": "^1.0.1",
     "@ucanto/client": "^1.0.1",
+    "@ucanto/principal": "^1.0.1",
     "c8": "^7.11.0",
     "chai": "^4.3.6",
     "chai-subset": "^1.6.0",
-    "mocha": "^10.0.0",
+    "mocha": "^10.1.0",
     "nyc": "^15.1.0",
     "playwright-test": "^8.1.1",
-    "typescript": "^4.8.3"
+    "typescript": "^4.8.4"
   },
   "type": "module",
   "main": "src/lib.js",

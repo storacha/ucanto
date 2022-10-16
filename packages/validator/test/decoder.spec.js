@@ -1,6 +1,5 @@
 import { URI, Link, Text, DID } from '../src/lib.js'
 import { test, assert } from './test.js'
-import { CID } from 'multiformats'
 
 {
   /** @type {[string, string|{message:string}][]} */
@@ -12,7 +11,7 @@ import { CID } from 'multiformats'
 
   for (const [input, expect] of dataset) {
     test(`URI.decode(${JSON.stringify(input)}}`, () => {
-      assert.containSubset(URI.decode(input), expect)
+      assert.deepNestedInclude(URI.decode(input), expect)
     })
   }
 }
@@ -41,7 +40,7 @@ import { CID } from 'multiformats'
     test(`URI.match(${JSON.stringify({
       protocol,
     })}).decode(${JSON.stringify(input)})}}`, () => {
-      assert.containSubset(URI.match({ protocol }).decode(input), expect)
+      assert.deepNestedInclude(URI.match({ protocol }).decode(input), expect)
     })
   }
 }
@@ -79,7 +78,7 @@ import { CID } from 'multiformats'
   /** @type {unknown[][]} */
   const dataset = [
     [
-      CID.parse('bafkqaaa'),
+      Link.parse('bafkqaaa'),
       null,
       { message: 'Expected link to be CID with 0x70 codec' },
       { message: 'Expected link to be CID with 0x12 hashing algorithm' },
@@ -87,7 +86,7 @@ import { CID } from 'multiformats'
       null,
     ],
     [
-      CID.parse('QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB'),
+      Link.parse('QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB'),
       null,
       null,
       null,
@@ -95,7 +94,7 @@ import { CID } from 'multiformats'
       null,
     ],
     [
-      CID.parse('bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'),
+      Link.parse('bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'),
       null,
       null,
       null,
@@ -129,22 +128,22 @@ import { CID } from 'multiformats'
 
   for (const [input, out1, out2, out3, out4, out5] of dataset) {
     test(`Link.decode(${input})`, () => {
-      assert.containSubset(Link.decode(input), out1 || input)
+      assert.deepNestedInclude(Link.decode(input), out1 || input)
     })
 
     test(`Link.match({ code: 0x70 }).decode(${input})`, () => {
       const link = Link.match({ code: 0x70 })
-      assert.containSubset(link.decode(input), out2 || input)
+      assert.deepNestedInclude(link.decode(input), out2 || input)
     })
 
     test(`Link.match({ algorithm: 0x12 }).decode(${input})`, () => {
       const link = Link.match({ algorithm: 0x12 })
-      assert.containSubset(link.decode(input), out3 || input)
+      assert.deepNestedInclude(link.decode(input), out3 || input)
     })
 
     test(`Link.match({ version: 1 }).decode(${input})`, () => {
       const link = Link.match({ version: 1 })
-      assert.containSubset(link.decode(input), out4 || input)
+      assert.deepNestedInclude(link.decode(input), out4 || input)
     })
 
     test(`Link.optional().decode(${input})`, () => {
@@ -168,7 +167,7 @@ import { CID } from 'multiformats'
 
   for (const [input, out] of dataset) {
     test(`Text.decode(${input})`, () => {
-      assert.containSubset(Text.decode(input), out)
+      assert.deepNestedInclude(Text.decode(input), out)
     })
   }
 }
@@ -201,7 +200,7 @@ import { CID } from 'multiformats'
 
   for (const [options, input, out] of dataset) {
     test(`Text.match({ pattern: ${options.pattern} }).decode(${input})`, () => {
-      assert.containSubset(Text.match(options).decode(input), out)
+      assert.deepNestedInclude(Text.match(options).decode(input), out)
     })
   }
 }
@@ -259,7 +258,7 @@ import { CID } from 'multiformats'
 
   for (const [input, out] of dataset) {
     test(`DID.decode(${input})`, () => {
-      assert.containSubset(DID.decode(input), out)
+      assert.deepNestedInclude(DID.decode(input), out)
     })
   }
 }
@@ -297,7 +296,7 @@ import { CID } from 'multiformats'
 
   for (const [options, input, out] of dataset) {
     test(`DID.match({ method: ${options.method} }).decode(${input})`, () => {
-      assert.containSubset(DID.match(options).decode(input), out)
+      assert.deepNestedInclude(DID.match(options).decode(input), out)
     })
   }
 }

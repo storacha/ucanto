@@ -3,7 +3,6 @@ import { invoke, parseLink, Delegation } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
-import { CID } from 'multiformats'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 
@@ -864,15 +863,20 @@ test('parse with nb', () => {
 
   const [match] = v2.matches
 
+  const link1 = Link.parse(
+    'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
+  )
+  const link2 = Link.parse(
+    'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
+  )
+
   const v3 = match.select(
     delegate([
       {
         can: 'store/add',
         with: 'did:key:zAlice',
         nb: {
-          link: CID.parse(
-            'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-          ),
+          link: link1,
         },
       },
     ])
@@ -901,9 +905,7 @@ test('parse with nb', () => {
               can: 'store/add',
               with: 'did:key:zAlice',
               nb: {
-                link: CID.parse(
-                  'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-                ),
+                link: link1,
               },
             },
             cause: {
@@ -923,9 +925,7 @@ test('parse with nb', () => {
         can: 'store/add',
         with: 'did:key:zAlice',
         nb: {
-          link: CID.parse(
-            'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-          ),
+          link: link1,
         },
       },
     ])
@@ -938,9 +938,7 @@ test('parse with nb', () => {
         can: 'store/add',
         with: 'did:key:zAlice',
         nb: {
-          link: CID.parse(
-            'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-          ),
+          link: link1,
         },
       },
     ])
@@ -955,9 +953,7 @@ test('parse with nb', () => {
           can: 'store/add',
           with: 'did:key:zAlice',
           nb: {
-            link: CID.parse(
-              'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-            ),
+            link: link1,
           },
         },
       },
@@ -970,9 +966,7 @@ test('parse with nb', () => {
         can: 'store/add',
         with: 'did:key:zAlice',
         nb: {
-          link: CID.parse(
-            'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
-          ),
+          link: link2,
         },
       },
     ])
@@ -987,9 +981,7 @@ test('parse with nb', () => {
             can: 'store/add',
             with: 'did:key:zAlice',
             nb: {
-              link: CID.parse(
-                'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-              ),
+              link: link1,
             },
           },
         },
@@ -1000,18 +992,14 @@ test('parse with nb', () => {
               can: 'store/add',
               with: 'did:key:zAlice',
               nb: {
-                link: CID.parse(
-                  'bafybeiabis2rrk6m3p7xghz42hi677ectmzqxsvz26icxxs7digddgpbr4'
-                ),
+                link: link1,
               },
             },
             delegated: {
               can: 'store/add',
               with: 'did:key:zAlice',
               nb: {
-                link: CID.parse(
-                  'bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'
-                ),
+                link: link2,
               },
             },
             cause: {
