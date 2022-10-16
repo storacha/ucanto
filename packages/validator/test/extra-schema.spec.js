@@ -148,6 +148,11 @@ test('URI.from', () => {
       assert.containSubset(Link.read(input), out1 || input)
     })
 
+    test('Link.link()', () => {
+      const schema = Link.link()
+      assert.containSubset(schema.read(input), out1 || input)
+    })
+
     test(`Link.match({ code: 0x70 }).read(${input})`, () => {
       const link = Link.match({ code: 0x70 })
       assert.containSubset(link.read(input), out2 || input)

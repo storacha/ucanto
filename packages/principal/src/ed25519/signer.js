@@ -1,12 +1,14 @@
 import * as ED25519 from '@noble/ed25519'
 import { varint } from 'multiformats'
-import * as API from '@ucanto/interface'
+import * as API from './type.js'
 import * as Verifier from './verifier.js'
-import { base64pad, base64url } from 'multiformats/bases/base64'
+import { base64pad } from 'multiformats/bases/base64'
 import * as Signature from '@ipld/dag-ucan/signature'
 
 export const code = 0x1300
 export const name = Verifier.name
+export const signatureAlgorithm = Verifier.signatureAlgorithm
+export const signatureCode = Verifier.signatureCode
 
 const PRIVATE_TAG_SIZE = varint.encodingLength(code)
 const PUBLIC_TAG_SIZE = varint.encodingLength(Verifier.code)
@@ -16,19 +18,19 @@ const SIZE = PRIVATE_TAG_SIZE + KEY_SIZE + PUBLIC_TAG_SIZE + KEY_SIZE
 export const PUB_KEY_OFFSET = PRIVATE_TAG_SIZE + KEY_SIZE
 
 /**
- * @typedef {API.Signer<"key", typeof Signature.EdDSA> & Uint8Array & { verifier: API.Verifier<"key", typeof Signature.EdDSA> }} Signer
+ * @typedef {API.EdSigner  } EdSigner
  */
 
 /**
  * Generates new issuer by generating underlying ED25519 keypair.
- * @returns {Promise<Signer>}
+ * @returns {Promise<API.EdSigner>}
  */
 export const generate = () => derive(ED25519.utils.randomPrivateKey())
 
 /**
  * Derives issuer from 32 byte long secret key.
  * @param {Uint8Array} secret
- * @returns {Promise<Signer>}
+ * @returns {Promise<API.EdSigner>}
  */
 export const derive = async secret => {
   if (secret.byteLength !== KEY_SIZE) {
@@ -50,8 +52,20 @@ export const derive = async secret => {
 }
 
 /**
+ * @param {API.SignerArchive<API.Signer<"key", typeof signatureCode>>} archive
+ * @returns {API.EdSigner}
+ */
+export const from = archive => {
+  if (archive instanceof Uint8Array) {
+    return decode(archive)
+  } else {
+    throw new Error(`Unsupported archive format`)
+  }
+}
+
+/**
  * @param {Uint8Array} bytes
- * @returns {Signer}
+ * @returns {API.EdSigner}
  */
 export const decode = bytes => {
   if (bytes.byteLength !== SIZE) {
@@ -80,31 +94,40 @@ export const decode = bytes => {
 }
 
 /**
- * @param {Signer} signer
- * @return {API.ByteView<Signer>}
+ * @param {API.EdSigner} signer
+ * @return {API.ByteView<API.EdSigner>}
  */
-export const encode = signer => signer
+export const encode = signer => signer.toArchive()
 
 /**
  * @template {string} Prefix
- * @param {Signer} signer
+ * @param {API.EdSigner} signer
  * @param {API.MultibaseEncoder<Prefix>} [encoder]
  */
-export const format = (signer, encoder) => (encoder || base64pad).encode(signer)
+export const format = (signer, encoder) =>
+  (encoder || base64pad).encode(encode(signer))
 
 /**
  * @template {string} Prefix
  * @param {string} principal
  * @param {API.MultibaseDecoder<Prefix>} [decoder]
- * @returns {Signer}
+ * @returns {API.EdSigner}
  */
 export const parse = (principal, decoder) =>
   decode((decoder || base64pad).decode(principal))
 
 /**
- * @implements {API.Signer<'key', typeof Signature.EdDSA>}
+ * @implements {API.EdSigner}
  */
 class Ed25519Signer extends Uint8Array {
+  /** @type {typeof code} */
+  get code() {
+    return code
+  }
+  get signer() {
+    return this
+  }
+  /** @type {API.EdVerifier} */
   get verifier() {
     const bytes = new Uint8Array(this.buffer, PRIVATE_TAG_SIZE + KEY_SIZE)
     const verifier = Verifier.decode(bytes)
@@ -149,11 +172,24 @@ class Ed25519Signer extends Uint8Array {
 
     return Signature.create(this.signatureCode, raw)
   }
+  /**
+   * @template T
+   * @param {API.ByteView<T>} payload
+   * @param {API.Signature<T, typeof this.signatureCode>} signature
+   */
+
+  verify(payload, signature) {
+    return this.verifier.verify(payload, signature)
+  }
 
   get signatureAlgorithm() {
     return 'EdDSA'
   }
   get signatureCode() {
     return Signature.EdDSA
+  }
+
+  toArchive() {
+    return this
   }
 }
