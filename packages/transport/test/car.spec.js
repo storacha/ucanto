@@ -52,11 +52,8 @@ test('encode / decode', async () => {
     expiration,
     proofs: [],
   })
-  assert.deepNestedInclude(
-    { data: [expect] },
-    { data: await CAR.decode(request) },
-    'roundtrips'
-  )
+
+  assert.deepEqual([expect], await CAR.decode(request), 'roundtrips')
 })
 
 test('decode requires application/car contet type', async () => {

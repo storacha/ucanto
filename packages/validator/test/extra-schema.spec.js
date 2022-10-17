@@ -11,9 +11,9 @@ import * as API from '@ucanto/interface'
   ]
 
   for (const [input, expect] of dataset) {
-    test(`URI.decode(${JSON.stringify(input)}}`, () => {
-      assert.deepNestedInclude(URI.read(input), expect)
-      assert.deepNestedInclude(URI.uri().read(input), expect)
+    test(`URI.read(${JSON.stringify(input)}}`, () => {
+      assert.containSubset(URI.read(input), expect)
+      assert.containSubset(URI.uri().read(input), expect)
     })
   }
 }
@@ -52,8 +52,8 @@ test('URI.from', () => {
   for (const [input, protocol, expect] of dataset) {
     test(`URI.match(${JSON.stringify({
       protocol,
-    })}).decode(${JSON.stringify(input)})}}`, () => {
-      assert.deepNestedInclude(URI.match({ protocol }).read(input), expect)
+    })}).read(${JSON.stringify(input)})}}`, () => {
+      assert.containSubset(URI.match({ protocol }).read(input), expect)
     })
   }
 }
@@ -81,7 +81,7 @@ test('URI.from', () => {
   for (const [input, protocol, expect] of dataset) {
     test(`URI.match(${JSON.stringify({
       protocol,
-    })}).optional().decode(${JSON.stringify(input)})}}`, () => {
+    })}).optional().read(${JSON.stringify(input)})}}`, () => {
       assert.containSubset(
         URI.match({ protocol }).optional().read(input),
         expect
@@ -144,7 +144,7 @@ test('URI.from', () => {
 
   for (const [input, out1, out2, out3, out4, out5] of dataset) {
     test(`Link.read(${input})`, () => {
-      assert.deepNestedInclude(Link.read(input), out1 || input)
+      assert.containSubset(Link.read(input), out1 || input)
     })
 
     test('Link.link()', () => {
@@ -154,17 +154,17 @@ test('URI.from', () => {
 
     test(`Link.match({ code: 0x70 }).read(${input})`, () => {
       const link = Link.match({ code: 0x70 })
-      assert.deepNestedInclude(link.read(input), out2 || input)
+      assert.containSubset(link.read(input), out2 || input)
     })
 
     test(`Link.match({ algorithm: 0x12 }).read(${input})`, () => {
       const link = Link.match({ algorithm: 0x12 })
-      assert.deepNestedInclude(link.read(input), out3 || input)
+      assert.containSubset(link.read(input), out3 || input)
     })
 
     test(`Link.match({ version: 1 }).read(${input})`, () => {
       const link = Link.match({ version: 1 })
-      assert.deepNestedInclude(link.read(input), out4 || input)
+      assert.containSubset(link.read(input), out4 || input)
     })
 
     test(`Link.optional().read(${input})`, () => {
@@ -191,7 +191,7 @@ test('URI.from', () => {
 
   for (const [input, out] of dataset) {
     test(`Text.read(${input})`, () => {
-      assert.deepNestedInclude(Text.read(input), out)
+      assert.containSubset(Text.read(input), out)
     })
   }
 }
@@ -226,7 +226,7 @@ test('URI.from', () => {
 
   for (const [options, input, out] of dataset) {
     test(`Text.match({ pattern: ${options.pattern} }).read(${input})`, () => {
-      assert.deepNestedInclude(Text.match(options).read(input), out)
+      assert.containSubset(Text.match(options).read(input), out)
     })
   }
 }
@@ -295,8 +295,8 @@ test('URI.from', () => {
   ]
 
   for (const [input, out] of dataset) {
-    test(`DID.decode(${input})`, () => {
-      assert.deepNestedInclude(DID.read(input), out)
+    test(`DID.read(${input})`, () => {
+      assert.containSubset(DID.read(input), out)
     })
   }
 }
@@ -333,8 +333,8 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`DID.match({ method: ${options.method} }).decode(${input})`, () => {
-      assert.deepNestedInclude(DID.match(options).read(input), out)
+    test(`DID.match({ method: ${options.method} }).read(${input})`, () => {
+      assert.containSubset(DID.match(options).read(input), out)
     })
   }
 }
@@ -375,7 +375,7 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`DID.match({ method: "${options.method}" }).optional().decode(${input})`, () => {
+    test(`DID.match({ method: "${options.method}" }).optional().read(${input})`, () => {
       const schema = options.method ? DID.match(options) : DID.did()
       assert.containSubset(schema.optional().read(input), out)
     })

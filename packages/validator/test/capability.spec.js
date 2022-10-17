@@ -1,11 +1,10 @@
-import { capability, URI, Link, unknown, Schema } from '../src/lib.js'
+import { capability, URI, Link, Schema } from '../src/lib.js'
 import { invoke, parseLink } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-import { derive } from '../src/capability.js'
 
 /**
  * @template {API.Capabilities} C
