@@ -1,5 +1,37 @@
 # Changelog
 
+## [2.0.0](https://www.github.com/web3-storage/ucanto/compare/validator-v1.0.1...validator-v2.0.0) (2022-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* switch decoder API to zod like schema API (#108)
+* upgrade to ucan 0.9 (#95)
+
+### Features
+
+* Impelment InferInvokedCapability per [#99](https://www.github.com/web3-storage/ucanto/issues/99) ([#100](https://www.github.com/web3-storage/ucanto/issues/100)) ([fc5a2ac](https://www.github.com/web3-storage/ucanto/commit/fc5a2ace33f2a3599a654d8edd1641d111032074))
+* implement .delegate on capabilities ([#110](https://www.github.com/web3-storage/ucanto/issues/110)) ([fd0bb9d](https://www.github.com/web3-storage/ucanto/commit/fd0bb9da58836c05d6ee9f60cd6b1cb6b747e3b1))
+* rip out special handling of my: and as: capabilities ([#109](https://www.github.com/web3-storage/ucanto/issues/109)) ([3ec8e64](https://www.github.com/web3-storage/ucanto/commit/3ec8e6434a096221bf72193e074810cc18dd5cd8))
+* switch decoder API to zod like schema API ([#108](https://www.github.com/web3-storage/ucanto/issues/108)) ([e2e03ff](https://www.github.com/web3-storage/ucanto/commit/e2e03ffeb35f00627335dbfd3e128e2cf9dcfdee))
+* upgrade to ucan 0.9 ([#95](https://www.github.com/web3-storage/ucanto/issues/95)) ([b752b39](https://www.github.com/web3-storage/ucanto/commit/b752b398950120d6121badcdbb639f4dc9ce8794))
+
+
+### Bug Fixes
+
+* optional caveats ([#106](https://www.github.com/web3-storage/ucanto/issues/106)) ([537a4c8](https://www.github.com/web3-storage/ucanto/commit/537a4c86fdd02c26c1442d6a205e8977afbad603))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^1.0.1 to ^2.0.0
+    * @ucanto/interface bumped from ^1.0.0 to ^2.0.0
+  * devDependencies
+    * @ucanto/principal bumped from ^1.0.1 to ^2.0.0
+    * @ucanto/client bumped from ^1.0.1 to ^2.0.0
+
 ### [1.0.1](https://www.github.com/web3-storage/ucanto/compare/validator-v1.0.0...validator-v1.0.1) (2022-09-21)
 
 
