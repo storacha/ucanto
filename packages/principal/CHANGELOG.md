@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://www.github.com/web3-storage/ucanto/compare/principal-v1.0.1...principal-v2.0.0) (2022-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* switch decoder API to zod like schema API (#108)
+* upgrade to ucan 0.9 (#95)
+
+### Features
+
+* implement rsa signer / verifier ([#102](https://www.github.com/web3-storage/ucanto/issues/102)) ([8ed7777](https://www.github.com/web3-storage/ucanto/commit/8ed77770142259be03c3d6a8108365db1ab796b2))
+* switch decoder API to zod like schema API ([#108](https://www.github.com/web3-storage/ucanto/issues/108)) ([e2e03ff](https://www.github.com/web3-storage/ucanto/commit/e2e03ffeb35f00627335dbfd3e128e2cf9dcfdee))
+* upgrade to ucan 0.9 ([#95](https://www.github.com/web3-storage/ucanto/issues/95)) ([b752b39](https://www.github.com/web3-storage/ucanto/commit/b752b398950120d6121badcdbb639f4dc9ce8794))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^1.0.0 to ^2.0.0
+
 ### [1.0.1](https://www.github.com/web3-storage/ucanto/compare/principal-v1.0.0...principal-v1.0.1) (2022-09-21)
 
 

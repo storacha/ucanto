@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.0.0](https://www.github.com/web3-storage/ucanto/compare/transport-v1.0.1...transport-v2.0.0) (2022-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* upgrade to ucan 0.9 (#95)
+
+### Features
+
+* upgrade to ucan 0.9 ([#95](https://www.github.com/web3-storage/ucanto/issues/95)) ([b752b39](https://www.github.com/web3-storage/ucanto/commit/b752b398950120d6121badcdbb639f4dc9ce8794))
+
+
+### Bug Fixes
+
+* FetchResponse type ([#113](https://www.github.com/web3-storage/ucanto/issues/113)) ([9397eb6](https://www.github.com/web3-storage/ucanto/commit/9397eb6449d0e2ba30c0da7402f3beda4980ed73))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^1.0.1 to ^2.0.0
+    * @ucanto/interface bumped from ^1.0.0 to ^2.0.0
+  * devDependencies
+    * @ucanto/principal bumped from ^1.0.1 to ^2.0.0
+
 ### [1.0.1](https://www.github.com/web3-storage/ucanto/compare/transport-v1.0.0...transport-v1.0.1) (2022-09-21)
 
 
