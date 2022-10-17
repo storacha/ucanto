@@ -18,8 +18,6 @@ export { capability } from './capability.js'
 export * from './schema.js'
 export * as Schema from './schema.js'
 
-const empty = () => []
-
 /**
  * @param {UCAN.Link} proof
  */
@@ -115,7 +113,7 @@ const resolveSources = async ({ delegation }, config) => {
         } else {
           // otherwise create source objects for it's capabilities, so we could
           // track which proof in which capability the are from.
-          for (const capability of iterateCapabilities(proof, config)) {
+          for (const capability of proof.capabilities) {
             sources.push({
               capability,
               delegation: proof,
@@ -131,6 +129,12 @@ const resolveSources = async ({ delegation }, config) => {
 }
 
 /**
+ * @param {API.ParsedCapability} capability
+ * @param {API.DID} issuer
+ */
+const isSelfIssued = (capability, issuer) => capability.with === issuer
+
+/**
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {R} URI
@@ -141,9 +145,9 @@ const resolveSources = async ({ delegation }, config) => {
  */
 export const access = async (
   invocation,
-  { canIssue, principal, my = empty, resolve = unavailable, capability }
+  { canIssue = isSelfIssued, principal, resolve = unavailable, capability }
 ) => {
-  const config = { canIssue, my, resolve, principal, capability }
+  const config = { canIssue, resolve, principal, capability }
 
   const claim = capability.match({
     capability: invocation.capabilities[0],
@@ -333,59 +337,6 @@ class Unauthorized extends Failure {
     const { error, name, message, cause, stack } = this
     return { error, name, message, cause, stack }
   }
-}
-const ALL = '*'
-
-/**
- * @param {API.Delegation} delegation
- * @param {Required<API.IssuingOptions>} options
- */
-function* iterateCapabilities({ issuer, capabilities }, { my }) {
-  const did = issuer.did()
-  for (const capability of capabilities) {
-    const uri = parseMyURI(capability.with, did) || parseAsURI(capability.with)
-    const { can } = capability
-
-    if (uri) {
-      for (const capability of my(uri.did)) {
-        if (
-          capability.with.startsWith(uri.protocol) &&
-          (can === ALL || capability.can === can)
-        ) {
-          yield capability
-        }
-      }
-    } else {
-      yield capability
-    }
-  }
-}
-
-const AS_PATTERN = /as:(.*):(.*)/
-const MY = /my:(.*)/
-
-/**
- * @param {string} uri
- * @returns {{did:API.DID, protocol:string}|null}
- */
-const parseAsURI = uri => {
-  const [, did, kind] = AS_PATTERN.exec(uri) || []
-  return did != null && kind != null
-    ? {
-        did: /** @type {API.DID} */ (did),
-        protocol: kind === ALL ? '' : `${kind}:`,
-      }
-    : null
-}
-
-/**
- * @param {string} uri
- * @param {API.DID} did
- */
-
-const parseMyURI = (uri, did) => {
-  const [, kind] = MY.exec(uri) || []
-  return kind != null ? { did, protocol: kind === ALL ? '' : `${kind}:` } : null
 }
 
 /**

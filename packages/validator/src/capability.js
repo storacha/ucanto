@@ -7,7 +7,7 @@ import {
   DelegationError as MatchError,
   Failure,
 } from './error.js'
-import { invoke } from '@ucanto/core'
+import { invoke, delegate } from '@ucanto/core'
 
 /**
  * @template {API.Ability} A
@@ -167,6 +167,51 @@ class Capability extends Unit {
     })
   }
 
+  /**
+   * @param {API.InferDelegationOptions<R, API.InferCaveats<C>>} options
+   */
+  async delegate({ with: with_, nb, ...options }) {
+    const { descriptor, can } = this
+    const readers = descriptor.nb
+    const data = /** @type {API.InferCaveats<C>} */ (nb || {})
+
+    const resource = descriptor.with.read(with_)
+    if (resource.error) {
+      throw Object.assign(new Error(`Invalid 'with' - ${resource.message}`), {
+        cause: resource,
+      })
+    }
+
+    const capabality =
+      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */
+      ({ can, with: resource })
+
+    for (const [name, reader] of Object.entries(readers || {})) {
+      const key = /** @type {keyof data & string} */ (name)
+      const source = data[key]
+      // omit undefined fields in the delegation
+      const value = source === undefined ? source : reader.read(data[key])
+      if (value?.error) {
+        throw Object.assign(
+          new Error(`Invalid 'nb.${key}' - ${value.message}`),
+          { cause: value }
+        )
+      } else if (value !== undefined) {
+        const nb =
+          capabality.nb ||
+          (capabality.nb = /** @type {API.InferCaveats<C>} */ ({}))
+
+        const key = /** @type {keyof nb} */ (name)
+        nb[key] = /** @type {typeof nb[key]} */ (value)
+      }
+    }
+
+    return await delegate({
+      capabilities: [capabality],
+      ...options,
+    })
+  }
+
   get can() {
     return this.descriptor.can
   }
@@ -310,6 +355,12 @@ class Derive extends Unit {
    */
   invoke(options) {
     return this.to.invoke(options)
+  }
+  /**
+   * @type {typeof this.to['delegate']}
+   */
+  delegate(options) {
+    return this.to.delegate(options)
   }
   get can() {
     return this.to.can
