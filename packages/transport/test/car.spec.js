@@ -34,6 +34,7 @@ test('encode / decode', async () => {
   })
   const reader = await CarReader.fromBytes(request.body)
 
+  // @ts-ignore - CID/Link mismatch needs multiformats 10
   assert.deepEqual(await reader.getRoots(), [cid])
 
   const expect = await Delegation.delegate({

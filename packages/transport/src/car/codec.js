@@ -8,7 +8,8 @@ import { sha256 } from 'multiformats/hashes/sha2'
 export const code = 0x0202
 
 /**
- * @typedef {API.Block<unknown, number, number, 0|1>} Block
+ * //TODO remove multiple block interfaces when multiformats 10 is merged
+ * @typedef {API.Block<unknown, number, number, 0|1> | CARWriter.Block} Block
  * @typedef {{
  * roots: Block[]
  * blocks: Map<string, Block>

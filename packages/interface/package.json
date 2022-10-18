@@ -23,11 +23,11 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^4.0.0-beta",
+    "@ipld/dag-ucan": "^2.0.0",
     "multiformats": "^9.8.1"
   },
   "devDependencies": {
-    "typescript": "^4.8.3"
+    "typescript": "^4.8.4"
   },
   "exports": {
     ".": {
