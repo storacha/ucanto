@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.0.0](https://www.github.com/web3-storage/ucanto/compare/transport-v2.0.0...transport-v3.0.0) (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* upgrades to multiformats@10 (#117)
+
+### Features
+
+* upgrades to multiformats@10 ([#117](https://www.github.com/web3-storage/ucanto/issues/117)) ([61dc4ca](https://www.github.com/web3-storage/ucanto/commit/61dc4cafece3365bbf60f709265ea71180f226d7))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^2.0.0 to ^3.0.0
+    * @ucanto/interface bumped from ^2.0.0 to ^3.0.0
+  * devDependencies
+    * @ucanto/principal bumped from ^2.0.0 to ^3.0.0
+
 ## [2.0.0](https://www.github.com/web3-storage/ucanto/compare/transport-v1.0.1...transport-v2.0.0) (2022-10-16)
 
 
