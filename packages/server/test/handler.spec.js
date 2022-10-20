@@ -70,7 +70,7 @@ test('delegated invocation fail', async () => {
   })
 
   const result = await Access.link(invocation, context)
-  assert.containSubset(result, {
+  assert.deepNestedInclude(result, {
     error: true,
     name: 'UnknownIDError',
     id: 'mailto:alice@web.mail',
@@ -136,7 +136,7 @@ test('checks service id', async () => {
 
     const result = await invocation.execute(client)
 
-    assert.containSubset(result, {
+    assert.deepNestedInclude(result, {
       error: true,
       name: 'InvalidAudience',
       audience: w3.did(),
@@ -197,7 +197,7 @@ test('checks for single capability invocation', async () => {
 
   const result = await invocation.execute(client)
 
-  assert.containSubset(result, {
+  assert.deepNestedInclude(result, {
     error: true,
     name: 'InvocationCapabilityError',
     message: 'Invocation is required to have a single capability.',

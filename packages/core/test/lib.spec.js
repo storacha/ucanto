@@ -22,7 +22,7 @@ test('create delegation', async () => {
     },
   })
 
-  assert.containSubset(delegation, {
+  assert.deepNestedInclude(delegation, {
     data,
     cid,
     bytes,
@@ -31,15 +31,12 @@ test('create delegation', async () => {
     version: data.version,
     signature: data.signature,
 
-    capabilities: {
-      ...[
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
-    },
-
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
     notBefore: undefined,
     expiration: data.expiration,
     nonce: undefined,
@@ -51,7 +48,7 @@ test('create delegation', async () => {
   assert.equal(delegation.audience.did(), bob.did())
 
   const dag = [...delegation.export()]
-  assert.containSubset(dag, [
+  assert.deepEqual(dag, [
     {
       cid,
       bytes,
@@ -79,7 +76,7 @@ test('create delegation (with just cid and bytes)', async () => {
     },
   })
 
-  assert.containSubset(delegation, {
+  assert.deepNestedInclude(delegation, {
     data,
     cid,
     bytes,
@@ -88,14 +85,12 @@ test('create delegation (with just cid and bytes)', async () => {
     version: data.version,
     signature: data.signature,
 
-    capabilities: {
-      ...[
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
-    },
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
 
     notBefore: undefined,
     expiration: data.expiration,
@@ -152,7 +147,7 @@ test('create delegation with attached proof', async () => {
     blocks: new Map([[proof.cid.toString(), proof.root]]),
   })
 
-  assert.containSubset(delegation, {
+  assert.deepNestedInclude(delegation, {
     root,
     data,
     bytes: root.bytes,
@@ -261,7 +256,7 @@ test('create delegation chain', async () => {
     const { proofs } = invocation
     assert.equal(proofs.length, 1)
     const [actual] = proofs
-    assert.containSubset(
+    assert.deepNestedInclude(
       actual,
       {
         cid: delegation.cid,
@@ -305,7 +300,7 @@ test('create delegation chain', async () => {
     const { proofs } = invocation
     assert.equal(proofs.length, 1)
     const [actual] = proofs
-    assert.containSubset(actual, {
+    assert.deepNestedInclude(actual, {
       cid: delegation.cid,
       bytes: delegation.bytes,
     })
@@ -321,7 +316,7 @@ test('create delegation chain', async () => {
     )
 
     assert.equal(actual.proofs.length, 1)
-    assert.containSubset(
+    assert.deepNestedInclude(
       actual.proofs[0],
       {
         cid: proof.cid,

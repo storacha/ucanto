@@ -7,9 +7,10 @@ import {
   DID,
   Fact,
   Link as UCANLink,
-  IPLDLink as Link,
   MultihashHasher,
   MultihashDigest,
+  MultibaseDecoder,
+  MultibaseEncoder,
   Phantom,
   Resource,
   Signature,
@@ -17,6 +18,7 @@ import {
   Verifier,
   Signer as UCANSigner,
 } from '@ipld/dag-ucan'
+import { Link, Block as IPLDBlock } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
 import {
   CanIssue,
@@ -29,11 +31,6 @@ import {
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
-
-export type {
-  MultibaseDecoder,
-  MultibaseEncoder,
-} from 'multiformats/bases/interface'
 export * from './capability.js'
 export * from './transport.js'
 export type {
@@ -50,11 +47,15 @@ export type {
   UCANBlock,
   UCANLink,
   Link,
+  Link as IPLDLink,
+  IPLDBlock,
   Block,
   Ability,
   Resource,
   MultihashDigest,
   MultihashHasher,
+  MultibaseDecoder,
+  MultibaseEncoder,
 }
 export * as UCAN from '@ipld/dag-ucan'
 

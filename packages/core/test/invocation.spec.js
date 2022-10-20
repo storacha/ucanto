@@ -16,7 +16,7 @@ test('encode invocation', async () => {
 
   const delegation = await add.delegate()
 
-  assert.containSubset(delegation, {
+  assert.deepNestedInclude(delegation, {
     capabilities: [
       {
         can: 'store/add',
@@ -44,7 +44,7 @@ test('expired invocation', async () => {
     expiration,
   })
 
-  assert.containSubset(await invocation.delegate(), {
+  assert.deepNestedInclude(await invocation.delegate(), {
     capabilities: [
       {
         can: 'store/add',
@@ -67,7 +67,7 @@ test('invocation with notBefore', async () => {
     notBefore,
   })
 
-  assert.containSubset(await invocation.delegate(), {
+  assert.deepNestedInclude(await invocation.delegate(), {
     capabilities: [
       {
         can: 'store/add',
@@ -89,7 +89,7 @@ test('invocation with nonce', async () => {
     nonce: 'hello',
   })
 
-  assert.containSubset(await invocation.delegate(), {
+  assert.deepNestedInclude(await invocation.delegate(), {
     capabilities: [
       {
         can: 'store/add',
@@ -115,7 +115,7 @@ test('invocation with facts', async () => {
     ],
   })
 
-  assert.containSubset(await invocation.delegate(), {
+  assert.deepNestedInclude(await invocation.delegate(), {
     capabilities: [
       {
         can: 'store/add',

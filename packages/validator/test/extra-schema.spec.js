@@ -1,6 +1,5 @@
 import { URI, Link, Text, DID } from '../src/schema.js'
 import { test, assert } from './test.js'
-import { CID } from 'multiformats'
 import * as API from '@ucanto/interface'
 
 {
@@ -12,7 +11,7 @@ import * as API from '@ucanto/interface'
   ]
 
   for (const [input, expect] of dataset) {
-    test(`URI.decode(${JSON.stringify(input)}}`, () => {
+    test(`URI.read(${JSON.stringify(input)}}`, () => {
       assert.containSubset(URI.read(input), expect)
       assert.containSubset(URI.uri().read(input), expect)
     })
@@ -82,7 +81,7 @@ test('URI.from', () => {
   for (const [input, protocol, expect] of dataset) {
     test(`URI.match(${JSON.stringify({
       protocol,
-    })}).optional().decode(${JSON.stringify(input)})}}`, () => {
+    })}).optional().read(${JSON.stringify(input)})}}`, () => {
       assert.containSubset(
         URI.match({ protocol }).optional().read(input),
         expect
@@ -95,7 +94,7 @@ test('URI.from', () => {
   /** @type {unknown[][]} */
   const dataset = [
     [
-      CID.parse('bafkqaaa'),
+      Link.parse('bafkqaaa'),
       null,
       { message: 'Expected link to be CID with 0x70 codec' },
       { message: 'Expected link to be CID with 0x12 hashing algorithm' },
@@ -103,7 +102,7 @@ test('URI.from', () => {
       null,
     ],
     [
-      CID.parse('QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB'),
+      Link.parse('QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB'),
       null,
       null,
       null,
@@ -111,7 +110,7 @@ test('URI.from', () => {
       null,
     ],
     [
-      CID.parse('bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'),
+      Link.parse('bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'),
       null,
       null,
       null,
@@ -334,7 +333,7 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`DID.match({ method: ${options.method} }).decode(${input})`, () => {
+    test(`DID.match({ method: ${options.method} }).read(${input})`, () => {
       assert.containSubset(DID.match(options).read(input), out)
     })
   }
@@ -376,7 +375,7 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`DID.match({ method: "${options.method}" }).optional().decode(${input})`, () => {
+    test(`DID.match({ method: "${options.method}" }).optional().read(${input})`, () => {
       const schema = options.method ? DID.match(options) : DID.did()
       assert.containSubset(schema.optional().read(input), out)
     })

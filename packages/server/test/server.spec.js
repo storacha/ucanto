@@ -191,7 +191,7 @@ test('unknown handler', async () => {
   // @ts-expect-error - reporst that service has no such capability
   const error = await register.execute(connection)
 
-  assert.containSubset(error, {
+  assert.deepNestedInclude(error, {
     error: true,
     name: 'HandlerNotFound',
     message: `service does not implement {can: "access/register"} handler`,
@@ -212,7 +212,7 @@ test('unknown handler', async () => {
 
   // @ts-expect-error - reporst that service has no such capability
   const error2 = await boom.execute(connection)
-  assert.containSubset(error2, {
+  assert.deepNestedInclude(error2, {
     error: true,
     name: 'HandlerNotFound',
     message: `service does not implement {can: "test/boom"} handler`,

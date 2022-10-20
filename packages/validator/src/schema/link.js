@@ -1,8 +1,8 @@
 import * as API from '@ucanto/interface'
-import { create, createV0, isLink, asLink, parse } from '@ucanto/core/link'
+import { create, createLegacy, isLink, parse } from '@ucanto/core/link'
 import * as Schema from './schema.js'
 
-export { create, createV0, isLink, asLink, parse }
+export { create, createLegacy, isLink, parse }
 
 /**
  * @template {number} [Code=number]
@@ -20,16 +20,16 @@ export { create, createV0, isLink, asLink, parse }
 class LinkSchema extends Schema.API {
   /**
    *
-   * @param {unknown} input
+   * @param {unknown} cid
    * @param {Settings<Code, Alg, Version>} settings
+   * @returns {Schema.ReadResult<API.Link<unknown, Code, Alg, Version>>}
    */
-  readWith(input, { code, algorithm, version }) {
-    if (input == null) {
-      return Schema.error(`Expected link but got ${input} instead`)
+  readWith(cid, { code, algorithm, version }) {
+    if (cid == null) {
+      return Schema.error(`Expected link but got ${cid} instead`)
     } else {
-      const cid = asLink(input)
-      if (cid == null) {
-        return Schema.error(`Expected link to be a CID instead of ${input}`)
+      if (!isLink(cid)) {
+        return Schema.error(`Expected link to be a CID instead of ${cid}`)
       } else {
         if (code != null && cid.code !== code) {
           return Schema.error(
@@ -50,9 +50,8 @@ class LinkSchema extends Schema.API {
           )
         }
 
-        const link = /** @type {API.Link<unknown, Code, Alg, Version>} */ (cid)
-
-        return link
+        // @ts-expect-error - can't infer version, code etc.
+        return cid
       }
     }
   }
