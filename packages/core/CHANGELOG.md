@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/core-v3.0.0...core-v3.0.1) (2022-11-02)
+
+
+### Bug Fixes
+
+* update @ipld/car and @ipld/dag-cbor deps ([#120](https://www.github.com/web3-storage/ucanto/issues/120)) ([5dcd7a5](https://www.github.com/web3-storage/ucanto/commit/5dcd7a5788dfd126f332b126f7ad1215972f29c4))
+
 ## [3.0.0](https://www.github.com/web3-storage/ucanto/compare/core-v2.0.0...core-v3.0.0) (2022-10-20)
 
 
