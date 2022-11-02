@@ -1,5 +1,21 @@
 # Changelog
 
+### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.0...validator-v3.0.1) (2022-11-02)
+
+
+### Bug Fixes
+
+* update @ipld/car and @ipld/dag-cbor deps ([#120](https://www.github.com/web3-storage/ucanto/issues/120)) ([5dcd7a5](https://www.github.com/web3-storage/ucanto/commit/5dcd7a5788dfd126f332b126f7ad1215972f29c4))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^3.0.0 to ^3.0.1
+  * devDependencies
+    * @ucanto/client bumped from ^3.0.0 to ^3.0.1
+
 ## [3.0.0](https://www.github.com/web3-storage/ucanto/compare/validator-v2.0.0...validator-v3.0.0) (2022-10-20)
 
 
