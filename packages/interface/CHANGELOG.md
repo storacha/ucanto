@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://www.github.com/web3-storage/ucanto/compare/interface-v2.0.0...interface-v3.0.0) (2022-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* upgrades to multiformats@10 (#117)
+
+### Features
+
+* upgrades to multiformats@10 ([#117](https://www.github.com/web3-storage/ucanto/issues/117)) ([61dc4ca](https://www.github.com/web3-storage/ucanto/commit/61dc4cafece3365bbf60f709265ea71180f226d7))
+
 ## [2.0.0](https://www.github.com/web3-storage/ucanto/compare/interface-v1.0.0...interface-v2.0.0) (2022-10-16)
 
 
