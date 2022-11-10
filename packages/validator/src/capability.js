@@ -432,7 +432,7 @@ class Match {
     const errors = []
     const matches = []
     for (const capability of capabilities) {
-      const result = parse(this, capability)
+      const result = parse(this, capability, true)
       if (!result.error) {
         const claim = this.descriptor.derives(this.value, result)
         if (claim.error) {
@@ -640,10 +640,11 @@ class AndMatch {
  * @template {API.Caveats} C
  * @param {{descriptor: API.Descriptor<A, R, C>}} self
  * @param {API.Source} source
+ * @param {boolean} optional
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
-const parse = (self, source) => {
+const parse = (self, source, optional = false) => {
   const { can, with: withReader, nb: readers } = self.descriptor
   const { delegation } = source
   const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
@@ -665,12 +666,14 @@ const parse = (self, source) => {
     /** @type {Partial<API.InferCaveats<C>>} */
     const caveats = capability.nb || {}
     for (const [name, reader] of entries(readers)) {
-      const key = /** @type {keyof caveats & keyof nb} */ (name)
-      const result = reader.read(caveats[key])
-      if (result?.error) {
-        return new MalformedCapability(capability, result)
-      } else if (result != null) {
-        nb[key] = /** @type {any} */ (result)
+      const key = /** @type {keyof caveats & keyof nb & string} */ (name)
+      if (key in caveats || !optional) {
+        const result = reader.read(caveats[key])
+        if (result?.error) {
+          return new MalformedCapability(capability, result)
+        } else if (result != null) {
+          nb[key] = /** @type {any} */ (result)
+        }
       }
     }
   }
