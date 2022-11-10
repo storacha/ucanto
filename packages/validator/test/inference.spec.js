@@ -1,7 +1,7 @@
 import * as Voucher from './voucher.js'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-import { capability, URI, Link } from '../src/lib.js'
+import { capability, URI, Link, DID } from '../src/lib.js'
 import * as API from './types.js'
 
 test('execute capabilty', () =>
@@ -93,3 +93,30 @@ test('use InferInvokedCapability', () =>
       result.product.toLocaleLowerCase()
     }
   })
+
+test('infers nb fields optional', () => {
+  capability({
+    can: 'test/nb',
+    with: DID.match({ method: 'key' }),
+    nb: {
+      msg: URI.match({ protocol: 'data:' }),
+    },
+    derives: (claim, proof) => {
+      /** @type {string} */
+      // @ts-expect-error - may be undenfined
+      const _1 = claim.nb.msg
+
+      /** @type {API.URI<"data:">|undefined} */
+      const _2 = claim.nb.msg
+
+      /** @type {string} */
+      // @ts-expect-error - may be undenfined
+      const _3 = proof.nb.msg
+
+      /** @type {API.URI<"data:">|undefined} */
+      const _4 = proof.nb.msg
+
+      return true
+    },
+  })
+})

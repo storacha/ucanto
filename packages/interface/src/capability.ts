@@ -299,8 +299,8 @@ export interface Descriptor<
   nb?: C
 
   derives?: Derives<
-    ParsedCapability<A, R, InferCaveats<C>>,
-    ParsedCapability<A, R, InferCaveats<C>>
+    ParsedCapability<A, R, Partial<InferCaveats<C>>>,
+    ParsedCapability<A, R, Partial<InferCaveats<C>>>
   >
 }
 

@@ -768,8 +768,8 @@ const selectGroup = (self, capabilities) => {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} claimed
- * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} delegated
+ * @param {API.ParsedCapability<A, R, Partial<API.InferCaveats<C>>>} claimed
+ * @param {API.ParsedCapability<A, R, Partial<API.InferCaveats<C>>>} delegated
  * @return {API.Result<true, API.Failure>}
  */
 const derives = (claimed, delegated) => {
