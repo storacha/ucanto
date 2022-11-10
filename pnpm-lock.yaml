@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 overrides:
-  multiformats: ^10.0.0
+  multiformats: ^10.0.2
 
 importers:
 
@@ -28,13 +28,13 @@ importers:
       c8: ^7.11.0
       chai: ^4.3.6
       mocha: ^10.1.0
-      multiformats: ^10.0.0
+      multiformats: ^10.0.2
       nyc: ^15.1.0
       playwright-test: ^8.1.1
       typescript: ^4.8.4
     dependencies:
       '@ucanto/interface': link:../interface
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     devDependencies:
       '@types/chai': 4.3.3
       '@types/mocha': 9.1.1
@@ -62,7 +62,7 @@ importers:
       c8: ^7.11.0
       chai: ^4.3.6
       mocha: ^10.1.0
-      multiformats: ^10.0.0
+      multiformats: ^10.0.2
       nyc: ^15.1.0
       playwright-test: ^8.1.1
       typescript: ^4.8.4
@@ -71,7 +71,7 @@ importers:
       '@ipld/dag-cbor': 8.0.0
       '@ipld/dag-ucan': 2.0.0
       '@ucanto/interface': link:../interface
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     devDependencies:
       '@types/chai': 4.3.3
       '@types/mocha': 9.1.1
@@ -86,11 +86,11 @@ importers:
   packages/interface:
     specifiers:
       '@ipld/dag-ucan': ^2.0.0
-      multiformats: ^10.0.0
+      multiformats: ^10.0.2
       typescript: ^4.8.4
     dependencies:
       '@ipld/dag-ucan': 2.0.0
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     devDependencies:
       typescript: 4.8.4
 
@@ -104,7 +104,7 @@ importers:
       c8: ^7.11.0
       chai: ^4.3.6
       mocha: ^10.1.0
-      multiformats: ^10.0.0
+      multiformats: ^10.0.2
       nyc: ^15.1.0
       one-webcrypto: ^1.0.3
       playwright-test: ^8.1.1
@@ -113,7 +113,7 @@ importers:
       '@ipld/dag-ucan': 2.0.0
       '@noble/ed25519': 1.7.1
       '@ucanto/interface': link:../interface
-      multiformats: 10.0.0
+      multiformats: 10.0.2
       one-webcrypto: 1.0.3
     devDependencies:
       '@types/chai': 4.3.3
@@ -142,7 +142,7 @@ importers:
       chai: ^4.3.6
       chai-subset: ^1.6.0
       mocha: ^10.1.0
-      multiformats: ^10.0.0
+      multiformats: ^10.0.2
       nyc: ^15.1.0
       playwright-test: ^8.1.1
       typescript: ^4.8.4
@@ -163,7 +163,7 @@ importers:
       chai: 4.3.6
       chai-subset: 1.6.0
       mocha: 10.1.0
-      multiformats: 10.0.0
+      multiformats: 10.0.2
       nyc: 15.1.0
       playwright-test: 8.1.1
       typescript: 4.8.4
@@ -181,7 +181,7 @@ importers:
       c8: ^7.11.0
       chai: ^4.3.6
       mocha: ^10.1.0
-      multiformats: ^10.0.0
+      multiformats: ^10.0.2
       nyc: ^15.1.0
       playwright-test: ^8.1.1
       typescript: ^4.8.4
@@ -190,7 +190,7 @@ importers:
       '@ipld/dag-cbor': 8.0.0
       '@ucanto/core': link:../core
       '@ucanto/interface': link:../interface
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     devDependencies:
       '@types/chai': 4.3.3
       '@types/mocha': 9.1.1
@@ -218,7 +218,7 @@ importers:
       chai: ^4.3.6
       chai-subset: ^1.6.0
       mocha: ^10.1.0
-      multiformats: ^10.0.0
+      multiformats: ^10.0.2
       nyc: ^15.1.0
       playwright-test: ^8.1.1
       typescript: ^4.8.4
@@ -227,7 +227,7 @@ importers:
       '@ipld/dag-cbor': 8.0.0
       '@ucanto/core': link:../core
       '@ucanto/interface': link:../interface
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     devDependencies:
       '@types/chai': 4.3.3
       '@types/chai-subset': 1.3.3
@@ -454,7 +454,7 @@ packages:
     dependencies:
       '@ipld/dag-cbor': 8.0.0
       cborg: 1.9.5
-      multiformats: 10.0.0
+      multiformats: 10.0.2
       varint: 6.0.0
     dev: false
 
@@ -462,7 +462,7 @@ packages:
     resolution: {integrity: sha512-1VVh2huHsuohdXC1bGJNE8WR72slZ9XE2T3wbBBq31dm7ZBatmKLLxrB+XAqafxfRFjv08RZmj/W/ZqaM13AuA==}
     dependencies:
       cborg: 1.9.5
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     dev: false
 
   /@ipld/dag-cbor/8.0.0:
@@ -470,14 +470,14 @@ packages:
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
       cborg: 1.9.5
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     dev: false
 
   /@ipld/dag-json/8.0.11:
     resolution: {integrity: sha512-Pea7JXeYHTWXRTIhBqBlhw7G53PJ7yta3G/sizGEZyzdeEwhZRr0od5IQ0r2ZxOt1Do+2czddjeEPp+YTxDwCA==}
     dependencies:
       cborg: 1.9.5
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     dev: false
 
   /@ipld/dag-ucan/2.0.0:
@@ -485,7 +485,7 @@ packages:
     dependencies:
       '@ipld/dag-cbor': 7.0.3
       '@ipld/dag-json': 8.0.11
-      multiformats: 10.0.0
+      multiformats: 10.0.2
     dev: false
 
   /@istanbuljs/load-nyc-config/1.1.0:
@@ -2231,8 +2231,8 @@ packages:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
     dev: true
 
-  /multiformats/10.0.0:
-    resolution: {integrity: sha512-qEj/ansAK86ufzupmp8B/JbiNSLJhNFcqW2Aa1dWxQc0OfoorpknwKkJeXAbtZ62AJlA6qKsGrCY3OjdFWZOrQ==}
+  /multiformats/10.0.2:
+    resolution: {integrity: sha512-nJEHLFOYhO4L+aNApHhCnWqa31FyqAHv9Q77AhmwU3KsM2f1j7tuJpCk5ByZ33smzycNCpSG5klNIejIyfFx2A==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
   /nanoid/3.3.3:
