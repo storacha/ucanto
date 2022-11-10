@@ -13,7 +13,8 @@ const storeAdd = capability({
   can: 'store/add',
   with: URI.match({ protocol: 'did:' }),
   nb: {
-    link: Link.match().optional(),
+    link: Link,
+    origin: Link.optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
@@ -34,19 +35,18 @@ const storeAdd = capability({
     }
   },
 })
+
 test('authorize self-issued invocation', async () => {
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    nb: {
+      link: Link.parse('bafkqaaa'),
+    },
+    with: alice.did(),
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -65,19 +65,17 @@ test('authorize self-issued invocation', async () => {
 
 test('unauthorized / expired invocation', async () => {
   const expiration = UCAN.now() - 5
-  const invocation = await Client.delegate({
+  const invocation = storeAdd.invoke({
     issuer: alice,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: {
+      link: Link.parse('bafkqaaa'),
+    },
     expiration,
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -113,19 +111,15 @@ test('unauthorized / expired invocation', async () => {
 
 test('unauthorized / not vaid before invocation', async () => {
   const notBefore = UCAN.now() + 500
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: alice,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     notBefore,
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -141,21 +135,19 @@ test('unauthorized / not vaid before invocation', async () => {
   })
 })
 
-test('unauthorized / invalid signature', async () => {
-  const invocation = await Client.delegate({
+test.skip('unauthorized / invalid signature', async () => {
+  const invocation = await storeAdd.invoke({
     issuer: alice,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
   })
 
-  invocation.data.signature.set(await bob.sign(invocation.bytes))
+  const delegation = await invocation.delegate()
 
-  const result = await access(invocation, {
+  delegation.data.signature.set(await bob.sign(delegation.bytes))
+
+  const result = await access(delegation, {
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -202,30 +194,21 @@ test('unauthorized / unknown capability', async () => {
 })
 
 test('authorize / delegated invocation', async () => {
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [delegation],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -254,32 +237,28 @@ test('authorize / delegated invocation', async () => {
 })
 
 test('authorize / delegation chain', async () => {
-  const aliceToBob = await Client.delegate({
+  const aliceToBob = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const bobToMallory = await Client.delegate({
+  const bobToMallory = await storeAdd.delegate({
     issuer: bob,
     audience: mallory,
-    capabilities: aliceToBob.capabilities,
+    with: alice.did(),
     proofs: [aliceToBob],
   })
 
-  const invocation = await Client.delegate({
+  const invocation = storeAdd.invoke({
     issuer: mallory,
     audience: w3,
-    capabilities: aliceToBob.capabilities,
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [bobToMallory],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -319,18 +298,14 @@ test('authorize / delegation chain', async () => {
 })
 
 test('invalid claim / no proofs', async () => {
-  const invocation = await Client.delegate({
+  const invocation = storeAdd.invoke({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: bob.did(),
-      },
-    ],
+    nb: { link: Link.parse('bafkqaaa') },
+    with: bob.did(),
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -353,26 +328,22 @@ test('invalid claim / no proofs', async () => {
 
 test('invalid claim / expired', async () => {
   const expiration = UCAN.now() - 5
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
     expiration,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: delegation.capabilities,
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [delegation],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -397,26 +368,22 @@ test('invalid claim / expired', async () => {
 
 test('invalid claim / not valid before', async () => {
   const notBefore = UCAN.now() + 60 * 60
-  const proof = await Client.delegate({
+  const proof = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
     notBefore,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: proof.capabilities,
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [proof],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -440,27 +407,23 @@ test('invalid claim / not valid before', async () => {
 })
 
 test('invalid claim / invalid signature', async () => {
-  const proof = await Client.delegate({
+  const proof = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
   // Just messing up signature
   proof.data.signature.set(await bob.sign(proof.data.signature))
 
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: proof.capabilities,
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [proof],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -487,27 +450,18 @@ test('invalid claim / unknown capability', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/pin',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [delegation],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -545,6 +499,7 @@ test('invalid claim / malformed capability', async () => {
       {
         can: 'store/add',
         with: alice.did(),
+        nb: { link: Link.parse('bafkqaaa') },
       },
     ],
     proofs: [delegation],
@@ -569,30 +524,21 @@ test('invalid claim / malformed capability', async () => {
 })
 
 test('invalid claim / unavailable proof', async () => {
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [delegation.cid],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -610,30 +556,21 @@ test('invalid claim / unavailable proof', async () => {
 })
 
 test('invalid claim / failed to resolve', async () => {
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: { link: Link.parse('bafkqaaa') },
     proofs: [delegation.cid],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     resolve() {
       throw new Error('Boom!')
@@ -655,30 +592,23 @@ test('invalid claim / failed to resolve', async () => {
 })
 
 test('invalid claim / invalid audience', async () => {
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: mallory,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: {
+      link: Link.parse('bafkqaaa'),
+    },
     proofs: [delegation],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -696,30 +626,23 @@ test('invalid claim / invalid audience', async () => {
 })
 
 test('invalid claim / invalid claim', async () => {
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: mallory.did(),
-      },
-    ],
+    with: mallory.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: {
+      link: Link.parse('bafkqaaa'),
+    },
     proofs: [delegation],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -737,42 +660,30 @@ test('invalid claim / invalid claim', async () => {
 })
 
 test('invalid claim / invalid sub delegation', async () => {
-  const proof = await Client.delegate({
+  const proof = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: w3.did(),
-      },
-    ],
+    with: w3.did(),
   })
 
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: bob,
     audience: mallory,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: w3.did(),
-      },
-    ],
+    with: w3.did(),
     proofs: [proof],
   })
 
-  const invocation = await Client.delegate({
+  const invocation = storeAdd.invoke({
     issuer: mallory,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: w3.did(),
-      },
-    ],
+    with: w3.did(),
+    nb: {
+      link: Link.parse('bafkqaaa'),
+    },
     proofs: [delegation],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -793,30 +704,24 @@ test('invalid claim / invalid sub delegation', async () => {
 })
 
 test('authorize / resolve external proof', async () => {
-  const delegation = await Client.delegate({
+  const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
   })
 
-  const invocation = await Client.delegate({
+  const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
+    with: alice.did(),
+    nb: {
+      link: Link.parse('bafkqaaa'),
+    },
+
     proofs: [delegation.cid],
   })
 
-  const result = await access(invocation, {
+  const result = await access(await invocation.delegate(), {
     principal: ed25519.Verifier,
     resolve: async link => {
       if (link.toString() === delegation.cid.toString()) {
@@ -827,6 +732,10 @@ test('authorize / resolve external proof', async () => {
     },
     capability: storeAdd,
   })
+
+  if (result.error) {
+    assert.fail(result.message)
+  }
 
   assert.containSubset(result, {
     capability: {
