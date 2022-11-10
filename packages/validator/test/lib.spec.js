@@ -135,7 +135,7 @@ test('unauthorized / not vaid before invocation', async () => {
   })
 })
 
-test.skip('unauthorized / invalid signature', async () => {
+test('unauthorized / invalid signature', async () => {
   const invocation = await storeAdd.invoke({
     issuer: alice,
     audience: w3,
@@ -158,8 +158,8 @@ test.skip('unauthorized / invalid signature', async () => {
     cause: {
       name: 'InvalidSignature',
       message: `Signature is invalid`,
-      issuer: invocation.issuer,
-      audience: invocation.audience,
+      issuer: delegation.issuer,
+      audience: delegation.audience,
     },
   })
 })
@@ -199,6 +199,8 @@ test('authorize / delegated invocation', async () => {
     audience: bob,
     with: alice.did(),
   })
+
+  delegation.capabilities[0].nb
 
   const invocation = storeAdd.invoke({
     issuer: bob,
@@ -298,10 +300,11 @@ test('authorize / delegation chain', async () => {
 })
 
 test('invalid claim / no proofs', async () => {
+  const link = Link.parse('bafkqaaa')
   const invocation = storeAdd.invoke({
     issuer: alice,
     audience: bob,
-    nb: { link: Link.parse('bafkqaaa') },
+    nb: { link },
     with: bob.did(),
   })
 
@@ -314,13 +317,17 @@ test('invalid claim / no proofs', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${bob.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${bob.did()}","nb":${JSON.stringify(
+        { link }
+      )}} is invalid
   - Capability can not be (self) issued by '${alice.did()}'
   - Delegated capability not found`,
       capability: {
         can: 'store/add',
         with: bob.did(),
-        nb: {},
+        nb: {
+          link,
+        },
       },
     },
   })
@@ -328,6 +335,7 @@ test('invalid claim / no proofs', async () => {
 
 test('invalid claim / expired', async () => {
   const expiration = UCAN.now() - 5
+  const link = Link.parse('bafkqaaa')
   const delegation = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
@@ -335,15 +343,17 @@ test('invalid claim / expired', async () => {
     with: alice.did(),
   })
 
-  const invocation = storeAdd.invoke({
-    issuer: bob,
-    audience: w3,
-    with: alice.did(),
-    nb: { link: Link.parse('bafkqaaa') },
-    proofs: [delegation],
-  })
+  const invocation = await storeAdd
+    .invoke({
+      issuer: bob,
+      audience: w3,
+      with: alice.did(),
+      nb: { link },
+      proofs: [delegation],
+    })
+    .delegate()
 
-  const result = await access(await invocation.delegate(), {
+  const result = await access(invocation, {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -352,7 +362,9 @@ test('invalid claim / expired', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        { link }
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Expired on ${new Date(expiration * 1000)}`,
@@ -368,6 +380,7 @@ test('invalid claim / expired', async () => {
 
 test('invalid claim / not valid before', async () => {
   const notBefore = UCAN.now() + 60 * 60
+  const link = Link.parse('bafkqaaa')
   const proof = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
@@ -375,15 +388,17 @@ test('invalid claim / not valid before', async () => {
     with: alice.did(),
   })
 
-  const invocation = await storeAdd.invoke({
-    issuer: bob,
-    audience: w3,
-    with: alice.did(),
-    nb: { link: Link.parse('bafkqaaa') },
-    proofs: [proof],
-  })
+  const invocation = await storeAdd
+    .invoke({
+      issuer: bob,
+      audience: w3,
+      with: alice.did(),
+      nb: { link },
+      proofs: [proof],
+    })
+    .delegate()
 
-  const result = await access(await invocation.delegate(), {
+  const result = await access(invocation, {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -392,7 +407,9 @@ test('invalid claim / not valid before', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        { link }
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${proof.cid} because:
     - Not valid before ${new Date(notBefore * 1000)}`,
@@ -407,6 +424,7 @@ test('invalid claim / not valid before', async () => {
 })
 
 test('invalid claim / invalid signature', async () => {
+  const link = Link.parse('bafkqaaa')
   const proof = await storeAdd.delegate({
     issuer: alice,
     audience: bob,
@@ -415,15 +433,17 @@ test('invalid claim / invalid signature', async () => {
   // Just messing up signature
   proof.data.signature.set(await bob.sign(proof.data.signature))
 
-  const invocation = await storeAdd.invoke({
-    issuer: bob,
-    audience: w3,
-    with: alice.did(),
-    nb: { link: Link.parse('bafkqaaa') },
-    proofs: [proof],
-  })
+  const invocation = await storeAdd
+    .invoke({
+      issuer: bob,
+      audience: w3,
+      with: alice.did(),
+      nb: { link },
+      proofs: [proof],
+    })
+    .delegate()
 
-  const result = await access(await invocation.delegate(), {
+  const result = await access(invocation, {
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -432,7 +452,9 @@ test('invalid claim / invalid signature', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        { link }
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${proof.cid} because:
     - Signature is invalid`,
@@ -450,14 +472,20 @@ test('invalid claim / unknown capability', async () => {
   const delegation = await Client.delegate({
     issuer: alice,
     audience: bob,
-    with: alice.did(),
+    capabilities: [
+      {
+        can: 'store/pin',
+        with: alice.did(),
+      },
+    ],
   })
 
-  const invocation = await storeAdd.invoke({
+  const link = Link.parse('bafkqaaa')
+  const invocation = storeAdd.invoke({
     issuer: bob,
     audience: w3,
     with: alice.did(),
-    nb: { link: Link.parse('bafkqaaa') },
+    nb: { link },
     proofs: [delegation],
   })
 
@@ -470,7 +498,9 @@ test('invalid claim / unknown capability', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        { link }
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Delegated capability not found
   - Encountered unknown capabilities
@@ -492,6 +522,7 @@ test('invalid claim / malformed capability', async () => {
     ],
   })
 
+  const nb = { link: Link.parse('bafkqaaa') }
   const invocation = await Client.delegate({
     issuer: bob,
     audience: w3,
@@ -499,7 +530,7 @@ test('invalid claim / malformed capability', async () => {
       {
         can: 'store/add',
         with: alice.did(),
-        nb: { link: Link.parse('bafkqaaa') },
+        nb,
       },
     ],
     proofs: [delegation],
@@ -514,9 +545,13 @@ test('invalid claim / malformed capability', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
-  - Can not derive {"can":"store/add","with":"${alice.did()}"} from delegated capabilities:
+  - Can not derive {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} from delegated capabilities:
     - Encountered malformed 'store/add' capability: {"can":"store/add","with":"${badDID}"}
       - Expected did: URI instead got ${badDID}`,
     },
@@ -530,11 +565,12 @@ test('invalid claim / unavailable proof', async () => {
     with: alice.did(),
   })
 
+  const nb = { link: Link.parse('bafkqaaa') }
   const invocation = storeAdd.invoke({
     issuer: bob,
     audience: w3,
     with: alice.did(),
-    nb: { link: Link.parse('bafkqaaa') },
+    nb,
     proofs: [delegation.cid],
   })
 
@@ -547,7 +583,9 @@ test('invalid claim / unavailable proof', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Linked proof '${delegation.cid}' is not included nor could be resolved`,
@@ -562,11 +600,12 @@ test('invalid claim / failed to resolve', async () => {
     with: alice.did(),
   })
 
+  const nb = { link: Link.parse('bafkqaaa') }
   const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
     with: alice.did(),
-    nb: { link: Link.parse('bafkqaaa') },
+    nb,
     proofs: [delegation.cid],
   })
 
@@ -582,7 +621,9 @@ test('invalid claim / failed to resolve', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Linked proof '${delegation.cid}' is not included nor could be resolved
@@ -598,13 +639,12 @@ test('invalid claim / invalid audience', async () => {
     with: alice.did(),
   })
 
+  const nb = { link: Link.parse('bafkqaaa') }
   const invocation = await storeAdd.invoke({
     issuer: mallory,
     audience: w3,
     with: alice.did(),
-    nb: {
-      link: Link.parse('bafkqaaa'),
-    },
+    nb,
     proofs: [delegation],
   })
 
@@ -617,7 +657,9 @@ test('invalid claim / invalid audience', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} is invalid
   - Capability can not be (self) issued by '${mallory.did()}'
   - Can not derive from prf:0 - ${delegation.cid} because:
     - Delegates to '${bob.did()}' instead of '${mallory.did()}'`,
@@ -632,13 +674,12 @@ test('invalid claim / invalid claim', async () => {
     with: mallory.did(),
   })
 
+  const nb = { link: Link.parse('bafkqaaa') }
   const invocation = await storeAdd.invoke({
     issuer: bob,
     audience: w3,
     with: alice.did(),
-    nb: {
-      link: Link.parse('bafkqaaa'),
-    },
+    nb,
     proofs: [delegation],
   })
 
@@ -651,9 +692,13 @@ test('invalid claim / invalid claim', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${alice.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} is invalid
   - Capability can not be (self) issued by '${bob.did()}'
-  - Can not derive {"can":"store/add","with":"${alice.did()}"} from delegated capabilities:
+  - Can not derive {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} from delegated capabilities:
     - Constraint violation: Expected 'with: "${mallory.did()}"' instead got '${alice.did()}'`,
     },
   })
@@ -673,13 +718,12 @@ test('invalid claim / invalid sub delegation', async () => {
     proofs: [proof],
   })
 
+  const nb = { link: Link.parse('bafkqaaa') }
   const invocation = storeAdd.invoke({
     issuer: mallory,
     audience: w3,
     with: w3.did(),
-    nb: {
-      link: Link.parse('bafkqaaa'),
-    },
+    nb,
     proofs: [delegation],
   })
 
@@ -692,7 +736,9 @@ test('invalid claim / invalid sub delegation', async () => {
     name: 'Unauthorized',
     cause: {
       name: 'InvalidClaim',
-      message: `Claimed capability {"can":"store/add","with":"${w3.did()}"} is invalid
+      message: `Claimed capability {"can":"store/add","with":"${w3.did()}","nb":${JSON.stringify(
+        nb
+      )}} is invalid
   - Capability can not be (self) issued by '${mallory.did()}'
   - Claimed capability {"can":"store/add","with":"${w3.did()}"} is invalid
     - Capability can not be (self) issued by '${bob.did()}'
@@ -734,7 +780,7 @@ test('authorize / resolve external proof', async () => {
   })
 
   if (result.error) {
-    assert.fail(result.message)
+    assert.fail(result.stack)
   }
 
   assert.containSubset(result, {
