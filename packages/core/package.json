@@ -33,7 +33,7 @@
     "@ipld/dag-cbor": "^8.0.0",
     "@ipld/dag-ucan": "^2.0.0",
     "@ucanto/interface": "^3.0.0",
-    "multiformats": "^10.0.0"
+    "multiformats": "^10.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",

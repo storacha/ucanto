@@ -335,7 +335,7 @@ class Derive extends Unit {
   /**
    * @param {API.MatchSelector<M>} from
    * @param {API.TheCapabilityParser<API.DirectMatch<T>>} to
-   * @param {API.Derives<T, M['value']>} derives
+   * @param {API.Derives<API.ToDeriveClaim<T>, API.ToDeriveProof<M['value']>>} derives
    */
   constructor(from, to, derives) {
     super()
@@ -432,7 +432,7 @@ class Match {
     const errors = []
     const matches = []
     for (const capability of capabilities) {
-      const result = parse(this, capability)
+      const result = parse(this, capability, true)
       if (!result.error) {
         const claim = this.descriptor.derives(this.value, result)
         if (claim.error) {
@@ -479,7 +479,7 @@ class DerivedMatch {
   /**
    * @param {API.DirectMatch<T>} selected
    * @param {API.MatchSelector<M>} from
-   * @param {API.Derives<T, M['value']>} derives
+   * @param {API.Derives<API.ToDeriveClaim<T>, API.ToDeriveProof<M['value']>>} derives
    */
   constructor(selected, from, derives) {
     this.selected = selected
@@ -635,16 +635,23 @@ class AndMatch {
 }
 
 /**
+ * Parses capability `source` using a provided capability `parser`. By default
+ * invocation parsing occurs, which respects a capability schema, failing if
+ * any non-optional field is missing. If `optional` argument is `true` it will
+ * parse capability as delegation, in this case all `nb` fields are considered
+ * optional.
+ *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @param {{descriptor: API.Descriptor<A, R, C>}} self
+ * @param {{descriptor: API.Descriptor<A, R, C>}} parser
  * @param {API.Source} source
+ * @param {boolean} [optional=false]
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
-const parse = (self, source) => {
-  const { can, with: withReader, nb: readers } = self.descriptor
+const parse = (parser, source, optional = false) => {
+  const { can, with: withReader, nb: readers } = parser.descriptor
   const { delegation } = source
   const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
     source.capability
@@ -665,12 +672,14 @@ const parse = (self, source) => {
     /** @type {Partial<API.InferCaveats<C>>} */
     const caveats = capability.nb || {}
     for (const [name, reader] of entries(readers)) {
-      const key = /** @type {keyof caveats & keyof nb} */ (name)
-      const result = reader.read(caveats[key])
-      if (result?.error) {
-        return new MalformedCapability(capability, result)
-      } else if (result != null) {
-        nb[key] = /** @type {any} */ (result)
+      const key = /** @type {keyof caveats & keyof nb & string} */ (name)
+      if (key in caveats || !optional) {
+        const result = reader.read(caveats[key])
+        if (result?.error) {
+          return new MalformedCapability(capability, result)
+        } else if (result != null) {
+          nb[key] = /** @type {any} */ (result)
+        }
       }
     }
   }
@@ -762,11 +771,10 @@ const selectGroup = (self, capabilities) => {
 }
 
 /**
- * @template {API.Ability} A
- * @template {API.URI} R
- * @template {API.Caveats} C
- * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} claimed
- * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} delegated
+ * @template {API.ParsedCapability} T
+ * @template {API.ParsedCapability} U
+ * @param {T} claimed
+ * @param {U} delegated
  * @return {API.Result<true, API.Failure>}
  */
 const derives = (claimed, delegated) => {

@@ -9,17 +9,36 @@ export const fail = value => (value === true ? undefined : value)
 /**
  * Check URI can be delegated
  *
- * @param {string} child
- * @param {string} parent
+ * @param {string|undefined} child
+ * @param {string|undefined} parent
  */
 export function canDelegateURI(child, parent) {
-  if (parent.endsWith('*')) {
+  if (parent === undefined) {
+    return true
+  }
+
+  if (child !== undefined && parent.endsWith('*')) {
     return child.startsWith(parent.slice(0, -1))
       ? true
       : new Failure(`${child} does not match ${parent}`)
   }
 
   return child === parent
+    ? true
+    : new Failure(`${child} is different from ${parent}`)
+}
+
+/**
+ * @param {API.Link<unknown, number, number, 0|1>|undefined} child
+ * @param {API.Link<unknown, number, number, 0|1>|undefined} parent
+ */
+export const canDelegateLink = (child, parent) => {
+  // if parent poses no restriction it's can be derived
+  if (parent === undefined) {
+    return true
+  }
+
+  return String(child) === parent.toString()
     ? true
     : new Failure(`${child} is different from ${parent}`)
 }

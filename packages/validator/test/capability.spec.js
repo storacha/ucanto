@@ -1669,16 +1669,6 @@ test('.and(...).match', () => {
           message: 'Constraint violation: a: a violates A',
         },
       },
-      {
-        name: 'InvalidClaim',
-        cause: {
-          name: 'MalformedCapability',
-          cause: {
-            name: 'TypeError',
-            message: 'Expected value of type string instead got undefined',
-          },
-        },
-      },
     ],
     matches: [
       {
