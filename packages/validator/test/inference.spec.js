@@ -120,3 +120,125 @@ test('infers nb fields optional', () => {
     },
   })
 })
+
+test('infers nb fields in derived capability', () => {
+  capability({
+    can: 'test/base',
+    with: DID.match({ method: 'key' }),
+    nb: {
+      msg: URI.match({ protocol: 'data:' }),
+    },
+  }).derive({
+    to: capability({
+      can: 'test/derived',
+      with: DID.match({ method: 'key' }),
+      nb: {
+        bar: URI.match({ protocol: 'data:' }),
+      },
+    }),
+    derives: (claim, proof) => {
+      /** @type {string} */
+      // @ts-expect-error - may be undenfined
+      const _1 = claim.nb.bar
+
+      /** @type {API.URI<"data:">|undefined} */
+      const _2 = claim.nb.bar
+
+      /** @type {string} */
+      // @ts-expect-error - may be undenfined
+      const _3 = proof.nb.msg
+
+      /** @type {API.URI<"data:">|undefined} */
+      const _4 = proof.nb.msg
+
+      return true
+    },
+  })
+})
+
+test('infers nb fields in derived capability', () => {
+  const A = capability({
+    can: 'test/a',
+    with: DID.match({ method: 'key' }),
+    nb: {
+      a: URI.match({ protocol: 'data:' }),
+    },
+  })
+
+  const B = capability({
+    can: 'test/b',
+    with: DID.match({ method: 'key' }),
+    nb: {
+      b: URI.match({ protocol: 'data:' }),
+    },
+  })
+
+  A.and(B).derive({
+    to: capability({
+      can: 'test/c',
+      with: DID.match({ method: 'key' }),
+      nb: {
+        c: URI.match({ protocol: 'data:' }),
+      },
+    }),
+    derives: (claim, [a, b]) => {
+      /** @type {string} */
+      // @ts-expect-error - may be undenfined
+      const _1 = claim.nb.c
+
+      /** @type {API.URI<"data:">|undefined} */
+      const _2 = claim.nb.c
+
+      /** @type {string} */
+      // @ts-expect-error - may be undenfined
+      const _3 = a.nb.a
+
+      /** @type {API.URI<"data:">|undefined} */
+      const _4 = a.nb.a
+
+      /** @type {string} */
+      // @ts-expect-error - may be undenfined
+      const _5 = b.nb.b
+
+      /** @type {API.URI<"data:">|undefined} */
+      const _6 = b.nb.b
+
+      return true
+    },
+  })
+
+  test('infers nb fields in derived capability', async () => {
+    const A = capability({
+      can: 'test/a',
+      with: DID.match({ method: 'key' }),
+      nb: {
+        a: URI.match({ protocol: 'data:' }),
+      },
+    })
+
+    const a = await A.delegate({
+      issuer: alice,
+      with: alice.did(),
+      audience: w3,
+    })
+
+    /** @type {string} */
+    // @ts-expect-error - may be undenfined
+    const _1 = a.capabilities[0].nb.a
+
+    /** @type {string|undefined} */
+    const _2 = a.capabilities[0].nb.a
+
+    const i = A.invoke({
+      issuer: alice,
+      with: alice.did(),
+      audience: w3,
+      nb: {
+        a: 'data:',
+      },
+    })
+
+    /** @type {string} */
+    const _3 = i.capabilities[0].nb.a
+  })
+})

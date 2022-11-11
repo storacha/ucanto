@@ -335,7 +335,7 @@ class Derive extends Unit {
   /**
    * @param {API.MatchSelector<M>} from
    * @param {API.TheCapabilityParser<API.DirectMatch<T>>} to
-   * @param {API.Derives<T, M['value']>} derives
+   * @param {API.Derives<API.ToDeriveClaim<T>, API.ToDeriveProof<M['value']>>} derives
    */
   constructor(from, to, derives) {
     super()
@@ -479,7 +479,7 @@ class DerivedMatch {
   /**
    * @param {API.DirectMatch<T>} selected
    * @param {API.MatchSelector<M>} from
-   * @param {API.Derives<T, M['value']>} derives
+   * @param {API.Derives<API.ToDeriveClaim<T>, API.ToDeriveProof<M['value']>>} derives
    */
   constructor(selected, from, derives) {
     this.selected = selected
@@ -765,11 +765,10 @@ const selectGroup = (self, capabilities) => {
 }
 
 /**
- * @template {API.Ability} A
- * @template {API.URI} R
- * @template {API.Caveats} C
- * @param {API.ParsedCapability<A, R, Partial<API.InferCaveats<C>>>} claimed
- * @param {API.ParsedCapability<A, R, Partial<API.InferCaveats<C>>>} delegated
+ * @template {API.ParsedCapability} T
+ * @template {API.ParsedCapability} U
+ * @param {T} claimed
+ * @param {U} delegated
  * @return {API.Result<true, API.Failure>}
  */
 const derives = (claimed, delegated) => {
