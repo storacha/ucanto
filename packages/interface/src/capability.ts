@@ -81,23 +81,37 @@ export interface DeriveSelector<M extends Match, T extends ParsedCapability> {
   derives: Derives<ToDeriveClaim<T>, ToDeriveProof<M['value']>>
 }
 
+/**
+ * Utility type is used to infer the type of the capability passed into
+ * `derives` handler. It simply makes all `nb` fileds optional because
+ * in delegation all `nb` fields could be left out implying no restrictions.
+ */
 export type ToDeriveClaim<T extends ParsedCapability> =
   | T
   | ParsedCapability<T['can'], T['with'], Partial<T['nb']>>
 
+/**
+ * Utility type is used to infer type of the second argument of `derives`
+ * handler (in the `cap.derive({ to, derives: (claim, proof) => true })`)
+ * which could be either capability or set of capabilities. It simply makes
+ * all `nb` fields optional, because in delegation all `nb` fields could be
+ * left out implying no restrictions.
+ */
+export type ToDeriveProof<T> = T extends ParsedCapability
+  ? // If it a capability we just make `nb` partial
+    ToDeriveClaim<T>
+  : // otherwise we need to map tuple
+    ToDeriveProofs<T>
+
+/**
+ * Another helper type which is equivalent of `ToDeriveClaim` except it works
+ * on tuple of capabilities.
+ */
 type ToDeriveProofs<T> = T extends [infer U, ...infer E]
   ? [ToDeriveClaim<U & ParsedCapability>, ...ToDeriveProofs<E>]
   : T extends never[]
   ? []
   : never
-
-export type ToDeriveProof<T> = T extends ParsedCapability<
-  infer A,
-  infer R,
-  infer C
->
-  ? ParsedCapability<A, R, Partial<C>>
-  : ToDeriveProofs<T>
 
 export interface Derives<T extends ParsedCapability, U = T> {
   (claim: T, proof: U): Result<true, Failure>

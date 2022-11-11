@@ -635,17 +635,23 @@ class AndMatch {
 }
 
 /**
+ * Parses capability `source` using a provided capability `parser`. By default
+ * invocation parsing occurs, which respects a capability schema, failing if
+ * any non-optional field is missing. If `optional` argument is `true` it will
+ * parse capability as delegation, in this case all `nb` fields are considered
+ * optional.
+ *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @param {{descriptor: API.Descriptor<A, R, C>}} self
+ * @param {{descriptor: API.Descriptor<A, R, C>}} parser
  * @param {API.Source} source
- * @param {boolean} optional
+ * @param {boolean} [optional=false]
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
-const parse = (self, source, optional = false) => {
-  const { can, with: withReader, nb: readers } = self.descriptor
+const parse = (parser, source, optional = false) => {
+  const { can, with: withReader, nb: readers } = parser.descriptor
   const { delegation } = source
   const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
     source.capability
