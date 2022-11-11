@@ -103,14 +103,14 @@ test('infers nb fields optional', () => {
     },
     derives: (claim, proof) => {
       /** @type {string} */
-      // @ts-expect-error - may be undenfined
+      // @ts-expect-error - may be undefined
       const _1 = claim.nb.msg
 
       /** @type {API.URI<"data:">|undefined} */
       const _2 = claim.nb.msg
 
       /** @type {string} */
-      // @ts-expect-error - may be undenfined
+      // @ts-expect-error - may be undefined
       const _3 = proof.nb.msg
 
       /** @type {API.URI<"data:">|undefined} */
@@ -138,14 +138,14 @@ test('infers nb fields in derived capability', () => {
     }),
     derives: (claim, proof) => {
       /** @type {string} */
-      // @ts-expect-error - may be undenfined
+      // @ts-expect-error - may be undefined
       const _1 = claim.nb.bar
 
       /** @type {API.URI<"data:">|undefined} */
       const _2 = claim.nb.bar
 
       /** @type {string} */
-      // @ts-expect-error - may be undenfined
+      // @ts-expect-error - may be undefined
       const _3 = proof.nb.msg
 
       /** @type {API.URI<"data:">|undefined} */
@@ -183,21 +183,21 @@ test('infers nb fields in derived capability', () => {
     }),
     derives: (claim, [a, b]) => {
       /** @type {string} */
-      // @ts-expect-error - may be undenfined
+      // @ts-expect-error - may be undefined
       const _1 = claim.nb.c
 
       /** @type {API.URI<"data:">|undefined} */
       const _2 = claim.nb.c
 
       /** @type {string} */
-      // @ts-expect-error - may be undenfined
+      // @ts-expect-error - may be undefined
       const _3 = a.nb.a
 
       /** @type {API.URI<"data:">|undefined} */
       const _4 = a.nb.a
 
       /** @type {string} */
-      // @ts-expect-error - may be undenfined
+      // @ts-expect-error - may be undefined
       const _5 = b.nb.b
 
       /** @type {API.URI<"data:">|undefined} */
@@ -223,7 +223,7 @@ test('infers nb fields in derived capability', () => {
     })
 
     /** @type {string} */
-    // @ts-expect-error - may be undenfined
+    // @ts-expect-error - may be undefined
     const _1 = a.capabilities[0].nb.a
 
     /** @type {string|undefined} */
