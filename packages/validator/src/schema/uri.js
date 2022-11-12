@@ -38,6 +38,9 @@ class URISchema extends Schema.API {
 
 const schema = new URISchema({})
 
+/**
+ * @returns {Schema.Schema<API.URI, unknown>}
+ */
 export const uri = () => schema
 
 /**
