@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.0.4](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.3...validator-v3.0.4) (2022-11-12)
+
+
+### Bug Fixes
+
+* versions ([#131](https://www.github.com/web3-storage/ucanto/issues/131)) ([88b87a7](https://www.github.com/web3-storage/ucanto/commit/88b87a7f3a32c02a22ddffcb8f38199445097133))
+
 ### [3.0.3](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.2...validator-v3.0.3) (2022-11-12)
 
 
