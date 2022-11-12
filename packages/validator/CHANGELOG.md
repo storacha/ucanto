@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.0.3](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.2...validator-v3.0.3) (2022-11-12)
+
+
+### Bug Fixes
+
+* add return type to URI.uri() schema ([#127](https://www.github.com/web3-storage/ucanto/issues/127)) ([c302866](https://www.github.com/web3-storage/ucanto/commit/c3028667bc1094e6f6b16c43b3a396ef6207f75c))
+
 ### [3.0.2](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.1...validator-v3.0.2) (2022-11-11)
 
 
