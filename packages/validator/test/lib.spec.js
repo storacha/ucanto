@@ -803,3 +803,38 @@ test('authorize / resolve external proof', async () => {
     ],
   })
 })
+
+test('invalid claim / principal aligment', async () => {
+  const proof = await storeAdd.delegate({
+    issuer: alice,
+    audience: bob,
+    with: alice.did(),
+  })
+
+  const nb = { link: Link.parse('bafkqaaa') }
+  const invocation = storeAdd.invoke({
+    issuer: mallory,
+    audience: w3,
+    with: alice.did(),
+    nb,
+    proofs: [proof],
+  })
+
+  const result = await access(await invocation.delegate(), {
+    principal: ed25519.Verifier,
+    capability: storeAdd,
+  })
+
+  assert.containSubset(result, {
+    name: 'Unauthorized',
+    cause: {
+      name: 'InvalidClaim',
+      message: `Claimed capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
+        nb
+      )}} is invalid
+  - Capability can not be (self) issued by '${mallory.did()}'
+  - Can not derive from prf:0 - ${proof.cid} because:
+    - Delegates to '${bob.did()}' instead of '${mallory.did()}'`,
+    },
+  })
+})
