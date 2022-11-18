@@ -46,8 +46,8 @@ describe('RSA', () => {
 
   it('can archive 🔁 restore unextractable', async () => {
     const original = await RSA.generate()
-    const bytes = original.toArchive()
-    const restored = RSA.from(bytes)
+    const archive = original.toArchive()
+    const restored = RSA.from(archive)
     const payload = utf8.encode('hello world')
 
     assert.equal(
