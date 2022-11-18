@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.0.5](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.4...server-v3.0.5) (2022-11-18)
+
+
+### Bug Fixes
+
+* server verifier to support RSA and ed ([#142](https://www.github.com/web3-storage/ucanto/issues/142)) ([7317e71](https://www.github.com/web3-storage/ucanto/commit/7317e7122e105271f50d20d88c8bf2bb3a3d2575))
+
 ### [3.0.4](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.3...server-v3.0.4) (2022-11-12)
 
 
