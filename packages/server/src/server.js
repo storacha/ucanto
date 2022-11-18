@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import { InvalidAudience } from '@ucanto/validator'
-import { Verifier } from '@ucanto/principal/ed25519'
+import { Verifier } from '@ucanto/principal'
 export {
   capability,
   URI,
