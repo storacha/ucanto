@@ -296,6 +296,9 @@ export interface OutpboundTranpsortOptions {
 export interface ConnectionOptions<T extends Record<string, any>>
   extends Transport.EncodeOptions,
     OutpboundTranpsortOptions {
+  /**
+   * DID of the target service.
+   */
   readonly id: Principal
   readonly channel: Transport.Channel<T>
 }
@@ -303,6 +306,9 @@ export interface ConnectionOptions<T extends Record<string, any>>
 export interface Connection<T extends Record<string, any>>
   extends Phantom<T>,
     ConnectionOptions<T> {
+  /**
+   * DID of the target service.
+   */
   readonly id: Principal
   readonly hasher: MultihashHasher
 }
