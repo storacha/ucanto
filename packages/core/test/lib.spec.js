@@ -356,7 +356,7 @@ test('import delegation', async () => {
 test('import empty delegation', async () => {
   assert.throws(
     () => Delegation.import([]),
-    /Empty DAG can not be turned into a dalagetion/
+    /Empty DAG can not be turned into a delegation/
   )
 })
 
