@@ -52,7 +52,7 @@ export const from = (
 
     return new Signer(signer, Verifier.create(archive.did, verifier))
   } else {
-    throw new RangeError(`did:dns archive expected to have resolveDID field`)
+    throw new RangeError(`did:dns archive expected to have resolvedDID field`)
   }
 }
 

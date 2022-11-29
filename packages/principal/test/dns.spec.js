@@ -77,6 +77,18 @@ describe('DNS', () => {
     )
   })
 
+  it('fails to restore without resolvedDID', async () => {
+    const original = await DNS.generate('api.web3.storage', RSA)
+    const archive = original.toArchive()
+    if (archive instanceof Uint8Array) {
+      return assert.fail('Expected archive to be a SignerInfo')
+    }
+    const { resolvedDID, ...rest } = archive
+
+    assert.equal(resolvedDID, original.resolve().did())
+    assert.throws(() => DNS.from(rest), /resolvedDID/)
+  })
+
   it('can sign & verify', async () => {
     const signer = await DNS.generate('web3.storage')
     const payload = utf8.encode('hello world')
@@ -100,7 +112,29 @@ describe('DNS', () => {
       },
     })
 
+    assert.equal(verifier.did(), 'did:dns:api.web3.storage')
     const signature = await principal.sign(payload)
     assert.equal(await verifier.verify(payload, signature), true)
+    // checks that key was cached
+    assert.equal(await verifier.verify(payload, signature), true)
+  })
+
+  it('fails to verify without resolver', async () => {
+    const principal = await DNS.generate('api.web3.storage')
+    const payload = utf8.encode('hello world')
+    const verifier = DNS.parse('did:dns:api.web3.storage')
+    const signature = await principal.sign(payload)
+
+    assert.equal(await verifier.verify(payload, signature), false)
+  })
+
+  it('verifier can resolve', async () => {
+    const keypair = await ed25519.generate()
+    const { verifier, signer } = await DNS.generate('api.web3.storage', {
+      generate: () => keypair,
+    })
+
+    assert.equal(verifier.resolve(), keypair.verifier)
+    assert.equal(verifier.did(), 'did:dns:api.web3.storage')
   })
 })
