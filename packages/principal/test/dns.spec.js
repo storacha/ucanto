@@ -1,9 +1,9 @@
 import { ed25519, RSA, DNS } from '../src/lib.js'
 import { assert } from 'chai'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { varint } from 'multiformats'
+
 export const utf8 = new TextEncoder()
-describe.only('DNS', () => {
+describe('DNS', () => {
   it('generate', async () => {
     const signer = await DNS.generate('api.web3.storage', ed25519)
 
@@ -46,7 +46,8 @@ describe.only('DNS', () => {
 
   it('can archive 🔁 restore rsa extractable', async () => {
     const original = await DNS.generate('api.web3.storage', RSA)
-    const restored = DNS.from(original.toArchive())
+    const archive = original.toArchive()
+    const restored = DNS.from(archive)
     const payload = utf8.encode('hello world')
 
     assert.equal(
@@ -94,7 +95,7 @@ describe.only('DNS', () => {
     const payload = utf8.encode('hello world')
     const verifier = DNS.Verifier.parse(principal.did(), {
       resolve: async _dns => {
-        const verifier = await principal.verifier.resolve()
+        const verifier = await principal.resolve()
         return verifier.did()
       },
     })

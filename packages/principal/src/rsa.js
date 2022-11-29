@@ -294,8 +294,12 @@ class ExtractableRSASigner extends RSASigner {
     super(options)
     this.bytes = options.bytes
   }
+
+  /**
+   * @returns {API.ByteView<this>}
+   */
   toArchive() {
-    return this.bytes
+    return /** @type {API.ByteView<this>} */ (this.bytes)
   }
 }
 
@@ -312,10 +316,14 @@ class UnextractableRSASigner extends RSASigner {
     super(options)
     this.privateKey = options.privateKey
   }
+
+  /**
+   * @returns {API.SignerArchive<this>}
+   */
   toArchive() {
-    return {
+    return /** @type {API.SignerArchive<this>} */ ({
       did: this.did(),
       key: this.privateKey,
-    }
+    })
   }
 }

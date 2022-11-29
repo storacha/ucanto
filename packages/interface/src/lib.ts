@@ -422,11 +422,19 @@ export interface Signer<M extends string = string, A extends number = number>
    * }
    * ```
    */
-  toArchive(): SignerArchive<Signer<M, A>>
+  toArchive(): SignerArchive<this>
 }
 
 export interface SignerInfo<Self extends Signer = Signer> {
+  /**
+   * DID that is returned by .did() method of the signer.
+   */
   readonly did: ReturnType<Self['did']>
+  /**
+   * If .did() returns non did:key (e.g did:dns) this field will
+   * contain did:key it resolves to, otherwise it is omitted.
+   */
+  readonly resolvedDID?: DID<'key'>
   readonly key: CryptoKey
 }
 

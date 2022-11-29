@@ -11,9 +11,8 @@ export interface EdSigner<M extends string = 'key'>
     UCAN.Verifier<M, CODE> {
   readonly signer: EdSigner<M>
   readonly verifier: EdVerifier<M>
-
   readonly code: 0x1300
-  toArchive(): ByteView<EdSigner<M>>
+  toArchive(): ByteView<this>
 }
 
 export interface EdVerifier<M extends string = 'key'>

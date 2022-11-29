@@ -11,9 +11,10 @@ const UTF8Decoder = new TextDecoder()
 const CODE = 0x35
 
 /**
- * @param {API.SignerArchive<API.Signer>} archive
+ * @template {number} Code
+ * @param {API.SignerArchive<API.Signer<Code>>} archive
  * @param {Partial<API.SignerOptions>} options
- * @returns {API.Signer}
+ * @returns {API.Signer<Code>}
  */
 export const from = (
   archive,
@@ -27,24 +28,28 @@ export const from = (
       new Uint8Array(archive.buffer, offset, length)
     )
 
-    const signer = importer.from(
-      new Uint8Array(archive.buffer, offset + length)
+    const signer = /** @type {API.SigningPrincipal<'key', Code>} */ (
+      importer.from(new Uint8Array(archive.buffer, offset + length))
     )
 
-    return new Signer(
-      /** @type {API.SigningPrincipal<"key">} */ (signer),
-      Verifier.create(`did:dns:${domain}`, signer.verifier)
+    const verifier = /** @type {API.UCAN.Verifier<'key', Code>} */ (
+      parser.parse(signer.did())
     )
+
+    return new Signer(signer, Verifier.create(`did:dns:${domain}`, verifier))
   } else if (!archive.did.startsWith('did:dns:')) {
     throw new RangeError(`Expeted did:dns identifer instead got ${archive.did}`)
   } else if (archive.resolvedDID) {
-    const verifier = parser.parse(archive.resolvedDID)
-    const signer = /** @type {API.SigningPrincipal<"key">} */ (
+    const signer = /** @type {API.SigningPrincipal<'key', Code>} */ (
       importer.from({
         did: archive.resolvedDID,
         key: archive.key,
       })
     )
+    const verifier = /** @type {API.UCAN.Verifier<'key', Code>} */ (
+      parser.parse(archive.resolvedDID)
+    )
+
     return new Signer(signer, Verifier.create(archive.did, verifier))
   } else {
     throw new RangeError(`did:dns archive expected to have resolveDID field`)
@@ -54,10 +59,16 @@ export const from = (
 /**
  * @template {number} Code
  * @param {string} domain
- * @param {{generate(): API.Await<{ signer: API.SigningPrincipal<'key', Code>, verifier: API.UCAN.Verifier<'key', Code> }>}} generator
+ * @param {API.SigningPrincipalGenerator<Code>} [generator]
+ * @returns {Promise<API.Signer<Code>>}
  */
-export const generate = async (domain, generator = ed25519) =>
-  create(domain, await generator.generate())
+export const generate = async (
+  domain,
+  generator = /** @type {API.SigningPrincipalGenerator<any>} */ (ed25519)
+) => {
+  const signer = await generator.generate()
+  return create(domain, signer)
+}
 
 /**
  * @template {number} Code
@@ -82,8 +93,13 @@ class Signer {
     this._signer = signer
     this.verifier = verifier
   }
+  /** @type {API.Signer<Code>} */
   get signer() {
     return this
+  }
+
+  resolve() {
+    return this._signer
   }
   get signatureAlgorithm() {
     return this._signer.signatureAlgorithm
@@ -91,6 +107,10 @@ class Signer {
   get signatureCode() {
     return this._signer.signatureCode
   }
+
+  /**
+   * @returns {API.DID<'dns'>}
+   */
   did() {
     return this.verifier.did()
   }
@@ -112,7 +132,7 @@ class Signer {
 
   /**
    *
-   * @returns {API.SignerArchive<API.SigningPrincipal<'dns', Code>>}
+   * @returns {API.SignerArchive<this>}
    */
   toArchive() {
     const archive = this._signer.toArchive()
@@ -136,7 +156,8 @@ class Signer {
       return bytes
     } else {
       return {
-        did: this.did(),
+        // 🫣 Don't know why TS fails to fails infer this properly.
+        did: /** @type {ReturnType<this['did']>} */ (this.did()),
         resolvedDID: archive.did,
         key: archive.key,
       }

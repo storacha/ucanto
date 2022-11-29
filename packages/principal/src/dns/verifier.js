@@ -30,7 +30,7 @@ export const parse = (
 /**
  * @template {number} Code
  * @param {API.DID<"dns">} source
- * @param {API.UCAN.Verifier<string, Code>} key
+ * @param {API.UCAN.Verifier<"key", Code>} key
  */
 export const create = (source, key) => new ResolvedVerifier(source, key)
 
