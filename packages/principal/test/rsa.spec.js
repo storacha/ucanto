@@ -29,8 +29,9 @@ describe('RSA', () => {
     assert.equal(verifier.signatureAlgorithm, 'RS256')
     assert.equal(verifier.did(), signer.did())
 
-    const { key, did } = /** @type {RSA.SignerInfo} */ (signer.toArchive())
-    assert.equal(did, signer.did())
+    const { id, keys } = signer.toArchive()
+    assert.equal(id, signer.did())
+    const key = /** @type {CryptoKey} */ (keys[id])
     assert.equal(key.type, 'private')
     assert.deepEqual(Object(key.algorithm), {
       name: 'RSASSA-PKCS1-v1_5',
@@ -80,7 +81,8 @@ describe('RSA', () => {
     assert.equal(verifier.signatureAlgorithm, 'RS256')
     assert.equal(verifier.did(), signer.did())
 
-    const bytes = signer.toArchive()
+    const archive = signer.toArchive()
+    const bytes = archive.keys[archive.id]
     if (!(bytes instanceof Uint8Array)) {
       return assert.fail()
     }
@@ -287,11 +289,10 @@ it('toJWK 🔁 fromJWK', async () => {
 
   const jwk = await webcrypto.subtle.exportKey('jwk', keyPair.privateKey)
 
+  const { id, keys } = signer.toArchive()
+
   const privateKey = PrivateKey.decode(
-    multiformat.untagWith(
-      RSA.code,
-      /** @type {Uint8Array} */ (signer.toArchive())
-    )
+    multiformat.untagWith(RSA.code, /** @type {Uint8Array} */ (keys[id]))
   )
 
   assert.deepEqual(PrivateKey.fromJWK(jwk), privateKey)
@@ -319,12 +320,64 @@ it('toSPKI 🔁 fromSPKI', async () => {
   const signer = await RSA.generate({ extractable: true })
   const spki = new Uint8Array(await exportKey('spki', signer.verifier))
 
+  const { id, keys } = signer.toArchive()
   const privateKey = PrivateKey.decode(
-    multiformat.untagWith(
-      RSA.code,
-      /** @type {Uint8Array} */ (signer.toArchive())
-    )
+    multiformat.untagWith(RSA.code, /** @type {Uint8Array} */ (keys[id]))
   )
 
   assert.deepEqual(PrivateKey.toSPKI(privateKey), spki)
+})
+
+it('withDID', async () => {
+  const signer = await RSA.generate()
+
+  const payload = utf8.encode('hello world')
+
+  const foo = signer.withDID('did:test:foo')
+  assert.deepEqual(foo.did(), 'did:test:foo')
+  assert.deepEqual(foo.signatureAlgorithm, signer.signatureAlgorithm)
+  assert.deepEqual(foo.signatureCode, signer.signatureCode)
+  assert.equal(await signer.verify(payload, await foo.sign(payload)), true)
+
+  assert.deepEqual(foo.verifier.did(), 'did:test:foo')
+  assert.equal(
+    await foo.verifier.verify(payload, await signer.sign(payload)),
+    true
+  )
+
+  assert.deepEqual(foo.toArchive(), {
+    ...signer.toArchive(),
+    id: 'did:test:foo',
+  })
+
+  const bar = signer.verifier.withDID('did:test:bar')
+  assert.deepEqual(bar.did(), 'did:test:bar')
+  assert.equal(await bar.verify(payload, await signer.sign(payload)), true)
+})
+
+it('extractable withDID', async () => {
+  const signer = await RSA.generate({ extractable: true })
+
+  const payload = utf8.encode('hello world')
+
+  const foo = signer.withDID('did:test:foo')
+  assert.deepEqual(foo.did(), 'did:test:foo')
+  assert.deepEqual(foo.signatureAlgorithm, signer.signatureAlgorithm)
+  assert.deepEqual(foo.signatureCode, signer.signatureCode)
+  assert.equal(await signer.verify(payload, await foo.sign(payload)), true)
+
+  assert.deepEqual(foo.verifier.did(), 'did:test:foo')
+  assert.equal(
+    await foo.verifier.verify(payload, await signer.sign(payload)),
+    true
+  )
+
+  assert.deepEqual(foo.toArchive(), {
+    ...signer.toArchive(),
+    id: 'did:test:foo',
+  })
+
+  const bar = signer.verifier.withDID('did:test:bar')
+  assert.deepEqual(bar.did(), 'did:test:bar')
+  assert.equal(await bar.verify(payload, await signer.sign(payload)), true)
 })

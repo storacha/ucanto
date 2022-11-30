@@ -14,9 +14,6 @@ import {
   Phantom,
   Resource,
   Signature,
-  Principal,
-  Verifier,
-  Signer as UCANSigner,
 } from '@ipld/dag-ucan'
 import { Link, Block as IPLDBlock } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
@@ -35,7 +32,6 @@ export * from './capability.js'
 export * from './transport.js'
 export type {
   Transport,
-  Principal,
   Phantom,
   Tuple,
   DID,
@@ -66,6 +62,10 @@ export * as UCAN from '@ipld/dag-ucan'
 export type Proof<C extends Capabilities = Capabilities> =
   | UCANLink<C>
   | Delegation<C>
+
+export interface Principal<ID extends DID = DID> {
+  did(): ID
+}
 
 export interface UCANOptions {
   audience: Principal
@@ -397,12 +397,27 @@ export interface PrincipalParser {
  * Library also provides utility functions for combining multiple
  * SignerImporters into one.
  */
-export interface SignerImporter<Self extends Signer = Signer> {
-  from(archive: SignerArchive<Self>): Self
+export interface SignerImporter<
+  ID extends DID = DID,
+  Code extends number = number
+> {
+  from(archive: SignerArchive<ID, Code>): Signer<ID, Code>
 }
 
-export interface Signer<M extends string = string, A extends number = number>
-  extends UCANSigner<M, A> {
+export interface Signer<ID extends DID = DID, A extends number = number>
+  extends Principal<ID>,
+    Verifier<ID, A> {
+  signer: Signer<ID, A>
+  verifier: Verifier<ID, A>
+
+  signatureAlgorithm: string
+  signatureCode: A
+
+  /**
+   * Takes byte encoded payload and produces a verifiable signature.
+   */
+  sign<T>(payload: ByteView<T>): Await<Signature<T, A>>
+
   /**
    * Returns archive of this signer which is byte encoded form when signer key
    * is extractable and is {@link SignerInfo} form otherwise. This allows a user
@@ -422,27 +437,33 @@ export interface Signer<M extends string = string, A extends number = number>
    * }
    * ```
    */
-  toArchive(): SignerArchive<this>
+  toArchive(): SignerArchive<ID, A>
+
+  withDID<ID extends DID>(id: ID): Signer<ID, A>
 }
 
-export interface SignerInfo<Self extends Signer = Signer> {
+export interface Verifier<ID extends DID = DID, A extends number = number>
+  extends Principal<ID> {
   /**
-   * DID that is returned by .did() method of the signer.
+   * Takes byte encoded payload and verifies that it is signed by corresponding
+   * signer.
    */
-  readonly did: ReturnType<Self['did']>
-  /**
-   * If .did() returns non did:key (e.g did:dns) this field will
-   * contain did:key it resolves to, otherwise it is omitted.
-   */
-  readonly resolvedDID?: DID<'key'>
-  readonly key: CryptoKey
+  verify<T>(payload: ByteView<T>, signature: Signature<T, A>): Await<boolean>
+
+  withDID<ID extends DID>(id: ID): Verifier<ID, A>
 }
 
-export type SignerArchive<Self extends Signer = Signer> =
-  | ByteView<Self>
-  | SignerInfo<Self>
+export interface SignerArchive<
+  ID extends DID = DID,
+  Code extends number = number
+> {
+  id: ID
+  keys: { [K: DID<'key'>]: KeyArchive<Code> }
+}
 
-export { Verifier }
+type KeyArchive<Code extends number = number> =
+  | CryptoKey
+  | ByteView<Signer<DID<'key'>, Code> & CryptoKey>
 
 export type InferInvokedCapability<
   C extends CapabilityParser<Match<ParsedCapability>>

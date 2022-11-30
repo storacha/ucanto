@@ -1,4 +1,4 @@
-import { Signer, Verifier, ByteView, UCAN, Await } from '@ucanto/interface'
+import { Signer, Verifier, ByteView, DID } from '@ucanto/interface'
 import * as Signature from '@ipld/dag-ucan/signature'
 
 export * from '@ucanto/interface'
@@ -6,17 +6,22 @@ export * from '@ucanto/interface'
 type CODE = typeof Signature.EdDSA
 type ALG = 'EdDSA'
 
-export interface EdSigner<M extends string = 'key'>
-  extends Signer<M, CODE>,
-    UCAN.Verifier<M, CODE> {
-  readonly signer: EdSigner<M>
-  readonly verifier: EdVerifier<M>
+export interface EdSigner extends Signer<DID<'key'>, CODE> {
+  readonly signatureCode: CODE
+  readonly signatureAlgorithm: ALG
   readonly code: 0x1300
-  toArchive(): ByteView<this>
+
+  readonly verifier: EdVerifier
+
+  encode(): ByteView<EdSigner & CryptoKeyPair>
+
+  toArchive(): {
+    id: DID<'key'>
+    keys: { [K: DID<'key'>]: ByteView<Signer<DID<'key'>, CODE> & CryptoKey> }
+  }
 }
 
-export interface EdVerifier<M extends string = 'key'>
-  extends Verifier<M, CODE> {
+export interface EdVerifier extends Verifier<DID<'key'>, CODE> {
   readonly code: 0xed
   readonly signatureCode: CODE
   readonly signatureAlgorithm: ALG

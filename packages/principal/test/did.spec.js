@@ -1,11 +1,12 @@
-import { ed25519, RSA, DNS } from '../src/lib.js'
+import { ed25519, RSA, DID } from '../src/lib.js'
 import { assert } from 'chai'
 import { sha256 } from 'multiformats/hashes/sha2'
 
 export const utf8 = new TextEncoder()
-describe('DNS', () => {
+describe('did', () => {
   it('generate', async () => {
-    const signer = await DNS.generate('api.web3.storage', ed25519)
+    const key = await ed25519.generate()
+    const signer = key.withDID('did:dns:api.web3.storage')
 
     assert.ok(signer.did().startsWith('did:dns:api.web3.storage'))
     assert.equal(signer.signatureCode, 0xd0ed)
@@ -28,9 +29,10 @@ describe('DNS', () => {
   })
 
   it('can archive 🔁 restore rsa unextractable', async () => {
-    const original = await DNS.generate('api.web3.storage', RSA)
+    const key = await RSA.generate()
+    const original = key.withDID('did:dns:api.web3.storage')
     const archive = original.toArchive()
-    const restored = DNS.from(archive)
+    const restored = DID.from(archive)
     const payload = utf8.encode('hello world')
 
     assert.equal(
@@ -45,9 +47,10 @@ describe('DNS', () => {
   })
 
   it('can archive 🔁 restore rsa extractable', async () => {
-    const original = await DNS.generate('api.web3.storage', RSA)
+    const key = await RSA.generate()
+    const original = key.withDID('did:web:api.web3.storage')
     const archive = original.toArchive()
-    const restored = DNS.from(archive)
+    const restored = DID.from(archive)
     const payload = utf8.encode('hello world')
 
     assert.equal(
@@ -62,8 +65,9 @@ describe('DNS', () => {
   })
 
   it('can archive 🔁 restore ed25519', async () => {
-    const original = await DNS.generate('api.web3.storage', ed25519)
-    const restored = DNS.from(original.toArchive())
+    const key = await ed25519.generate()
+    const original = key.withDID('did:web:api.web3.storage')
+    const restored = DID.from(original.toArchive())
     const payload = utf8.encode('hello world')
 
     assert.equal(
@@ -78,19 +82,22 @@ describe('DNS', () => {
   })
 
   it('fails to restore without resolvedDID', async () => {
-    const original = await DNS.generate('api.web3.storage', RSA)
+    const key = await RSA.generate()
+    const original = key.withDID('did:dns:api.web3.storage')
     const archive = original.toArchive()
     if (archive instanceof Uint8Array) {
       return assert.fail('Expected archive to be a SignerInfo')
     }
-    const { resolvedDID, ...rest } = archive
+    const { id, keys } = archive
 
-    assert.equal(resolvedDID, original.resolve().did())
-    assert.throws(() => DNS.from(rest), /resolvedDID/)
+    assert.equal(id, 'did:dns:api.web3.storage')
+    assert.equal(Object.keys(keys)[0].startsWith('did:key:'), true)
+    assert.throws(() => DID.from({ id, keys: {} }), /constaints no keys/)
   })
 
   it('can sign & verify', async () => {
-    const signer = await DNS.generate('web3.storage')
+    const key = await ed25519.generate()
+    const signer = key.withDID('did:web:web3.storage')
     const payload = utf8.encode('hello world')
 
     const signature = await signer.sign(payload)
@@ -103,12 +110,12 @@ describe('DNS', () => {
   })
 
   it('can parse verifier', async () => {
-    const principal = await DNS.generate('api.web3.storage')
+    const key = await ed25519.generate()
+    const principal = key.withDID('did:dns:api.web3.storage')
     const payload = utf8.encode('hello world')
-    const verifier = DNS.Verifier.parse(principal.did(), {
+    const verifier = DID.parse(principal.did(), {
       resolve: async _dns => {
-        const verifier = await principal.resolve()
-        return verifier.did()
+        return key.did()
       },
     })
 
@@ -117,24 +124,66 @@ describe('DNS', () => {
     assert.equal(await verifier.verify(payload, signature), true)
     // checks that key was cached
     assert.equal(await verifier.verify(payload, signature), true)
+
+    const v2 = verifier.withDID('did:web:api.web3.storage')
+    assert.equal(v2.did(), 'did:web:api.web3.storage')
+    assert.equal(await v2.verify(payload, signature), true)
   })
 
   it('fails to verify without resolver', async () => {
-    const principal = await DNS.generate('api.web3.storage')
+    const key = await ed25519.generate()
+    const principal = key.withDID('did:dns:api.web3.storage')
     const payload = utf8.encode('hello world')
-    const verifier = DNS.parse('did:dns:api.web3.storage')
+    const verifier = DID.parse('did:dns:api.web3.storage')
     const signature = await principal.sign(payload)
 
     assert.equal(await verifier.verify(payload, signature), false)
   })
 
   it('verifier can resolve', async () => {
-    const keypair = await ed25519.generate()
-    const { verifier, signer } = await DNS.generate('api.web3.storage', {
-      generate: () => keypair,
+    const key = await ed25519.generate()
+    const { verifier } = key.withDID('did:web:api.web3.storage')
+
+    assert.equal(verifier.did(), 'did:web:api.web3.storage')
+  })
+
+  it('verifier does not wrap if it is key', async () => {
+    const key = await ed25519.generate()
+    const verifier = DID.parse(key.did())
+
+    assert.deepEqual(key.verifier, verifier)
+  })
+
+  it('can call withDID several times', async () => {
+    const s = await ed25519.generate()
+    const v = s.verifier
+    const { keys } = s.toArchive()
+
+    const s1 = s.withDID('did:test:s1')
+    const v1 = v.withDID('did:test:v1')
+    assert.deepEqual(s1.did(), 'did:test:s1')
+    assert.deepEqual(v1.did(), 'did:test:v1')
+    assert.deepEqual(s1.toArchive(), {
+      id: 'did:test:s1',
+      keys,
     })
 
-    assert.equal(verifier.resolve(), keypair.verifier)
-    assert.equal(verifier.did(), 'did:dns:api.web3.storage')
+    const s2 = s1.withDID('did:test:s2')
+    const v2 = v1.withDID('did:test:v2')
+    assert.deepEqual(s2.did(), 'did:test:s2')
+    assert.deepEqual(v2.did(), 'did:test:v2')
+    assert.deepEqual(s2.toArchive(), {
+      id: 'did:test:s2',
+      keys,
+    })
+
+    const s3 = s2.withDID('did:test:s3')
+    const v3 = v2.withDID('did:test:v3')
+    assert.deepEqual(s3.did(), 'did:test:s3')
+    assert.deepEqual(v3.did(), 'did:test:v3')
+    assert.deepEqual(s3.toArchive(), {
+      id: 'did:test:s3',
+      keys,
+    })
   })
 })

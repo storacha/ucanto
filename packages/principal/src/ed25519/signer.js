@@ -4,9 +4,12 @@ import * as API from './type.js'
 import * as Verifier from './verifier.js'
 import { base64pad } from 'multiformats/bases/base64'
 import * as Signature from '@ipld/dag-ucan/signature'
+import { withDID } from '../signer.js'
 
 export const code = 0x1300
 export const name = Verifier.name
+
+/** @type {'EdDSA'} */
 export const signatureAlgorithm = Verifier.signatureAlgorithm
 export const signatureCode = Verifier.signatureCode
 
@@ -16,10 +19,6 @@ const KEY_SIZE = 32
 const SIZE = PRIVATE_TAG_SIZE + KEY_SIZE + PUBLIC_TAG_SIZE + KEY_SIZE
 
 export const PUB_KEY_OFFSET = PRIVATE_TAG_SIZE + KEY_SIZE
-
-/**
- * @typedef {API.EdSigner  } EdSigner
- */
 
 /**
  * Generates new issuer by generating underlying ED25519 keypair.
@@ -52,12 +51,13 @@ export const derive = async secret => {
 }
 
 /**
- * @param {API.SignerArchive<API.Signer<"key", typeof signatureCode>>} archive
+ * @param {API.SignerArchive<API.DID<'key'>, typeof signatureCode>} archive
  * @returns {API.EdSigner}
  */
-export const from = archive => {
-  if (archive instanceof Uint8Array) {
-    return decode(archive)
+export const from = ({ id, keys }) => {
+  const key = keys[id]
+  if (key instanceof Uint8Array) {
+    return decode(key)
   } else {
     throw new Error(`Unsupported archive format`)
   }
@@ -95,9 +95,9 @@ export const decode = bytes => {
 
 /**
  * @param {API.EdSigner} signer
- * @return {API.ByteView<API.EdSigner>}
+ * @return {API.ByteView<API.EdSigner & CryptoKeyPair>}
  */
-export const encode = signer => signer.toArchive()
+export const encode = signer => signer.encode()
 
 /**
  * @template {string} Prefix
@@ -163,6 +163,15 @@ class Ed25519Signer extends Uint8Array {
   }
 
   /**
+   * @template {API.DID} ID
+   * @param {ID} id
+   * @returns {API.Signer<ID, typeof Signature.EdDSA>}
+   */
+  withDID(id) {
+    return withDID(this, id)
+  }
+
+  /**
    * @template T
    * @param {API.ByteView<T>} payload
    * @returns {Promise<API.Signature<T, typeof Signature.EdDSA>>}
@@ -183,13 +192,21 @@ class Ed25519Signer extends Uint8Array {
   }
 
   get signatureAlgorithm() {
-    return 'EdDSA'
+    return signatureAlgorithm
   }
   get signatureCode() {
     return Signature.EdDSA
   }
 
-  toArchive() {
+  encode() {
     return this
+  }
+
+  toArchive() {
+    const id = this.did()
+    return {
+      id,
+      keys: { [id]: this.encode() },
+    }
   }
 }
