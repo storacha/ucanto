@@ -486,7 +486,7 @@ export type Protocol<Scheme extends string = string> = `${Scheme}:`
 /**
  * A typed string representing a URI of a given protocol.
  *
- * @typeParam P - The protocol (scheme) of the given uri. For example, `did:key:foo` has the protocol of `did`.
+ * @template P - The protocol (scheme) of the given uri. For example, `did:key:foo` has the protocol of `did`.
  */
 export type URI<P extends Protocol = Protocol> = `${P}${string}` &
   // ⚠️ Without phantom type TS does not seem to retain `P` type
