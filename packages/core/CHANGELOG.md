@@ -1,5 +1,21 @@
 # Changelog
 
+### [3.0.3](https://www.github.com/web3-storage/ucanto/compare/core-v3.0.2...core-v3.0.3) (2022-12-01)
+
+
+### Bug Fixes
+
+* typo ([#145](https://www.github.com/web3-storage/ucanto/issues/145)) ([18b3fd1](https://www.github.com/web3-storage/ucanto/commit/18b3fd17e8d7671dc76a238723cb8d524b29cba3))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^3.0.1 to ^4.0.0
+  * devDependencies
+    * @ucanto/principal bumped from ^3.0.1 to ^4.0.0
+
 ### [3.0.2](https://www.github.com/web3-storage/ucanto/compare/core-v3.0.1...core-v3.0.2) (2022-11-11)
 
 

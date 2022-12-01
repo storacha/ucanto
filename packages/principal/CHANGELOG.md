@@ -1,5 +1,23 @@
 # Changelog
 
+## [4.0.0](https://www.github.com/web3-storage/ucanto/compare/principal-v3.0.1...principal-v4.0.0) (2022-12-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* did prinicipal (#149)
+
+### Features
+
+* did prinicipal ([#149](https://www.github.com/web3-storage/ucanto/issues/149)) ([4c11092](https://www.github.com/web3-storage/ucanto/commit/4c11092e420292af697bd5bec126112f9b961612))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^3.0.1 to ^4.0.0
+
 ### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/principal-v3.0.0...principal-v3.0.1) (2022-11-11)
 
 
