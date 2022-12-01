@@ -56,7 +56,7 @@ export type {
 export * as UCAN from '@ipld/dag-ucan'
 
 /**
- * Proof can either be a link to a delegated UCAN or a materialized `Delegation`
+ * Proof can either be a link to a delegated UCAN or a materialized {@link Delegation}
  * view.
  */
 export type Proof<C extends Capabilities = Capabilities> =
@@ -67,6 +67,12 @@ export interface Principal<ID extends DID = DID> {
   did(): ID
 }
 
+/**
+ * UCAN creation options that apply to all UCAN types.
+ *
+ * See {@link DelegationOptions} for options specific to capability delegation.
+ * See {@link InvocationOptions} for options specific to invoking a capability.
+ */
 export interface UCANOptions {
   audience: Principal
   lifetimeInSeconds?: number
@@ -79,17 +85,46 @@ export interface UCANOptions {
   proofs?: Proof[]
 }
 
+/**
+ * A {@link UCANOptions} instance that include options for delegating capabilities.
+ */
 export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
+  /**
+   * The `issuer` of a {@link Delegation} is the delegating party,
+   * or the {@link Principal} that has some capabilities that they wish to delegate
+   * the `audience` {@link Principal}.
+   *
+   */
   issuer: Signer
+
+  /**
+   * The `audience` for a {@link Delegation} is the party being delegated to, or the
+   * {@link Principal} which will invoke the delegated {@link Capabilities} on behalf
+   * of the `issuer`.
+   */
   audience: Principal
+
+  /**
+   * The set of {@link Capabilities} being delegated.
+   */
   capabilities: C
+
+  /**
+   * If the `issuer` of this {@link Delegation} is not the resource owner / service provider,
+   * for the delegated capabilities, the `proofs` array must contain valid {@link Proof}s
+   * containing delegations to the `issuer`.
+   */
   proofs?: Proof[]
 }
 
+/**
+ * A materialized view of a UCAN delegation, which can be encoded into a UCAN token and
+ * used as proof for an invocation or further delegations.
+ */
 export interface Delegation<C extends Capabilities = Capabilities> {
   readonly root: UCANBlock<C>
   /**
-   * Map of all the IPLD blocks that where included with this delegation DAG.
+   * Map of all the IPLD blocks that were included with this delegation DAG.
    * Usually this would be blocks corresponding to proofs, however it may
    * also contain other blocks e.g. things that `capabilities` or `facts` may
    * link.
@@ -123,12 +158,29 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   iterate(): IterableIterator<Delegation>
 }
 
+/**
+ * An Invocation represents a UCAN that can be presented to a service provider to
+ * invoke or "exercise" a {@link Capability}. You can think of invocations as a
+ * serialized function call, where the ability or `can` portion of the Capability acts
+ * as the function name, and the resource (`with`) and caveats (`nb`) of the capability
+ * act as function arguments.
+ *
+ * Most Invocations will require valid proofs, which consist of a chain of {@link Delegation}s.
+ * The service provider will inspect the proofs to verify that the invocation has
+ * sufficient privileges to execute.
+ */
 export interface Invocation<C extends Capability = Capability>
   extends Delegation<[C]> {}
 
+/**
+ * A {@link UCANOptions} instance that includes options specific to {@link Invocation}s.
+ */
 export interface InvocationOptions<C extends Capability = Capability>
   extends UCANOptions {
+  /** The `issuer` of an invocation is the "caller" of the RPC method and the party that signs the invocation UCAN token. */
   issuer: Signer
+
+  /** The {@link Capability} that is being invoked. */
   capability: C
 }
 
@@ -157,6 +209,13 @@ export type InferInvocations<T> = T extends []
   ? Invocation<U>[]
   : never
 
+/**
+ * An invocation handler, as returned by {@link @ucanto/server#provide | `Server.provide` }.
+ *
+ * @typeParam I - the {@link Capability} type accepted by the handler
+ * @typeParam O - type returned by the handler on success
+ * @typeParam X - type returned by the handler on error
+ */
 export interface ServiceMethod<
   I extends Capability,
   O,
@@ -167,6 +226,10 @@ export interface ServiceMethod<
   >
 }
 
+/**
+ * Error types returned by the framework during invocation that are not
+ * specific to any particular {@link ServiceMethod}.
+ */
 export type InvocationError =
   | HandlerNotFound
   | HandlerExecutionError
@@ -338,6 +401,9 @@ export interface InboundTransportOptions {
   readonly encoder: Transport.ResponseEncoder
 }
 
+/**
+ * Options for UCAN validation.
+ */
 export interface ValidatorOptions {
   /**
    * Takes principal parser that can be used to turn a `UCAN.Principal`
@@ -360,6 +426,13 @@ export interface ServerOptions
   readonly id: Principal
 }
 
+/**
+ * A definition for a {@link Service}, combined with an optional
+ * handler method for execution errors.
+ *
+ * Used as input to {@link @ucanto/server#create | `Server.create` } when
+ * defining a service implementation.
+ */
 export interface Server<T> extends ServerOptions {
   /**
    * Actual service providing capability handlers.
@@ -369,6 +442,14 @@ export interface Server<T> extends ServerOptions {
   readonly catch?: (err: HandlerExecutionError) => void
 }
 
+/**
+ * A materialized {@link Server} that is configured to use a specific
+ * transport channel. The `ServerView` has an {@link InvocationContext}
+ * which contains the DID of the service itself, among other things.
+ *
+ * Returned by {@link @ucanto/server#create | `Server.create` } when instantiating
+ * a server.
+ */
 export interface ServerView<T extends Record<string, any>>
   extends Server<T>,
     Transport.Channel<T> {
@@ -376,15 +457,31 @@ export interface ServerView<T extends Record<string, any>>
   catch: (err: HandlerExecutionError) => void
 }
 
+/**
+ * A mapping of service names to handlers, used to define a service implementation.
+ *
+ * See {@link Server}, which wraps a `Service` and is used by {@link @ucanto/server/create}.
+ */
 export type Service = Record<
   string,
   (input: Invocation<any>) => Promise<Result<any, any>>
 >
 
+/**
+ * Something that can be `await`ed to get a value of type `T`.
+ */
 export type Await<T> = T | PromiseLike<T> | Promise<T>
 
+/**
+ * A string literal type that matches the "scheme" portion of a URI.
+ */
 export type Protocol<Scheme extends string = string> = `${Scheme}:`
 
+/**
+ * A typed string representing a URI of a given protocol.
+ *
+ * @template P - The protocol (scheme) of the given uri. For example, `did:key:foo` has the protocol of `did`.
+ */
 export type URI<P extends Protocol = Protocol> = `${P}${string}` &
   // ⚠️ Without phantom type TS does not seem to retain `P` type
   // resulting in `${string}${string}` instead.
@@ -392,6 +489,10 @@ export type URI<P extends Protocol = Protocol> = `${P}${string}` &
     protocol: P
   }>
 
+/**
+ * A `PrincipalParser` provides {@link Verifier} instances that can validate UCANs issued
+ * by a given {@link Principal}.
+ */
 export interface PrincipalParser {
   parse(did: UCAN.DID): Verifier
 }
