@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://www.github.com/web3-storage/ucanto/compare/interface-v3.0.1...interface-v4.0.0) (2022-12-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* did prinicipal (#149)
+
+### Features
+
+* did prinicipal ([#149](https://www.github.com/web3-storage/ucanto/issues/149)) ([4c11092](https://www.github.com/web3-storage/ucanto/commit/4c11092e420292af697bd5bec126112f9b961612))
+
 ### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/interface-v3.0.0...interface-v3.0.1) (2022-11-11)
 
 
