@@ -2,19 +2,22 @@ import * as API from '@ucanto/interface'
 import * as Key from './key.js'
 
 /**
- * @template {API.DID} ID
- * @template {number} Code
- * @param {API.SignerArchive<ID, Code>} archive
+ * Takes `SignerArchive` and restores it into a `Signer` that can be used
+ * for signing & verifying payloads.
+ *
+ * @template {API.DID} ID - DID that can be imported, which may be a type union.
+ * @template {API.SigAlg} Alg - Multicodec code corresponding to signature algorithm.
+ * @param {API.SignerArchive<ID, Alg>} archive
  * @param {API.SignerImporter} importer
- * @returns {API.Signer<ID, Code>}
+ * @returns {API.Signer<ID, Alg>}
  */
 export const from = (archive, importer = Key.Signer) => {
   if (archive.id.startsWith('did:key:')) {
-    return /** @type {API.Signer<ID, Code>} */ (importer.from(archive))
+    return /** @type {API.Signer<ID, Alg>} */ (importer.from(archive))
   } else {
     for (const [name, key] of Object.entries(archive.keys)) {
       const id = /** @type {API.DID<'key'>} */ (name)
-      const signer = /** @type {API.Signer<API.DID<'key'>, Code>} */ (
+      const signer = /** @type {API.Signer<API.DID<'key'>, Alg>} */ (
         importer.from({
           id,
           keys: { [id]: key },
@@ -65,14 +68,18 @@ export const parse = (
  */
 
 /**
+ * Implementation of `Verifier` that lazily resolves it's DID to corresponding
+ * did:key verifier. For more details on methods and type parameters please see
+ * `Verifier` interface.
+ *
  * @template {API.DID} ID
- * @template {number} Code
- * @implements {API.Verifier<ID, Code>}
+ * @template {API.SigAlg} Alg
+ * @implements {API.Verifier<ID, Alg>}
  */
 class Verifier {
   /**
    * @param {ID} id
-   * @param {API.Verifier<API.DID<"key">, Code>|null} key
+   * @param {API.VerifierKey<Alg>|null} key
    * @param {VerifierOptions} options
    */
   constructor(id, key, options) {
@@ -80,6 +87,7 @@ class Verifier {
     this.options = options
     this.key = key
   }
+
   did() {
     return this.id
   }
@@ -95,7 +103,7 @@ class Verifier {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @param {API.Signature<T, Code>} signature
+   * @param {API.Signature<T, Alg>} signature
    * @returns {API.Await<boolean>}
    */
   verify(payload, signature) {
@@ -106,10 +114,17 @@ class Verifier {
     }
   }
 
+  /**
+   * @private
+   */
   async resolve() {
+    // Please note that this is not meant to perform live DID document
+    // resolution nor instance is supposed to be reused across UCAN validation
+    // sessions. Key is only ever resolved once to make this verifier
+    // referentially transparent.
     if (!this.key) {
       const did = await this.options.resolve(this.id)
-      this.key = /** @type {API.Verifier<API.DID<'key'>, Code>} */ (
+      this.key = /** @type {API.Verifier<API.DID<'key'>, Alg>} */ (
         this.options.parser.parse(did)
       )
     }
@@ -120,7 +135,7 @@ class Verifier {
    * @private
    * @template T
    * @param {API.ByteView<T>} payload
-   * @param {API.Signature<T, Code>} signature
+   * @param {API.Signature<T, Alg>} signature
    * @returns {Promise<boolean>}
    */
   async resolveAndVerify(payload, signature) {
@@ -128,6 +143,10 @@ class Verifier {
       const key = await this.resolve()
       return key.verify(payload, signature)
     } catch (_) {
+      // It may swallow resolution error which is not ideal, but throwing
+      // is not really a good solution here instead we should change return
+      // type to result from boolean as per issue
+      // @see https://github.com/web3-storage/ucanto/issues/150
       return false
     }
   }
