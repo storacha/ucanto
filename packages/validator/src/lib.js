@@ -1,5 +1,6 @@
 import * as API from '@ucanto/interface'
-import { isDelegation, UCAN } from '@ucanto/core'
+import { Delegation, isDelegation, UCAN } from '@ucanto/core'
+import { capability } from './capability.js'
 import {
   UnavailableProof,
   InvalidAudience,
@@ -15,6 +16,7 @@ import {
 export { Failure, UnavailableProof, MalformedCapability }
 
 export { capability } from './capability.js'
+import { DID } from './schema.js'
 export * from './schema.js'
 export * as Schema from './schema.js'
 
@@ -368,10 +370,38 @@ const validate = async (delegation, config) => {
  * @returns {Promise<API.Result<T, API.InvalidSignature>>}
  */
 const verifySignature = async (delegation, { principal }) => {
-  const issuer = principal.parse(delegation.issuer.did())
+  const issuer = principal.parse(delegation.issuer.did(), {
+    resolve(did) {},
+  })
   const valid = await UCAN.verifySignature(delegation.data, issuer)
 
   return valid ? delegation : new InvalidSignature(delegation)
+}
+
+const sign = capability({
+  can: 'ucan/sign',
+  with: DID.match({ method: 'key' }),
+})
+
+/**
+ * @param {API.DID} did
+ * @param {API.Delegation} delegation
+ * @param {Required<API.ProofResolver>} resolver
+ */
+const resolveDID = async (did, delegation, resolver) => {
+  for (const proof of await resolveProofs(delegation, resolver)) {
+    if (!proof.error) {
+      if (proof.issuer.did() === did && proof.audience.did() === did) {
+        for (const [index, capability] of proof.capabilities.entries()) {
+          const claim = sign.match({
+            capability,
+            delegation,
+            index,
+          })
+        }
+      }
+    }
+  }
 }
 
 export { InvalidAudience }
