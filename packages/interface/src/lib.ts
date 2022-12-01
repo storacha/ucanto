@@ -170,13 +170,7 @@ export interface Delegation<C extends Capabilities = Capabilities> {
  * sufficient privileges to execute.
  */
 export interface Invocation<C extends Capability = Capability>
-  extends Delegation<[C]> {
-  /** The `issuer` for an {@link Invocation} is the party requesting the invocation from the service provider. */
-  issuer: Signer
-
-  /** The `audience` for an {@link Invocation} is the service provider who will execute the invocation. */
-  audience: Principal
-}
+  extends Delegation<[C]> {}
 
 /**
  * A {@link UCANOptions} instance that includes options specific to {@link Invocation}s.
