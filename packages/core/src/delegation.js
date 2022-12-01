@@ -238,7 +238,7 @@ export const importDAG = dag => {
 
   const last = entries.pop()
   if (!last) {
-    throw new RangeError('Empty DAG can not be turned into a dalagetion')
+    throw new RangeError('Empty DAG can not be turned into a delegation')
   } else {
     const [, root] = last
 

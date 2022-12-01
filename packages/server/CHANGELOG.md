@@ -1,5 +1,48 @@
 # Changelog
 
+### [3.0.5](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.4...server-v3.0.5) (2022-11-18)
+
+
+### Bug Fixes
+
+* server verifier to support RSA and ed ([#142](https://www.github.com/web3-storage/ucanto/issues/142)) ([7317e71](https://www.github.com/web3-storage/ucanto/commit/7317e7122e105271f50d20d88c8bf2bb3a3d2575))
+
+### [3.0.4](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.3...server-v3.0.4) (2022-11-12)
+
+
+### Bug Fixes
+
+* versions ([#131](https://www.github.com/web3-storage/ucanto/issues/131)) ([88b87a7](https://www.github.com/web3-storage/ucanto/commit/88b87a7f3a32c02a22ddffcb8f38199445097133))
+
+### [3.0.3](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.2...server-v3.0.3) (2022-11-12)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/validator bumped from ^3.0.2 to ^3.0.3
+
+### [3.0.2](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.1...server-v3.0.2) (2022-11-11)
+
+
+### Bug Fixes
+
+* optional field validation ([#124](https://www.github.com/web3-storage/ucanto/issues/124)) ([87b70d2](https://www.github.com/web3-storage/ucanto/commit/87b70d2d56c07f8257717fa5ef584a21eb0417c8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^3.0.1 to ^3.0.2
+    * @ucanto/interface bumped from ^3.0.0 to ^3.0.1
+    * @ucanto/validator bumped from ^3.0.1 to ^3.0.2
+  * devDependencies
+    * @ucanto/principal bumped from ^3.0.0 to ^3.0.1
+    * @ucanto/client bumped from ^3.0.1 to ^3.0.2
+    * @ucanto/transport bumped from ^3.0.1 to ^3.0.2
+
 ### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.0...server-v3.0.1) (2022-11-02)
 
 

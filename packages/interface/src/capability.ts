@@ -78,11 +78,43 @@ export interface DerivedMatch<T, M extends Match>
 
 export interface DeriveSelector<M extends Match, T extends ParsedCapability> {
   to: TheCapabilityParser<DirectMatch<T>>
-  derives: Derives<T, M['value']>
+  derives: Derives<ToDeriveClaim<T>, ToDeriveProof<M['value']>>
 }
 
-export interface Derives<T, U = T> {
-  (self: T, from: U): Result<true, Failure>
+/**
+ * Utility type is used to infer the type of the capability passed into
+ * `derives` handler. It simply makes all `nb` fileds optional because
+ * in delegation all `nb` fields could be left out implying no restrictions.
+ */
+export type ToDeriveClaim<T extends ParsedCapability> =
+  | T
+  | ParsedCapability<T['can'], T['with'], Partial<T['nb']>>
+
+/**
+ * Utility type is used to infer type of the second argument of `derives`
+ * handler (in the `cap.derive({ to, derives: (claim, proof) => true })`)
+ * which could be either capability or set of capabilities. It simply makes
+ * all `nb` fields optional, because in delegation all `nb` fields could be
+ * left out implying no restrictions.
+ */
+export type ToDeriveProof<T> = T extends ParsedCapability
+  ? // If it a capability we just make `nb` partial
+    ToDeriveClaim<T>
+  : // otherwise we need to map tuple
+    ToDeriveProofs<T>
+
+/**
+ * Another helper type which is equivalent of `ToDeriveClaim` except it works
+ * on tuple of capabilities.
+ */
+type ToDeriveProofs<T> = T extends [infer U, ...infer E]
+  ? [ToDeriveClaim<U & ParsedCapability>, ...ToDeriveProofs<E>]
+  : T extends never[]
+  ? []
+  : never
+
+export interface Derives<T extends ParsedCapability, U = T> {
+  (claim: T, proof: U): Result<true, Failure>
 }
 
 export interface View<M extends Match> extends Matcher<M>, Selector<M> {
@@ -153,7 +185,7 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
    */
   delegate(
     options: InferDelegationOptions<M['value']['with'], M['value']['nb']>
-  ): Promise<Delegation<[M['value']]>>
+  ): Promise<Delegation<[ToDeriveClaim<M['value']>]>>
 }
 
 export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
@@ -299,8 +331,8 @@ export interface Descriptor<
   nb?: C
 
   derives?: Derives<
-    ParsedCapability<A, R, InferCaveats<C>>,
-    ParsedCapability<A, R, InferCaveats<C>>
+    ToDeriveClaim<ParsedCapability<A, R, InferCaveats<C>>>,
+    ToDeriveClaim<ParsedCapability<A, R, InferCaveats<C>>>
   >
 }
 

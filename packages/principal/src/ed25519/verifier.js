@@ -4,6 +4,8 @@ import { varint } from 'multiformats'
 import * as API from './type.js'
 import * as Signature from '@ipld/dag-ucan/signature'
 import { base58btc } from 'multiformats/bases/base58'
+import { withDID } from '../verifier.js'
+
 export const code = 0xed
 export const name = 'Ed25519'
 
@@ -19,7 +21,7 @@ const SIZE = 32 + PUBLIC_TAG_SIZE
 /**
  * Parses `did:key:` string as a VerifyingPrincipal.
  *
- * @param {API.DID<"key">|string} did
+ * @param {API.DID|string} did
  */
 export const parse = did => decode(DID.parse(did))
 
@@ -48,7 +50,7 @@ export const decode = bytes => {
 /**
  * Formats given Principal into `did:key:` format.
  *
- * @param {API.Principal<"key">} principal
+ * @param {API.Principal<API.DID<"key">>} principal
  */
 export const format = principal => DID.format(principal)
 
@@ -56,7 +58,7 @@ export const format = principal => DID.format(principal)
  * Encodes given Principal by tagging it's ed25519 public key with `0xed`
  * multiformat code.
  *
- * @param {API.Principal<"key">} principal
+ * @param {API.Principal<API.DID<"key">>} principal
  */
 export const encode = principal => DID.encode(principal)
 
@@ -108,5 +110,14 @@ class Ed25519Verifier extends Uint8Array {
       signature.code === signatureCode &&
       ED25519.verify(signature.raw, payload, this.publicKey)
     )
+  }
+
+  /**
+   * @template {API.DID} ID
+   * @param {ID} id
+   * @returns {API.Verifier<ID, typeof signatureCode>}
+   */
+  withDID(id) {
+    return withDID(this, id)
   }
 }

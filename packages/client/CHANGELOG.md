@@ -1,5 +1,23 @@
 # Changelog
 
+### [3.0.2](https://www.github.com/web3-storage/ucanto/compare/client-v3.0.1...client-v3.0.2) (2022-11-11)
+
+
+### Bug Fixes
+
+* optional field validation ([#124](https://www.github.com/web3-storage/ucanto/issues/124)) ([87b70d2](https://www.github.com/web3-storage/ucanto/commit/87b70d2d56c07f8257717fa5ef584a21eb0417c8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^3.0.0 to ^3.0.1
+  * devDependencies
+    * @ucanto/principal bumped from ^3.0.0 to ^3.0.1
+    * @ucanto/core bumped from ^3.0.1 to ^3.0.2
+    * @ucanto/transport bumped from ^3.0.1 to ^3.0.2
+
 ### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/client-v3.0.0...client-v3.0.1) (2022-11-02)
 
 

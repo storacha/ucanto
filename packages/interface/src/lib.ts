@@ -14,9 +14,6 @@ import {
   Phantom,
   Resource,
   Signature,
-  Principal,
-  Verifier,
-  Signer as UCANSigner,
 } from '@ipld/dag-ucan'
 import { Link, Block as IPLDBlock } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
@@ -35,7 +32,6 @@ export * from './capability.js'
 export * from './transport.js'
 export type {
   Transport,
-  Principal,
   Phantom,
   Tuple,
   DID,
@@ -67,9 +63,13 @@ export type Proof<C extends Capabilities = Capabilities> =
   | UCANLink<C>
   | Delegation<C>
 
+export interface Principal<ID extends DID = DID> {
+  did(): ID
+}
+
 /**
  * UCAN creation options that apply to all UCAN types.
- * 
+ *
  * See {@link DelegationOptions} for options specific to capability delegation.
  * See {@link InvocationOptions} for options specific to invoking a capability.
  */
@@ -89,14 +89,14 @@ export interface UCANOptions {
  * A {@link UCANOptions} instance that include options for delegating capabilities.
  */
 export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
-  /** 
-   * The `issuer` of a {@link Delegation} is the delegating party, 
-   * or the {@link Principal} that has some capabilities that they wish to delegate 
-   * the `audience` {@link Principal}. 
-   * 
+  /**
+   * The `issuer` of a {@link Delegation} is the delegating party,
+   * or the {@link Principal} that has some capabilities that they wish to delegate
+   * the `audience` {@link Principal}.
+   *
    */
   issuer: Signer
-  
+
   /**
    * The `audience` for a {@link Delegation} is the party being delegated to, or the
    * {@link Principal} which will invoke the delegated {@link Capabilities} on behalf
@@ -108,10 +108,10 @@ export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
    * The set of {@link Capabilities} being delegated.
    */
   capabilities: C
-  
-  /** 
+
+  /**
    * If the `issuer` of this {@link Delegation} is not the resource owner / service provider,
-   * for the delegated capabilities, the `proofs` array must contain valid {@link Proof}s 
+   * for the delegated capabilities, the `proofs` array must contain valid {@link Proof}s
    * containing delegations to the `issuer`.
    */
   proofs?: Proof[]
@@ -164,26 +164,25 @@ export interface Delegation<C extends Capabilities = Capabilities> {
  * serialized function call, where the ability or `can` portion of the Capability acts
  * as the function name, and the resource (`with`) and caveats (`nb`) of the capability
  * act as function arguments.
- * 
+ *
  * Most Invocations will require valid proofs, which consist of a chain of {@link Delegation}s.
  * The service provider will inspect the proofs to verify that the invocation has
  * sufficient privileges to execute.
  */
 export interface Invocation<C extends Capability = Capability>
   extends Delegation<[C]> {
-    /** The `issuer` for an {@link Invocation} is the party requesting the invocation from the service provider. */
-    issuer: Signer
+  /** The `issuer` for an {@link Invocation} is the party requesting the invocation from the service provider. */
+  issuer: Signer
 
-    /** The `audience` for an {@link Invocation} is the service provider who will execute the invocation. */
-    audience: Principal
-  }
+  /** The `audience` for an {@link Invocation} is the service provider who will execute the invocation. */
+  audience: Principal
+}
 
 /**
  * A {@link UCANOptions} instance that includes options specific to {@link Invocation}s.
  */
 export interface InvocationOptions<C extends Capability = Capability>
   extends UCANOptions {
-  
   /** The `issuer` of an invocation is the "caller" of the RPC method and the party that signs the invocation UCAN token. */
   issuer: Signer
 
@@ -218,7 +217,7 @@ export type InferInvocations<T> = T extends []
 
 /**
  * An invocation handler, as returned by {@link @ucanto/server#provide | `Server.provide` }.
- * 
+ *
  * @typeParam I - the {@link Capability} type accepted by the handler
  * @typeParam O - type returned by the handler on success
  * @typeParam X - type returned by the handler on error
@@ -366,6 +365,9 @@ export interface OutpboundTranpsortOptions {
 export interface ConnectionOptions<T extends Record<string, any>>
   extends Transport.EncodeOptions,
     OutpboundTranpsortOptions {
+  /**
+   * DID of the target service.
+   */
   readonly id: Principal
   readonly channel: Transport.Channel<T>
 }
@@ -373,6 +375,9 @@ export interface ConnectionOptions<T extends Record<string, any>>
 export interface Connection<T extends Record<string, any>>
   extends Phantom<T>,
     ConnectionOptions<T> {
+  /**
+   * DID of the target service.
+   */
   readonly id: Principal
   readonly hasher: MultihashHasher
 }
@@ -430,7 +435,7 @@ export interface ServerOptions
 /**
  * A definition for a {@link Service}, combined with an optional
  * handler method for execution errors.
- * 
+ *
  * Used as input to {@link @ucanto/server#create | `Server.create` } when
  * defining a service implementation.
  */
@@ -460,7 +465,7 @@ export interface ServerView<T extends Record<string, any>>
 
 /**
  * A mapping of service names to handlers, used to define a service implementation.
- * 
+ *
  * See {@link Server}, which wraps a `Service` and is used by {@link @ucanto/server/create}.
  */
 export type Service = Record<
@@ -480,7 +485,7 @@ export type Protocol<Scheme extends string = string> = `${Scheme}:`
 
 /**
  * A typed string representing a URI of a given protocol.
- * 
+ *
  * @typeParam P - The protocol (scheme) of the given uri. For example, `did:key:foo` has the protocol of `did`.
  */
 export type URI<P extends Protocol = Protocol> = `${P}${string}` &
@@ -499,50 +504,208 @@ export interface PrincipalParser {
 }
 
 /**
+ * Integer corresponding to the byteprefix of the VarSig. It is used to tag
+ * signature with a registered multicodec code making it self describing.
+ * @see https://github.com/ucan-wg/ucan-ipld/#25-signature
+ */
+export type SigAlg = number
+
+/**
  * Represents component that can create a signer from it's archive. Usually
- * signer module would provide `from` function and therefor be implementation
+ * signer module would provide `from` function and therefor be an implementation
  * of this interface.
+ *
  * Library also provides utility functions for combining multiple
  * SignerImporters into one.
+ *
+ * @template ID - DID that can be imported, which may be a type union.
+ * @template Alg - Multicodec code corresponding to signature algorithm.
  */
-export interface SignerImporter<Self extends Signer = Signer> {
-  from(archive: SignerArchive<Self>): Self
+export interface SignerImporter<
+  ID extends DID = DID,
+  Alg extends SigAlg = SigAlg
+> {
+  from(archive: SignerArchive<ID, Alg>): Signer<ID, Alg>
 }
 
-export interface Signer<M extends string = string, A extends number = number>
-  extends UCANSigner<M, A> {
+/**
+ * Principal that can issue UCANs (and sign payloads). While it's primary role
+ * is to sign payloads it also extends `Verifier` interface so it could be used
+ * to verifying signed payloads as well.
+ */
+export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
+  extends Principal<ID>,
+    Verifier<ID, Alg> {
   /**
-   * Returns archive of this signer which is byte encoded form when signer key
-   * is extractable and is {@link SignerInfo} form otherwise. This allows a user
-   * to store non extractable archives in indexedDB and store extractable
-   * archives on disk, which matches general expectation that in browsers
-   * unextratable keys should be used and extractable keys in node.
+   * Integer corresponding to the byteprefix of the {@link VarSig}. It is used
+   * to tag [signature] so it can self describe what algorithm was used.
+   *
+   * [signature]:https://github.com/ucan-wg/ucan-ipld/#25-signature
+   */
+  signatureCode: Alg
+
+  /**
+   * Name of the signature algorithm. It is a human readable equivalent of
+   * the {@link signatureCode}, however it is also used as last segment in
+   * [Nonstandard Signatures], which is used as an `alg` field of JWT header
+   * when UCANs are serialized to JWT.
+   *
+   * [Nonstandard Signatures]:https://github.com/ucan-wg/ucan-ipld/#251-nonstandard-signatures
+   */
+  signatureAlgorithm: string
+
+  /**
+   * The `signer` field is a self reference (usually a getter). It's sole
+   * purpose is to allow splitting signer and verifier through destructuring.
+   *
+   * @expample
+   * ```js
+   * import * as Principal from "@ucanto/principal"
+   *
+   * const { signer, verifier } = Principal.from(archive)
+   * ```
+   */
+  signer: Signer<ID, Alg>
+
+  /**
+   * The `verifier` field just like the `signer` exists to allow splitting
+   * them apart through destructuring.
+   */
+  verifier: Verifier<ID, Alg>
+
+  /**
+   * @template T - Source data before it was byte encoding into payload.
+   *
+   * Takes byte encoded payload and produces a verifiable signature.
+   */
+  sign<T>(payload: ByteView<T>): Await<Signature<T, Alg>>
+
+  /**
+   * Returns archive of this signer which will have keys byte encoded when
+   * underlying keys are extractable or in {@link CryptoKey} form otherwise.
+   *
+   * This allows a storing non extractable archives into indexedDB and storing
+   * extractable archives on disk ofter serializing them using IPLD code.
+   *
+   * This aligns with a best practice that in browsers unextratable keys should
+   * be used and extractable keys in node.
    *
    * @example
    * ```ts
+   * import * as CBOR from '@ipld/dag-cbor'
+   *
    * const save = async (signer: Signer) => {
    *   const archive = signer.toArchive()
-   *   if (archive instanceof Uint8Array) {
-   *     await fs.writeFile(KEY_PATH, archive)
-   *   } else {
+   *   if (globalThis.indexedDB) {
    *     await IDB_OBJECT_STORE.add(archive)
+   *   } else {
+   *     await fs.writeFile(KEY_PATH, CBOR.encode(archive))
    *   }
    * }
    * ```
    */
-  toArchive(): SignerArchive<Signer<M, A>>
+  toArchive(): SignerArchive<ID, Alg>
+
+  /**
+   * Wraps key of this signer into a signer with a different DID. This is
+   * primarily used to wrap {@link SignerKey} into a {@link Signer} that has
+   * {@link did} of different method.
+   *
+   * @example
+   *
+   * ```ts
+   * import { ed25519 } from "@ucanto/principal"
+   *
+   * const demo = async () => {
+   *   const key = await ed25519.generate()
+   *   key.did() // 'did:key:z6Mkqa4oY9Z5Pf5tUcjLHLUsDjKwMC95HGXdE1j22jkbhz6r'
+   *   const gozala = key.withDID('did:web:gozala.io')
+   *   gozala.did() // 'did:web:gozala.io'
+   * }
+   * ```
+   * [did:key]:https://w3c-ccg.github.io/did-method-key/
+   */
+  withDID<ID extends DID>(id: ID): Signer<ID, Alg>
 }
 
-export interface SignerInfo<Self extends Signer = Signer> {
-  readonly did: ReturnType<Self['did']>
-  readonly key: CryptoKey
+/**
+ * Principal that issued a UCAN. In usually represents remote principal and is
+ * used to verify that certain payloads were signed by it.
+ */
+export interface Verifier<ID extends DID = DID, Alg extends SigAlg = SigAlg>
+  extends Principal<ID> {
+  /**
+   * @template T - Source data before it was byte encoding into payload.
+   *
+   * Takes byte encoded payload and verifies that it is signed by corresponding
+   * signer.
+   */
+  verify<T>(payload: ByteView<T>, signature: Signature<T, Alg>): Await<boolean>
+
+  /**
+   * Wraps key of this verifire into a verifiier with a different DID. This is
+   * primarily used to wrap {@link VerifierKey} into a {@link Verifier} that has
+   * {@link did} of different method.
+   */
+  withDID<ID extends DID>(id: ID): Verifier<ID, Alg>
 }
 
-export type SignerArchive<Self extends Signer = Signer> =
-  | ByteView<Self>
-  | SignerInfo<Self>
+/**
+ * Represents [`did:key`] identifier.
+ *
+ * [`did:key`]:https://w3c-ccg.github.io/did-method-key/
+ */
+export type DIDKey = DID<'key'>
 
-export { Verifier }
+/**
+ * {@link Signer} corresponding to [`did:key`] identified principal.
+ *
+ * [`did:key`]:https://w3c-ccg.github.io/did-method-key/
+ */
+export interface SignerKey<Alg extends SigAlg = SigAlg>
+  extends Signer<DIDKey, Alg> {}
+
+/**
+ * {@link Verifier} corresponding to [`did:key`] identified principal.
+ *
+ * [`did:key`]:https://w3c-ccg.github.io/did-method-key/
+ */
+export interface VerifierKey<Alg extends SigAlg = SigAlg>
+  extends Verifier<DIDKey, Alg> {}
+
+/**
+ * {@link Signer} keys and it's DID that can be used for persist and restore
+ * signer across sessions.
+ */
+export interface SignerArchive<
+  ID extends DID = DID,
+  Alg extends SigAlg = SigAlg
+> {
+  /**
+   * [DID Subject](https://www.w3.org/TR/did-core/#did-subject) for this
+   * signer.
+   */
+  id: ID
+
+  /**
+   * Set of private keys this signer uses keyed by corresponding [did:key][].
+   *
+   * ⚠️ At the moment signers only support single key use case, however we may
+   * change that in the future, which is why data model is forward designed to
+   * support multiple keys.
+   *
+   * [did:key]:https://w3c-ccg.github.io/did-method-key/
+   */
+  keys: { [Key: DIDKey]: KeyArchive<Alg> }
+}
+
+/**
+ * Represents a private key which will be in `CryptoKey` format if it is
+ * non-extractable or is byte encoded when extractable.
+ */
+export type KeyArchive<Alg extends SigAlg = SigAlg> =
+  | CryptoKey
+  | ByteView<SignerKey<Alg> & CryptoKey>
 
 export type InferInvokedCapability<
   C extends CapabilityParser<Match<ParsedCapability>>

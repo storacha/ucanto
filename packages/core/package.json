@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/core",
   "description": "ucanto core",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "keywords": [
     "UCAN",
     "RPC",
@@ -32,13 +32,13 @@
     "@ipld/car": "^5.0.0",
     "@ipld/dag-cbor": "^8.0.0",
     "@ipld/dag-ucan": "^2.0.0",
-    "@ucanto/interface": "^3.0.0",
-    "multiformats": "^10.0.0"
+    "@ucanto/interface": "^3.0.1",
+    "multiformats": "^10.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^9.1.0",
-    "@ucanto/principal": "^3.0.0",
+    "@ucanto/principal": "^3.0.1",
     "c8": "^7.11.0",
     "chai": "^4.3.6",
     "mocha": "^10.1.0",

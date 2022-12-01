@@ -33,3 +33,7 @@ export const untagWith = (code, source, byteOffset = 0) => {
     return new Uint8Array(bytes.buffer, bytes.byteOffset + size)
   }
 }
+
+export const encodingLength = varint.encodingLength
+export const encodeTo = varint.encodeTo
+export const decode = varint.decode

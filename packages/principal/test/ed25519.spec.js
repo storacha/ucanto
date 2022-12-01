@@ -69,19 +69,20 @@ describe('signing principal', () => {
   it('SigningPrincipal.decode', async () => {
     const signer = await Lib.generate()
     const bytes = Signer.encode(signer)
+    const { id, keys } = signer.toArchive()
 
-    assert.deepEqual(Signer.decode(signer.toArchive()), signer)
+    assert.deepEqual(Signer.decode(keys[id]), signer)
 
-    const invalid = new Uint8Array(signer.toArchive())
+    const invalid = new Uint8Array(keys[id])
     varint.encodeTo(4, invalid, 0)
     assert.throws(() => Signer.decode(invalid), /must be a multiformat with/)
 
     assert.throws(
-      () => Signer.decode(signer.toArchive().slice(0, 32)),
+      () => Signer.decode(keys[id].slice(0, 32)),
       /Expected Uint8Array with byteLength/
     )
 
-    const malformed = new Uint8Array(signer.toArchive())
+    const malformed = new Uint8Array(keys[id])
     // @ts-ignore
     varint.encodeTo(4, malformed, Signer.PUB_KEY_OFFSET)
 
@@ -119,7 +120,8 @@ describe('principal', () => {
   it('Verifier.parse', async () => {
     const signer = await Lib.generate()
     const verifier = Verifier.parse(signer.did())
-    const bytes = signer.toArchive()
+    const { id, keys } = signer.toArchive()
+    const bytes = keys[id]
 
     assert.deepEqual(
       new Uint8Array(bytes.buffer, bytes.byteOffset + Signer.PUB_KEY_OFFSET),
@@ -130,17 +132,15 @@ describe('principal', () => {
 
   it('Verifier.decode', async () => {
     const signer = await Lib.generate()
-    const bytes = signer.toArchive()
+    const { id, keys } = signer.toArchive()
+    const bytes = keys[id]
 
     const verifier = new Uint8Array(
       bytes.buffer,
       bytes.byteOffset + Signer.PUB_KEY_OFFSET
     )
     assert.deepEqual(Object(Verifier.decode(verifier)), verifier)
-    assert.throws(
-      () => Verifier.decode(signer.toArchive()),
-      /key algorithm with multicode/
-    )
+    assert.throws(() => Verifier.decode(bytes), /key algorithm with multicode/)
 
     assert.throws(
       () => Verifier.decode(verifier.slice(0, 32)),
@@ -165,7 +165,16 @@ describe('principal', () => {
   it('signer toArchive', async () => {
     const signer = await Lib.generate()
 
-    assert.equal(signer.toArchive(), Signer.encode(signer))
+    assert.deepEqual(
+      {
+        id: signer.did(),
+        /** @type {Record<`did:key:${string}`, Uint8Array>} */
+        keys: {
+          [signer.did()]: Signer.encode(signer),
+        },
+      },
+      signer.toArchive()
+    )
   })
 
   it('can parse keys with forward slash', async () => {

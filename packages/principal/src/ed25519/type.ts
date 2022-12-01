@@ -1,24 +1,56 @@
-import { Signer, Verifier, ByteView, UCAN, Await } from '@ucanto/interface'
+import { SignerKey, VerifierKey, ByteView, DIDKey } from '@ucanto/interface'
 import * as Signature from '@ipld/dag-ucan/signature'
 
 export * from '@ucanto/interface'
 
-type CODE = typeof Signature.EdDSA
-type ALG = 'EdDSA'
+/**
+ * Integer corresponding to EdDSA byteprefix of the VarSig.
+ */
+export type SigAlg = typeof Signature.EdDSA
 
-export interface EdSigner<M extends string = 'key'>
-  extends Signer<M, CODE>,
-    UCAN.Verifier<M, CODE> {
-  readonly signer: EdSigner<M>
-  readonly verifier: EdVerifier<M>
+/**
+ * Name corresponding to EdDSA algorithm.
+ */
+export type Name = 'EdDSA'
 
+/**
+ * This interface parametrizes {@link SignerKey} and extends it with Ed specific
+ * details.
+ */
+export interface EdSigner extends SignerKey<SigAlg> {
+  readonly signatureAlgorithm: Name
+  /**
+   * Multicodec code that corresponds to Ed private key.
+   */
   readonly code: 0x1300
-  toArchive(): ByteView<EdSigner<M>>
+
+  readonly signer: EdSigner
+  readonly verifier: EdVerifier
+
+  /**
+   * Encodes keypair into bytes.
+   */
+  encode(): ByteView<EdSigner & CryptoKeyPair>
+
+  /**
+   * Overrides method to make it more concrete allowing one to use `keys`
+   * without checking if it's a `CryptoKey` or bytes.
+   */
+  toArchive(): {
+    id: DIDKey
+    keys: { [Key: DIDKey]: ByteView<SignerKey<SigAlg> & CryptoKey> }
+  }
 }
 
-export interface EdVerifier<M extends string = 'key'>
-  extends Verifier<M, CODE> {
+/**
+ * This interface parametrizes {@link VerifierKey} and extends it with Ed
+ * specific details.
+ */
+export interface EdVerifier extends VerifierKey<SigAlg> {
+  /**
+   * Multicodec code that corresponds to Ed public key.
+   */
   readonly code: 0xed
-  readonly signatureCode: CODE
-  readonly signatureAlgorithm: ALG
+  readonly signatureCode: SigAlg
+  readonly signatureAlgorithm: Name
 }

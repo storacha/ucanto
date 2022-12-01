@@ -22,8 +22,10 @@ describe('PrincipalParser', () => {
 
   it('throws on unknown did', () => {
     assert.throws(
-      () => Verifier.parse('did:echo:boom'),
-      /Unsupported principal/
+      () =>
+        // @ts-expect-error - not a did string
+        Verifier.parse('bib:echo:boom'),
+      /Expected did instead got bib:echo:boom/
     )
   })
 
@@ -31,18 +33,25 @@ describe('PrincipalParser', () => {
     const ed = await ed25519.generate()
     const rsa = await RSA.generate()
 
-    const { key } = /** @type {API.SignerInfo} */ (rsa.toArchive())
+    const { id, keys } = rsa.toArchive()
 
-    const archive = { did: ed.did(), key }
+    const archive = { id: ed.did(), keys }
 
     assert.throws(() => Signer.from(archive), /Unsupported signer/)
+  })
+
+  it('throws on invalid did:key', () => {
+    assert.throws(
+      () => Verifier.parse('did:key:zBob'),
+      /Unsupported did did:key:zBob/
+    )
   })
 
   it('ed decode & sign', async () => {
     const ed = await ed25519.generate()
 
-    const bytes = ed.toArchive()
-    const signer = Signer.from(bytes)
+    const archive = ed.toArchive()
+    const signer = Signer.from(archive)
     const payload = utf8.encode('hello ed')
 
     const signature = await signer.sign(payload)
@@ -75,9 +84,16 @@ describe('PrincipalParser', () => {
     )
   })
 
-  it('throws on unknown signer', () => {
+  it('throws on unknown signer', async () => {
+    const ed = await ed25519.generate()
+    const id = ed.did()
+
     assert.throws(
-      () => Signer.from(new Uint8Array([1, 1, 1])),
+      () =>
+        Signer.from({
+          id,
+          keys: { [id]: new Uint8Array([1, 1, 1]) },
+        }),
       /Unsupported signer/
     )
   })

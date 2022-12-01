@@ -17,14 +17,17 @@ const echo = capability({
 
 test('delegate can omit constraints', async () => {
   assert.deepEqual(
-    await echo.delegate({
-      issuer: alice,
-      audience: w3,
-      with: alice.did(),
-      nb: {
-        message: 'data:1',
-      },
-    }),
+    /** @type {API.Delegation} */
+    (
+      await echo.delegate({
+        issuer: alice,
+        audience: w3,
+        with: alice.did(),
+        nb: {
+          message: 'data:1',
+        },
+      })
+    ),
     await delegate({
       issuer: alice,
       audience: w3,

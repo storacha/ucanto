@@ -1,5 +1,37 @@
 # Changelog
 
+### [3.0.4](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.3...validator-v3.0.4) (2022-11-12)
+
+
+### Bug Fixes
+
+* versions ([#131](https://www.github.com/web3-storage/ucanto/issues/131)) ([88b87a7](https://www.github.com/web3-storage/ucanto/commit/88b87a7f3a32c02a22ddffcb8f38199445097133))
+
+### [3.0.3](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.2...validator-v3.0.3) (2022-11-12)
+
+
+### Bug Fixes
+
+* add return type to URI.uri() schema ([#127](https://www.github.com/web3-storage/ucanto/issues/127)) ([c302866](https://www.github.com/web3-storage/ucanto/commit/c3028667bc1094e6f6b16c43b3a396ef6207f75c))
+
+### [3.0.2](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.1...validator-v3.0.2) (2022-11-11)
+
+
+### Bug Fixes
+
+* optional field validation ([#124](https://www.github.com/web3-storage/ucanto/issues/124)) ([87b70d2](https://www.github.com/web3-storage/ucanto/commit/87b70d2d56c07f8257717fa5ef584a21eb0417c8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^3.0.1 to ^3.0.2
+    * @ucanto/interface bumped from ^3.0.0 to ^3.0.1
+  * devDependencies
+    * @ucanto/client bumped from ^3.0.1 to ^3.0.2
+    * @ucanto/principal bumped from ^3.0.0 to ^3.0.1
+
 ### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/validator-v3.0.0...validator-v3.0.1) (2022-11-02)
 
 

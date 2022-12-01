@@ -8,6 +8,8 @@ import * as SPKI from './rsa/spki.js'
 import * as PKCS8 from './rsa/pkcs8.js'
 import * as PrivateKey from './rsa/private-key.js'
 import * as PublicKey from './rsa/public-key.js'
+import { withDID as setVerifierDID } from './verifier.js'
+import { withDID } from './signer.js'
 export * from './rsa/type.js'
 
 export const name = 'RSA'
@@ -87,16 +89,17 @@ export const generate = async ({
 }
 
 /**
- * @param {API.SignerArchive<API.Signer<'key', typeof signatureCode>>} archive
+ * @param {API.SignerArchive<API.DID<'key'>, typeof signatureCode>} archive
  * @returns {API.RSASigner}
  */
-export const from = archive => {
-  if (archive instanceof Uint8Array) {
-    return decode(archive)
+export const from = ({ id, keys }) => {
+  const key = keys[id]
+  if (key instanceof Uint8Array) {
+    return decode(key)
   } else {
     return new UnextractableRSASigner({
-      privateKey: archive.key,
-      verifier: RSAVerifier.parse(archive.did),
+      privateKey: key,
+      verifier: RSAVerifier.parse(id),
     })
   }
 }
@@ -142,6 +145,15 @@ class RSAVerifier {
   }
 
   /**
+   * @template {API.DID} ID
+   * @param {ID} id
+   * @returns {API.Verifier<ID, typeof signatureCode>}
+   */
+  withDID(id) {
+    return setVerifierDID(this, id)
+  }
+
+  /**
    * @param {API.ByteView<API.RSAVerifier>} bytes
    * @returns {API.RSAVerifier}
    */
@@ -158,7 +170,7 @@ class RSAVerifier {
     })
   }
   /**
-   * @param {API.DID} did
+   * @param {API.DID<"key">} did
    * @returns {API.RSAVerifier}
    */
   static parse(did) {
@@ -215,7 +227,7 @@ class RSAVerifier {
 export const Verifier = RSAVerifier
 
 /**
- * @typedef {API.ByteView<API.Signer<'key', typeof signatureCode>>} EncodedSigner
+ * @typedef {API.ByteView<API.Signer<API.DID<'key'>, typeof signatureCode> & CryptoKey>} EncodedSigner
  */
 
 class RSASigner {
@@ -231,9 +243,9 @@ class RSASigner {
     this.privateKey = privateKey
   }
   get signer() {
-    // @ts-expect-error - we define export methods on subclasses
-    return /** @type {API.RSASigner} */ (this)
+    return this
   }
+
   /**
    * @type {typeof code}
    */
@@ -294,8 +306,22 @@ class ExtractableRSASigner extends RSASigner {
     super(options)
     this.bytes = options.bytes
   }
+
+  /**
+   * @template {API.DID} ID
+   * @param {ID} id
+   * @returns {API.Signer<ID, typeof signatureCode>}
+   */
+  withDID(id) {
+    return withDID(this, id)
+  }
+
   toArchive() {
-    return this.bytes
+    const id = this.did()
+    return {
+      id,
+      keys: { [id]: this.bytes },
+    }
   }
 }
 
@@ -312,10 +338,21 @@ class UnextractableRSASigner extends RSASigner {
     super(options)
     this.privateKey = options.privateKey
   }
+
+  /**
+   * @template {API.DID} ID
+   * @param {ID} id
+   * @returns {API.Signer<ID, typeof signatureCode>}
+   */
+  withDID(id) {
+    return withDID(this, id)
+  }
+
   toArchive() {
+    const id = this.did()
     return {
-      did: this.did(),
-      key: this.privateKey,
+      id,
+      keys: { [id]: this.privateKey },
     }
   }
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.0.1](https://www.github.com/web3-storage/ucanto/compare/interface-v3.0.0...interface-v3.0.1) (2022-11-11)
+
+
+### Bug Fixes
+
+* optional field validation ([#124](https://www.github.com/web3-storage/ucanto/issues/124)) ([87b70d2](https://www.github.com/web3-storage/ucanto/commit/87b70d2d56c07f8257717fa5ef584a21eb0417c8))
+
 ## [3.0.0](https://www.github.com/web3-storage/ucanto/compare/interface-v2.0.0...interface-v3.0.0) (2022-10-20)
 
 
