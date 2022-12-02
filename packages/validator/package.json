@@ -2,6 +2,7 @@
   "name": "@ucanto/validator",
   "description": "UCAN RPC validators",
   "version": "3.0.7",
+  "version": "3.0.7",
   "keywords": [
     "UCAN",
     "ed25519",

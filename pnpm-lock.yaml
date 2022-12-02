@@ -19,10 +19,17 @@ importers:
     specifiers:
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
+<<<<<<< HEAD
       '@ucanto/core': ^3.0.5
       '@ucanto/interface': ^3.0.1
       '@ucanto/principal': ^3.0.1
       '@ucanto/transport': ^3.0.5
+=======
+      '@ucanto/core': ^3.0.4
+      '@ucanto/interface': ^3.0.1
+      '@ucanto/principal': ^3.0.1
+      '@ucanto/transport': ^3.0.4
+>>>>>>> 842db38... fix: downgrade versions
       '@web-std/fetch': ^4.1.0
       '@web-std/file': ^3.0.2
       c8: ^7.11.0
@@ -130,12 +137,21 @@ importers:
       '@types/chai': ^4.3.3
       '@types/chai-subset': ^1.3.3
       '@types/mocha': ^9.1.0
+<<<<<<< HEAD
       '@ucanto/client': ^3.0.5
       '@ucanto/core': ^3.0.5
       '@ucanto/interface': ^3.0.1
       '@ucanto/principal': ^3.0.1
       '@ucanto/transport': ^3.0.5
       '@ucanto/validator': ^3.0.7
+=======
+      '@ucanto/client': ^3.0.4
+      '@ucanto/core': ^3.0.4
+      '@ucanto/interface': ^3.0.1
+      '@ucanto/principal': ^3.0.1
+      '@ucanto/transport': ^3.0.4
+      '@ucanto/validator': ^3.0.6
+>>>>>>> 842db38... fix: downgrade versions
       '@web-std/fetch': ^4.1.0
       '@web-std/file': ^3.0.2
       c8: ^7.11.0
@@ -174,7 +190,11 @@ importers:
       '@ipld/dag-cbor': ^8.0.0
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
+<<<<<<< HEAD
       '@ucanto/core': ^3.0.5
+=======
+      '@ucanto/core': ^3.0.4
+>>>>>>> 842db38... fix: downgrade versions
       '@ucanto/interface': ^3.0.1
       '@ucanto/principal': ^3.0.1
       '@web-std/fetch': ^4.1.0
@@ -210,8 +230,13 @@ importers:
       '@types/chai': ^4.3.3
       '@types/chai-subset': ^1.3.3
       '@types/mocha': ^9.1.0
+<<<<<<< HEAD
       '@ucanto/client': ^3.0.5
       '@ucanto/core': ^3.0.5
+=======
+      '@ucanto/client': ^3.0.4
+      '@ucanto/core': ^3.0.4
+>>>>>>> 842db38... fix: downgrade versions
       '@ucanto/interface': ^3.0.1
       '@ucanto/principal': ^3.0.1
       c8: ^7.11.0
