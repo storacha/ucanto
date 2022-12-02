@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/transport",
   "description": "ucanto transport",
-  "version": "3.0.4",
+  "version": "4.0.0",
   "keywords": [
     "UCAN",
     "RPC",
@@ -31,7 +31,7 @@
   "dependencies": {
     "@ipld/car": "^5.0.0",
     "@ipld/dag-cbor": "^8.0.0",
-    "@ucanto/core": "^3.0.4",
+    "@ucanto/core": "^4.0.0",
     "@ucanto/interface": "^4.0.0",
     "multiformats": "^10.0.2"
   },

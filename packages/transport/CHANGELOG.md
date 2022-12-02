@@ -1,5 +1,19 @@
 # Changelog
 
+### [3.0.5](https://www.github.com/web3-storage/ucanto/compare/transport-v3.0.4...transport-v3.0.5) (2022-12-02)
+
+
+### Bug Fixes
+
+* downgrade versions ([#158](https://www.github.com/web3-storage/ucanto/issues/158)) ([f814e75](https://www.github.com/web3-storage/ucanto/commit/f814e75a89d3ed7c3488a8cb7af8d94f0cfba440))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^3.0.4 to ^3.0.5
+
 ### [3.0.4](https://www.github.com/web3-storage/ucanto/compare/transport-v3.0.3...transport-v3.0.4) (2022-12-02)
 
 
