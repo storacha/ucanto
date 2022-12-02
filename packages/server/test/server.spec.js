@@ -272,36 +272,3 @@ test('execution error', async () => {
     },
   })
 })
-
-test('did:web server', async () => {
-  const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: 'world ' })],
-  })
-
-  const server = Server.create({
-    service: Service.create(),
-    decoder: CAR,
-    encoder: CBOR,
-    id: w3.withDID('did:web:web3.storage'),
-  })
-
-  const connection = Client.connect({
-    id: server.id,
-    encoder: CAR,
-    decoder: CBOR,
-    channel: server,
-  })
-
-  const identify = Client.invoke({
-    issuer: alice,
-    audience: server.id,
-    capability: {
-      can: 'access/identify',
-      with: 'did:email:alice@mail.com',
-    },
-  })
-
-  const register = await identify.execute(connection)
-
-  assert.deepEqual(register, null)
-})
