@@ -14,6 +14,7 @@ import {
   Phantom,
   Resource,
   Signature,
+  Principal,
 } from '@ipld/dag-ucan'
 import { Link, Block as IPLDBlock } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
@@ -52,6 +53,7 @@ export type {
   MultihashHasher,
   MultibaseDecoder,
   MultibaseEncoder,
+  Principal,
 }
 export * as UCAN from '@ipld/dag-ucan'
 
@@ -62,10 +64,6 @@ export * as UCAN from '@ipld/dag-ucan'
 export type Proof<C extends Capabilities = Capabilities> =
   | UCANLink<C>
   | Delegation<C>
-
-export interface Principal<ID extends DID = DID> {
-  did(): ID
-}
 
 /**
  * UCAN creation options that apply to all UCAN types.
@@ -352,13 +350,13 @@ export interface HandlerExecutionError extends Failure {
 
 export type API<T> = T[keyof T]
 
-export interface OutpboundTranpsortOptions {
+export interface OutboundTransportOptions {
   readonly encoder: Transport.RequestEncoder
   readonly decoder: Transport.ResponseDecoder
 }
 export interface ConnectionOptions<T extends Record<string, any>>
   extends Transport.EncodeOptions,
-    OutpboundTranpsortOptions {
+    OutboundTransportOptions {
   /**
    * DID of the target service.
    */
@@ -540,7 +538,7 @@ export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
 
   /**
    * Name of the signature algorithm. It is a human readable equivalent of
-   * the {@link signatureCode}, however it is also used as last segment in
+   * the {@link Signer.signatureCode}, however it is also used as last segment in
    * [Nonstandard Signatures], which is used as an `alg` field of JWT header
    * when UCANs are serialized to JWT.
    *
@@ -552,7 +550,7 @@ export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
    * The `signer` field is a self reference (usually a getter). It's sole
    * purpose is to allow splitting signer and verifier through destructuring.
    *
-   * @expample
+   * @example
    * ```js
    * import * as Principal from "@ucanto/principal"
    *
@@ -581,7 +579,7 @@ export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
    * This allows a storing non extractable archives into indexedDB and storing
    * extractable archives on disk ofter serializing them using IPLD code.
    *
-   * This aligns with a best practice that in browsers unextratable keys should
+   * This aligns with a best practice that in browsers inextricable keys should
    * be used and extractable keys in node.
    *
    * @example
@@ -637,7 +635,7 @@ export interface Verifier<ID extends DID = DID, Alg extends SigAlg = SigAlg>
   verify<T>(payload: ByteView<T>, signature: Signature<T, Alg>): Await<boolean>
 
   /**
-   * Wraps key of this verifire into a verifiier with a different DID. This is
+   * Wraps key of this verifier into a verifier with a different DID. This is
    * primarily used to wrap {@link VerifierKey} into a {@link Verifier} that has
    * {@link did} of different method.
    */
