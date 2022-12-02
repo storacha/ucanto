@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/client",
   "description": "UCAN RPC Client",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "keywords": [
     "UCAN",
     "RPC",
@@ -35,9 +35,9 @@
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^9.1.0",
-    "@ucanto/principal": "^4.0.0",
-    "@ucanto/core": "^3.0.3",
-    "@ucanto/transport": "^3.0.3",
+    "@ucanto/principal": "^4.0.1",
+    "@ucanto/core": "^3.0.4",
+    "@ucanto/transport": "^3.0.4",
     "@web-std/fetch": "^4.1.0",
     "@web-std/file": "^3.0.2",
     "c8": "^7.11.0",

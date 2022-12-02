@@ -1,5 +1,12 @@
 # Changelog
 
+### [4.0.1](https://www.github.com/web3-storage/ucanto/compare/principal-v4.0.0...principal-v4.0.1) (2022-12-02)
+
+
+### Bug Fixes
+
+* ed type export ([#154](https://www.github.com/web3-storage/ucanto/issues/154)) ([2f14271](https://www.github.com/web3-storage/ucanto/commit/2f142715ec7350f57b0a43374f699695292f6edd))
+
 ## [4.0.0](https://www.github.com/web3-storage/ucanto/compare/principal-v3.0.1...principal-v4.0.0) (2022-12-01)
 
 

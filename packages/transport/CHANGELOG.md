@@ -1,5 +1,16 @@
 # Changelog
 
+### [3.0.4](https://www.github.com/web3-storage/ucanto/compare/transport-v3.0.3...transport-v3.0.4) (2022-12-02)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^3.0.3 to ^3.0.4
+  * devDependencies
+    * @ucanto/principal bumped from ^4.0.0 to ^4.0.1
+
 ### [3.0.3](https://www.github.com/web3-storage/ucanto/compare/transport-v3.0.2...transport-v3.0.3) (2022-12-01)
 
 
