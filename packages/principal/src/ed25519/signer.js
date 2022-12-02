@@ -5,6 +5,7 @@ import * as Verifier from './verifier.js'
 import { base64pad } from 'multiformats/bases/base64'
 import * as Signature from '@ipld/dag-ucan/signature'
 import { withDID } from '../signer.js'
+export * from './type.js'
 
 export const code = 0x1300
 export const name = Verifier.name
