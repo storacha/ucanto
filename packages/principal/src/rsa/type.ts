@@ -1,11 +1,11 @@
-import { VerifierKey, SignerKey } from '@ucanto/interface'
+import { VerifierKey, SignerKey, MulticodecCode } from '@ucanto/interface'
 
 export * from '@ucanto/interface'
 
 /**
  * Integer corresponding to RS256 byteprefix of the VarSig.
  */
-export type SigAlg = 0xd01205
+export type SigAlg = MulticodecCode<0xd01205, 'RS256'>
 
 /**
  * Name corresponding to RS256 algorithm.
@@ -23,7 +23,7 @@ export interface RSASigner extends SignerKey<SigAlg> {
   /**
    * Multicodec code that corresponds to Ed private key.
    */
-  readonly code: 0x1305
+  readonly code: MulticodecCode<0x1305, 'RSAPrivateKey'>
 }
 
 /**
@@ -34,7 +34,7 @@ export interface RSAVerifier extends VerifierKey<SigAlg> {
   /**
    * Multicodec code that corresponds to RSA public key.
    */
-  readonly code: 0x1205
+  readonly code: MulticodecCode<0x1205, 'RSAPublicKey'>
   readonly signatureCode: SigAlg
   readonly signatureAlgorithm: Name
 }

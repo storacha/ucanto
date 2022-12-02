@@ -21,22 +21,22 @@ export const create = options => ({
 
 /**
  * @template {API.DID} ID
- * @template {number} Code
- * @param {API.Verifier<API.DID<"key">, Code>} key
+ * @template {API.MulticodecCode} SigAlg
+ * @param {API.VerifierKey<SigAlg>} key
  * @param {ID} id
- * @returns {API.Verifier<ID, Code>}
+ * @returns {API.Verifier<ID, SigAlg>}
  */
 export const withDID = (key, id) => new Verifier(id, key)
 
 /**
  * @template {API.DID} ID
- * @template {number} Code
- * @implements {API.Verifier<ID, Code>}
+ * @template {API.MulticodecCode} SigAlg
+ * @implements {API.Verifier<ID, SigAlg>}
  */
 class Verifier {
   /**
    * @param {ID} id
-   * @param {API.Verifier<API.DID<"key">, Code>} key
+   * @param {API.VerifierKey<SigAlg>} key
    */
   constructor(id, key) {
     this.id = id
@@ -49,7 +49,7 @@ class Verifier {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @param {API.Signature<T, Code>} signature
+   * @param {API.Signature<T, SigAlg>} signature
    * @returns {API.Await<boolean>}
    */
   verify(payload, signature) {

@@ -15,6 +15,8 @@ import {
   Resource,
   Signature,
   Principal,
+  MulticodecCode,
+  SigAlg,
 } from '@ipld/dag-ucan'
 import { Link, Block as IPLDBlock } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
@@ -49,10 +51,12 @@ export type {
   Block,
   Ability,
   Resource,
+  SigAlg,
   MultihashDigest,
   MultihashHasher,
   MultibaseDecoder,
   MultibaseEncoder,
+  MulticodecCode,
   Principal,
 }
 export * as UCAN from '@ipld/dag-ucan'
@@ -74,10 +78,10 @@ export type Proof<C extends Capabilities = Capabilities> =
 export interface UCANOptions {
   audience: Principal
   lifetimeInSeconds?: number
-  expiration?: number
-  notBefore?: number
+  expiration?: UCAN.UTCUnixTimestamp
+  notBefore?: UCAN.UTCUnixTimestamp
 
-  nonce?: string
+  nonce?: UCAN.Nonce
 
   facts?: Fact[]
   proofs?: Proof[]
@@ -146,10 +150,10 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   issuer: UCAN.Principal
   audience: UCAN.Principal
   capabilities: C
-  expiration?: number
-  notBefore?: number
+  expiration?: UCAN.UTCUnixTimestamp
+  notBefore?: UCAN.UTCUnixTimestamp
 
-  nonce?: string
+  nonce?: UCAN.Nonce
 
   facts: Fact[]
   proofs: Proof[]
@@ -496,13 +500,6 @@ export interface PrincipalParser {
 }
 
 /**
- * Integer corresponding to the byteprefix of the VarSig. It is used to tag
- * signature with a registered multicodec code making it self describing.
- * @see https://github.com/ucan-wg/ucan-ipld/#25-signature
- */
-export type SigAlg = number
-
-/**
  * Represents component that can create a signer from it's archive. Usually
  * signer module would provide `from` function and therefor be an implementation
  * of this interface.
@@ -526,26 +523,8 @@ export interface SignerImporter<
  * to verifying signed payloads as well.
  */
 export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
-  extends Principal<ID>,
+  extends UCAN.Signer<ID, Alg>,
     Verifier<ID, Alg> {
-  /**
-   * Integer corresponding to the byteprefix of the {@link VarSig}. It is used
-   * to tag [signature] so it can self describe what algorithm was used.
-   *
-   * [signature]:https://github.com/ucan-wg/ucan-ipld/#25-signature
-   */
-  signatureCode: Alg
-
-  /**
-   * Name of the signature algorithm. It is a human readable equivalent of
-   * the {@link Signer.signatureCode}, however it is also used as last segment in
-   * [Nonstandard Signatures], which is used as an `alg` field of JWT header
-   * when UCANs are serialized to JWT.
-   *
-   * [Nonstandard Signatures]:https://github.com/ucan-wg/ucan-ipld/#251-nonstandard-signatures
-   */
-  signatureAlgorithm: string
-
   /**
    * The `signer` field is a self reference (usually a getter). It's sole
    * purpose is to allow splitting signer and verifier through destructuring.
@@ -564,13 +543,6 @@ export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
    * them apart through destructuring.
    */
   verifier: Verifier<ID, Alg>
-
-  /**
-   * @template T - Source data before it was byte encoding into payload.
-   *
-   * Takes byte encoded payload and produces a verifiable signature.
-   */
-  sign<T>(payload: ByteView<T>): Await<Signature<T, Alg>>
 
   /**
    * Returns archive of this signer which will have keys byte encoded when
@@ -625,15 +597,7 @@ export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
  * used to verify that certain payloads were signed by it.
  */
 export interface Verifier<ID extends DID = DID, Alg extends SigAlg = SigAlg>
-  extends Principal<ID> {
-  /**
-   * @template T - Source data before it was byte encoding into payload.
-   *
-   * Takes byte encoded payload and verifies that it is signed by corresponding
-   * signer.
-   */
-  verify<T>(payload: ByteView<T>, signature: Signature<T, Alg>): Await<boolean>
-
+  extends UCAN.Verifier<ID, Alg> {
   /**
    * Wraps key of this verifier into a verifier with a different DID. This is
    * primarily used to wrap {@link VerifierKey} into a {@link Verifier} that has

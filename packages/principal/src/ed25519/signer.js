@@ -52,7 +52,7 @@ export const derive = async secret => {
 }
 
 /**
- * @param {API.SignerArchive<API.DID<'key'>, typeof signatureCode>} archive
+ * @param {API.SignerArchive<API.DIDKey, typeof signatureCode>} archive
  * @returns {API.EdSigner}
  */
 export const from = ({ id, keys }) => {
