@@ -1,5 +1,5 @@
 import { capability, DID, URI, Link, unknown, Schema } from '../src/lib.js'
-import { invoke, parseLink, delegate } from '@ucanto/core'
+import { invoke, parseLink, delegate, UCAN } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
@@ -14,6 +14,7 @@ const echo = capability({
     message: URI.match({ protocol: 'data:' }),
   },
 })
+const expiration = UCAN.now() + 100
 
 test('delegate can omit constraints', async () => {
   assert.deepEqual(
@@ -26,6 +27,7 @@ test('delegate can omit constraints', async () => {
         nb: {
           message: 'data:1',
         },
+        expiration,
       })
     ),
     await delegate({
@@ -40,6 +42,7 @@ test('delegate can omit constraints', async () => {
           },
         },
       ],
+      expiration,
     })
   )
 })
@@ -50,10 +53,12 @@ test('delegate can specify constraints', async () => {
       with: alice.did(),
       issuer: alice,
       audience: w3,
+      expiration,
     }),
     await delegate({
       issuer: alice,
       audience: w3,
+      expiration,
       capabilities: [
         {
           with: alice.did(),
@@ -87,6 +92,7 @@ test('omits unknown nb fields', async () => {
       issuer: alice,
       audience: w3,
       with: alice.did(),
+      expiration,
       nb: {
         // @ts-expect-error - no x expected
         x: 1,
@@ -95,6 +101,7 @@ test('omits unknown nb fields', async () => {
     await delegate({
       issuer: alice,
       audience: w3,
+      expiration,
       capabilities: [
         {
           with: alice.did(),
@@ -112,10 +119,12 @@ test('can pass undefined nb', async () => {
       audience: w3,
       with: alice.did(),
       nb: undefined,
+      expiration,
     }),
     await delegate({
       issuer: alice,
       audience: w3,
+      expiration,
       capabilities: [
         {
           with: alice.did(),
@@ -133,10 +142,12 @@ test('can pass empty nb', async () => {
       audience: w3,
       with: alice.did(),
       nb: {},
+      expiration,
     }),
     await delegate({
       issuer: alice,
       audience: w3,
+      expiration,
       capabilities: [
         {
           with: alice.did(),
@@ -153,6 +164,7 @@ test('errors on invalid nb', async () => {
       issuer: alice,
       audience: w3,
       with: alice.did(),
+      expiration,
       nb: {
         // @ts-expect-error - not a data URI
         message: 'echo:foo',
@@ -184,6 +196,7 @@ test('capability with optional caveats', async () => {
     nb: {
       message: 'data:hello',
     },
+    expiration,
   })
 
   assert.deepEqual(echo.capabilities, [
@@ -251,6 +264,7 @@ test('delegate derived capability', async () => {
       issuer: alice,
       audience: w3,
       with: alice.did(),
+      expiration,
     }),
     await delegate({
       issuer: alice,
@@ -261,6 +275,7 @@ test('delegate derived capability', async () => {
           with: alice.did(),
         },
       ],
+      expiration,
     })
   )
 })
@@ -271,6 +286,7 @@ test('delegate derived capability omitting nb', async () => {
       issuer: alice,
       audience: w3,
       with: alice.did(),
+      expiration,
     }),
     await delegate({
       issuer: alice,
@@ -281,6 +297,7 @@ test('delegate derived capability omitting nb', async () => {
           with: alice.did(),
         },
       ],
+      expiration,
     })
   )
 })
@@ -294,6 +311,7 @@ test('delegate derived capability with nb', async () => {
       nb: {
         limit: 5,
       },
+      expiration,
     }),
     await delegate({
       issuer: alice,
@@ -307,6 +325,7 @@ test('delegate derived capability with nb', async () => {
           },
         },
       ],
+      expiration,
     })
   )
 })
