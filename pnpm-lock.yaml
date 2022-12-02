@@ -54,7 +54,7 @@ importers:
     specifiers:
       '@ipld/car': ^5.0.0
       '@ipld/dag-cbor': ^8.0.0
-      '@ipld/dag-ucan': ^2.0.0
+      '@ipld/dag-ucan': ^3.0.1
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
       '@ucanto/interface': ^4.0.0
@@ -69,7 +69,7 @@ importers:
     dependencies:
       '@ipld/car': 5.0.0
       '@ipld/dag-cbor': 8.0.0
-      '@ipld/dag-ucan': 2.0.0
+      '@ipld/dag-ucan': 3.0.1
       '@ucanto/interface': link:../interface
       multiformats: 10.0.2
     devDependencies:
@@ -85,18 +85,18 @@ importers:
 
   packages/interface:
     specifiers:
-      '@ipld/dag-ucan': ^2.0.0
+      '@ipld/dag-ucan': ^3.0.1
       multiformats: ^10.0.2
       typescript: ^4.8.4
     dependencies:
-      '@ipld/dag-ucan': 2.0.0
+      '@ipld/dag-ucan': 3.0.1
       multiformats: 10.0.2
     devDependencies:
       typescript: 4.8.4
 
   packages/principal:
     specifiers:
-      '@ipld/dag-ucan': ^2.0.0
+      '@ipld/dag-ucan': ^3.0.1
       '@noble/ed25519': ^1.7.1
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
@@ -110,7 +110,7 @@ importers:
       playwright-test: ^8.1.1
       typescript: ^4.8.4
     dependencies:
-      '@ipld/dag-ucan': 2.0.0
+      '@ipld/dag-ucan': 3.0.1
       '@noble/ed25519': 1.7.1
       '@ucanto/interface': link:../interface
       multiformats: 10.0.2
@@ -458,13 +458,6 @@ packages:
       varint: 6.0.0
     dev: false
 
-  /@ipld/dag-cbor/7.0.3:
-    resolution: {integrity: sha512-1VVh2huHsuohdXC1bGJNE8WR72slZ9XE2T3wbBBq31dm7ZBatmKLLxrB+XAqafxfRFjv08RZmj/W/ZqaM13AuA==}
-    dependencies:
-      cborg: 1.9.5
-      multiformats: 10.0.2
-    dev: false
-
   /@ipld/dag-cbor/8.0.0:
     resolution: {integrity: sha512-VfedC21yAD/ZIahcrHTeMcc17kEVRlCmHQl0JY9/Rwbd102v0QcuXtBN8KGH8alNO82S89+H6MM/hxP85P4Veg==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
@@ -473,18 +466,19 @@ packages:
       multiformats: 10.0.2
     dev: false
 
-  /@ipld/dag-json/8.0.11:
-    resolution: {integrity: sha512-Pea7JXeYHTWXRTIhBqBlhw7G53PJ7yta3G/sizGEZyzdeEwhZRr0od5IQ0r2ZxOt1Do+2czddjeEPp+YTxDwCA==}
+  /@ipld/dag-json/9.0.1:
+    resolution: {integrity: sha512-dL5Xhrk0XXoq3lSsY2LNNraH2Nxx4nlgQwSarl2J3oir2jBDQEiBDW8bjgr30ni8/epdWDhXm5mdxat8dFWwGQ==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
       cborg: 1.9.5
       multiformats: 10.0.2
     dev: false
 
-  /@ipld/dag-ucan/2.0.0:
-    resolution: {integrity: sha512-Fep3MDup7nwistsRAt8fvcgY4QzUzp17atgfMQ9771DnCM1psbz3LITBBbKhhPphIQTxrscZlbK0A38D41/HiA==}
+  /@ipld/dag-ucan/3.0.1:
+    resolution: {integrity: sha512-71YwJeRHxwX3diPXfwiuzhJTjmJSqi8XW/x5Xglp82UqpM5xwtNojB07VhmDXTZXhKi42bZHyQIOLaca/t9IHw==}
     dependencies:
-      '@ipld/dag-cbor': 7.0.3
-      '@ipld/dag-json': 8.0.11
+      '@ipld/dag-cbor': 8.0.0
+      '@ipld/dag-json': 9.0.1
       multiformats: 10.0.2
     dev: false
 
