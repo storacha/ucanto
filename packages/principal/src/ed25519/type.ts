@@ -1,4 +1,10 @@
-import { SignerKey, VerifierKey, ByteView, DIDKey } from '@ucanto/interface'
+import {
+  SignerKey,
+  VerifierKey,
+  MulticodecCode,
+  ByteView,
+  DIDKey,
+} from '@ucanto/interface'
 import * as Signature from '@ipld/dag-ucan/signature'
 
 export * from '@ucanto/interface'
@@ -6,7 +12,7 @@ export * from '@ucanto/interface'
 /**
  * Integer corresponding to EdDSA byteprefix of the VarSig.
  */
-export type SigAlg = typeof Signature.EdDSA
+export type SigAlg = MulticodecCode<typeof Signature.EdDSA, 'EdDSA'>
 
 /**
  * Name corresponding to EdDSA algorithm.
@@ -22,7 +28,7 @@ export interface EdSigner extends SignerKey<SigAlg> {
   /**
    * Multicodec code that corresponds to Ed private key.
    */
-  readonly code: 0x1300
+  readonly code: MulticodecCode<0x1300, 'ed25519-private-key'>
 
   readonly signer: EdSigner
   readonly verifier: EdVerifier
@@ -50,7 +56,7 @@ export interface EdVerifier extends VerifierKey<SigAlg> {
   /**
    * Multicodec code that corresponds to Ed public key.
    */
-  readonly code: 0xed
+  readonly code: MulticodecCode<0xed, 'ed25519-public-key'>
   readonly signatureCode: SigAlg
   readonly signatureAlgorithm: Name
 }

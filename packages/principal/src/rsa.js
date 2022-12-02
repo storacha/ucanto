@@ -13,16 +13,21 @@ import { withDID } from './signer.js'
 export * from './rsa/type.js'
 
 export const name = 'RSA'
+
+/** @type {API.RSASigner['code']} */
 export const code = 0x1305
+
+/** @type {API.RSAVerifier['code']} */
 const verifierCode = 0x1205
 
+/** @type {API.SigAlg} */
 export const signatureCode = Signature.RS256
 export const signatureAlgorithm = 'RS256'
 
 const ALG = 'RSASSA-PKCS1-v1_5'
 const HASH_ALG = 'SHA-256'
 const KEY_SIZE = 2048
-const SALT_LEGNTH = 128
+const SALT_LENGTH = 128
 const IMPORT_PARAMS = {
   name: ALG,
   hash: { name: HASH_ALG },
@@ -89,7 +94,7 @@ export const generate = async ({
 }
 
 /**
- * @param {API.SignerArchive<API.DID<'key'>, typeof signatureCode>} archive
+ * @param {API.SignerArchive<API.DIDKey, typeof signatureCode>} archive
  * @returns {API.RSASigner}
  */
 export const from = ({ id, keys }) => {
@@ -283,7 +288,7 @@ class RSASigner {
    */
   async sign(payload) {
     const buffer = await webcrypto.subtle.sign(
-      { name: ALG, saltLength: SALT_LEGNTH },
+      { name: ALG, saltLength: SALT_LENGTH },
       await this.privateKey,
       payload
     )
