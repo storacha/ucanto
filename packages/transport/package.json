@@ -32,13 +32,13 @@
     "@ipld/car": "^5.0.0",
     "@ipld/dag-cbor": "^8.0.0",
     "@ucanto/core": "^3.0.4",
-    "@ucanto/interface": "^4.0.0",
+    "@ucanto/interface": "^3.0.1",
     "multiformats": "^10.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^9.1.0",
-    "@ucanto/principal": "^4.0.1",
+    "@ucanto/principal": "^3.0.1",
     "@web-std/fetch": "^4.1.0",
     "c8": "^7.11.0",
     "chai": "^4.3.6",
