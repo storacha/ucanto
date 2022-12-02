@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.0.2](https://github.com/web3-storage/ucanto/compare/server-v3.0.8...server-v4.0.2) (2022-12-02)
+
+
+### Miscellaneous Chores
+
+* release 4.0.2 ([e9e35df](https://github.com/web3-storage/ucanto/commit/e9e35dffeeb7e5b5e19627f791b66bbdd35d2d11))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^4.0.0 to ^4.0.2
+    * @ucanto/interface bumped from ^4.0.0 to ^4.0.2
+    * @ucanto/validator bumped from ^4.0.0 to ^4.0.2
+  * devDependencies
+    * @ucanto/principal bumped from ^4.0.1 to ^4.0.2
+    * @ucanto/client bumped from ^4.0.0 to ^4.0.2
+    * @ucanto/transport bumped from ^4.0.0 to ^4.0.2
+
 ### [3.0.8](https://www.github.com/web3-storage/ucanto/compare/server-v3.0.7...server-v3.0.8) (2022-12-02)
 
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.0.2](https://github.com/web3-storage/ucanto/compare/principal-v4.0.1...principal-v4.0.2) (2022-12-02)
+
+
+### Features
+
+* update to latest dag-ucan ([#165](https://github.com/web3-storage/ucanto/issues/165)) ([20e50de](https://github.com/web3-storage/ucanto/commit/20e50de5e311781ee8dc10e32de4eb12e8df2080))
+
+
+### Miscellaneous Chores
+
+* release 4.0.2 ([e9e35df](https://github.com/web3-storage/ucanto/commit/e9e35dffeeb7e5b5e19627f791b66bbdd35d2d11))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^4.0.0 to ^4.0.2
+
 ### [4.0.1](https://www.github.com/web3-storage/ucanto/compare/principal-v4.0.0...principal-v4.0.1) (2022-12-02)
 
 
