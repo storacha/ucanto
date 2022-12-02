@@ -19,10 +19,10 @@ importers:
     specifiers:
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
-      '@ucanto/core': ^4.0.0
-      '@ucanto/interface': ^4.0.0
-      '@ucanto/principal': ^4.0.1
-      '@ucanto/transport': ^4.0.0
+      '@ucanto/core': ^3.0.5
+      '@ucanto/interface': ^3.0.1
+      '@ucanto/principal': ^3.0.1
+      '@ucanto/transport': ^3.0.5
       '@web-std/fetch': ^4.1.0
       '@web-std/file': ^3.0.2
       c8: ^7.11.0
@@ -33,13 +33,13 @@ importers:
       playwright-test: ^8.1.1
       typescript: ^4.8.4
     dependencies:
-      '@ucanto/interface': link:../interface
+      '@ucanto/interface': 3.0.1
       multiformats: 10.0.2
     devDependencies:
       '@types/chai': 4.3.3
       '@types/mocha': 9.1.1
-      '@ucanto/core': link:../core
-      '@ucanto/principal': link:../principal
+      '@ucanto/core': 3.0.5
+      '@ucanto/principal': 3.0.1
       '@ucanto/transport': link:../transport
       '@web-std/fetch': 4.1.0
       '@web-std/file': 3.0.2
@@ -130,12 +130,12 @@ importers:
       '@types/chai': ^4.3.3
       '@types/chai-subset': ^1.3.3
       '@types/mocha': ^9.1.0
-      '@ucanto/client': ^4.0.0
-      '@ucanto/core': ^4.0.0
-      '@ucanto/interface': ^4.0.0
-      '@ucanto/principal': ^4.0.1
-      '@ucanto/transport': ^4.0.0
-      '@ucanto/validator': ^4.0.0
+      '@ucanto/client': ^3.0.5
+      '@ucanto/core': ^3.0.5
+      '@ucanto/interface': ^3.0.1
+      '@ucanto/principal': ^3.0.1
+      '@ucanto/transport': ^3.0.5
+      '@ucanto/validator': ^3.0.7
       '@web-std/fetch': ^4.1.0
       '@web-std/file': ^3.0.2
       c8: ^7.11.0
@@ -147,15 +147,15 @@ importers:
       playwright-test: ^8.1.1
       typescript: ^4.8.4
     dependencies:
-      '@ucanto/core': link:../core
-      '@ucanto/interface': link:../interface
+      '@ucanto/core': 3.0.5
+      '@ucanto/interface': 3.0.1
       '@ucanto/validator': link:../validator
     devDependencies:
       '@types/chai': 4.3.3
       '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
       '@ucanto/client': link:../client
-      '@ucanto/principal': link:../principal
+      '@ucanto/principal': 3.0.1
       '@ucanto/transport': link:../transport
       '@web-std/fetch': 4.1.0
       '@web-std/file': 3.0.2
@@ -174,9 +174,9 @@ importers:
       '@ipld/dag-cbor': ^8.0.0
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
-      '@ucanto/core': ^4.0.0
-      '@ucanto/interface': ^4.0.0
-      '@ucanto/principal': ^4.0.1
+      '@ucanto/core': ^3.0.5
+      '@ucanto/interface': ^3.0.1
+      '@ucanto/principal': ^3.0.1
       '@web-std/fetch': ^4.1.0
       c8: ^7.11.0
       chai: ^4.3.6
@@ -188,13 +188,13 @@ importers:
     dependencies:
       '@ipld/car': 5.0.0
       '@ipld/dag-cbor': 8.0.0
-      '@ucanto/core': link:../core
-      '@ucanto/interface': link:../interface
+      '@ucanto/core': 3.0.5
+      '@ucanto/interface': 3.0.1
       multiformats: 10.0.2
     devDependencies:
       '@types/chai': 4.3.3
       '@types/mocha': 9.1.1
-      '@ucanto/principal': link:../principal
+      '@ucanto/principal': 3.0.1
       '@web-std/fetch': 4.1.0
       c8: 7.12.0
       chai: 4.3.6
@@ -210,10 +210,10 @@ importers:
       '@types/chai': ^4.3.3
       '@types/chai-subset': ^1.3.3
       '@types/mocha': ^9.1.0
-      '@ucanto/client': ^4.0.0
-      '@ucanto/core': ^4.0.0
-      '@ucanto/interface': ^4.0.0
-      '@ucanto/principal': ^4.0.1
+      '@ucanto/client': ^3.0.5
+      '@ucanto/core': ^3.0.5
+      '@ucanto/interface': ^3.0.1
+      '@ucanto/principal': ^3.0.1
       c8: ^7.11.0
       chai: ^4.3.6
       chai-subset: ^1.6.0
@@ -225,15 +225,15 @@ importers:
     dependencies:
       '@ipld/car': 5.0.0
       '@ipld/dag-cbor': 8.0.0
-      '@ucanto/core': link:../core
-      '@ucanto/interface': link:../interface
+      '@ucanto/core': 3.0.5
+      '@ucanto/interface': 3.0.1
       multiformats: 10.0.2
     devDependencies:
       '@types/chai': 4.3.3
       '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
       '@ucanto/client': link:../client
-      '@ucanto/principal': link:../principal
+      '@ucanto/principal': 3.0.1
       c8: 7.12.0
       chai: 4.3.6
       chai-subset: 1.6.0
@@ -456,7 +456,12 @@ packages:
       cborg: 1.9.5
       multiformats: 10.0.2
       varint: 6.0.0
-    dev: false
+
+  /@ipld/dag-cbor/7.0.3:
+    resolution: {integrity: sha512-1VVh2huHsuohdXC1bGJNE8WR72slZ9XE2T3wbBBq31dm7ZBatmKLLxrB+XAqafxfRFjv08RZmj/W/ZqaM13AuA==}
+    dependencies:
+      cborg: 1.9.5
+      multiformats: 10.0.2
 
   /@ipld/dag-cbor/8.0.0:
     resolution: {integrity: sha512-VfedC21yAD/ZIahcrHTeMcc17kEVRlCmHQl0JY9/Rwbd102v0QcuXtBN8KGH8alNO82S89+H6MM/hxP85P4Veg==}
@@ -464,7 +469,12 @@ packages:
     dependencies:
       cborg: 1.9.5
       multiformats: 10.0.2
-    dev: false
+
+  /@ipld/dag-json/8.0.11:
+    resolution: {integrity: sha512-Pea7JXeYHTWXRTIhBqBlhw7G53PJ7yta3G/sizGEZyzdeEwhZRr0od5IQ0r2ZxOt1Do+2czddjeEPp+YTxDwCA==}
+    dependencies:
+      cborg: 1.9.5
+      multiformats: 10.0.2
 
   /@ipld/dag-json/9.0.1:
     resolution: {integrity: sha512-dL5Xhrk0XXoq3lSsY2LNNraH2Nxx4nlgQwSarl2J3oir2jBDQEiBDW8bjgr30ni8/epdWDhXm5mdxat8dFWwGQ==}
@@ -473,6 +483,13 @@ packages:
       cborg: 1.9.5
       multiformats: 10.0.2
     dev: false
+
+  /@ipld/dag-ucan/2.0.0:
+    resolution: {integrity: sha512-Fep3MDup7nwistsRAt8fvcgY4QzUzp17atgfMQ9771DnCM1psbz3LITBBbKhhPphIQTxrscZlbK0A38D41/HiA==}
+    dependencies:
+      '@ipld/dag-cbor': 7.0.3
+      '@ipld/dag-json': 8.0.11
+      multiformats: 10.0.2
 
   /@ipld/dag-ucan/3.0.1:
     resolution: {integrity: sha512-71YwJeRHxwX3diPXfwiuzhJTjmJSqi8XW/x5Xglp82UqpM5xwtNojB07VhmDXTZXhKi42bZHyQIOLaca/t9IHw==}
@@ -538,7 +555,6 @@ packages:
 
   /@noble/ed25519/1.7.1:
     resolution: {integrity: sha512-Rk4SkJFaXZiznFyC/t77Q0NKS4FL7TLJJsVG2V2oiEq3kJVeTdxysEe/yRWSpnWMe808XRDJ+VFh5pt/FN5plw==}
-    dev: false
 
   /@nodelib/fs.scandir/2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -585,6 +601,31 @@ packages:
 
   /@types/mocha/9.1.1:
     resolution: {integrity: sha512-Z61JK7DKDtdKTWwLeElSEBcWGRLY8g95ic5FoQqI9CMx0ns/Ghep3B4DfcEimiKMvtamNVULVNKEsiwV3aQmXw==}
+    dev: true
+
+  /@ucanto/core/3.0.5:
+    resolution: {integrity: sha512-UJ4PZ0EKdhJ9n/3qyXvDGTw0j8G6wmy4cZphLlQ7Z4+TJAlR2YciWtAFztsxK97ylRSU/n3UmqorjZwlP9mM/w==}
+    dependencies:
+      '@ipld/car': 5.0.0
+      '@ipld/dag-cbor': 8.0.0
+      '@ipld/dag-ucan': 2.0.0
+      '@ucanto/interface': 3.0.1
+      multiformats: 10.0.2
+
+  /@ucanto/interface/3.0.1:
+    resolution: {integrity: sha512-1UlyLMjJwgzAmhlqu/V1gz0xrE9MUiI3gdzxOJbIXwrS7zAWsbtUZqIS/SPpr1+PYnNO8PHSGyGekb+N0dqtWQ==}
+    dependencies:
+      '@ipld/dag-ucan': 2.0.0
+      multiformats: 10.0.2
+
+  /@ucanto/principal/3.0.1:
+    resolution: {integrity: sha512-0U0EF2ddfR55LKKc7FkzTkH8OFvjZvEeRqMkyV5FyeSsFEF7lXhgEXZrNgggK2zlriXjYC9VVCpPhsGb4cI72g==}
+    dependencies:
+      '@ipld/dag-ucan': 2.0.0
+      '@noble/ed25519': 1.7.1
+      '@ucanto/interface': 3.0.1
+      multiformats: 10.0.2
+      one-webcrypto: 1.0.3
     dev: true
 
   /@web-std/blob/3.0.4:
@@ -854,7 +895,6 @@ packages:
   /cborg/1.9.5:
     resolution: {integrity: sha512-fLBv8wmqtlXqy1Yu+pHzevAIkW6k2K0ZtMujNzWphLsA34vzzg9BHn+5GmZqOJkSA9V7EMKsWrf6K976c1QMjQ==}
     hasBin: true
-    dev: false
 
   /chai-subset/1.6.0:
     resolution: {integrity: sha512-K3d+KmqdS5XKW5DWPd5sgNffL3uxdDe+6GdnJh3AYPhwnBGRY5urfvfcbRtWIvvpz+KxkL9FeBB6MZewLUNwug==}
@@ -2342,7 +2382,6 @@ packages:
 
   /one-webcrypto/1.0.3:
     resolution: {integrity: sha512-fu9ywBVBPx0gS9K0etIROTiCkvI5S1TDjFsYFb3rC1ewFxeOqsbzq7aIMBHsYfrTHBcGXJaONXXjTl8B01cW1Q==}
-    dev: false
 
   /onetime/5.1.2:
     resolution: {integrity: sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==}
@@ -3039,7 +3078,6 @@ packages:
 
   /varint/6.0.0:
     resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
-    dev: false
 
   /wcwidth/1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
