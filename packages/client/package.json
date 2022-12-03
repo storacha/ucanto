@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/client",
   "description": "UCAN RPC Client",
-  "version": "3.0.2",
+  "version": "4.0.2",
   "keywords": [
     "UCAN",
     "RPC",
@@ -29,15 +29,15 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ucanto/interface": "^3.0.1",
+    "@ucanto/interface": "^4.0.2",
     "multiformats": "^10.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^9.1.0",
-    "@ucanto/principal": "^3.0.1",
-    "@ucanto/core": "^3.0.2",
-    "@ucanto/transport": "^3.0.2",
+    "@ucanto/principal": "^4.0.2",
+    "@ucanto/core": "^4.0.2",
+    "@ucanto/transport": "^4.0.2",
     "@web-std/fetch": "^4.1.0",
     "@web-std/file": "^3.0.2",
     "c8": "^7.11.0",

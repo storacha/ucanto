@@ -6,9 +6,11 @@ import * as Signature from '@ipld/dag-ucan/signature'
 import { base58btc } from 'multiformats/bases/base58'
 import { withDID } from '../verifier.js'
 
+/** @type {API.EdVerifier['code']} */
 export const code = 0xed
 export const name = 'Ed25519'
 
+/** @type {API.SigAlg} */
 export const signatureCode = Signature.EdDSA
 export const signatureAlgorithm = 'EdDSA'
 const PUBLIC_TAG_SIZE = varint.encodingLength(code)

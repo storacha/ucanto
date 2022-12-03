@@ -1,6 +1,8 @@
 {
-  "plugins": ["node-workspace"],
-  "bootstrap-sha": "1f995064ec6e5953118c2dd1065ee6be959f25b9",
+  "plugins": [
+    "node-workspace"
+  ],
+  "bootstrap-sha": "f814e75a89d3ed7c3488a8cb7af8d94f0cfba440",
   "packages": {
     "packages/principal": {},
     "packages/client": {},

@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/principal",
   "description": "ed25519 principal",
-  "version": "3.0.1",
+  "version": "4.0.2",
   "keywords": [
     "UCAN",
     "ed25519",
@@ -27,9 +27,9 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^2.0.0",
+    "@ipld/dag-ucan": "^3.0.1",
     "@noble/ed25519": "^1.7.1",
-    "@ucanto/interface": "^3.0.1",
+    "@ucanto/interface": "^4.0.2",
     "multiformats": "^10.0.2",
     "one-webcrypto": "^1.0.3"
   },
