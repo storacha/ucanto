@@ -52,16 +52,17 @@ export const derive = async secret => {
 }
 
 /**
- * @param {API.SignerArchive<API.DIDKey, typeof signatureCode>} archive
+ * @param {API.SignerArchive<API.DID, typeof signatureCode>} archive
  * @returns {API.EdSigner}
  */
 export const from = ({ id, keys }) => {
-  const key = keys[id]
-  if (key instanceof Uint8Array) {
-    return decode(key)
-  } else {
-    throw new TypeError(`Unsupported archive format`)
+  if (id.startsWith('did:key:')) {
+    const key = keys[/** @type {API.DIDKey} */ (id)]
+    if (key instanceof Uint8Array) {
+      return decode(key)
+    }
   }
+  throw new TypeError(`Unsupported archive format`)
 }
 
 from

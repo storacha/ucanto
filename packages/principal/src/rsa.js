@@ -94,19 +94,24 @@ export const generate = async ({
 }
 
 /**
- * @param {API.SignerArchive<API.DIDKey, typeof signatureCode>} archive
+ * @param {API.SignerArchive<API.DID, typeof signatureCode>} archive
  * @returns {API.RSASigner}
  */
 export const from = ({ id, keys }) => {
-  const key = keys[id]
-  if (key instanceof Uint8Array) {
-    return decode(key)
-  } else {
-    return new UnextractableRSASigner({
-      privateKey: key,
-      verifier: RSAVerifier.parse(id),
-    })
+  if (id.startsWith('did:key:')) {
+    const did = /** @type {API.DIDKey} */ (id)
+    const key = keys[did]
+    if (key instanceof Uint8Array) {
+      return decode(key)
+    } else {
+      return new UnextractableRSASigner({
+        privateKey: key,
+        verifier: RSAVerifier.parse(did),
+      })
+    }
   }
+
+  throw new TypeError(`Unsupported archive format`)
 }
 
 /**
