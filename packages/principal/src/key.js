@@ -1,7 +1,7 @@
 import * as ed25519 from './ed25519.js'
 import * as RSA from './rsa.js'
-import { create as createVerifier } from './verifier.js'
-import { create as createSigner } from './signer.js'
+import * as S from './signer.js'
+import * as V from './verifier.js'
 
-export const Verifier = createVerifier([ed25519.Verifier, RSA.Verifier])
-export const Signer = createSigner([ed25519, RSA])
+export const Verifier = ed25519.Verifier.or(RSA.Verifier)
+export const Signer = ed25519.or(RSA)

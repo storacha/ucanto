@@ -26,6 +26,7 @@ import {
   InvalidAudience,
   Unauthorized,
   UnavailableProof,
+  DIDResolutionError,
   ParsedCapability,
   CapabilityParser,
 } from './capability.js'
@@ -239,7 +240,7 @@ export type InvocationError =
   | Unauthorized
 
 export interface InvocationContext extends CanIssue {
-  id: Principal
+  id: Verifier
   my?: (issuer: DID) => Capability[]
   resolve?: (proof: UCANLink) => Await<Result<Delegation, UnavailableProof>>
 
@@ -425,7 +426,7 @@ export interface ServerOptions
    * Service DID which will be used to verify that received invocation
    * audience matches it.
    */
-  readonly id: Principal
+  readonly id: Verifier
 }
 
 /**
@@ -491,12 +492,20 @@ export type URI<P extends Protocol = Protocol> = `${P}${string}` &
     protocol: P
   }>
 
+export interface ComposedDIDParser extends PrincipalParser {
+  or(parser: PrincipalParser): PrincipalParser
+}
+
 /**
  * A `PrincipalParser` provides {@link Verifier} instances that can validate UCANs issued
  * by a given {@link Principal}.
  */
 export interface PrincipalParser {
-  parse(did: UCAN.DID): Verifier
+  parse(did: UCAN.DID, options?: DIDResolver): Verifier
+}
+
+export interface DIDResolver {
+  resolveDID?: (did: UCAN.DID) => Await<Result<DIDKey, DIDResolutionError>>
 }
 
 /**
@@ -517,6 +526,23 @@ export interface SignerImporter<
   from(archive: SignerArchive<ID, Alg>): Signer<ID, Alg>
 }
 
+export interface CompositeImporter<
+  Variants extends [SignerImporter, ...SignerImporter[]]
+> {
+  from: Intersection<Variants[number]['from']>
+  or<Other extends SignerImporter>(
+    other: Other
+  ): CompositeImporter<[Other, ...Variants]>
+}
+
+export interface Importer<Self extends Signer = Signer> {
+  from(archive: Archive<Self>): Self
+}
+
+export interface Archive<Self extends Signer> {
+  id: ReturnType<Signer['did']>
+  keys: { [Key: DIDKey]: KeyArchive<Signer['signatureCode']> }
+}
 /**
  * Principal that can issue UCANs (and sign payloads). While it's primary role
  * is to sign payloads it also extends `Verifier` interface so it could be used

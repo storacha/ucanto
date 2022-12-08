@@ -8,8 +8,8 @@ import * as SPKI from './rsa/spki.js'
 import * as PKCS8 from './rsa/pkcs8.js'
 import * as PrivateKey from './rsa/private-key.js'
 import * as PublicKey from './rsa/public-key.js'
-import { withDID as setVerifierDID } from './verifier.js'
-import { withDID } from './signer.js'
+import { withDID, or } from './verifier.js'
+import * as Signer from './signer.js'
 export * from './rsa/type.js'
 
 export const name = 'RSA'
@@ -155,7 +155,7 @@ class RSAVerifier {
    * @returns {API.Verifier<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return setVerifierDID(this, id)
+    return withDID(this, id)
   }
 
   /**
@@ -175,11 +175,18 @@ class RSAVerifier {
     })
   }
   /**
-   * @param {API.DID<"key">} did
+   * @param {API.DIDKey} did
    * @returns {API.RSAVerifier}
    */
   static parse(did) {
     return RSAVerifier.decode(/** @type {Uint8Array} */ (DID.parse(did)))
+  }
+
+  /**
+   * @param {API.PrincipalParser} other
+   */
+  static or(other) {
+    return or(this, other)
   }
 
   /** @type {typeof verifierCode} */
@@ -228,7 +235,7 @@ class RSAVerifier {
   }
 }
 
-/** @type {API.PrincipalParser} */
+/** @type {API.ComposedDIDParser} */
 export const Verifier = RSAVerifier
 
 /**
@@ -318,7 +325,7 @@ class ExtractableRSASigner extends RSASigner {
    * @returns {API.Signer<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return withDID(this, id)
+    return Signer.withDID(this, id)
   }
 
   toArchive() {
@@ -350,7 +357,7 @@ class UnextractableRSASigner extends RSASigner {
    * @returns {API.Signer<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return withDID(this, id)
+    return Signer.withDID(this, id)
   }
 
   toArchive() {

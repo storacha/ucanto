@@ -1,4 +1,4 @@
-import { ed25519, RSA, DID } from '../src/lib.js'
+import { ed25519, RSA, Verifier, Signer } from '../src/lib.js'
 import { assert } from 'chai'
 import { sha256 } from 'multiformats/hashes/sha2'
 
@@ -32,7 +32,7 @@ describe('did', () => {
     const key = await RSA.generate()
     const original = key.withDID('did:dns:api.web3.storage')
     const archive = original.toArchive()
-    const restored = DID.from(archive)
+    const restored = Signer.from(archive)
     const payload = utf8.encode('hello world')
 
     assert.equal(
@@ -50,7 +50,7 @@ describe('did', () => {
     const key = await RSA.generate()
     const original = key.withDID('did:web:api.web3.storage')
     const archive = original.toArchive()
-    const restored = DID.from(archive)
+    const restored = Signer.from(archive)
     const payload = utf8.encode('hello world')
 
     assert.equal(
@@ -67,7 +67,7 @@ describe('did', () => {
   it('can archive 🔁 restore ed25519', async () => {
     const key = await ed25519.generate()
     const original = key.withDID('did:web:api.web3.storage')
-    const restored = DID.from(original.toArchive())
+    const restored = Signer.from(original.toArchive())
     const payload = utf8.encode('hello world')
 
     assert.equal(
@@ -92,7 +92,7 @@ describe('did', () => {
 
     assert.equal(id, 'did:dns:api.web3.storage')
     assert.equal(Object.keys(keys)[0].startsWith('did:key:'), true)
-    assert.throws(() => DID.from({ id, keys: {} }), /constaints no keys/)
+    assert.throws(() => Signer.from({ id, keys: {} }))
   })
 
   it('can sign & verify', async () => {
@@ -113,8 +113,8 @@ describe('did', () => {
     const key = await ed25519.generate()
     const principal = key.withDID('did:dns:api.web3.storage')
     const payload = utf8.encode('hello world')
-    const verifier = DID.parse(principal.did(), {
-      resolve: async _dns => {
+    const verifier = Verifier.parse(principal.did(), {
+      resolveDID: async _dns => {
         return key.did()
       },
     })
@@ -134,7 +134,7 @@ describe('did', () => {
     const key = await ed25519.generate()
     const principal = key.withDID('did:dns:api.web3.storage')
     const payload = utf8.encode('hello world')
-    const verifier = DID.parse('did:dns:api.web3.storage')
+    const verifier = Verifier.parse('did:dns:api.web3.storage')
     const signature = await principal.sign(payload)
 
     assert.equal(await verifier.verify(payload, signature), false)
@@ -149,7 +149,7 @@ describe('did', () => {
 
   it('verifier does not wrap if it is key', async () => {
     const key = await ed25519.generate()
-    const verifier = DID.parse(key.did())
+    const verifier = Verifier.parse(key.did())
 
     assert.deepEqual(key.verifier, verifier)
   })

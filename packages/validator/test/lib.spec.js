@@ -47,6 +47,7 @@ test('authorize self-issued invocation', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -76,6 +77,7 @@ test('unauthorized / expired invocation', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -120,6 +122,7 @@ test('unauthorized / not vaid before invocation', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -148,6 +151,7 @@ test('unauthorized / invalid signature', async () => {
   delegation.data.signature.set(await bob.sign(delegation.bytes))
 
   const result = await access(delegation, {
+    authority: w3,
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -178,6 +182,7 @@ test('unauthorized / unknown capability', async () => {
   })
 
   const result = await access(invocation, {
+    authority: w3,
     // @ts-ignore
     capability: storeAdd,
     principal: ed25519.Verifier,
@@ -211,6 +216,7 @@ test('authorize / delegated invocation', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -261,6 +267,7 @@ test('authorize / delegation chain', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     capability: storeAdd,
     principal: ed25519.Verifier,
   })
@@ -309,6 +316,7 @@ test('invalid claim / no proofs', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -354,6 +362,7 @@ test('invalid claim / expired', async () => {
     .delegate()
 
   const result = await access(invocation, {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -399,6 +408,7 @@ test('invalid claim / not valid before', async () => {
     .delegate()
 
   const result = await access(invocation, {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -444,6 +454,7 @@ test('invalid claim / invalid signature', async () => {
     .delegate()
 
   const result = await access(invocation, {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -490,6 +501,7 @@ test('invalid claim / unknown capability', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -537,6 +549,7 @@ test('invalid claim / malformed capability', async () => {
   })
 
   const result = await access(invocation, {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -575,6 +588,7 @@ test('invalid claim / unavailable proof', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -610,6 +624,7 @@ test('invalid claim / failed to resolve', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     resolve() {
       throw new Error('Boom!')
@@ -649,6 +664,7 @@ test('invalid claim / invalid audience', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -684,6 +700,7 @@ test('invalid claim / invalid claim', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -728,6 +745,7 @@ test('invalid claim / invalid sub delegation', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -768,6 +786,7 @@ test('authorize / resolve external proof', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     resolve: async link => {
       if (link.toString() === delegation.cid.toString()) {
@@ -821,6 +840,7 @@ test('invalid claim / principal aligment', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })
@@ -858,6 +878,7 @@ test('invalid claim / invalid delegation chain', async () => {
   })
 
   const result = await access(await invocation.delegate(), {
+    authority: w3,
     principal: ed25519.Verifier,
     capability: storeAdd,
   })

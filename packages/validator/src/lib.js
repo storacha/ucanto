@@ -1,6 +1,7 @@
 import * as API from '@ucanto/interface'
 import { Delegation, isDelegation, UCAN } from '@ucanto/core'
 import { capability } from './capability.js'
+import * as Schema from './schema.js'
 import {
   UnavailableProof,
   InvalidAudience,
@@ -10,15 +11,16 @@ import {
   DelegationError,
   Failure,
   MalformedCapability,
+  DIDResolutionError,
   li,
 } from './error.js'
 
-export { Failure, UnavailableProof, MalformedCapability }
+export { Failure, UnavailableProof, MalformedCapability, DIDResolutionError }
 
 export { capability } from './capability.js'
 import { DID } from './schema.js'
 export * from './schema.js'
-export * as Schema from './schema.js'
+export { Schema }
 
 /**
  * @param {UCAN.Link} proof
@@ -26,7 +28,14 @@ export * as Schema from './schema.js'
 const unavailable = proof => new UnavailableProof(proof)
 
 /**
- * @param {Required<API.ProofResolver>} config
+ *
+ * @param {UCAN.DID} did
+ * @returns {API.DIDResolutionError}
+ */
+const failDIDResolution = did => new DIDResolutionError(did)
+
+/**
+ * @param {Required<API.ClaimOptions>} config
  * @param {API.Match<unknown, API.Match>} match
  */
 
@@ -51,21 +60,21 @@ const resolveMatch = async (match, config) => {
 }
 
 /**
- * @param {API.Delegation} delegation
+ * @param {API.Proof[]} proofs
  * @param {Required<API.ProofResolver>} config
  */
-const resolveProofs = async (delegation, config) => {
+const resolveProofs = async (proofs, config) => {
   /** @type {API.Result<API.Delegation, API.UnavailableProof>[]} */
-  const proofs = []
+  const delegations = []
   const promises = []
-  for (const [index, proof] of delegation.proofs.entries()) {
+  for (const [index, proof] of proofs.entries()) {
     if (!isDelegation(proof)) {
       promises.push(
         new Promise(async resolve => {
           try {
-            proofs[index] = await config.resolve(proof)
+            delegations[index] = await config.resolve(proof)
           } catch (error) {
-            proofs[index] = new UnavailableProof(
+            delegations[index] = new UnavailableProof(
               proof,
               /** @type {Error} */ (error)
             )
@@ -74,30 +83,30 @@ const resolveProofs = async (delegation, config) => {
         })
       )
     } else {
-      proofs[index] = proof
+      delegations[index] = proof
     }
   }
 
   await Promise.all(promises)
-  return proofs
+  return delegations
 }
 
 /**
  * @param {API.Source} from
- * @param {Required<API.ProofResolver>} config
+ * @param {Required<API.ClaimOptions>} config
  * @return {Promise<{sources:API.Source[], errors:ProofError[]}>}
  */
 const resolveSources = async ({ delegation }, config) => {
   const errors = []
   const sources = []
   // resolve all the proofs that can be side-loaded
-  const proofs = await resolveProofs(delegation, config)
+  const proofs = await resolveProofs(delegation.proofs, config)
   for (const [index, proof] of proofs.entries()) {
     // if proof can not be side-loaded save a proof errors.
     if (proof.error) {
       errors.push(new ProofError(proof.link, index, proof))
     } else {
-      // If proof does not delegate to a matchig audience save an proof error.
+      // If proof does not delegate to a matching audience save an proof error.
       if (delegation.issuer.did() !== proof.audience.did()) {
         errors.push(
           new ProofError(
@@ -108,7 +117,7 @@ const resolveSources = async ({ delegation }, config) => {
         )
       } else {
         // If proof is not valid (expired, not active yet or has incorrect
-        // signature) save a correspondig proof error.
+        // signature) save a corresponding proof error.
         const validation = await validate(proof, config)
         if (validation.error) {
           errors.push(new ProofError(proof.cid, index, validation))
@@ -137,6 +146,10 @@ const resolveSources = async ({ delegation }, config) => {
 const isSelfIssued = (capability, issuer) => capability.with === issuer
 
 /**
+ * @template {{[key:string]: {key: API.DIDKey}}} Docs
+ */
+
+/**
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {R} URI
@@ -147,9 +160,23 @@ const isSelfIssued = (capability, issuer) => capability.with === issuer
  */
 export const access = async (
   invocation,
-  { canIssue = isSelfIssued, principal, resolve = unavailable, capability }
+  {
+    authority,
+    canIssue = isSelfIssued,
+    resolveDID = failDIDResolution,
+    principal,
+    resolve = unavailable,
+    capability,
+  }
 ) => {
-  const config = { canIssue, resolve, principal, capability }
+  const config = {
+    canIssue,
+    resolve,
+    principal,
+    capability,
+    authority,
+    resolveDID,
+  }
 
   const claim = capability.match({
     capability: invocation.capabilities[0],
@@ -179,6 +206,84 @@ export const access = async (
 }
 
 /**
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, API.InferCaveats<C>>>>} capability
+ * @param {API.Proof[]} proofs
+ * @param {API.ClaimOptions} config
+ * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
+ */
+export const claim = async (
+  capability,
+  proofs,
+  {
+    authority,
+    principal,
+    resolveDID = failDIDResolution,
+    canIssue = isSelfIssued,
+    resolve = unavailable,
+  }
+) => {
+  const config = {
+    canIssue,
+    resolve,
+    principal,
+    capability,
+    authority,
+    resolveDID,
+  }
+
+  const invalidProofs = []
+
+  /** @type {API.Source[]} */
+  const sources = []
+  for (const proof of await resolveProofs(proofs, config)) {
+    const delegation = proof.error ? proof : await validate(proof, config)
+
+    if (!delegation.error) {
+      for (const [index, capability] of delegation.capabilities.entries()) {
+        sources.push({
+          capability,
+          delegation,
+          index,
+        })
+      }
+    } else {
+      invalidProofs.push(delegation)
+    }
+  }
+  // look for the matching capability
+  const selection = capability.select(sources)
+
+  const { errors: delegationErrors, unknown: unknownCapabilities } = selection
+  const failedProofs = []
+  for (const matched of selection.matches) {
+    const selector = matched.prune(config)
+    if (selector == null) {
+      return new Authorization(matched, [])
+    } else {
+      const result = await authorize(selector, config)
+      if (result.error) {
+        failedProofs.push(result)
+      } else {
+        return new Authorization(matched, [result])
+      }
+    }
+  }
+
+  return new Unauthorized(
+    new UnfoundedClaim({
+      capability,
+      delegationErrors,
+      unknownCapabilities,
+      invalidProofs,
+      failedProofs,
+    })
+  )
+}
+
+/**
  * @template {API.ParsedCapability} C
  */
 class Authorization {
@@ -204,12 +309,11 @@ class Authorization {
   }
 }
 /**
- * Verifies whether any of the delegated proofs grant give capabality.
+ * Verifies whether any of the delegated proofs grant give capability.
  *
- * @template {API.ParsedCapability} C
  * @template {API.Match} Match
  * @param {Match} match
- * @param {Required<API.ValidationOptions<C>>} config
+ * @param {Required<API.ClaimOptions>} config
  * @returns {Promise<API.Result<Authorization<API.ParsedCapability>, API.InvalidClaim>>}
  */
 
@@ -218,14 +322,14 @@ export const authorize = async (match, config) => {
   const { sources, errors: invalidProofs } = await resolveMatch(match, config)
 
   const selection = match.select(sources)
-  const { errors: delegationErrors, unknown: unknownCapaibilities } = selection
+  const { errors: delegationErrors, unknown: unknownCapabilities } = selection
 
   const failedProofs = []
   for (const matched of selection.matches) {
     const selector = matched.prune(config)
     if (selector == null) {
       // @ts-expect-error - it may not be a parsed capability but rather a
-      // group of capabilites but we can deal with that in the future.
+      // group of capabilities but we can deal with that in the future.
       return new Authorization(matched, [])
     } else {
       const result = await authorize(selector, config)
@@ -233,7 +337,7 @@ export const authorize = async (match, config) => {
         failedProofs.push(result)
       } else {
         // @ts-expect-error - it may not be a parsed capability but rather a
-        // group of capabilites but we can deal with that in the future.
+        // group of capabilities but we can deal with that in the future.
         return new Authorization(matched, [result])
       }
     }
@@ -242,7 +346,7 @@ export const authorize = async (match, config) => {
   return new InvalidClaim({
     match,
     delegationErrors,
-    unknownCapaibilities,
+    unknownCapabilities,
     invalidProofs,
     failedProofs,
   })
@@ -277,7 +381,7 @@ class InvalidClaim extends Failure {
    * @param {{
    * match: API.Match
    * delegationErrors: API.DelegationError[]
-   * unknownCapaibilities: API.Capability[]
+   * unknownCapabilities: API.Capability[]
    * invalidProofs: ProofError[]
    * failedProofs: API.InvalidClaim[]
    * }} info
@@ -304,7 +408,7 @@ class InvalidClaim extends Failure {
       ...this.info.invalidProofs.map(error => li(error.message)),
     ]
 
-    const unknown = this.info.unknownCapaibilities.map(c =>
+    const unknown = this.info.unknownCapabilities.map(c =>
       li(JSON.stringify(c))
     )
 
@@ -324,7 +428,7 @@ class InvalidClaim extends Failure {
  */
 class Unauthorized extends Failure {
   /**
-   * @param {API.InvalidCapability | API.InvalidProof | API.InvalidClaim} cause
+   * @param {API.InvalidCapability | API.InvalidProof | API.InvalidClaim | API.UnfoundedClaim} cause
    */
   constructor(cause) {
     super()
@@ -342,10 +446,56 @@ class Unauthorized extends Failure {
 }
 
 /**
+ * @implements {API.UnfoundedClaim}
+ */
+
+class UnfoundedClaim extends Failure {
+  /**
+   * @param {{
+   * capability: API.CapabilityParser
+   * delegationErrors: API.DelegationError[]
+   * unknownCapabilities: API.Capability[]
+   * invalidProofs: API.InvalidProof[]
+   * failedProofs: API.InvalidClaim[]
+   * }} cause
+   */
+  constructor(cause) {
+    super()
+    /** @type {"UnfoundedClaim"} */
+    this.name = 'UnfoundedClaim'
+    this.info = cause
+  }
+
+  describe() {
+    const errors = [
+      ...this.info.failedProofs.map(error => li(error.message)),
+      ...this.info.delegationErrors.map(error => li(error.message)),
+      ...this.info.invalidProofs.map(error => li(error.message)),
+    ]
+
+    const unknown = this.info.unknownCapabilities.map(c =>
+      li(JSON.stringify(c))
+    )
+
+    return [
+      `Claimed capability ${this.info.capability} is invalid`,
+      ...(errors.length > 0 ? errors : [li(`Delegated capability not found`)]),
+      ...(unknown.length > 0
+        ? [li(`Encountered unknown capabilities\n${unknown.join('\n')}`)]
+        : []),
+    ].join('\n')
+  }
+  toJSON() {
+    const { error, name, message, stack } = this
+    return { error, name, message, stack }
+  }
+}
+
+/**
  * @template {API.Delegation} T
  * @param {T} delegation
- * @param {API.PrincipalOptions} config
- * @returns {Promise<API.Result<T, API.InvalidProof>>}
+ * @param {Required<API.ClaimOptions>} config
+ * @returns {Promise<API.Result<T, API.InvalidProof|API.DIDResolutionError>>}
  */
 const validate = async (delegation, config) => {
   if (UCAN.isExpired(delegation.data)) {
@@ -366,42 +516,81 @@ const validate = async (delegation, config) => {
 /**
  * @template {API.Delegation} T
  * @param {T} delegation
- * @param {API.PrincipalOptions} config
- * @returns {Promise<API.Result<T, API.InvalidSignature>>}
+ * @param {Required<API.ClaimOptions>} config
+ * @returns {Promise<API.Result<T, API.InvalidSignature|API.DIDResolutionError>>}
  */
-const verifySignature = async (delegation, { principal }) => {
-  const issuer = principal.parse(delegation.issuer.did(), {
-    resolve(did) {},
-  })
-  const valid = await UCAN.verifySignature(delegation.data, issuer)
+const verifySignature = async (delegation, config) => {
+  const did = delegation.issuer.did()
+  const issuer = await resolveDID(did, delegation, config)
 
+  if (issuer.error) {
+    return issuer
+  }
+
+  const valid = await UCAN.verifySignature(delegation.data, issuer)
   return valid ? delegation : new InvalidSignature(delegation)
 }
-
-const sign = capability({
-  can: 'ucan/sign',
-  with: DID.match({ method: 'key' }),
-})
 
 /**
  * @param {API.DID} did
  * @param {API.Delegation} delegation
- * @param {Required<API.ProofResolver>} resolver
+ * @param {Required<API.ClaimOptions>} config
+ * @returns {Promise<API.Result<API.Verifier, API.DIDResolutionError>>}
  */
-const resolveDID = async (did, delegation, resolver) => {
-  for (const proof of await resolveProofs(delegation, resolver)) {
-    if (!proof.error) {
-      if (proof.issuer.did() === did && proof.audience.did() === did) {
-        for (const [index, capability] of proof.capabilities.entries()) {
-          const claim = sign.match({
-            capability,
-            delegation,
-            index,
-          })
-        }
-      }
-    }
+const resolveDID = async (did, delegation, config) => {
+  if (did === config.authority.did()) {
+    return config.authority
+  } else if (did.startsWith('did:key:')) {
+    return config.principal.parse(did)
+  } else {
+    // First we attempt to resolve key from the embedded proofs
+    const local = await resolveDIDFromProofs(did, delegation, config)
+    const result = local?.error
+      ? // If failed to resolve because there is an invalid proof propagate error
+        local
+      : // otherwise either use resolved key or if not found attempt to resolve
+        // did externally
+        local || (await config.resolveDID(did))
+    return result.error ? result : config.principal.parse(result).withDID(did)
   }
 }
+
+/**
+ * @param {API.DID} did
+ * @param {API.Delegation} delegation
+ * @param {Required<API.ClaimOptions>} config
+ * @returns {Promise<API.Result<API.DIDKey|null, API.DIDResolutionError>>}
+ */
+const resolveDIDFromProofs = async (did, delegation, config) => {
+  const update = Top.derive({
+    to: capability({
+      with: Schema.literal(config.authority.did()),
+      can: './update',
+      nb: { key: DID.match({ method: 'key' }) },
+    }),
+    derives: equalWith,
+  })
+
+  const result = await claim(update, delegation.proofs, config)
+  return !result.error
+    ? result.match.value.nb.key
+    : result.cause.name === 'UnknownCapability'
+    ? null
+    : new DIDResolutionError(did, result)
+}
+
+const Top = capability({
+  can: '*',
+  with: DID,
+})
+
+/**
+ * @param {API.Capability} to
+ * @param {API.Capability} from
+ */
+
+const equalWith = (to, from) =>
+  to.with === from.with ||
+  new Failure(`Claimed ${to.with} can not be derived from ${from.with}`)
 
 export { InvalidAudience }

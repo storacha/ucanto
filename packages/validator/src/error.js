@@ -125,6 +125,25 @@ export class UnavailableProof extends Failure {
   }
 }
 
+export class DIDResolutionError extends Failure {
+  /**
+   * @param {API.UCAN.DID} did
+   * @param {Error} [cause]
+   */
+  constructor(did, cause) {
+    super()
+    this.name = the('DIDResolutionError')
+    this.did = did
+    this.cause = cause
+  }
+  describe() {
+    return [
+      `Unable to resolve '${this.did}'`,
+      ...(this.cause ? [li(`Resolution failed: ${this.cause.message}`)] : []),
+    ].join('\n')
+  }
+}
+
 /**
  * @implements {API.InvalidAudience}
  */

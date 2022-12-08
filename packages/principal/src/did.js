@@ -36,7 +36,7 @@ export const from = (archive, importer = Key.Signer) => {
  * @param {API.DID} did
  */
 const notFound = did => {
-  throw new RangeError(`Unable to reslove ${did}`)
+  throw new RangeError(`Unable to resolve ${did}`)
 }
 
 /**

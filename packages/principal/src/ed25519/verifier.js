@@ -4,7 +4,7 @@ import { varint } from 'multiformats'
 import * as API from './type.js'
 import * as Signature from '@ipld/dag-ucan/signature'
 import { base58btc } from 'multiformats/bases/base58'
-import { withDID } from '../verifier.js'
+import * as Verifier from '../verifier.js'
 
 /** @type {API.EdVerifier['code']} */
 export const code = 0xed
@@ -24,6 +24,7 @@ const SIZE = 32 + PUBLIC_TAG_SIZE
  * Parses `did:key:` string as a VerifyingPrincipal.
  *
  * @param {API.DID|string} did
+ * @returns {API.Verifier<API.DID, typeof signatureCode>}
  */
 export const parse = did => decode(DID.parse(did))
 
@@ -52,7 +53,7 @@ export const decode = bytes => {
 /**
  * Formats given Principal into `did:key:` format.
  *
- * @param {API.Principal<API.DID<"key">>} principal
+ * @param {API.Principal<API.DID>} principal
  */
 export const format = principal => DID.format(principal)
 
@@ -120,6 +121,23 @@ class Ed25519Verifier extends Uint8Array {
    * @returns {API.Verifier<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return withDID(this, id)
+    return Verifier.withDID(this, id)
   }
 }
+
+/**
+ * @param {API.DIDKey} did
+ * @return {API.EdVerifier}
+ */
+export const fromDID = did => {
+  if (did.startsWith('did:key:')) {
+    throw new Error(`Expected did:key instead got ${did}`)
+  } else {
+    return decode(DID.parse(did))
+  }
+}
+
+/**
+ * @param {API.PrincipalParser} other
+ */
+export const or = other => Verifier.or({ parse }, other)
