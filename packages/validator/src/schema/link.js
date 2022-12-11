@@ -55,6 +55,15 @@ class LinkSchema extends Schema.API {
       }
     }
   }
+
+  /**
+   *
+   * @param {API.Link<unknown, Code, Alg, Version>} self
+   * @param {API.Link<unknown, Code, Alg, Version>} other
+   */
+  incudesWith(self, other) {
+    return self.equals(other)
+  }
 }
 
 /** @type {Schema.Schema<API.Link<unknown, number, number, 0|1>, unknown>}  */

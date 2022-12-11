@@ -32,12 +32,30 @@ export class API {
   readWith(input, settings) {
     throw new Error(`Abstract method readWith must be implemented by subclass`)
   }
+
   /**
    * @param {I} input
    * @returns {Schema.ReadResult<T>}
    */
   read(input) {
     return this.readWith(input, this.settings)
+  }
+
+  /**
+   * @param {T} self
+   * @param {T} other
+   */
+  includes(self, other) {
+    return this.includesWith(self, other, this.settings)
+  }
+
+  /**
+   * @param {T} self
+   * @param {T} other
+   * @param {Settings} _settings
+   */
+  includesWith(self, other, _settings) {
+    return self === other
   }
 
   /**
@@ -83,7 +101,7 @@ export class API {
   }
   /**
    * @template U
-   * @param {Schema.Reader<U, I>} schema
+   * @param {Schema.GroupReader<U, I>} schema
    * @returns {Schema.Schema<T | U, I>}
    */
 
@@ -93,7 +111,7 @@ export class API {
 
   /**
    * @template U
-   * @param {Schema.Reader<U, I>} schema
+   * @param {Schema.GroupReader<U, I>} schema
    * @returns {Schema.Schema<T & U, I>}
    */
   and(schema) {
@@ -132,7 +150,7 @@ export class API {
     }
 
     const schema = new Default({
-      reader: /** @type {Schema.Reader<T, I>} */ (this),
+      reader: /** @type {Schema.GroupReader<T, I>} */ (this),
       value: /** @type {Schema.NotUndefined<T>} */ (fallback),
     })
 
@@ -157,6 +175,11 @@ class Never extends API {
    */
   read(input) {
     return typeError({ expect: 'never', actual: input })
+  }
+
+  includes() {
+    // never is included in any other group
+    return true
   }
 }
 
@@ -192,7 +215,7 @@ export const unknown = () => new Unknown()
 /**
  * @template O
  * @template [I=unknown]
- * @extends {API<null|O, I, Schema.Reader<O, I>>}
+ * @extends {API<null|O, I, Schema.GroupReader<O, I>>}
  * @implements {Schema.Schema<null|O, I>}
  */
 class Nullable extends API {
@@ -215,12 +238,26 @@ class Nullable extends API {
   toString() {
     return `${this.settings}.nullable()`
   }
+
+  /**
+   *
+   * @param {null|O} self
+   * @param {null|O} other
+   * @param {Schema.Group<O>} group
+   */
+  includesWith(self, other, group) {
+    return self === other
+      ? true
+      : self === null || other === null
+      ? false
+      : group.includes(self, other)
+  }
 }
 
 /**
  * @template O
  * @template [I=unknown]
- * @param {Schema.Reader<O, I>} schema
+ * @param {Schema.GroupReader<O, I>} schema
  * @returns {Schema.Schema<O|null, I>}
  */
 export const nullable = schema => new Nullable(schema)
@@ -228,7 +265,7 @@ export const nullable = schema => new Nullable(schema)
 /**
  * @template O
  * @template [I=unknown]
- * @extends {API<O|undefined, I, Schema.Reader<O, I>>}
+ * @extends {API<O|undefined, I, Schema.GroupReader<O, I>>}
  * @implements {Schema.Schema<O|undefined, I>}
  */
 class Optional extends API {
@@ -247,12 +284,26 @@ class Optional extends API {
   toString() {
     return `${this.settings}.optional()`
   }
+
+  /**
+   *
+   * @param {O|undefined} self
+   * @param {O|undefined} other
+   * @param {Schema.Group<O>} group
+   */
+  includesWith(self, other, group) {
+    return self === undefined
+      ? true
+      : other === undefined
+      ? false
+      : group.includes(self, other)
+  }
 }
 
 /**
  * @template {unknown} O
  * @template [I=unknown]
- * @extends {API<O, I, {reader:Schema.Reader<O, I>, value:O & Schema.NotUndefined<O>}>}
+ * @extends {API<O, I, {reader:Schema.GroupReader<O, I>, value:O & Schema.NotUndefined<O>}>}
  * @implements {Schema.DefaultSchema<O, I>}
  */
 class Default extends API {
@@ -283,6 +334,18 @@ class Default extends API {
       )
     }
   }
+
+  /**
+   *
+   * @param {O} self
+   * @param {O} other
+   * @param {object} options
+   * @param {Schema.Group<O>} options.reader
+   */
+  includesWith(self, other, { reader: group }) {
+    return group.includes(self, other)
+  }
+
   toString() {
     return `${this.settings.reader}.default(${JSON.stringify(
       this.settings.value
@@ -297,7 +360,7 @@ class Default extends API {
 /**
  * @template O
  * @template [I=unknown]
- * @param {Schema.Reader<O, I>} schema
+ * @param {Schema.GroupReader<O, I>} schema
  * @returns {Schema.Schema<O|undefined, I>}
  */
 export const optional = schema => new Optional(schema)
@@ -305,7 +368,7 @@ export const optional = schema => new Optional(schema)
 /**
  * @template O
  * @template [I=unknown]
- * @extends {API<O[], I, Schema.Reader<O, I>>}
+ * @extends {API<O[], I, Schema.GroupReader<O, I>>}
  * @implements {Schema.ArraySchema<O, I>}
  */
 class ArrayOf extends API {
@@ -329,6 +392,34 @@ class ArrayOf extends API {
     }
     return results
   }
+
+  /**
+   *
+   * @param {O[]} self
+   * @param {O[]} other
+   * @param {Schema.Group<O>} group
+   */
+  includesWith(self, other, group) {
+    // If arrays are of different length it is not obvious which semantics to
+    // apply. With set semantics array with more elements includes array with
+    // subset of it's elements. With structural (sub-typing) semantics structure
+    // with subset of elements would include structure with superset of elements.
+    // Here we choose treat arrays with different length as disjoint sets, so
+    // neither of two will include the other, if arrays have same length then
+    // one includes the other if each element includes the same positioned
+    // element of the other.
+    if (self.length === other.length) {
+      for (const [index, element] of other.entries()) {
+        if (!group.includes(self[index], element)) {
+          return false
+        }
+      }
+      return true
+    } else {
+      return false
+    }
+  }
+
   get element() {
     return this.settings
   }
@@ -340,13 +431,13 @@ class ArrayOf extends API {
 /**
  * @template O
  * @template [I=unknown]
- * @param {Schema.Reader<O, I>} schema
+ * @param {Schema.GroupReader<O, I>} schema
  * @returns {Schema.ArraySchema<O, I>}
  */
 export const array = schema => new ArrayOf(schema)
 
 /**
- * @template {Schema.Reader<unknown, I>} T
+ * @template {Schema.GroupReader<unknown, I>} T
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
  * @extends {API<Schema.InferTuple<U>, I, U>}
@@ -381,6 +472,21 @@ class Tuple extends API {
     return /** @type {Schema.InferTuple<U>} */ (results)
   }
 
+  /**
+   *
+   * @param {Schema.InferTuple<U>} self
+   * @param {Schema.InferTuple<U>} other
+   * @param {U} shape
+   */
+  includesWith(self, other, shape) {
+    for (const [index, group] of shape.entries()) {
+      if (!group.includes(self[index], other[index])) {
+        return false
+      }
+    }
+    return true
+  }
+
   /** @type {U} */
   get shape() {
     return this.settings
@@ -392,7 +498,7 @@ class Tuple extends API {
 }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
+ * @template {Schema.GroupReader<unknown, I>} T
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
  * @param {U} shape
@@ -439,7 +545,7 @@ const createEnum = variants =>
 export { createEnum as enum }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
+ * @template {Schema.GroupReader<unknown, I>} T
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
  * @extends {API<Schema.InferUnion<U>, I, U>}
@@ -469,10 +575,28 @@ class Union extends API {
   toString() {
     return `union([${this.variants.map(type => type.toString()).join(', ')}])`
   }
+
+  /**
+   * @param {Schema.InferUnion<U>} self
+   * @param {Schema.InferUnion<U>} other
+   * @param {U} variants
+   */
+  includesWith(self, other, variants) {
+    for (const group of variants) {
+      // try catch here is really uncomfortable, but unfortunately right now
+      // we have no better way because `self` maybe of variant A and `other` may
+      // be of variant B and since we don't know which one is which there is
+      // no way for us to compare.
+      try {
+        return group.includes(self, other)
+      } catch {}
+    }
+    return false
+  }
 }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
+ * @template {Schema.GroupReader<unknown, I>} T
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
  * @param {U} variants
@@ -483,24 +607,24 @@ const union = variants => new Union(variants)
 /**
  * @template T, U
  * @template [I=unknown]
- * @param {Schema.Reader<T, I>} left
- * @param {Schema.Reader<U, I>} right
+ * @param {Schema.GroupReader<T, I>} left
+ * @param {Schema.GroupReader<U, I>} right
  * @returns {Schema.Schema<T|U, I>}
  */
 export const or = (left, right) => union([left, right])
 
 /**
- * @template {Schema.Reader<unknown, I>} T
+ * @template {Schema.GroupReader<unknown, I>} T
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
- * @extends {API<Schema.InferIntesection<U>, I, U>}
- * @implements {Schema.Schema<Schema.InferIntesection<U>, I>}
+ * @extends {API<Schema.InferIntersection<U>, I, U>}
+ * @implements {Schema.Schema<Schema.InferIntersection<U>, I>}
  */
 class Intersection extends API {
   /**
    * @param {I} input
    * @param {U} schemas
-   * @returns {Schema.ReadResult<Schema.InferIntesection<U>>}
+   * @returns {Schema.ReadResult<Schema.InferIntersection<U>>}
    */
   readWith(input, schemas) {
     const causes = []
@@ -513,7 +637,21 @@ class Intersection extends API {
 
     return causes.length > 0
       ? new IntersectionError({ causes })
-      : /** @type {Schema.ReadResult<Schema.InferIntesection<U>>} */ (input)
+      : /** @type {Schema.ReadResult<Schema.InferIntersection<U>>} */ (input)
+  }
+
+  /**
+   * @param {Schema.InferIntersection<U>} self
+   * @param {Schema.InferIntersection<U>} other
+   * @param {U} schemas
+   */
+  includesWith(self, other, schemas) {
+    for (const group of schemas) {
+      if (!group.includes(self, other)) {
+        return false
+      }
+    }
+    return true
   }
   toString() {
     return `intersection([${this.settings
@@ -523,19 +661,19 @@ class Intersection extends API {
 }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
+ * @template {Schema.GroupReader<unknown, I>} T
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
  * @param {U} variants
- * @returns {Schema.Schema<Schema.InferIntesection<U>, I>}
+ * @returns {Schema.Schema<Schema.InferIntersection<U>, I>}
  */
 export const intersection = variants => new Intersection(variants)
 
 /**
  * @template T, U
  * @template [I=unknown]
- * @param {Schema.Reader<T, I>} left
- * @param {Schema.Reader<U, I>} right
+ * @param {Schema.GroupReader<T, I>} left
+ * @param {Schema.GroupReader<U, I>} right
  * @returns {Schema.Schema<T & U, I>}
  */
 export const and = (left, right) => intersection([left, right])
@@ -599,6 +737,15 @@ class UnknownNumber extends API {
    */
   refine(schema) {
     return new RefinedNumber({ base: this, schema })
+  }
+
+  /**
+   *
+   * @param {O} self
+   * @param {O} other
+   */
+  includesWith(self, other) {
+    return self >= other
   }
 }
 
@@ -782,6 +929,14 @@ class UnknownString extends API {
    */
   endsWith(suffix) {
     return this.refine(endsWith(suffix))
+  }
+
+  /**
+   * @param {O} self
+   * @param {O} other
+   */
+  includesWith(self, other) {
+    return self.includes(other)
   }
   toString() {
     return `string()`
@@ -968,7 +1123,7 @@ class Literal extends API {
 export const literal = value => new Literal(value)
 
 /**
- * @template {{[key:string]: Schema.Reader}} U
+ * @template {{[key:string]: Schema.GroupReader}} U
  * @template [I=unknown]
  * @extends {API<Schema.InferStruct<U>, I, U>}
  */
@@ -1008,6 +1163,22 @@ class Struct extends API {
     return struct
   }
 
+  /**
+   * @param {Schema.InferStruct<U>} self
+   * @param {Schema.InferStruct<U>} other
+   * @param {U} shape
+   */
+  includesWith(self, other, shape) {
+    for (const [key, group] of Object.entries(shape)) {
+      const name = /** @type {keyof self} */ (key)
+      if (!group.includes(self[name], other[name])) {
+        return false
+      }
+    }
+
+    return true
+  }
+
   /** @type {U} */
   get shape() {
     // @ts-ignore - We declared `settings` private but we access it here
@@ -1043,16 +1214,16 @@ class Struct extends API {
 
 /**
  * @template {null|boolean|string|number} T
- * @template {{[key:string]: T|Schema.Reader}} U
- * @template {{[K in keyof U]: U[K] extends Schema.Reader ? U[K] : Schema.LiteralSchema<U[K] & T>}} V
+ * @template {{[key:string]: T|Schema.GroupReader}} U
+ * @template {{[K in keyof U]: U[K] extends Schema.GroupReader ? U[K] : Schema.LiteralSchema<U[K] & T>}} V
  * @template [I=unknown]
  * @param {U} fields
  * @returns {Schema.StructSchema<V, I>}
  */
 export const struct = fields => {
   const shape =
-    /** @type {{[K in keyof U]: Schema.Reader<unknown, unknown>}} */ ({})
-  /** @type {[keyof U & string, T|Schema.Reader][]} */
+    /** @type {{[K in keyof U]: Schema.GroupReader<unknown, unknown>}} */ ({})
+  /** @type {[keyof U & string, T|Schema.GroupReader][]} */
   const entries = Object.entries(fields)
 
   for (const [key, field] of entries) {

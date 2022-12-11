@@ -8,6 +8,27 @@ export interface Reader<
   read(input: I): Result<O, X>
 }
 
+export interface GroupReader<
+  O = unknown,
+  I = unknown,
+  X extends { error: true } = Error,
+  Q = O
+> extends Reader<O, I, X>,
+    Group<O, Q> {}
+
+export interface Group<T, I = T> {
+  /**
+   * Returns `true` if given `group` contains `members`.
+   */
+  includes(group: I, members: T): boolean
+}
+
+export interface DerivedSchema<O, B, I, X extends { error: true }>
+  extends Reader<O, I, X>,
+    Group<B, O> {
+  derivedFrom: GroupReader<B>
+}
+
 export type { Error }
 
 export type ReadResult<T, X extends { error: true } = Error> = Result<T, X>
@@ -15,7 +36,8 @@ export type ReadResult<T, X extends { error: true } = Error> = Result<T, X>
 export interface Schema<
   O extends unknown = unknown,
   I extends unknown = unknown
-> extends Reader<O, I> {
+> extends Reader<O, I>,
+    Group<O, O> {
   optional(): Schema<O | undefined, I>
   nullable(): Schema<O | null, I>
   array(): Schema<O[], I>
@@ -28,6 +50,10 @@ export interface Schema<
 
   is(value: unknown): value is O
   from(value: I): O
+
+  derive<Q, I, X extends { error: true }, U>(
+    schema: GroupReader<Q, I, X, U>
+  ): DerivedSchema<Q, O, I, X>
 }
 
 export interface DefaultSchema<
@@ -95,7 +121,7 @@ export type Float = number & Phantom<{ typeof: 'float' }>
 
 export type Infer<T extends Reader> = T extends Reader<infer T, any> ? T : never
 
-export type InferIntesection<U extends [Reader, ...Reader[]]> = {
+export type InferIntersection<U extends [Reader, ...Reader[]]> = {
   [K in keyof U]: (input: Infer<U[K]>) => void
 }[number] extends (input: infer T) => void
   ? T

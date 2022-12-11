@@ -34,6 +34,19 @@ class URISchema extends Schema.API {
       return Schema.error(`Invalid URI`)
     }
   }
+
+  /**
+   *
+   * @param {API.URI<O['protocol']>} self
+   * @param {API.URI<O['protocol']>} other
+   */
+  includes(self, other) {
+    return self === other
+      ? true
+      : // Ensure that `self` has trailing space so that
+        // file://a doesn't include file://ab/c
+        other.startsWith(self.endsWith('/') ? self : `${self}/`)
+  }
 }
 
 const schema = new URISchema({})
