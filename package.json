@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
+    "packages/agent",
     "packages/interface",
     "packages/core",
     "packages/client",
