@@ -14,6 +14,7 @@ import {
   UCANOptions,
   DIDKey,
   Verifier,
+  API,
 } from './lib.js'
 
 export interface Source {
@@ -429,6 +430,8 @@ export interface UnavailableProof extends Failure {
 export interface DIDResolutionError extends Failure {
   readonly name: 'DIDResolutionError'
   readonly did: UCAN.DID
+
+  readonly cause?: Unauthorized
 }
 
 export interface Expired extends Failure {
@@ -463,7 +466,11 @@ export type InvalidProof =
 
 export interface Unauthorized extends Failure {
   name: 'Unauthorized'
-  cause: InvalidCapability | InvalidProof | InvalidClaim | UnfoundedClaim
+
+  delegationErrors: DelegationError[]
+  unknownCapabilities: Capability[]
+  invalidProofs: InvalidProof[]
+  failedProofs: InvalidClaim[]
 }
 
 export interface InvalidClaim extends Failure {
@@ -472,8 +479,4 @@ export interface InvalidClaim extends Failure {
   delegation: Delegation
 
   message: string
-}
-
-export interface UnfoundedClaim extends Failure {
-  name: 'UnfoundedClaim'
 }

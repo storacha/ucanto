@@ -119,3 +119,77 @@ test('delegated ./update', async () => {
     },
   })
 })
+
+test('fail without ./update proof', async () => {
+  const account = alice.withDID('did:mailto:alice@web.mail')
+
+  const inv = claim.invoke({
+    audience: w3,
+    issuer: account,
+    with: account.did(),
+  })
+
+  const result = await access(await inv.delegate(), {
+    authority: w3,
+    capability: claim,
+    principal: Verifier,
+  })
+
+  assert.containSubset(result, {
+    error: true,
+    name: 'Unauthorized',
+  })
+
+  assert.match(
+    result.toString(),
+    /Unable to resolve 'did:mailto:alice@web.mail'/
+  )
+})
+
+test('fail invalid ./update proof', async () => {
+  const account = alice.withDID('did:mailto:alice@web.mail')
+  const service = await ed25519.generate()
+
+  const auth = await update.delegate({
+    issuer: service,
+    audience: account,
+    with: w3.did(),
+    nb: { key: alice.did() },
+    proofs: [
+      await Core.delegate({
+        issuer: w3,
+        audience: service,
+        capabilities: [
+          {
+            with: w3.toDIDKey(),
+            can: '*',
+          },
+        ],
+      }),
+    ],
+  })
+
+  const request = claim.invoke({
+    audience: w3,
+    issuer: account,
+    with: account.did(),
+    expiration: Infinity,
+    proofs: [auth],
+  })
+
+  const result = await access(await request.delegate(), {
+    authority: w3,
+    capability: claim,
+    principal: Verifier,
+  })
+
+  assert.containSubset(result, {
+    error: true,
+    name: 'Unauthorized',
+  })
+
+  console.log(
+    result.toString(),
+    /did:web:web3.storage is not contained by did:dns:web3.storage/
+  )
+})

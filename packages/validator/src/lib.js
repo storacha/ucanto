@@ -146,10 +146,6 @@ const resolveSources = async ({ delegation }, config) => {
 const isSelfIssued = (capability, issuer) => capability.with === issuer
 
 /**
- * @template {{[key:string]: {key: API.DIDKey}}} Docs
- */
-
-/**
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {R} URI
@@ -158,52 +154,8 @@ const isSelfIssued = (capability, issuer) => capability.with === issuer
  * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} config
  * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
  */
-export const access = async (
-  invocation,
-  {
-    authority,
-    canIssue = isSelfIssued,
-    resolveDID = failDIDResolution,
-    principal,
-    resolve = unavailable,
-    capability,
-  }
-) => {
-  const config = {
-    canIssue,
-    resolve,
-    principal,
-    capability,
-    authority,
-    resolveDID,
-  }
-
-  const claim = capability.match({
-    capability: invocation.capabilities[0],
-    delegation: invocation,
-    index: 0,
-  })
-
-  if (claim.error) {
-    return new Unauthorized(claim)
-  }
-  const check = await validate(invocation, config)
-  if (check.error) {
-    return new Unauthorized(check)
-  }
-
-  const match = claim.prune(config)
-  if (match == null) {
-    return new Authorization(claim, [])
-  } else {
-    const result = await authorize(match, config)
-    if (result.error) {
-      return new Unauthorized(result)
-    } else {
-      return new Authorization(claim, [result])
-    }
-  }
-}
+export const access = async (invocation, { capability, ...config }) =>
+  claim(capability, [invocation], config)
 
 /**
  * @template {API.Ability} A
@@ -272,15 +224,13 @@ export const claim = async (
     }
   }
 
-  return new Unauthorized(
-    new UnfoundedClaim({
-      capability,
-      delegationErrors,
-      unknownCapabilities,
-      invalidProofs,
-      failedProofs,
-    })
-  )
+  return new Unauthorized({
+    capability,
+    delegationErrors,
+    unknownCapabilities,
+    invalidProofs,
+    failedProofs,
+  })
 }
 
 /**
@@ -367,7 +317,7 @@ class ProofError extends Failure {
   }
   describe() {
     return [
-      `Can not derive from prf:${this.index} - ${this.proof} because:`,
+      `Capability can not be derived from prf:${this.index} - ${this.proof} because:`,
       li(this.cause.message),
     ].join(`\n`)
   }
@@ -395,9 +345,6 @@ class InvalidClaim extends Failure {
   get issuer() {
     return this.delegation.issuer
   }
-  get capability() {
-    return this.info.match.value
-  }
   get delegation() {
     return this.info.match.source[0].delegation
   }
@@ -413,7 +360,7 @@ class InvalidClaim extends Failure {
     )
 
     return [
-      `Claimed capability ${this.info.match} is invalid`,
+      `Capability ${this.info.match} is not authorized because:`,
       li(`Capability can not be (self) issued by '${this.issuer.did()}'`),
       ...(errors.length > 0 ? errors : [li(`Delegated capability not found`)]),
       ...(unknown.length > 0
@@ -426,30 +373,8 @@ class InvalidClaim extends Failure {
 /**
  * @implements {API.Unauthorized}
  */
+
 class Unauthorized extends Failure {
-  /**
-   * @param {API.InvalidCapability | API.InvalidProof | API.InvalidClaim | API.UnfoundedClaim} cause
-   */
-  constructor(cause) {
-    super()
-    /** @type {"Unauthorized"} */
-    this.name = 'Unauthorized'
-    this.cause = cause
-  }
-  get message() {
-    return this.cause.message
-  }
-  toJSON() {
-    const { error, name, message, cause, stack } = this
-    return { error, name, message, cause, stack }
-  }
-}
-
-/**
- * @implements {API.UnfoundedClaim}
- */
-
-class UnfoundedClaim extends Failure {
   /**
    * @param {{
    * capability: API.CapabilityParser
@@ -459,27 +384,37 @@ class UnfoundedClaim extends Failure {
    * failedProofs: API.InvalidClaim[]
    * }} cause
    */
-  constructor(cause) {
+  constructor({
+    capability,
+    delegationErrors,
+    unknownCapabilities,
+    invalidProofs,
+    failedProofs,
+  }) {
     super()
-    /** @type {"UnfoundedClaim"} */
-    this.name = 'UnfoundedClaim'
-    this.info = cause
+    /** @type {"Unauthorized"} */
+    this.name = 'Unauthorized'
+    this.capability = capability
+    this.delegationErrors = delegationErrors
+    this.unknownCapabilities = unknownCapabilities
+    this.invalidProofs = invalidProofs
+    this.failedProofs = failedProofs
   }
 
   describe() {
     const errors = [
-      ...this.info.failedProofs.map(error => li(error.message)),
-      ...this.info.delegationErrors.map(error => li(error.message)),
-      ...this.info.invalidProofs.map(error => li(error.message)),
+      ...this.failedProofs.map(error => li(error.message)),
+      ...this.delegationErrors.map(error => li(error.message)),
+      ...this.invalidProofs.map(error => li(error.message)),
     ]
 
-    const unknown = this.info.unknownCapabilities.map(c =>
-      li(JSON.stringify(c))
-    )
+    const unknown = this.unknownCapabilities.map(c => li(JSON.stringify(c)))
 
     return [
-      `Claimed capability ${this.info.capability} is invalid`,
-      ...(errors.length > 0 ? errors : [li(`Delegated capability not found`)]),
+      `Claim ${this.capability} is not authorized`,
+      ...(errors.length > 0
+        ? errors
+        : [li(`No matching delegated capability found`)]),
       ...(unknown.length > 0
         ? [li(`Encountered unknown capabilities\n${unknown.join('\n')}`)]
         : []),
@@ -545,12 +480,14 @@ const resolveDID = async (did, delegation, config) => {
   } else {
     // First we attempt to resolve key from the embedded proofs
     const local = await resolveDIDFromProofs(did, delegation, config)
-    const result = local?.error
-      ? // If failed to resolve because there is an invalid proof propagate error
-        local
+    const result = !local?.error
+      ? local
+      : // If failed to resolve because there is an invalid proof propagate error
+      (local?.cause?.failedProofs?.length || 0) > 0
+      ? local
       : // otherwise either use resolved key or if not found attempt to resolve
         // did externally
-        local || (await config.resolveDID(did))
+        await config.resolveDID(did)
     return result.error ? result : config.principal.parse(result).withDID(did)
   }
 }
@@ -559,7 +496,7 @@ const resolveDID = async (did, delegation, config) => {
  * @param {API.DID} did
  * @param {API.Delegation} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<API.DIDKey|null, API.DIDResolutionError>>}
+ * @returns {Promise<API.Result<API.DIDKey, API.DIDResolutionError>>}
  */
 const resolveDIDFromProofs = async (did, delegation, config) => {
   const update = Top.derive({
@@ -574,8 +511,6 @@ const resolveDIDFromProofs = async (did, delegation, config) => {
   const result = await claim(update, delegation.proofs, config)
   return !result.error
     ? result.match.value.nb.key
-    : result.cause.name === 'UnknownCapability'
-    ? null
     : new DIDResolutionError(did, result)
 }
 
