@@ -38,15 +38,14 @@ test('invocation', async () => {
     ],
   })
   const result = await Access.link(invocation, context)
+
   assert.containSubset(result, {
     error: true,
     name: 'Unauthorized',
-    cause: {
-      name: 'InvalidClaim',
-      message: `Claimed capability {"can":"identity/link","with":"mailto:alice@web.mail"} is invalid
-  - Capability can not be (self) issued by '${alice.did()}'
-  - Delegated capability not found`,
-    },
+    message: `Claim {"can":"identity/link"} is not authorized
+  - Capability {"can":"identity/link","with":"mailto:alice@web.mail"} is not authorized because:
+    - Capability can not be (self) issued by '${alice.did()}'
+    - Delegated capability not found`,
   })
 })
 
