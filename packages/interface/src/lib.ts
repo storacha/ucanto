@@ -18,7 +18,7 @@ import {
   MulticodecCode,
   SigAlg,
 } from '@ipld/dag-ucan'
-import { Link, Block as IPLDBlock } from 'multiformats'
+import { Link, Block as IPLDBlock, ToString, UnknownLink } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
 import {
   CanIssue,
@@ -143,6 +143,9 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   readonly bytes: ByteView<UCAN.UCAN<C>>
   readonly data: UCAN.View<C>
 
+  version: UCAN.Version
+  signature: UCAN.Signature
+
   asCID: UCANLink<C>
 
   export(): IterableIterator<Block>
@@ -158,7 +161,33 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   facts: Fact[]
   proofs: Proof[]
   iterate(): IterableIterator<Delegation>
+
+  toJSON(): DelegationJSON<this>
 }
+
+export interface DelegationJSON<T extends Delegation>
+  extends LinkJSON<T['cid']> {
+  version: T['version']
+  issuer: PrincipalJSON<T['issuer']>
+  audience: PrincipalJSON<T['audience']>
+  capabilities: T['capabilities']
+  expiration: UCAN.UTCUnixTimestamp | null
+  notBefore?: UCAN.UTCUnixTimestamp
+  nonce?: UCAN.Nonce
+  facts: Fact[]
+  proofs: LinkJSON[]
+  signature: { '/': { bytes: ToString<T['signature']> } }
+}
+
+export interface LinkJSON<T extends UnknownLink = UnknownLink> {
+  '/': ToString<T>
+}
+
+export interface BytesJSON<T extends Uint8Array = Uint8Array> {
+  '/': { bytes: ToString<T, 'm'> }
+}
+
+export type PrincipalJSON<T extends Principal> = DID & Phantom<T>
 
 /**
  * An Invocation represents a UCAN that can be presented to a service provider to

@@ -1,6 +1,7 @@
 import * as UCAN from '@ipld/dag-ucan'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
+import { base64 } from 'multiformats/bases/base64'
 
 /**
  * @deprecated
@@ -130,7 +131,60 @@ export class Delegation {
   iterate() {
     return it(this)
   }
+
+  /**
+   * @returns {API.DelegationJSON<this>}
+   */
+
+  toJSON() {
+    return toJSON(this)
+  }
 }
+
+/**
+ * @template {API.Delegation} T
+ * @param {T} delegation
+ * @returns {API.DelegationJSON<T>}
+ */
+export const toJSON = ({
+  cid,
+  issuer,
+  audience,
+  version,
+  signature,
+  proofs,
+  capabilities,
+  expiration,
+  notBefore,
+  nonce,
+  facts,
+}) => {
+  return {
+    ...Link.toJSON(cid),
+    version,
+    issuer: principalToJSON(issuer),
+    audience: principalToJSON(audience),
+    capabilities,
+    expiration: /** @type {API.UCAN.UTCUnixTimestamp|null} */ (expiration),
+    notBefore,
+    nonce,
+    facts,
+    proofs: proofs.map(proof =>
+      Link.toJSON(isDelegation(proof) ? proof.cid : proof)
+    ),
+    signature: {
+      '/': { bytes: base64.baseEncode(signature) },
+    },
+  }
+}
+
+/**
+ * @template {API.Principal} T
+ * @param {T} principal
+ * @returns {API.PrincipalJSON<T>}
+ */
+
+const principalToJSON = principal => principal.did()
 
 /**
  * @param {API.Delegation} delegation
