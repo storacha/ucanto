@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import { Delegation, isDelegation, UCAN } from '@ucanto/core'
+import { isDelegation, UCAN } from '@ucanto/core'
 import { capability } from './capability.js'
 import * as Schema from './schema.js'
 import {

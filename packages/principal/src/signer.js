@@ -5,7 +5,7 @@ import * as API from '@ucanto/interface'
  * @template {API.SignerImporter} R
  * @param {L} left
  * @param {R} right
- * @returns {{from: API.Intersection<(L|R)['from']>}}
+ * @returns {API.CompositeImporter<[L, R]>}
  */
 export const or = (left, right) => new Importer([left, right])
 
@@ -37,40 +37,36 @@ class Importer {
  * @param {Importers} importers
  */
 const create = importers => {
-  const from = /** @type {API.Intersection<Importers[number]['from']>} */ (
-    /**
-     * @template {API.DID} ID - DID that can be imported, which may be a type union.
-     * @template {API.SigAlg} Alg - Multicodec code corresponding to signature algorithm.
-     * @param {API.SignerArchive<ID, Alg>} archive
-     * @returns {API.Signer<ID, Alg>}
-     */
-    archive => {
-      if (archive.id.startsWith('did:key:')) {
-        return /** @type {API.Signer<ID, Alg>} */ (
-          importWith(archive, importers)
-        )
-      } else {
-        for (const [name, key] of Object.entries(archive.keys)) {
-          const id = /** @type {API.DIDKey} */ (name)
-          const signer = /** @type {API.Signer<API.DIDKey, Alg>} */ (
-            importWith(
-              {
-                id,
-                keys: { [id]: key },
-              },
-              importers
-            )
+  /**
+   * @template {API.DID} ID - DID that can be imported, which may be a type union.
+   * @template {API.SigAlg} Alg - Multicodec code corresponding to signature algorithm.
+   * @param {API.SignerArchive<ID, Alg>} archive
+   * @returns {API.Signer<ID, Alg>}
+   */
+  const from = archive => {
+    if (archive.id.startsWith('did:key:')) {
+      return /** @type {API.Signer<ID, Alg>} */ (importWith(archive, importers))
+    } else {
+      for (const [name, key] of Object.entries(archive.keys)) {
+        const id = /** @type {API.DIDKey} */ (name)
+        const signer = /** @type {API.Signer<API.DIDKey, Alg>} */ (
+          importWith(
+            {
+              id,
+              keys: { [id]: key },
+            },
+            importers
           )
+        )
 
-          return signer.withDID(archive.id)
-        }
-
-        throw new Error(`Archive ${archive.id} contains no keys`)
+        return signer.withDID(archive.id)
       }
-    }
-  )
 
-  return from
+      throw new Error(`Archive ${archive.id} contains no keys`)
+    }
+  }
+
+  return /** @type {API.Intersection<Importers[number]['from']>} */ (from)
 }
 
 /**
@@ -127,6 +123,10 @@ class SignerWithDID {
    */
   did() {
     return this.verifier.did()
+  }
+
+  toDIDKey() {
+    return this.verifier.toDIDKey()
   }
 
   /**

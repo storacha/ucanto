@@ -8,7 +8,9 @@ describe('did', () => {
     const key = await ed25519.generate()
     const signer = key.withDID('did:dns:api.web3.storage')
 
-    assert.ok(signer.did().startsWith('did:dns:api.web3.storage'))
+    assert.equal(signer.did().startsWith('did:dns:api.web3.storage'), true)
+    assert.equal(signer.toDIDKey().startsWith('did:key:'), true)
+    assert.equal(signer.toDIDKey(), key.toDIDKey())
     assert.equal(signer.signatureCode, 0xd0ed)
     assert.equal(signer.signatureAlgorithm, 'EdDSA')
     assert.equal(signer.signer, signer)
@@ -26,6 +28,19 @@ describe('did', () => {
     assert.equal(signer.signatureAlgorithm, 'EdDSA')
     assert.equal(signer.signatureCode, 0xd0ed)
     assert.equal(signer.did(), signer.verifier.did())
+  })
+
+  it('withDID RSA', async () => {
+    const key = await RSA.generate()
+    const signer = key.withDID('did:web:api.web3.storage')
+
+    assert.equal(signer.did(), 'did:web:api.web3.storage')
+    assert.equal(key.did(), signer.toDIDKey())
+    assert.equal(key.toDIDKey(), key.did())
+
+    const { verifier } = signer
+    assert.equal(verifier.did(), signer.did())
+    assert.equal(verifier.toDIDKey(), key.did())
   })
 
   it('can archive 🔁 restore rsa unextractable', async () => {
@@ -109,15 +124,11 @@ describe('did', () => {
     assert.equal(await signer.verify(payload, signature), true)
   })
 
-  it('can parse verifier', async () => {
+  it.skip('can parse verifier', async () => {
     const key = await ed25519.generate()
     const principal = key.withDID('did:dns:api.web3.storage')
     const payload = utf8.encode('hello world')
-    const verifier = Verifier.parse(principal.did(), {
-      resolveDID: async _dns => {
-        return key.did()
-      },
-    })
+    const verifier = Verifier.parse(principal.did())
 
     assert.equal(verifier.did(), 'did:dns:api.web3.storage')
     const signature = await principal.sign(payload)
@@ -132,12 +143,15 @@ describe('did', () => {
 
   it('fails to verify without resolver', async () => {
     const key = await ed25519.generate()
-    const principal = key.withDID('did:dns:api.web3.storage')
+    const principal = key.withDID('did:web:api.web3.storage')
     const payload = utf8.encode('hello world')
-    const verifier = Verifier.parse('did:dns:api.web3.storage')
     const signature = await principal.sign(payload)
+    assert.throws(() => Verifier.parse(principal.did()))
+    const verifier = Verifier.parse(principal.toDIDKey())
 
-    assert.equal(await verifier.verify(payload, signature), false)
+    assert.equal(await principal.verifier.verify(payload, signature), true)
+
+    assert.equal(await verifier.verify(payload, signature), true)
   })
 
   it('verifier can resolve', async () => {

@@ -8,7 +8,7 @@ import * as SPKI from './rsa/spki.js'
 import * as PKCS8 from './rsa/pkcs8.js'
 import * as PrivateKey from './rsa/private-key.js'
 import * as PublicKey from './rsa/public-key.js'
-import { withDID, or } from './verifier.js'
+import * as Verifier from './verifier.js'
 import * as Signer from './signer.js'
 export * from './rsa/type.js'
 
@@ -109,10 +109,18 @@ export const from = ({ id, keys }) => {
         verifier: RSAVerifier.parse(did),
       })
     }
+  } else {
+    throw new TypeError(
+      `RSA can not import from ${id} archive, try generic Signer instead`
+    )
   }
-
-  throw new TypeError(`Unsupported archive format`)
 }
+
+/**
+ * @template {API.SignerImporter} Other
+ * @param {Other} other
+ */
+export const or = other => Signer.or({ from }, other)
 
 /**
  * @param {EncodedSigner} bytes
@@ -160,7 +168,11 @@ class RSAVerifier {
    * @returns {API.Verifier<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return withDID(this, id)
+    return Verifier.withDID(this, id)
+  }
+
+  toDIDKey() {
+    return this.did()
   }
 
   /**
@@ -191,7 +203,7 @@ class RSAVerifier {
    * @param {API.PrincipalParser} other
    */
   static or(other) {
-    return or(this, other)
+    return Verifier.or(this, other)
   }
 
   /** @type {typeof verifierCode} */
@@ -240,8 +252,8 @@ class RSAVerifier {
   }
 }
 
-/** @type {API.ComposedDIDParser} */
-export const Verifier = RSAVerifier
+const RSAVerifier$ = /** @type {API.ComposedDIDParser} */ (RSAVerifier)
+export { RSAVerifier as Verifier }
 
 /**
  * @typedef {API.ByteView<API.Signer<API.DID<'key'>, typeof signatureCode> & CryptoKey>} EncodedSigner
@@ -285,6 +297,11 @@ class RSASigner {
   did() {
     return this.verifier.did()
   }
+
+  toDIDKey() {
+    return this.verifier.toDIDKey()
+  }
+
   /**
    * @template T
    * @param {API.ByteView<T>} payload

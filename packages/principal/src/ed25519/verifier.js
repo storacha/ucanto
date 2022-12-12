@@ -123,17 +123,9 @@ class Ed25519Verifier extends Uint8Array {
   withDID(id) {
     return Verifier.withDID(this, id)
   }
-}
 
-/**
- * @param {API.DIDKey} did
- * @return {API.EdVerifier}
- */
-export const fromDID = did => {
-  if (did.startsWith('did:key:')) {
-    throw new Error(`Expected did:key instead got ${did}`)
-  } else {
-    return decode(DID.parse(did))
+  toDIDKey() {
+    return this.did()
   }
 }
 

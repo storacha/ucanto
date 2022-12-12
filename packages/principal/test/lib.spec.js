@@ -97,4 +97,43 @@ describe('PrincipalParser', () => {
       /Unsupported signer/
     )
   })
+
+  it('RSA.Verifier.or(ed25519.Verifier)', async () => {
+    const ed = await ed25519.generate()
+    const rsa = await RSA.generate()
+    const Verifier = RSA.Verifier.or(ed25519.Verifier)
+
+    assert.deepEqual(Verifier.parse(ed.did()), ed.verifier)
+    assert.deepEqual(Verifier.parse(rsa.did()).did(), rsa.did())
+  })
+
+  it('Verifier.or', async () => {
+    const ed = await ed25519.generate()
+
+    const Verifier = RSA.Verifier.or(ed25519.Verifier).or({
+      parse(did) {
+        return ed.verifier.withDID(did)
+      },
+    })
+
+    const did = Verifier.parse('did:web:ucan.space')
+    assert.deepEqual(did.did(), 'did:web:ucan.space')
+    assert.deepEqual(did.toDIDKey(), ed.did())
+  })
+
+  it('Signer.or', async () => {
+    const ed = await ed25519.generate()
+
+    const Signer = RSA.or({
+      /**
+       * @param {API.SignerArchive<API.DIDKey, 0>} _archive
+       */
+      from(_archive) {
+        throw new Error('Can not do it')
+      },
+    }).or(ed25519)
+
+    const signer = Signer.from(ed.toArchive())
+    assert.deepEqual(signer.did(), ed.did())
+  })
 })

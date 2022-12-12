@@ -493,7 +493,7 @@ export type URI<P extends Protocol = Protocol> = `${P}${string}` &
   }>
 
 export interface ComposedDIDParser extends PrincipalParser {
-  or(parser: PrincipalParser): PrincipalParser
+  or(parser: PrincipalParser): ComposedDIDParser
 }
 
 /**
@@ -501,7 +501,7 @@ export interface ComposedDIDParser extends PrincipalParser {
  * by a given {@link Principal}.
  */
 export interface PrincipalParser {
-  parse(did: UCAN.DID, options?: DIDResolver): Verifier
+  parse(did: UCAN.DID): Verifier
 }
 
 export interface DIDResolver {
@@ -624,6 +624,10 @@ export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
  */
 export interface Verifier<ID extends DID = DID, Alg extends SigAlg = SigAlg>
   extends UCAN.Verifier<ID, Alg> {
+  /**
+   * Returns unwrapped did:key of this principal.
+   */
+  toDIDKey(): DIDKey
   /**
    * Wraps key of this verifier into a verifier with a different DID. This is
    * primarily used to wrap {@link VerifierKey} into a {@link Verifier} that has

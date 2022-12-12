@@ -171,6 +171,10 @@ class Ed25519Signer extends Uint8Array {
     return this.verifier.did()
   }
 
+  toDIDKey() {
+    return this.verifier.toDIDKey()
+  }
+
   /**
    * @template {API.DID} ID
    * @param {ID} id
