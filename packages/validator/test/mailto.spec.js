@@ -188,8 +188,8 @@ test('fail invalid ./update proof', async () => {
     name: 'Unauthorized',
   })
 
-  console.log(
+  assert.match(
     result.toString(),
-    /did:web:web3.storage is not contained by did:dns:web3.storage/
+    /did:web:web3.storage can not be derived from did:key/
   )
 })
