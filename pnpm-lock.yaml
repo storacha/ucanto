@@ -172,6 +172,7 @@ importers:
     specifiers:
       '@ipld/car': ^5.0.0
       '@ipld/dag-cbor': ^8.0.0
+      '@ipld/dag-json': ^9.0.1
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
       '@ucanto/core': ^4.0.2
@@ -192,6 +193,7 @@ importers:
       '@ucanto/interface': link:../interface
       multiformats: 10.0.2
     devDependencies:
+      '@ipld/dag-json': 9.0.1
       '@types/chai': 4.3.3
       '@types/mocha': 9.1.1
       '@ucanto/principal': link:../principal
@@ -472,7 +474,6 @@ packages:
     dependencies:
       cborg: 1.9.5
       multiformats: 10.0.2
-    dev: false
 
   /@ipld/dag-ucan/3.0.1:
     resolution: {integrity: sha512-71YwJeRHxwX3diPXfwiuzhJTjmJSqi8XW/x5Xglp82UqpM5xwtNojB07VhmDXTZXhKi42bZHyQIOLaca/t9IHw==}
@@ -854,7 +855,6 @@ packages:
   /cborg/1.9.5:
     resolution: {integrity: sha512-fLBv8wmqtlXqy1Yu+pHzevAIkW6k2K0ZtMujNzWphLsA34vzzg9BHn+5GmZqOJkSA9V7EMKsWrf6K976c1QMjQ==}
     hasBin: true
-    dev: false
 
   /chai-subset/1.6.0:
     resolution: {integrity: sha512-K3d+KmqdS5XKW5DWPd5sgNffL3uxdDe+6GdnJh3AYPhwnBGRY5urfvfcbRtWIvvpz+KxkL9FeBB6MZewLUNwug==}

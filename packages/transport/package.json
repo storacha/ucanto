@@ -40,6 +40,7 @@
     "@types/mocha": "^9.1.0",
     "@ucanto/principal": "^4.0.2",
     "@web-std/fetch": "^4.1.0",
+    "@ipld/dag-json": "^9.0.1",
     "c8": "^7.11.0",
     "chai": "^4.3.6",
     "mocha": "^10.1.0",
