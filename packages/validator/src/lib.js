@@ -151,18 +151,28 @@ const resolveSources = async ({ delegation }, config) => {
 const isSelfIssued = (capability, issuer) => capability.with === issuer
 
 /**
+ * Finds a valid path in a proof chain of the given `invocation` by exploring
+ * every possible option. On success an `Authorization` object is returned that
+ * illustrates the valid path. If no valid path is found `Unauthorized` error
+ * is returned detailing all explored paths and where they proved to fail.
+ *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {R} URI
  * @template {API.Caveats} C
  * @param {API.Invocation<API.Capability<A, URI, API.InferCaveats<C>>>} invocation
- * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} config
+ * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} options
  * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
  */
 export const access = async (invocation, { capability, ...config }) =>
   claim(capability, [invocation], config)
 
 /**
+ * Attempts to find a valid proof chain for the claimed `capability` given set
+ * of `proofs`. On success an `Authorization` object with detailed proof chain
+ * is returned and on failure `Unauthorized` error is returned with details on
+ * paths explored and why they have failed.
+ *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
