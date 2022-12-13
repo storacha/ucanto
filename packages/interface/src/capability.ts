@@ -367,11 +367,15 @@ export interface ProofResolver extends PrincipalOptions {
   resolve?: (proof: Link) => Await<Result<Delegation, UnavailableProof>>
 }
 
-export interface Docs {
-  [key: DID]: { key: DIDKey }
-}
-
 export interface Validator {
+  /**
+   * Validator must be provided a `Verifier` corresponding to local authority.
+   * Capability provider service will use one corresponding to own DID or it's
+   * supervisor's DID if it acts under it's authority.
+   *
+   * This allows service identified by non did:key e.g. did:web or did:dns to
+   * pass resolved key so it does not need to be resolved at runtime.
+   */
   authority: Verifier
 }
 
