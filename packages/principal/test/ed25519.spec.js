@@ -6,8 +6,6 @@ import { varint } from 'multiformats'
 describe('signing principal', () => {
   const { Signer } = Lib
 
-  /** @type {Lib.Signer.EdSigner} */
-
   it('exports', () => {
     assert.equal(Lib.code, 0x1300)
     assert.equal(Lib.name, 'Ed25519')
