@@ -126,20 +126,20 @@ export class UnavailableProof extends Failure {
   }
 }
 
-export class DIDResolutionError extends Failure {
+export class DIDKeyResolutionError extends Failure {
   /**
    * @param {API.UCAN.DID} did
    * @param {API.Unauthorized} [cause]
    */
   constructor(did, cause) {
     super()
-    this.name = the('DIDResolutionError')
+    this.name = the('DIDKeyResolutionError')
     this.did = did
     this.cause = cause
   }
   describe() {
     return [
-      `Unable to resolve '${this.did}'`,
+      `Unable to resolve '${this.did}' key`,
       ...(this.cause ? [li(`Resolution failed: ${this.cause.message}`)] : []),
     ].join('\n')
   }

@@ -11,11 +11,16 @@ import {
   DelegationError,
   Failure,
   MalformedCapability,
-  DIDResolutionError,
+  DIDKeyResolutionError,
   li,
 } from './error.js'
 
-export { Failure, UnavailableProof, MalformedCapability, DIDResolutionError }
+export {
+  Failure,
+  UnavailableProof,
+  MalformedCapability,
+  DIDKeyResolutionError as DIDResolutionError,
+}
 
 export { capability } from './capability.js'
 import { DID } from './schema.js'
@@ -30,9 +35,9 @@ const unavailable = proof => new UnavailableProof(proof)
 /**
  *
  * @param {UCAN.DID} did
- * @returns {API.DIDResolutionError}
+ * @returns {API.DIDKeyResolutionError}
  */
-const failDIDResolution = did => new DIDResolutionError(did)
+const failDIDKeyResolution = did => new DIDKeyResolutionError(did)
 
 /**
  * @param {Required<API.ClaimOptions>} config
@@ -172,7 +177,7 @@ export const claim = async (
   {
     authority,
     principal,
-    resolveDID = failDIDResolution,
+    resolveDIDKey = failDIDKeyResolution,
     canIssue = isSelfIssued,
     resolve = unavailable,
   }
@@ -183,7 +188,7 @@ export const claim = async (
     principal,
     capability,
     authority,
-    resolveDID,
+    resolveDIDKey,
   }
 
   const invalidProofs = []
@@ -430,7 +435,7 @@ class Unauthorized extends Failure {
  * @template {API.Delegation} T
  * @param {T} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<T, API.InvalidProof|API.DIDResolutionError>>}
+ * @returns {Promise<API.Result<T, API.InvalidProof|API.DIDKeyResolutionError>>}
  */
 const validate = async (delegation, config) => {
   if (UCAN.isExpired(delegation.data)) {
@@ -452,11 +457,11 @@ const validate = async (delegation, config) => {
  * @template {API.Delegation} T
  * @param {T} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<T, API.InvalidSignature|API.DIDResolutionError>>}
+ * @returns {Promise<API.Result<T, API.InvalidSignature|API.DIDKeyResolutionError>>}
  */
 const verifySignature = async (delegation, config) => {
   const did = delegation.issuer.did()
-  const issuer = await resolveDID(did, delegation, config)
+  const issuer = await resolveVerifier(did, delegation, config)
 
   if (issuer.error) {
     return issuer
@@ -470,9 +475,9 @@ const verifySignature = async (delegation, config) => {
  * @param {API.DID} did
  * @param {API.Delegation} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<API.Verifier, API.DIDResolutionError>>}
+ * @returns {Promise<API.Result<API.Verifier, API.DIDKeyResolutionError>>}
  */
-const resolveDID = async (did, delegation, config) => {
+const resolveVerifier = async (did, delegation, config) => {
   if (did === config.authority.did()) {
     return config.authority
   } else if (did.startsWith('did:key:')) {
@@ -487,7 +492,7 @@ const resolveDID = async (did, delegation, config) => {
       ? local
       : // otherwise either use resolved key or if not found attempt to resolve
         // did externally
-        await config.resolveDID(did)
+        await config.resolveDIDKey(did)
     return result.error ? result : config.principal.parse(result).withDID(did)
   }
 }
@@ -496,7 +501,7 @@ const resolveDID = async (did, delegation, config) => {
  * @param {API.DID} did
  * @param {API.Delegation} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<API.DIDKey, API.DIDResolutionError>>}
+ * @returns {Promise<API.Result<API.DIDKey, API.DIDKeyResolutionError>>}
  */
 const resolveDIDFromProofs = async (did, delegation, config) => {
   const update = Top.derive({
@@ -511,7 +516,7 @@ const resolveDIDFromProofs = async (did, delegation, config) => {
   const result = await claim(update, delegation.proofs, config)
   return !result.error
     ? result.match.value.nb.key
-    : new DIDResolutionError(did, result)
+    : new DIDKeyResolutionError(did, result)
 }
 
 const Top = capability({

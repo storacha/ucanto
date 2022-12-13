@@ -5,7 +5,7 @@ import {
   Result,
   Failure,
   PrincipalParser,
-  DIDResolver,
+  PrincipalResolver,
   Signer,
   URI,
   UCANLink,
@@ -380,8 +380,8 @@ export interface ValidationOptions<
 > extends Partial<CanIssue>,
     Validator,
     PrincipalOptions,
-    ProofResolver,
-    DIDResolver {
+    PrincipalResolver,
+    ProofResolver {
   capability: CapabilityParser<Match<C, any>>
 }
 
@@ -389,8 +389,8 @@ export interface ClaimOptions
   extends Partial<CanIssue>,
     Validator,
     PrincipalOptions,
-    ProofResolver,
-    DIDResolver {}
+    PrincipalResolver,
+    ProofResolver {}
 
 export interface DelegationError extends Failure {
   name: 'InvalidClaim'
@@ -427,8 +427,8 @@ export interface UnavailableProof extends Failure {
   readonly link: UCANLink
 }
 
-export interface DIDResolutionError extends Failure {
-  readonly name: 'DIDResolutionError'
+export interface DIDKeyResolutionError extends Failure {
+  readonly name: 'DIDKeyResolutionError'
   readonly did: UCAN.DID
 
   readonly cause?: Unauthorized
@@ -461,7 +461,7 @@ export type InvalidProof =
   | NotValidBefore
   | InvalidSignature
   | InvalidAudience
-  | DIDResolutionError
+  | DIDKeyResolutionError
   | UnavailableProof
 
 export interface Unauthorized extends Failure {

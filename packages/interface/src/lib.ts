@@ -26,7 +26,7 @@ import {
   InvalidAudience,
   Unauthorized,
   UnavailableProof,
-  DIDResolutionError,
+  DIDKeyResolutionError,
   ParsedCapability,
   CapabilityParser,
 } from './capability.js'
@@ -504,8 +504,15 @@ export interface PrincipalParser {
   parse(did: UCAN.DID): Verifier
 }
 
-export interface DIDResolver {
-  resolveDID?: (did: UCAN.DID) => Await<Result<DIDKey, DIDResolutionError>>
+/**
+ * A `PrincipalResolver` is used to resolve a key of the principal that is
+ * identified by DID different from did:key method. It can be passed into a
+ * UCAN validator in order to augmented it with additional DID methods support.
+ */
+export interface PrincipalResolver {
+  resolveDIDKey?: (
+    did: UCAN.DID
+  ) => Await<Result<DIDKey, DIDKeyResolutionError>>
 }
 
 /**
