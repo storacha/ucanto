@@ -1,5 +1,23 @@
 # Changelog
 
+### [4.0.3](https://www.github.com/web3-storage/ucanto/compare/client-v4.0.2...client-v4.0.3) (2022-12-14)
+
+
+### Bug Fixes
+
+* trigger releases ([a0d9291](https://www.github.com/web3-storage/ucanto/commit/a0d9291f9e20456e115fa6c7890cafe937fa511e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^4.0.2 to ^4.0.3
+  * devDependencies
+    * @ucanto/principal bumped from ^4.0.2 to ^4.0.3
+    * @ucanto/core bumped from ^4.0.2 to ^4.0.3
+    * @ucanto/transport bumped from ^4.0.2 to ^4.0.3
+
 ## [4.0.2](https://github.com/web3-storage/ucanto/compare/client-v4.0.3...client-v4.0.2) (2022-12-14)
 
 ### ⚠ BREAKING CHANGES
