@@ -1,5 +1,47 @@
 # Changelog
 
+## [4.0.2](https://github.com/web3-storage/ucanto/compare/principal-v4.1.0...principal-v4.0.2) (2022-12-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* did prinicipal ([#149](https://github.com/web3-storage/ucanto/issues/149))
+* upgrades to multiformats@10 ([#117](https://github.com/web3-storage/ucanto/issues/117))
+* switch decoder API to zod like schema API ([#108](https://github.com/web3-storage/ucanto/issues/108))
+* upgrade to ucan 0.9 ([#95](https://github.com/web3-storage/ucanto/issues/95))
+* update dag-ucan, types and names ([#90](https://github.com/web3-storage/ucanto/issues/90))
+
+### Features
+
+* did prinicipal ([#149](https://github.com/web3-storage/ucanto/issues/149)) ([4c11092](https://github.com/web3-storage/ucanto/commit/4c11092e420292af697bd5bec126112f9b961612))
+* embedded key resolution ([#168](https://github.com/web3-storage/ucanto/issues/168)) ([5e650f3](https://github.com/web3-storage/ucanto/commit/5e650f376db79c690e4771695d1ff4e6deece40e))
+* implement rsa signer / verifier ([#102](https://github.com/web3-storage/ucanto/issues/102)) ([8ed7777](https://github.com/web3-storage/ucanto/commit/8ed77770142259be03c3d6a8108365db1ab796b2))
+* switch decoder API to zod like schema API ([#108](https://github.com/web3-storage/ucanto/issues/108)) ([e2e03ff](https://github.com/web3-storage/ucanto/commit/e2e03ffeb35f00627335dbfd3e128e2cf9dcfdee))
+* update dag-ucan, types and names ([#90](https://github.com/web3-storage/ucanto/issues/90)) ([cd792c9](https://github.com/web3-storage/ucanto/commit/cd792c934fbd358d6ccfa5d02f205b14b5f2e14e))
+* update to latest dag-ucan ([#165](https://github.com/web3-storage/ucanto/issues/165)) ([20e50de](https://github.com/web3-storage/ucanto/commit/20e50de5e311781ee8dc10e32de4eb12e8df2080))
+* upgrade to ucan 0.9 ([#95](https://github.com/web3-storage/ucanto/issues/95)) ([b752b39](https://github.com/web3-storage/ucanto/commit/b752b398950120d6121badcdbb639f4dc9ce8794))
+* upgrades to multiformats@10 ([#117](https://github.com/web3-storage/ucanto/issues/117)) ([61dc4ca](https://github.com/web3-storage/ucanto/commit/61dc4cafece3365bbf60f709265ea71180f226d7))
+
+
+### Bug Fixes
+
+* ed type export ([#154](https://github.com/web3-storage/ucanto/issues/154)) ([2f14271](https://github.com/web3-storage/ucanto/commit/2f142715ec7350f57b0a43374f699695292f6edd))
+* optional field validation ([#124](https://github.com/web3-storage/ucanto/issues/124)) ([87b70d2](https://github.com/web3-storage/ucanto/commit/87b70d2d56c07f8257717fa5ef584a21eb0417c8))
+* parse should take strings ([#93](https://github.com/web3-storage/ucanto/issues/93)) ([db57d6b](https://github.com/web3-storage/ucanto/commit/db57d6bdf3ad989e4dc6e906d9b0bce4befbd735))
+
+
+### Miscellaneous Chores
+
+* release 0.0.1-beta ([d6c7e73](https://github.com/web3-storage/ucanto/commit/d6c7e73de56278e2f2c92c4a0e1a2709c92bcbf9))
+* release 4.0.2 ([e9e35df](https://github.com/web3-storage/ucanto/commit/e9e35dffeeb7e5b5e19627f791b66bbdd35d2d11))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^4.1.0 to ^4.0.2
+
 ## [4.1.0](https://github.com/web3-storage/ucanto/compare/principal-v4.0.2...principal-v4.1.0) (2022-12-14)
 
 
