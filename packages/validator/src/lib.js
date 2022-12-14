@@ -471,14 +471,14 @@ const validate = async (delegation, config) => {
  */
 const verifySignature = async (delegation, config) => {
   const did = delegation.issuer.did()
-  const issuer = await resolveVerifier(did, delegation, config)
+  const verifier = await resolveVerifier(did, delegation, config)
 
-  if (issuer.error) {
-    return issuer
+  if (verifier.error) {
+    return verifier
   }
 
-  const valid = await UCAN.verifySignature(delegation.data, issuer)
-  return valid ? delegation : new InvalidSignature(delegation)
+  const valid = await UCAN.verifySignature(delegation.data, verifier)
+  return valid ? delegation : new InvalidSignature(delegation, verifier)
 }
 
 /**
