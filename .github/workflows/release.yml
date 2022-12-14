@@ -14,7 +14,7 @@ jobs:
       releases_created: ${{ steps.release-please.outputs.releases_created }}
     steps:
       - name: Running Release Please
-        uses: google-github-actions/release-please-action@v2
+        uses: google-github-actions/release-please-action@v3
         id: release-please
         with:
           command: manifest
