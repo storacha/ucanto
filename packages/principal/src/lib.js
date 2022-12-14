@@ -1,10 +1,7 @@
 import * as ed25519 from './ed25519.js'
 import * as RSA from './rsa.js'
-import * as DID from './did.js'
-import * as Key from './key.js'
-export { from, parse } from './did.js'
 
-export const Verifier = DID
-export const Signer = DID
+export const Verifier = ed25519.Verifier.or(RSA.Verifier)
+export const Signer = ed25519.or(RSA)
 
-export { ed25519, RSA, Key, DID }
+export { ed25519, RSA }

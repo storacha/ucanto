@@ -8,8 +8,8 @@ import * as SPKI from './rsa/spki.js'
 import * as PKCS8 from './rsa/pkcs8.js'
 import * as PrivateKey from './rsa/private-key.js'
 import * as PublicKey from './rsa/public-key.js'
-import { withDID as setVerifierDID } from './verifier.js'
-import { withDID } from './signer.js'
+import * as Verifier from './verifier.js'
+import * as Signer from './signer.js'
 export * from './rsa/type.js'
 
 export const name = 'RSA'
@@ -94,20 +94,33 @@ export const generate = async ({
 }
 
 /**
- * @param {API.SignerArchive<API.DIDKey, typeof signatureCode>} archive
+ * @param {API.SignerArchive<API.DID, typeof signatureCode>} archive
  * @returns {API.RSASigner}
  */
 export const from = ({ id, keys }) => {
-  const key = keys[id]
-  if (key instanceof Uint8Array) {
-    return decode(key)
+  if (id.startsWith('did:key:')) {
+    const did = /** @type {API.DIDKey} */ (id)
+    const key = keys[did]
+    if (key instanceof Uint8Array) {
+      return decode(key)
+    } else {
+      return new UnextractableRSASigner({
+        privateKey: key,
+        verifier: RSAVerifier.parse(did),
+      })
+    }
   } else {
-    return new UnextractableRSASigner({
-      privateKey: key,
-      verifier: RSAVerifier.parse(id),
-    })
+    throw new TypeError(
+      `RSA can not import from ${id} archive, try generic Signer instead`
+    )
   }
 }
+
+/**
+ * @template {API.SignerImporter} Other
+ * @param {Other} other
+ */
+export const or = other => Signer.or({ from }, other)
 
 /**
  * @param {EncodedSigner} bytes
@@ -155,7 +168,11 @@ class RSAVerifier {
    * @returns {API.Verifier<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return setVerifierDID(this, id)
+    return Verifier.withDID(this, id)
+  }
+
+  toDIDKey() {
+    return this.did()
   }
 
   /**
@@ -175,11 +192,18 @@ class RSAVerifier {
     })
   }
   /**
-   * @param {API.DID<"key">} did
+   * @param {API.DIDKey} did
    * @returns {API.RSAVerifier}
    */
   static parse(did) {
     return RSAVerifier.decode(/** @type {Uint8Array} */ (DID.parse(did)))
+  }
+
+  /**
+   * @param {API.PrincipalParser} other
+   */
+  static or(other) {
+    return Verifier.or(this, other)
   }
 
   /** @type {typeof verifierCode} */
@@ -228,8 +252,8 @@ class RSAVerifier {
   }
 }
 
-/** @type {API.PrincipalParser} */
-export const Verifier = RSAVerifier
+const RSAVerifier$ = /** @type {API.ComposedDIDParser} */ (RSAVerifier)
+export { RSAVerifier as Verifier }
 
 /**
  * @typedef {API.ByteView<API.Signer<API.DID<'key'>, typeof signatureCode> & CryptoKey>} EncodedSigner
@@ -273,6 +297,11 @@ class RSASigner {
   did() {
     return this.verifier.did()
   }
+
+  toDIDKey() {
+    return this.verifier.toDIDKey()
+  }
+
   /**
    * @template T
    * @param {API.ByteView<T>} payload
@@ -318,7 +347,7 @@ class ExtractableRSASigner extends RSASigner {
    * @returns {API.Signer<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return withDID(this, id)
+    return Signer.withDID(this, id)
   }
 
   toArchive() {
@@ -350,7 +379,7 @@ class UnextractableRSASigner extends RSASigner {
    * @returns {API.Signer<ID, typeof signatureCode>}
    */
   withDID(id) {
-    return withDID(this, id)
+    return Signer.withDID(this, id)
   }
 
   toArchive() {

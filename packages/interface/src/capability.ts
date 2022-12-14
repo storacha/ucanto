@@ -5,12 +5,16 @@ import {
   Result,
   Failure,
   PrincipalParser,
+  PrincipalResolver,
   Signer,
   URI,
   UCANLink,
   Await,
   IssuedInvocationView,
   UCANOptions,
+  DIDKey,
+  Verifier,
+  API,
 } from './lib.js'
 
 export interface Source {
@@ -358,17 +362,39 @@ export interface ProofResolver extends PrincipalOptions {
   /**
    * You can provide a proof resolver that validator will call when UCAN
    * links to external proof. If resolver is not provided validator may not
-   * be able to explore correesponding path within a proof chain.
+   * be able to explore corresponding path within a proof chain.
    */
   resolve?: (proof: Link) => Await<Result<Delegation, UnavailableProof>>
 }
 
-export interface ValidationOptions<C extends ParsedCapability>
-  extends Partial<CanIssue>,
+export interface Validator {
+  /**
+   * Validator must be provided a `Verifier` corresponding to local authority.
+   * Capability provider service will use one corresponding to own DID or it's
+   * supervisor's DID if it acts under it's authority.
+   *
+   * This allows service identified by non did:key e.g. did:web or did:dns to
+   * pass resolved key so it does not need to be resolved at runtime.
+   */
+  authority: Verifier
+}
+
+export interface ValidationOptions<
+  C extends ParsedCapability = ParsedCapability
+> extends Partial<CanIssue>,
+    Validator,
     PrincipalOptions,
+    PrincipalResolver,
     ProofResolver {
   capability: CapabilityParser<Match<C, any>>
 }
+
+export interface ClaimOptions
+  extends Partial<CanIssue>,
+    Validator,
+    PrincipalOptions,
+    PrincipalResolver,
+    ProofResolver {}
 
 export interface DelegationError extends Failure {
   name: 'InvalidClaim'
@@ -405,6 +431,13 @@ export interface UnavailableProof extends Failure {
   readonly link: UCANLink
 }
 
+export interface DIDKeyResolutionError extends Failure {
+  readonly name: 'DIDKeyResolutionError'
+  readonly did: UCAN.DID
+
+  readonly cause?: Unauthorized
+}
+
 export interface Expired extends Failure {
   readonly name: 'Expired'
   readonly delegation: Delegation
@@ -432,16 +465,21 @@ export type InvalidProof =
   | NotValidBefore
   | InvalidSignature
   | InvalidAudience
+  | DIDKeyResolutionError
+  | UnavailableProof
 
 export interface Unauthorized extends Failure {
   name: 'Unauthorized'
-  cause: InvalidCapability | InvalidProof | InvalidClaim
+
+  delegationErrors: DelegationError[]
+  unknownCapabilities: Capability[]
+  invalidProofs: InvalidProof[]
+  failedProofs: InvalidClaim[]
 }
 
 export interface InvalidClaim extends Failure {
   issuer: UCAN.Principal
   name: 'InvalidClaim'
-  capability: ParsedCapability
   delegation: Delegation
 
   message: string

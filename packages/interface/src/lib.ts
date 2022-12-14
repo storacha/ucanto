@@ -26,6 +26,7 @@ import {
   InvalidAudience,
   Unauthorized,
   UnavailableProof,
+  DIDKeyResolutionError,
   ParsedCapability,
   CapabilityParser,
 } from './capability.js'
@@ -239,7 +240,7 @@ export type InvocationError =
   | Unauthorized
 
 export interface InvocationContext extends CanIssue {
-  id: Principal
+  id: Verifier
   my?: (issuer: DID) => Capability[]
   resolve?: (proof: UCANLink) => Await<Result<Delegation, UnavailableProof>>
 
@@ -425,7 +426,7 @@ export interface ServerOptions
    * Service DID which will be used to verify that received invocation
    * audience matches it.
    */
-  readonly id: Principal
+  readonly id: Verifier
 }
 
 /**
@@ -491,12 +492,27 @@ export type URI<P extends Protocol = Protocol> = `${P}${string}` &
     protocol: P
   }>
 
+export interface ComposedDIDParser extends PrincipalParser {
+  or(parser: PrincipalParser): ComposedDIDParser
+}
+
 /**
  * A `PrincipalParser` provides {@link Verifier} instances that can validate UCANs issued
  * by a given {@link Principal}.
  */
 export interface PrincipalParser {
   parse(did: UCAN.DID): Verifier
+}
+
+/**
+ * A `PrincipalResolver` is used to resolve a key of the principal that is
+ * identified by DID different from did:key method. It can be passed into a
+ * UCAN validator in order to augmented it with additional DID methods support.
+ */
+export interface PrincipalResolver {
+  resolveDIDKey?: (
+    did: UCAN.DID
+  ) => Await<Result<DIDKey, DIDKeyResolutionError>>
 }
 
 /**
@@ -517,6 +533,23 @@ export interface SignerImporter<
   from(archive: SignerArchive<ID, Alg>): Signer<ID, Alg>
 }
 
+export interface CompositeImporter<
+  Variants extends [SignerImporter, ...SignerImporter[]]
+> {
+  from: Intersection<Variants[number]['from']>
+  or<Other extends SignerImporter>(
+    other: Other
+  ): CompositeImporter<[Other, ...Variants]>
+}
+
+export interface Importer<Self extends Signer = Signer> {
+  from(archive: Archive<Self>): Self
+}
+
+export interface Archive<Self extends Signer> {
+  id: ReturnType<Signer['did']>
+  keys: { [Key: DIDKey]: KeyArchive<Signer['signatureCode']> }
+}
 /**
  * Principal that can issue UCANs (and sign payloads). While it's primary role
  * is to sign payloads it also extends `Verifier` interface so it could be used
@@ -598,6 +631,10 @@ export interface Signer<ID extends DID = DID, Alg extends SigAlg = SigAlg>
  */
 export interface Verifier<ID extends DID = DID, Alg extends SigAlg = SigAlg>
   extends UCAN.Verifier<ID, Alg> {
+  /**
+   * Returns unwrapped did:key of this principal.
+   */
+  toDIDKey(): DIDKey
   /**
    * Wraps key of this verifier into a verifier with a different DID. This is
    * primarily used to wrap {@link VerifierKey} into a {@link Verifier} that has
