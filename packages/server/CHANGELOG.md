@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.1.0](https://github.com/web3-storage/ucanto/compare/server-v4.0.2...server-v4.1.0) (2022-12-14)
+
+
+### Features
+
+* embedded key resolution ([#168](https://github.com/web3-storage/ucanto/issues/168)) ([5e650f3](https://github.com/web3-storage/ucanto/commit/5e650f376db79c690e4771695d1ff4e6deece40e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^4.0.2 to ^4.0.3
+    * @ucanto/interface bumped from ^4.0.2 to ^4.1.0
+    * @ucanto/validator bumped from ^4.0.2 to ^4.1.0
+  * devDependencies
+    * @ucanto/principal bumped from ^4.0.2 to ^4.1.0
+    * @ucanto/client bumped from ^4.0.2 to ^4.0.3
+    * @ucanto/transport bumped from ^4.0.2 to ^4.0.3
+
 ## [4.0.2](https://github.com/web3-storage/ucanto/compare/server-v4.1.0...server-v4.0.2) (2022-12-14)
 
 
