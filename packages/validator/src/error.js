@@ -85,11 +85,13 @@ export class DelegationError extends Failure {
 export class InvalidSignature extends Failure {
   /**
    * @param {API.Delegation} delegation
+   * @param {API.Verifier} verifier
    */
-  constructor(delegation) {
+  constructor(delegation, verifier) {
     super()
     this.name = the('InvalidSignature')
     this.delegation = delegation
+    this.verifier = verifier
   }
   get issuer() {
     return this.delegation.issuer
@@ -97,8 +99,22 @@ export class InvalidSignature extends Failure {
   get audience() {
     return this.delegation.audience
   }
+  get key() {
+    return this.verifier.toDIDKey()
+  }
   describe() {
-    return [`Proof ${this.delegation.cid} signature is invalid`].join('\n')
+    const issuer = this.issuer.did()
+    const key = this.key
+    return (
+      issuer.startsWith('did:key')
+        ? [
+            `Proof ${this.delegation.cid} does not has a valid signature from ${key}`,
+          ]
+        : [
+            `Proof ${this.delegation.cid} issued by ${issuer} does not has a valid signature from ${key}`,
+            `  ℹ️ Probably issuer signed with a different key, which got rotated, invalidating delegations that were issued with prior keys`,
+          ]
+    ).join('\n')
   }
 }
 
