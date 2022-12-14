@@ -3,7 +3,6 @@
     "node-workspace"
   ],
   "bootstrap-sha": "f814e75a89d3ed7c3488a8cb7af8d94f0cfba440",
-  "last-release-sha": "dcad5fb3a81047c053938c9749cc5a300f9adf4a",
   "packages": {
     "packages/principal": {},
     "packages/client": {},
