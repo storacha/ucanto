@@ -7,6 +7,13 @@
 
 * trigger releases ([a0d9291](https://www.github.com/web3-storage/ucanto/commit/a0d9291f9e20456e115fa6c7890cafe937fa511e))
 
+### [4.0.3](https://www.github.com/web3-storage/ucanto/compare/server-v4.0.2...server-v4.0.3) (2022-12-14)
+
+
+### Bug Fixes
+
+* trigger releases ([a0d9291](https://www.github.com/web3-storage/ucanto/commit/a0d9291f9e20456e115fa6c7890cafe937fa511e))
+
 
 ### Dependencies
 

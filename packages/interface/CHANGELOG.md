@@ -7,6 +7,13 @@
 
 * trigger releases ([a0d9291](https://www.github.com/web3-storage/ucanto/commit/a0d9291f9e20456e115fa6c7890cafe937fa511e))
 
+### [4.0.3](https://www.github.com/web3-storage/ucanto/compare/interface-v4.0.2...interface-v4.0.3) (2022-12-14)
+
+
+### Bug Fixes
+
+* trigger releases ([a0d9291](https://www.github.com/web3-storage/ucanto/commit/a0d9291f9e20456e115fa6c7890cafe937fa511e))
+
 ## [4.0.2](https://github.com/web3-storage/ucanto/compare/interface-v4.1.0...interface-v4.0.2) (2022-12-14)
 
 ### ⚠ BREAKING CHANGES
