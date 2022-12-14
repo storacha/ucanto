@@ -17,8 +17,13 @@ import {
   Principal,
   MulticodecCode,
   SigAlg,
+  ToJSON,
+  SignatureJSON,
+  JSONUnknown,
+  IntoJSON,
+  JSONObject,
 } from '@ipld/dag-ucan'
-import { Link, Block as IPLDBlock } from 'multiformats'
+import { Link, UnknownLink, Block as IPLDBlock, ToString } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
 import {
   CanIssue,
@@ -59,6 +64,10 @@ export type {
   MultibaseEncoder,
   MulticodecCode,
   Principal,
+  ToJSON,
+  ToString,
+  UnknownLink,
+  JSONUnknown,
 }
 export * as UCAN from '@ipld/dag-ucan'
 
@@ -161,7 +170,38 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   iterate(): IterableIterator<Delegation>
 
   signature: Signature
+  version: UCAN.Version
+
+  toJSON(): DelegationJSON<this>
 }
+
+export type DelegationJSON<T extends Delegation = Delegation> = ToJSON<
+  T,
+  {
+    '/': ToString<T['cid']>
+    v: T['version']
+    iss: DID
+    aud: DID
+    att: ToJSON<
+      T['capabilities'],
+      T['capabilities'] &
+        UCAN.Tuple<{ with: UCAN.Resource; can: UCAN.Ability; nb?: JSONObject }>
+    >
+    exp: T['expiration']
+    nbf?: T['notBefore'] & {}
+    nnc?: T['nonce'] & {}
+    fct: ToJSON<T['facts']>
+    prf: ProofJSON[] & JSONUnknown[]
+    s: SignatureJSON<T['signature']>
+  }
+>
+
+export type ProofJSON = DelegationJSON | LinkJSON<UCANLink>
+
+export type LinkJSON<T extends UnknownLink = UnknownLink> = ToJSON<
+  T,
+  { '/': ToString<T> }
+>
 
 /**
  * An Invocation represents a UCAN that can be presented to a service provider to
