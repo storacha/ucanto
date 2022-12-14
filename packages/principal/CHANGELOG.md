@@ -2,7 +2,6 @@
 
 ## [4.0.2](https://github.com/web3-storage/ucanto/compare/principal-v4.1.0...principal-v4.0.2) (2022-12-14)
 
-
 ### ⚠ BREAKING CHANGES
 
 * did prinicipal ([#149](https://github.com/web3-storage/ucanto/issues/149))

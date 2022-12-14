@@ -1,23 +1,6 @@
 # Changelog
 
-### Dependencies
-
-* The following workspace dependencies were updated
-  * dependencies
-    * @ucanto/interface bumped from ^4.0.2 to ^4.1.0
-  * devDependencies
-    * @ucanto/principal bumped from ^4.0.2 to ^4.1.0
-
-### Dependencies
-
-* The following workspace dependencies were updated
-  * dependencies
-    * @ucanto/interface bumped from ^4.0.2 to ^4.1.0
-  * devDependencies
-    * @ucanto/principal bumped from ^4.0.2 to ^4.1.0
-
 ## [4.0.2](https://github.com/web3-storage/ucanto/compare/core-v4.0.3...core-v4.0.2) (2022-12-14)
-
 
 ### ⚠ BREAKING CHANGES
 

@@ -2,7 +2,6 @@
 
 ## [4.0.2](https://github.com/web3-storage/ucanto/compare/validator-v4.1.0...validator-v4.0.2) (2022-12-14)
 
-
 ### ⚠ BREAKING CHANGES
 
 * upgrades to multiformats@10 ([#117](https://github.com/web3-storage/ucanto/issues/117))
