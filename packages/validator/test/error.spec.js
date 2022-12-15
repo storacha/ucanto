@@ -61,7 +61,7 @@ test('InvalidSignature', async () => {
     proofs: [],
   })
 
-  const error = new InvalidSignature(delegation)
+  const error = new InvalidSignature(delegation, alice)
   assert.deepEqual(error.issuer.did(), alice.did())
   assert.deepEqual(error.audience.did(), w3.verifier.did())
 })

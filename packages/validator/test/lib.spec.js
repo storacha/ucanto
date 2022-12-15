@@ -2,10 +2,10 @@ import { test, assert } from './test.js'
 import { access, claim } from '../src/lib.js'
 import { capability, URI, Link } from '../src/lib.js'
 import { Failure } from '../src/error.js'
-import * as ed25519 from '@ucanto/principal/ed25519'
+import { Verifier } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 
-import { alice, bob, mallory, service as w3 } from './fixtures.js'
+import { alice, bob, mallory, service, service as w3 } from './fixtures.js'
 import { UCAN, DID as Principal } from '@ucanto/core'
 import { UnavailableProof } from '../src/error.js'
 
@@ -49,7 +49,7 @@ test('authorize self-issued invocation', async () => {
   const result = await access(await invocation.delegate(), {
     authority: w3,
     capability: storeAdd,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
@@ -81,7 +81,7 @@ test('unauthorized / expired invocation', async () => {
   const result = await access(invocation, {
     authority: w3,
     capability: storeAdd,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
@@ -118,7 +118,7 @@ test('unauthorized / not valid before invocation', async () => {
   const result = await access(invocation, {
     authority: w3,
     capability: storeAdd,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
@@ -144,14 +144,14 @@ test('unauthorized / invalid signature', async () => {
   const result = await access(invocation, {
     authority: w3,
     capability: storeAdd,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
     error: true,
     name: 'Unauthorized',
     message: `Claim ${storeAdd} is not authorized
-  - Proof ${invocation.cid} signature is invalid`,
+  - Proof ${invocation.cid} does not has a valid signature from ${alice.did()}`,
   })
 })
 
@@ -172,7 +172,7 @@ test('unauthorized / unknown capability', async () => {
     authority: w3,
     // @ts-ignore
     capability: storeAdd,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
@@ -205,7 +205,7 @@ test('authorize / delegated invocation', async () => {
   const result = await access(await invocation.delegate(), {
     authority: w3,
     capability: storeAdd,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
@@ -256,7 +256,7 @@ test('authorize / delegation chain', async () => {
   const result = await access(await invocation.delegate(), {
     authority: w3,
     capability: storeAdd,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
@@ -304,7 +304,7 @@ test('invalid claim / no proofs', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -341,7 +341,7 @@ test('invalid claim / expired', async () => {
 
   const result = await access(invocation, {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -379,7 +379,7 @@ test('invalid claim / not valid before', async () => {
 
   const result = await access(invocation, {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -418,7 +418,7 @@ test('invalid claim / invalid signature', async () => {
 
   const result = await access(invocation, {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -431,7 +431,7 @@ test('invalid claim / invalid signature', async () => {
     )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Capability can not be derived from prf:0 - ${proof.cid} because:
-      - Proof ${proof.cid} signature is invalid`,
+      - Proof ${proof.cid} does not has a valid signature from ${alice.did()}`,
   })
 })
 
@@ -458,7 +458,7 @@ test('invalid claim / unknown capability', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -504,7 +504,7 @@ test('invalid claim / malformed capability', async () => {
 
   const result = await access(invocation, {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -541,7 +541,7 @@ test('invalid claim / unavailable proof', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -578,7 +578,7 @@ test('invalid claim / failed to resolve', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     resolve() {
       throw new Error('Boom!')
     },
@@ -619,7 +619,7 @@ test('invalid claim / invalid audience', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -654,7 +654,7 @@ test('invalid claim / invalid claim', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -698,7 +698,7 @@ test('invalid claim / invalid sub delegation', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -737,7 +737,7 @@ test('authorize / resolve external proof', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     resolve: async link => {
       if (link.toString() === delegation.cid.toString()) {
         return delegation
@@ -791,7 +791,7 @@ test('invalid claim / principal alignment', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -828,7 +828,7 @@ test('invalid claim / invalid delegation chain', async () => {
 
   const result = await access(await invocation.delegate(), {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
     capability: storeAdd,
   })
 
@@ -854,7 +854,7 @@ test('claim without a proof', async () => {
 
   const result = await claim(storeAdd, [delegation.cid], {
     authority: w3,
-    principal: ed25519.Verifier,
+    principal: Verifier,
   })
 
   assert.containSubset(result, {
@@ -862,5 +862,31 @@ test('claim without a proof', async () => {
 
     message: `Claim ${storeAdd} is not authorized
   - Linked proof '${delegation.cid}' is not included and could not be resolved`,
+  })
+})
+
+test('mismatched signature', async () => {
+  const old = alice.withDID('did:web:w3.storage')
+  const current = bob.withDID('did:web:w3.storage')
+
+  const delegation = await storeAdd.delegate({
+    issuer: old,
+    audience: old,
+    with: old.did(),
+  })
+
+  const result = await claim(storeAdd, [delegation], {
+    authority: current,
+    principal: Verifier,
+  })
+
+  assert.containSubset(result, {
+    name: 'Unauthorized',
+
+    message: `Claim ${storeAdd} is not authorized
+  - Proof ${
+    delegation.cid
+  } issued by ${current.did()} does not has a valid signature from ${current.toDIDKey()}
+    ℹ️ Probably issuer signed with a different key, which got rotated, invalidating delegations that were issued with prior keys`,
   })
 })
