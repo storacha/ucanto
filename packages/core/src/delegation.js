@@ -130,6 +130,19 @@ export class Delegation {
   iterate() {
     return it(this)
   }
+
+  /**
+   * @returns {API.DelegationJSON<this>}
+   */
+  toJSON() {
+    return /** @type {any} */ ({
+      ...this.data.toJSON(),
+      '/': this.cid.toString(),
+      prf: this.proofs.map(proof =>
+        isDelegation(proof) ? proof : { '/': proof.toString() }
+      ),
+    })
+  }
 }
 
 /**
