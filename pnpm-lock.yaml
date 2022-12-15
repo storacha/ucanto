@@ -54,7 +54,7 @@ importers:
     specifiers:
       '@ipld/car': ^5.0.0
       '@ipld/dag-cbor': ^8.0.0
-      '@ipld/dag-ucan': ^3.1.1
+      '@ipld/dag-ucan': ^3.0.1
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
       '@ucanto/interface': ^4.0.3
@@ -69,7 +69,7 @@ importers:
     dependencies:
       '@ipld/car': 5.0.0
       '@ipld/dag-cbor': 8.0.0
-      '@ipld/dag-ucan': 3.1.1
+      '@ipld/dag-ucan': 3.0.1
       '@ucanto/interface': link:../interface
       multiformats: 10.0.2
     devDependencies:
@@ -85,18 +85,18 @@ importers:
 
   packages/interface:
     specifiers:
-      '@ipld/dag-ucan': ^3.1.1
+      '@ipld/dag-ucan': ^3.0.1
       multiformats: ^10.0.2
       typescript: ^4.8.4
     dependencies:
-      '@ipld/dag-ucan': 3.1.1
+      '@ipld/dag-ucan': 3.0.1
       multiformats: 10.0.2
     devDependencies:
       typescript: 4.8.4
 
   packages/principal:
     specifiers:
-      '@ipld/dag-ucan': ^3.1.1
+      '@ipld/dag-ucan': ^3.0.1
       '@noble/ed25519': ^1.7.1
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
@@ -110,7 +110,7 @@ importers:
       playwright-test: ^8.1.1
       typescript: ^4.8.4
     dependencies:
-      '@ipld/dag-ucan': 3.1.1
+      '@ipld/dag-ucan': 3.0.1
       '@noble/ed25519': 1.7.1
       '@ucanto/interface': link:../interface
       multiformats: 10.0.2
@@ -474,8 +474,8 @@ packages:
       multiformats: 10.0.2
     dev: false
 
-  /@ipld/dag-ucan/3.1.1:
-    resolution: {integrity: sha512-iTIME/QZNGMSXvM8aPDMR9zp6d5orCEAL0BqgAobm9jDt0RV0CLITLWgvxb5MSc0vjRw7GR51Bva1RdZw2qs9w==}
+  /@ipld/dag-ucan/3.0.1:
+    resolution: {integrity: sha512-71YwJeRHxwX3diPXfwiuzhJTjmJSqi8XW/x5Xglp82UqpM5xwtNojB07VhmDXTZXhKi42bZHyQIOLaca/t9IHw==}
     dependencies:
       '@ipld/dag-cbor': 8.0.0
       '@ipld/dag-json': 9.0.1

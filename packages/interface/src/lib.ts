@@ -151,7 +151,7 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   issuer: UCAN.Principal
   audience: UCAN.Principal
   capabilities: C
-  expiration: UCAN.UTCUnixTimestamp
+  expiration?: UCAN.UTCUnixTimestamp
   notBefore?: UCAN.UTCUnixTimestamp
 
   nonce?: UCAN.Nonce
@@ -159,8 +159,6 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   facts: Fact[]
   proofs: Proof[]
   iterate(): IterableIterator<Delegation>
-
-  signature: Signature
 }
 
 /**
