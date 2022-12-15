@@ -27,7 +27,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^3.0.1",
+    "@ipld/dag-ucan": "^3.1.1",
     "@noble/ed25519": "^1.7.1",
     "@ucanto/interface": "^4.0.3",
     "multiformats": "^10.0.2",
