@@ -1,5 +1,6 @@
 import { pass, fail, display } from './util.js'
 import * as Schema from '../../src/schema.js'
+import { string, unknown } from '../../src/schema.js'
 
 /**
  * @typedef {import('./util.js').Expect} Expect
@@ -52,6 +53,9 @@ import * as Schema from '../../src/schema.js'
  * point2d?: ExpectGroup
  * ['Red|Green|Blue']?: ExpectGroup
  * xyz?: ExpectGroup
+ * intDict?: ExpectGroup
+ * pointDict?: ExpectGroup
+ * dict: ExpectGroup
  * }} Fixture
  *
  * @param {Partial<Fixture>} source
@@ -128,6 +132,10 @@ export const fixture = ({ in: input, got = input, array, ...expect }) => ({
     any: fail({ got }),
     ...expect.enum,
   },
+  dict: {
+    any: fail({ expect: 'dictionary', got }),
+    ...expect.dict,
+  },
 })
 
 /** @type {Partial<Fixture>[]} */
@@ -182,6 +190,13 @@ export const source = [
     xyz: {
       any: fail.at('"x"', { expect: 'number', got: 'undefined' }),
     },
+    intDict: {
+      any: fail.at('"0"', { expect: 'number', got: '"h"' }),
+    },
+    pointDict: {
+      any: fail.at('0', { expect: 'name|x|y', got: '"0"' }),
+    },
+    dict: { any: pass({ 0: 'h', 1: 'e', 2: 'l', 3: 'l', 4: 'o' }) },
   },
   {
     in: null,
@@ -330,6 +345,9 @@ export const source = [
     },
     xyz: {
       any: fail.at('"x"', { expect: 'number', got: 'undefined' }),
+    },
+    dict: {
+      any: pass(),
     },
   },
   {
@@ -536,6 +554,12 @@ export const source = [
     xyz: {
       any: fail.at('"z"', { expect: 'number', got: 'undefined' }),
     },
+    intDict: {
+      any: fail.at('"name"', { expect: 'number', got: '"Point2d"' }),
+    },
+    dict: {
+      any: pass(),
+    },
   },
   {
     in: { name: 'Point2d', x: 0, z: 0 },
@@ -549,6 +573,15 @@ export const source = [
     xyz: {
       any: fail.at('"y"', { expect: 'number', got: 'undefined' }),
     },
+    intDict: {
+      any: fail.at('"name"', { expect: 'number', got: '"Point2d"' }),
+    },
+    pointDict: {
+      any: fail.at('z', { expect: 'name|x|y', got: '"z"' }),
+    },
+    dict: {
+      any: pass(),
+    },
   },
   {
     in: { name: 'Point2d', x: 0, y: 0.1 },
@@ -560,6 +593,12 @@ export const source = [
       any: fail.at('"y"', { expect: 'integer', got: '0.1' }),
     },
     unknown: {
+      any: pass(),
+    },
+    intDict: {
+      any: fail.at('"name"', { expect: 'number', got: '"Point2d"' }),
+    },
+    dict: {
       any: pass(),
     },
   },
@@ -859,6 +898,24 @@ export const scenarios = fixture => [
       .and(Schema.struct({ y: Schema.integer() }))
       .and(Schema.struct({ z: Schema.integer() })),
     expect: fixture.xyz?.any || fixture.struct.any || fixture.any,
+  },
+  {
+    schema: Schema.dictionary({ value: Schema.integer() }),
+
+    expect: fixture.intDict?.any || fixture.dict?.any || fixture.any,
+  },
+
+  {
+    schema: Schema.dictionary({ value: unknown() }),
+    expect: fixture.dict?.any || fixture.any,
+  },
+
+  {
+    schema: Schema.dictionary({
+      value: unknown(),
+      key: Schema.enum(['name', 'x', 'y']),
+    }),
+    expect: fixture.pointDict?.any || fixture.dict.any || fixture.any,
   },
 ]
 
