@@ -20,6 +20,7 @@ export const provide =
   async (invocation, options) => {
     const authorization = await access(invocation, {
       ...options,
+      authority: options.id,
       capability,
     })
     if (authorization.error) {

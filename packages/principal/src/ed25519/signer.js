@@ -4,7 +4,7 @@ import * as API from './type.js'
 import * as Verifier from './verifier.js'
 import { base64pad } from 'multiformats/bases/base64'
 import * as Signature from '@ipld/dag-ucan/signature'
-import { withDID } from '../signer.js'
+import * as Signer from '../signer.js'
 export * from './type.js'
 
 export const code = 0x1300
@@ -52,17 +52,25 @@ export const derive = async secret => {
 }
 
 /**
- * @param {API.SignerArchive<API.DIDKey, typeof signatureCode>} archive
+ * @param {API.SignerArchive<API.DID, typeof signatureCode>} archive
  * @returns {API.EdSigner}
  */
 export const from = ({ id, keys }) => {
-  const key = keys[id]
-  if (key instanceof Uint8Array) {
-    return decode(key)
-  } else {
-    throw new Error(`Unsupported archive format`)
+  if (id.startsWith('did:key:')) {
+    const key = keys[/** @type {API.DIDKey} */ (id)]
+    if (key instanceof Uint8Array) {
+      return decode(key)
+    }
   }
+  throw new TypeError(`Unsupported archive format`)
 }
+
+from
+/**
+ * @template {API.SignerImporter} O
+ * @param {O} other
+ */
+export const or = other => Signer.or({ from }, other)
 
 /**
  * @param {Uint8Array} bytes
@@ -163,13 +171,17 @@ class Ed25519Signer extends Uint8Array {
     return this.verifier.did()
   }
 
+  toDIDKey() {
+    return this.verifier.toDIDKey()
+  }
+
   /**
    * @template {API.DID} ID
    * @param {ID} id
    * @returns {API.Signer<ID, typeof Signature.EdDSA>}
    */
   withDID(id) {
-    return withDID(this, id)
+    return Signer.withDID(this, id)
   }
 
   /**

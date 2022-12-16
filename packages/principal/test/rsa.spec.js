@@ -9,7 +9,7 @@ import { webcrypto } from 'one-webcrypto'
 
 export const utf8 = new TextEncoder()
 describe('RSA', () => {
-  it('can generate non extractabel keypair', async () => {
+  it('can generate non extractable keypair', async () => {
     const signer = await RSA.generate()
 
     assert.equal(signer.code, 0x1305)
@@ -43,6 +43,17 @@ describe('RSA', () => {
     })
     assert.equal(key.extractable, false)
     assert.deepEqual(key.usages, ['sign'])
+  })
+
+  it('can not restore non did:key archive', async () => {
+    const signer = await RSA.generate()
+    const principal = signer.withDID('did:web:web3.storage')
+
+    const archive = principal.toArchive()
+    assert.throws(
+      () => RSA.from(archive),
+      /can not import from did:web:web3.storage/
+    )
   })
 
   it('can archive 🔁 restore unextractable', async () => {

@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/transport",
   "description": "ucanto transport",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "keywords": [
     "UCAN",
     "RPC",
@@ -31,14 +31,14 @@
   "dependencies": {
     "@ipld/car": "^5.0.0",
     "@ipld/dag-cbor": "^8.0.0",
-    "@ucanto/core": "^4.0.2",
-    "@ucanto/interface": "^4.0.2",
+    "@ucanto/core": "^4.0.3",
+    "@ucanto/interface": "^4.0.3",
     "multiformats": "^10.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^9.1.0",
-    "@ucanto/principal": "^4.0.2",
+    "@ucanto/principal": "^4.0.3",
     "@web-std/fetch": "^4.1.0",
     "c8": "^7.11.0",
     "chai": "^4.3.6",

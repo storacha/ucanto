@@ -1,5 +1,6 @@
 import * as API from '@ucanto/interface'
 import { the } from './util.js'
+import { isLink } from 'multiformats/link'
 
 /**
  * @implements {API.Failure}
@@ -84,11 +85,13 @@ export class DelegationError extends Failure {
 export class InvalidSignature extends Failure {
   /**
    * @param {API.Delegation} delegation
+   * @param {API.Verifier} verifier
    */
-  constructor(delegation) {
+  constructor(delegation, verifier) {
     super()
     this.name = the('InvalidSignature')
     this.delegation = delegation
+    this.verifier = verifier
   }
   get issuer() {
     return this.delegation.issuer
@@ -96,8 +99,22 @@ export class InvalidSignature extends Failure {
   get audience() {
     return this.delegation.audience
   }
+  get key() {
+    return this.verifier.toDIDKey()
+  }
   describe() {
-    return [`Signature is invalid`].join('\n')
+    const issuer = this.issuer.did()
+    const key = this.key
+    return (
+      issuer.startsWith('did:key')
+        ? [
+            `Proof ${this.delegation.cid} does not has a valid signature from ${key}`,
+          ]
+        : [
+            `Proof ${this.delegation.cid} issued by ${issuer} does not has a valid signature from ${key}`,
+            `  ℹ️ Probably issuer signed with a different key, which got rotated, invalidating delegations that were issued with prior keys`,
+          ]
+    ).join('\n')
   }
 }
 
@@ -117,10 +134,29 @@ export class UnavailableProof extends Failure {
   }
   describe() {
     return [
-      `Linked proof '${this.link}' is not included nor could be resolved`,
+      `Linked proof '${this.link}' is not included and could not be resolved`,
       ...(this.cause
-        ? [li(`Provided resolve failed: ${this.cause.message}`)]
+        ? [li(`Proof resolution failed with: ${this.cause.message}`)]
         : []),
+    ].join('\n')
+  }
+}
+
+export class DIDKeyResolutionError extends Failure {
+  /**
+   * @param {API.UCAN.DID} did
+   * @param {API.Unauthorized} [cause]
+   */
+  constructor(did, cause) {
+    super()
+    this.name = the('DIDKeyResolutionError')
+    this.did = did
+    this.cause = cause
+  }
+  describe() {
+    return [
+      `Unable to resolve '${this.did}' key`,
+      ...(this.cause ? [li(`Resolution failed: ${this.cause.message}`)] : []),
     ].join('\n')
   }
 }
@@ -140,7 +176,7 @@ export class InvalidAudience extends Failure {
     this.delegation = delegation
   }
   describe() {
-    return `Delegates to '${this.delegation.audience.did()}' instead of '${this.audience.did()}'`
+    return `Delegation audience is '${this.delegation.audience.did()}' instead of '${this.audience.did()}'`
   }
   toJSON() {
     const { error, name, audience, message, stack } = this
@@ -188,6 +224,7 @@ export class UnknownCapability extends Failure {
     this.name = the('UnknownCapability')
     this.capability = capability
   }
+  /* c8 ignore next 3 */
   describe() {
     return `Encountered unknown capability: ${format(this.capability)}`
   }
@@ -203,7 +240,9 @@ export class Expired extends Failure {
     this.delegation = delegation
   }
   describe() {
-    return `Expired on ${new Date(this.delegation.expiration * 1000)}`
+    return `Proof ${this.delegation.cid} has expired on ${new Date(
+      this.delegation.expiration * 1000
+    )}`
   }
   get expiredAt() {
     return this.delegation.expiration
@@ -230,10 +269,22 @@ export class NotValidBefore extends Failure {
     this.delegation = delegation
   }
   describe() {
-    return `Not valid before ${new Date(this.delegation.notBefore * 1000)}`
+    return `Proof ${this.delegation.cid} is not valid before ${new Date(
+      this.delegation.notBefore * 1000
+    )}`
   }
   get validAt() {
     return this.delegation.notBefore
+  }
+  toJSON() {
+    const { error, name, validAt, message, stack } = this
+    return {
+      error,
+      name,
+      message,
+      validAt,
+      stack,
+    }
   }
 }
 
@@ -245,9 +296,9 @@ export class NotValidBefore extends Failure {
 const format = (capability, space) =>
   JSON.stringify(
     capability,
-    (key, value) => {
+    (_key, value) => {
       /* c8 ignore next 2 */
-      if (value && value.asCID === value) {
+      if (isLink(value)) {
         return value.toString()
       } else {
         return value

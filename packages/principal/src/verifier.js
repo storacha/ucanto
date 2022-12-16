@@ -1,23 +1,55 @@
 import * as API from '@ucanto/interface'
 
 /**
- * @param {API.PrincipalParser[]} options
+ * @param {API.DID} did
+ * @param {API.PrincipalParser[]} parsers
+ * @return {API.Verifier}
  */
-export const create = options => ({
-  create,
-  /**
-   * @param {API.DID} did
-   * @return {API.Verifier}
-   */
-  parse: did => {
-    for (const option of options) {
+const parseWith = (did, parsers) => {
+  if (did.startsWith('did:')) {
+    for (const parser of parsers) {
       try {
-        return option.parse(did)
+        return parser.parse(did)
       } catch (_) {}
     }
     throw new Error(`Unsupported did ${did}`)
-  },
-})
+  } else {
+    throw new Error(`Expected did instead got ${did}`)
+  }
+}
+
+/**
+ * @param {API.PrincipalParser} left
+ * @param {API.PrincipalParser} right
+ * @returns {API.ComposedDIDParser}
+ */
+export const or = (left, right) => new Parser([left, right])
+
+/**
+ * @implements {API.ComposedDIDParser}
+ */
+class Parser {
+  /**
+   * @param {API.PrincipalParser[]} variants
+   */
+  constructor(variants) {
+    this.variants = variants
+  }
+
+  /**
+   * @param {API.DID} did
+   */
+  parse(did) {
+    return parseWith(did, this.variants)
+  }
+
+  /**
+   * @param {API.PrincipalParser} parser
+   */
+  or(parser) {
+    return new Parser([...this.variants, parser])
+  }
+}
 
 /**
  * @template {API.DID} ID
@@ -26,14 +58,14 @@ export const create = options => ({
  * @param {ID} id
  * @returns {API.Verifier<ID, SigAlg>}
  */
-export const withDID = (key, id) => new Verifier(id, key)
+export const withDID = (key, id) => new VerifierWithDID(id, key)
 
 /**
  * @template {API.DID} ID
  * @template {API.MulticodecCode} SigAlg
  * @implements {API.Verifier<ID, SigAlg>}
  */
-class Verifier {
+class VerifierWithDID {
   /**
    * @param {ID} id
    * @param {API.VerifierKey<SigAlg>} key
@@ -44,6 +76,10 @@ class Verifier {
   }
   did() {
     return this.id
+  }
+
+  toDIDKey() {
+    return this.key.toDIDKey()
   }
 
   /**
