@@ -26,6 +26,8 @@ import {
   IssuedInvocationView,
 } from '@ucanto/interface'
 
+import { Schema } from '@ucanto/validator'
+
 // This is the interface of the module we'll have
 export interface AgentModule {
   create<ID extends DID>(options: CreateAgent<ID>): Agent<ID>
@@ -33,7 +35,7 @@ export interface AgentModule {
   resource<ID extends URI, Abilities extends ResourceAbilities>(
     resource: Reader<ID>,
     abilities: Abilities
-  ): Resource<ID, With<ID, Abilities>>
+  ): Resource<ID, With<ID, Abilities>> & ResourceCapabilities<ID, '', Abilities>
 
   ability<
     In,
@@ -56,11 +58,22 @@ export interface Ability<
   out: Reader<Result<Out, Fail>>
 }
 
+export interface CapabilitySchema<
+  URI extends API.URI = API.URI,
+  Ability extends API.Ability = API.Ability,
+  Input extends { [key: string]: Reader } = {}
+> extends Schema.StructSchema<{
+    can: Reader<Ability, string>
+    with: Reader<URI, string>
+    nb: Schema.StructSchema<Input>
+  }> {}
+
 export interface Resource<
   ID extends URI,
   Abilities extends ResourceAbilities,
   Context extends {} = {}
 > {
+  capabilities: ResourceCapabilities<ID, '', Abilities>
   from<At extends ID>(at: At): From<At, '', Abilities>
   query<Q extends Query<ID, Abilities>>(query: Q): Batch<Q>
 
@@ -78,6 +91,50 @@ export interface Resource<
     other: Resource<ID2, Abilities2, Context2>
   ): Resource<ID | ID2, Abilities & Abilities2, Context & Context2>
 }
+
+export type ResourceCapabilities<
+  At extends URI,
+  Can extends string,
+  Abilities extends ResourceAbilities
+> = {
+  [K in keyof Abilities & string]: Abilities[K] extends Reader<
+    Result<infer In, infer Fail>
+  >
+    ? ResourceCapability<At, Can extends '' ? K : `${Can}/${K}`, In>
+    : Abilities[K] extends Ability<infer In, infer Out, infer Fail>
+    ? ResourceCapability<At, Can extends '' ? K : `${Can}/${K}`, In>
+    : Abilities[K] extends ResourceAbilities
+    ? ResourceCapabilities<At, Can extends '' ? K : `${Can}/${K}`, Abilities[K]>
+    : Abilities[K]
+}
+
+export interface ResourceCapability<
+  At extends URI,
+  Can extends API.Ability,
+  Input extends unknown
+> extends ResourceSchema<At, Can, Input> {
+  can: Can
+
+  delegate<In extends Partial<Input>>(
+    uri: At,
+    input?: In
+  ): Promise<Delegation<[Capability<Can, URI, In>]>>
+
+  invoke<In extends Input>(
+    uri: At,
+    input: In
+  ): IssuedInvocationView<Capability<Can, URI, In>>
+}
+
+export interface ResourceSchema<
+  At extends URI,
+  Can extends API.Ability,
+  Input extends unknown
+> extends Schema.StructSchema<{
+    with: Schema.Reader<At>
+    can: Schema.Reader<Can>
+    input: Schema.Reader<Input>
+  }> {}
 
 export interface Provider<
   ID extends URI = URI,
@@ -179,12 +236,20 @@ export type Input<T> =
   | Selector<URI, API.Ability, unknown, T, any>
   | Selection<URI, API.Ability, unknown, T, any, any>
 
+/**
+ * Resource abilities is defined as a trees structure where leaves are query
+ * sources and paths leading to them define ability of the capability.
+ */
 export type ResourceAbilities = {
-  [K: string]:
-    | Reader<Result<unknown, { error: true }>>
-    | Ability
-    | ResourceAbilities
+  [K: string]: Source | ResourceAbilities
 }
+
+export type Source =
+  // If query source takes no input it is defined as a reader
+  | Reader
+  // If query source takes an input and returns output it is defined
+  // as ability
+  | Ability
 
 export interface Selector<
   At extends URI,

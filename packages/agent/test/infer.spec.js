@@ -208,18 +208,6 @@ test('demo', () =>
    */
   async ({ Agent, me, w3 }) => {
 
-
-
-
-    // agent.query({
-    //   version: agent.from(alice.did()).test.version()
-
-    // })
-    //   me.did()).select('test/version', )
-    
-
-    const version = result(Schema.integer(), Schema.struct({ message: Schema.string() }))
-
     const source = Agent.resource(DID, {
       test: {
         version: result(Schema.integer()),
@@ -267,13 +255,34 @@ test('demo', () =>
       }
     })
 
+    const Base = Agent.resource(URI.match({ protocol: 'did:' }), {
+      '*': Schema.struct({}),
+      upload: {
+        add: Schema.struct({
+          root: Schema.Link
+        }),
+        info: Schema.struct({})
+      }
+    })
+
+    const a1 = Base.upload.add.delegate('did:key:zAlice', {})
+    const a2 = Base.upload.add.invoke('did:key:zAlice', { root: Link.parse('bafkqaaa')})
+
+
+
+
+
+
+
+
+
     const UploadAdd = Agent.resource(DID, {
       upload: {
         add: Agent.ability(Upload, result(Upload))
       }
     })
 
-    resource(DID).
+
 
     const ConsoleProtocol = Agent.resource(DID.match({ method: 'key' }), {
       console: {
@@ -304,7 +313,9 @@ test('demo', () =>
       })
 
 
-    const alice = UploadProtocol.from('did:key:zAlice')
+    
+
+    const alice = UploadProtocol.and(ConsoleProtocol).from('did:key:zAlice')
 
 
 
@@ -373,3 +384,39 @@ test('demo', () =>
     //   e.toLocaleLowerCase()
     // }
   })
+
+
+/**
+ * @param {object} input
+ * @param {API.AgentModule} input.Agent
+ */
+const w3protocol = async ({ Agent }) => {
+  const Space = DID.match({ method: 'key' })
+
+  const Add = Schema.struct({
+    link: Schema.Link,
+    size: Schema.integer(),
+    origin: Schema.Link.optional()
+  })
+
+  const AddDone = Schema.struct({
+    status: 'done',
+    with: Space,
+    link: Schema.Link
+  })
+
+  const AddHandOff = Schema.struct({
+    status: 'upload',
+    with: Space,
+    link: Schema.Link,
+    url: Schema.URI,
+    headers: Schema.
+  })
+
+  return Agent.resource(Space, {
+    store: {
+      _: Schema.struct({}),
+      add: Agent.ability(Add, )
+    }
+  })
+}
