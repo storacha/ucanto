@@ -37,20 +37,32 @@ export interface AgentModule {
     abilities: Abilities
   ): Resource<ID, With<ID, Abilities>> & ResourceCapabilities<ID, '', Abilities>
 
-  ability<
+  task<
     In,
     Out,
-    Fail extends { error: true } = { error: true; message: string }
-  >(
-    input: Reader<In>,
-    output: Reader<Result<Out, Fail>>
-  ): Ability<In, Out, Fail>
+    Fail extends { error: true } = { error: true; message: string },
+    Event extends unknown = never
+  >(options: {
+    in: Reader<In>
+    out: Reader<Result<Out, Fail>>
+    events?: Reader<Event>
+  }): Task<In, Out, Fail, Event>
+
+  task<
+    Out,
+    Fail extends { error: true } = { error: true; message: string },
+    Event extends unknown = never
+  >(options: {
+    out: Reader<Result<Out, Fail>>
+    events?: Reader<Event>
+  }): Task<void, Out, Fail, Event>
 }
 
-export interface Ability<
+export interface Task<
   In extends unknown = unknown,
   Out extends unknown = unknown,
   Fail extends { error: true } = { error: true },
+  Event extends unknown = never,
   With extends URI = URI
 > {
   uri: With
@@ -69,13 +81,16 @@ export interface CapabilitySchema<
   }> {}
 
 export interface Resource<
-  ID extends URI,
-  Abilities extends ResourceAbilities,
+  ID extends URI = URI,
+  Abilities extends ResourceAbilities = ResourceAbilities,
   Context extends {} = {}
 > {
+  id: ID
+  abilities: Abilities
+
   capabilities: ResourceCapabilities<ID, '', Abilities>
   from<At extends ID>(at: At): From<At, '', Abilities>
-  query<Q extends Query<ID, Abilities>>(query: Q): Batch<Q>
+  query<Q>(query: Q): Batch<Q>
 
   with<CTX>(context: CTX): Resource<ID, Abilities, Context & CTX>
 
@@ -94,19 +109,23 @@ export interface Resource<
 
 export type ResourceCapabilities<
   At extends URI,
-  Can extends string,
+  NS extends string,
   Abilities extends ResourceAbilities
 > = {
   [K in keyof Abilities & string]: Abilities[K] extends Reader<
     Result<infer In, infer Fail>
   >
-    ? ResourceCapability<At, Can extends '' ? K : `${Can}/${K}`, In>
-    : Abilities[K] extends Ability<infer In, infer Out, infer Fail>
-    ? ResourceCapability<At, Can extends '' ? K : `${Can}/${K}`, In>
+    ? ResourceCapability<At, ToCan<NS, K>, In>
+    : Abilities[K] extends Task<infer In, infer Out, infer Fail>
+    ? ResourceCapability<At, ToCan<NS, K>, In>
     : Abilities[K] extends ResourceAbilities
-    ? ResourceCapabilities<At, Can extends '' ? K : `${Can}/${K}`, Abilities[K]>
+    ? ResourceCapabilities<At, ToCan<NS, K>, Abilities[K]>
     : Abilities[K]
 }
+
+type ToCan<NS extends string, T extends string> = NS extends ''
+  ? T
+  : `${NS extends '_' ? '*' : NS}/${T extends '_' ? '*' : T}`
 
 export interface ResourceCapability<
   At extends URI,
@@ -151,10 +170,10 @@ type ProviderOf<
   Context extends {} = {}
 > = {
   [K in keyof Abilities & string]: Abilities[K] extends Reader<
-    Result<infer Out, infer Fail> & { uri: infer ID }
-  >
+    Result<infer Out, infer Fail>
+  > & { uri: infer ID }
     ? (uri: ID, context: Context) => Await<Result<Out, Fail>>
-    : Abilities[K] extends Ability<infer In, infer Out, infer Fail, infer URI>
+    : Abilities[K] extends Task<infer In, infer Out, infer Fail, infer URI>
     ? (uri: URI, input: In, context: Context) => Await<Result<Out, Fail>>
     : Abilities[K] extends ResourceAbilities
     ? ProviderOf<Abilities[K], Context>
@@ -169,29 +188,26 @@ type With<
     Result<infer Out, infer Fail>
   >
     ? Reader<Result<Out, Fail>> & { uri: ID }
-    : Abilities[K] extends Ability<infer In, infer Out, infer Fail, URI>
-    ? Ability<In, Out, Fail, ID>
+    : Abilities[K] extends Task<infer In, infer Out, infer Fail, URI>
+    ? Task<In, Out, Fail, ID>
     : Abilities[K] extends ResourceAbilities
     ? With<ID, Abilities[K]>
     : never
 }
 
-type Query<
-  ID extends URI = URI,
-  Abilities extends ResourceAbilities = ResourceAbilities
-> =
+type Query<ID extends URI = URI> =
   | {
       [K: PropertyKey]:
-        | Selector<URI, API.Ability, unknown, unknown, { error: true }>
-        | Selection<URI, API.Ability, unknown, unknown, { error: true }, any>
+        | Selector<ID, API.Ability, unknown, unknown, { error: true }>
+        | Selection<ID, API.Ability, unknown, unknown, { error: true }, any>
     }
   | [
-      Selector<URI, API.Ability, unknown, unknown, { error: true }>,
-      ...Selector<URI, API.Ability, unknown, unknown, { error: true }>[]
+      Selector<ID, API.Ability, unknown, unknown, { error: true }>,
+      ...Selector<ID, API.Ability, unknown, unknown, { error: true }>[]
     ]
 
-interface Batch<Q extends Query> {
-  query: Query
+interface Batch<Q> {
+  query: Q
 
   decode(): {
     [K in keyof Q]: Q[K] extends Selector<
@@ -224,7 +240,7 @@ export type From<
     Result<infer Out, infer Fail>
   >
     ? () => Selector<At, K extends '*' ? K : `./${K}`, void, Out, Fail>
-    : Abilities[K] extends Ability<infer In, infer Out, infer Fail>
+    : Abilities[K] extends Task<infer In, infer Out, infer Fail>
     ? (input: Input<In>) => Selector<At, `${Can}/${K}`, In, Out, Fail>
     : Abilities[K] extends ResourceAbilities
     ? From<At, Can extends '' ? K : `${Can}/${K}`, Abilities[K]>
@@ -249,7 +265,7 @@ export type Source =
   | Reader
   // If query source takes an input and returns output it is defined
   // as ability
-  | Ability
+  | Task
 
 export interface Selector<
   At extends URI,
@@ -264,7 +280,7 @@ export interface Selector<
 
   encode(): Uint8Array
 
-  decode(bytes: Uint8Array): Promise<Result<Out, Fail>>
+  decode(bytes: Uint8Array): Result<Out, Fail>
   select<Q extends QueryFor<Out>>(
     query: Q
   ): Selection<At, Can, In, Select<Out, Q>, Fail, Q>
@@ -310,7 +326,7 @@ export type Select<Out, Query extends QueryFor<Out>> = {
     ? Out[K]
     : Query[K] extends object
     ? Select<Out[K], Query[K]>
-    : never
+    : { debug: Query[K] }
 }
 
 type QueryFor<Out> = Partial<{
@@ -323,6 +339,8 @@ export interface CreateAgent<ID extends DID> {
    * principal alignment on incoming delegations.
    */
   signer: Signer<ID>
+
+  authority?: API.Principal
   /**
    * Agent may act on behalf of some other authority e.g. in case of
    * web3.storage we'd like to `root -> manager -> worker` chain of
@@ -336,9 +354,9 @@ export interface CreateAgent<ID extends DID> {
 
 export interface AgentConnect<
   ID extends DID,
-  Capabilities extends [CapabilityParser, ...CapabilityParser[]]
+  Capabilities extends Resource = never
 > {
-  principal: Verifier<ID>
+  principal: API.Principal<ID>
 
   delegations?: Delegation[]
 
@@ -352,15 +370,12 @@ export interface AgentConnect<
 export interface Agent<
   ID extends DID = DID,
   Context extends {} = {},
-  Provides = () => never
+  Abilities extends ResourceAbilities = ResourceAbilities
 > {
   signer: Signer<ID>
   context: Context
 
-  connect<
-    ID extends DID,
-    Capabilities extends [CapabilityParser, ...CapabilityParser[]]
-  >(
+  connect<ID extends DID, Capabilities extends Resource>(
     options: AgentConnect<ID, Capabilities>
   ): AgentConnection<ID, Capabilities>
 
@@ -374,36 +389,14 @@ export interface Agent<
    */
   init<Ext extends {}>(start: () => API.Await<Ext>): Agent<ID, Context & Ext>
 
-  // provide<
-  //   Can extends ProvidedAbility,
-  //   With extends URI,
-  //   NB extends Caveats,
-  //   Out,
-  //   Problem extends Failure
-  // >(
-  //   capability: CapabilityParser<
-  //     Match<ParsedCapability<Can, With, InferCaveats<NB>>>
-  //   >,
-  //   handler: (
-  //     input: HandlerInput<
-  //       ParsedCapability<Can, With, InferCaveats<NB>>,
-  //       Context
-  //     >
-  //   ) => Await<Result<Out, Problem>>
-  // ): Agent<
-  //   ID,
-  //   Context,
-  //   Provides &
-  //     ((
-  //       input: Capability<Can, With, InferCaveats<NB>>
-  //     ) => Await<Result<Out, Problem | InvocationError>>)
-  // >
+  provide<At extends URI, Abilities extends ResourceAbilities>(
+    capabilities: Resource<At, Abilities>,
+    provider: ProviderOf<Abilities, Context>
+  ): Agent<ID, Context, Abilities & Resource<At, Abilities>['abilities']>
 
-  resource<ID extends URI, Abilities extends ResourceAbilities>(
-    resource: Reader<ID>,
-    abilities: Abilities
-  ): Resource<ID, Abilities>
-  invoke: Provides
+  resource<At extends URI>(uri: At): From<At, '', Abilities>
+
+  query: Resource<URI, Abilities, Context>['query']
 }
 
 export type QueryEndpoint<
@@ -412,9 +405,12 @@ export type QueryEndpoint<
 
 export interface AgentConnection<
   ID extends DID,
-  Capabilities extends [CapabilityParser, ...CapabilityParser[]]
+  Capabilities extends Resource
 > {
   did(): ID
+  capabilities: Capabilities
+
+  query: Capabilities['query']
 }
 
 export interface HandlerInput<T extends ParsedCapability, Context extends {}> {
@@ -423,20 +419,4 @@ export interface HandlerInput<T extends ParsedCapability, Context extends {}> {
 
   invocation: API.ServiceInvocation<T>
   agent: Agent<DID, Context>
-}
-
-export interface Application<
-  Can extends ProvidedAbility = ProvidedAbility,
-  With extends URI = URI,
-  In extends object = {},
-  Out extends Result<unknown, { error: true }> = Result<
-    unknown,
-    { error: true }
-  >
-> {
-  can: Can
-  with: With
-
-  in: InferCaveats<In>
-  out: Out
 }
