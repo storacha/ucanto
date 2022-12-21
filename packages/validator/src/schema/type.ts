@@ -44,6 +44,19 @@ export interface ArraySchema<T, I = unknown> extends Schema<T[], I> {
   element: Reader<T, I>
 }
 
+export interface DictionarySchema<V, K extends string, I = unknown>
+  extends Schema<Dictionary<K, V>, I> {
+  key: Reader<K, string>
+  value: Reader<V, I>
+}
+
+export type Dictionary<
+  K extends string = string,
+  V extends unknown = unknown
+> = {
+  [Key in K]: V
+}
+
 export interface LiteralSchema<
   T extends string | number | boolean | null,
   I = unknown

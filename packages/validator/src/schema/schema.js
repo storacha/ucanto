@@ -401,6 +401,68 @@ class Tuple extends API {
 export const tuple = shape => new Tuple(shape)
 
 /**
+ * @template V
+ * @template {string} K
+ * @template [I=unknown]
+ * @extends {API<Schema.Dictionary<K, V>, I, { key: Schema.Reader<K, string>, value: Schema.Reader<V, I> }>}
+ * @implements {Schema.DictionarySchema<V, K, I>}
+ */
+class Dictionary extends API {
+  /**
+   * @param {I} input
+   * @param {object} schema
+   * @param {Schema.Reader<K, string>} schema.key
+   * @param {Schema.Reader<V, I>} schema.value
+   */
+  readWith(input, { key, value }) {
+    if (typeof input != 'object' || input === null || Array.isArray(input)) {
+      return typeError({
+        expect: 'dictionary',
+        actual: input,
+      })
+    }
+
+    const dict = /** @type {Schema.Dictionary<K, V>} */ ({})
+
+    for (const [k, v] of Object.entries(input)) {
+      const keyResult = key.read(k)
+      if (keyResult?.error) {
+        return memberError({ at: k, cause: keyResult })
+      }
+
+      const valueResult = value.read(v)
+      if (valueResult?.error) {
+        return memberError({ at: k, cause: valueResult })
+      }
+
+      dict[keyResult] = valueResult
+    }
+
+    return dict
+  }
+  get key() {
+    return this.settings.key
+  }
+  get value() {
+    return this.settings.value
+  }
+  toString() {
+    return `dictionary(${this.settings})`
+  }
+}
+
+/**
+ * @template {string} K
+ * @template {unknown} V
+ * @template [I=unknown]
+ * @param {object} shape
+ * @param {Schema.Reader<V, I>} shape.value
+ * @param {Schema.Reader<K, string>} [shape.key]
+ */
+export const dictionary = ({ value, key = string() }) =>
+  new Dictionary({ value, key })
+
+/**
  * @template {[unknown, ...unknown[]]} T
  * @template [I=unknown]
  * @extends {API<T[number], I, {type: string, variants:Set<T[number]>}>}
