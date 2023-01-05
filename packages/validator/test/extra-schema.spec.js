@@ -381,3 +381,41 @@ test('URI.from', () => {
     })
   }
 }
+
+{
+  /** @type {Array<[unknown, null|{ name: string, message: string }]>} */
+  const dataset = [
+    ['did:key:foo', null],
+    ['did:web:example.com', null],
+    ['did:twosegments', null],
+    [
+      'notdid',
+      {
+        name: 'SchemaError',
+        message: 'Expected a did: but got "notdid" instead',
+      },
+    ],
+    [
+      undefined,
+      {
+        name: 'TypeError',
+        message: 'Expected value of type string instead got undefined',
+      },
+    ],
+  ]
+  for (const [did, errorExpectation] of dataset) {
+    test(`DID.from("${did}")`, () => {
+      let error
+      try {
+        DID.from(did)
+      } catch (_error) {
+        error = _error
+      }
+      if (errorExpectation) {
+        assert.containSubset(error, errorExpectation)
+      } else {
+        assert.notOk(error, 'expected no error, but got an error')
+      }
+    })
+  }
+}

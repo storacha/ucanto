@@ -37,3 +37,9 @@ export const match = options =>
   /** @type {Schema.Schema<API.DID<Method> & API.URI<"did:">>} */ (
     Schema.string().refine(new DIDSchema(options.method))
   )
+
+/**
+ * Create a DID string from any input (or throw)
+ * @param {unknown} input
+ */
+export const from = input => match({}).from(input)
