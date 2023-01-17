@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@ucanto/interface": "^4.0.3",
-    "multiformats": "^10.0.2"
+    "multiformats": "^11.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
