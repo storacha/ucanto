@@ -3,21 +3,7 @@ import { DID as Principal } from '@ucanto/core'
 import { capability, Schema, DID, URI, Text, Link } from '@ucanto/validator'
 import { ed25519 } from '@ucanto/principal'
 import { CAR } from '@ucanto/transport'
-
-const fail = Schema.struct({ error: true })
-
-/**
- * @template T
- * @template {{}} [X={message:string}]
- * @param {Schema.Reader<T>} ok
- * @param {Schema.Reader<X>} error
- * @returns {Schema.Schema<API.Result<T & {error?: undefined}, X & { error: true }>>}
- */
-const result = (ok, error = Schema.struct({ message: Schema.string() })) =>
-  Schema.or(
-    /** @type {Schema.Reader<T & {error?:never}>} */ (ok),
-    fail.and(error)
-  )
+import { result, task } from '../src/agent.js'
 
 /**
  * @param {object} input
@@ -104,15 +90,15 @@ const testW3protocol = async ({ Agent }) => {
   const store = Agent.resource(Space, {
     store: {
       _: Unit,
-      add: Agent.task({
+      add: task({
         in: Add,
         out: result(AddDone.or(AddHandOff), AddError),
       }),
-      remove: Agent.task({
+      remove: task({
         in: Remove,
         out: result(Remove, MalformedCapability.or(InvocationError)),
       }),
-      list: Agent.task({
+      list: task({
         in: Cursor,
         out: result(list(Add), InvocationError),
       }),
@@ -122,15 +108,15 @@ const testW3protocol = async ({ Agent }) => {
   const upload = Agent.resource(Space, {
     upload: {
       _: Unit,
-      add: Agent.task({
+      add: task({
         in: Upload,
         out: result(Upload),
       }),
-      remove: Agent.task({
+      remove: task({
         in: UploadRoot,
         out: result(Upload),
       }),
-      list: Agent.task({
+      list: task({
         in: Cursor,
         out: result(list(Upload)),
       }),
@@ -141,9 +127,11 @@ const testW3protocol = async ({ Agent }) => {
     did: DID,
   })
 
+  const info = task({ out: result(Info) })
+
   const debug = Agent.resource(Schema.URI, {
     debug: {
-      info: Agent.task({ out: result(Info) }),
+      info: task({ in: undefined, out: result(Info) }),
     },
   })
 
@@ -233,5 +221,19 @@ const testW3protocol = async ({ Agent }) => {
 
   if (!second.error) {
     second.did
+  }
+}
+
+/**
+ * @param {object} input
+ * @param {API.Outcome<number, Error>} input.out
+ */
+export const testResult = ({ out }) => {
+  const { ok, error } = out
+  if (!error) {
+    ok
+  } else {
+    error
+    ok
   }
 }

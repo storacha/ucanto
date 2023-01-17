@@ -35,27 +35,7 @@ export interface AgentModule {
   resource<ID extends URI, Abilities extends ResourceAbilities>(
     resource: Reader<ID>,
     abilities: Abilities
-  ): Resource<ID, With<ID, Abilities>> & ResourceCapabilities<ID, '', Abilities>
-
-  task<
-    In,
-    Out,
-    Fail extends { error: true } = { error: true; message: string },
-    Event extends unknown = never
-  >(options: {
-    in: Reader<In>
-    out: Reader<Result<Out, Fail>>
-    events?: Reader<Event>
-  }): Task<In, Out, Fail, Event>
-
-  task<
-    Out,
-    Fail extends { error: true } = { error: true; message: string },
-    Event extends unknown = never
-  >(options: {
-    out: Reader<Result<Out, Fail>>
-    events?: Reader<Event>
-  }): Task<void, Out, Fail, Event>
+  ): Resource<ID, With<ID, Abilities>> // & ResourceCapabilities<ID, '', Abilities>
 }
 
 export interface Task<
@@ -66,8 +46,32 @@ export interface Task<
   With extends URI = URI
 > {
   uri: With
+
+  in: Reader<In>
+  event: Reader<Event>
+
+  ok: Reader<Out>
+  error: Reader<Fail>
+  out: Reader<Result<Out, Fail>>
+}
+
+export type CreateTask<
+  In = unknown,
+  Out = unknown,
+  Fail extends { error: true } = { error: true },
+  Mail = unknown
+> = TaskWithInput<In, Out, Fail, Mail> | TaskWithoutInput<Out, Fail, Mail>
+
+export interface TaskWithInput<In, Out, Fail extends { error: true }, Mail> {
   in: Reader<In>
   out: Reader<Result<Out, Fail>>
+  mail?: Reader<Mail>
+}
+
+export interface TaskWithoutInput<Out, Fail extends { error: true }, Mail> {
+  in?: undefined
+  out: Reader<Result<Out, Fail>>
+  mail?: Reader<Mail>
 }
 
 export interface CapabilitySchema<
@@ -85,10 +89,10 @@ export interface Resource<
   Abilities extends ResourceAbilities = ResourceAbilities,
   Context extends {} = {}
 > {
-  id: ID
-  abilities: Abilities
+  // id: ID
+  // abilities: Abilities
 
-  capabilities: ResourceCapabilities<ID, '', Abilities>
+  // capabilities: ResourceCapabilities<ID, '', Abilities>
   from<At extends ID>(at: At): From<At, '', Abilities>
   query<Q>(query: Q): Batch<Q>
 
@@ -116,7 +120,13 @@ export type ResourceCapabilities<
     Result<infer In, infer Fail>
   >
     ? ResourceCapability<At, ToCan<NS, K>, In>
-    : Abilities[K] extends Task<infer In, infer Out, infer Fail>
+    : Abilities[K] extends Task<
+        infer In,
+        infer _Out,
+        infer _Fail,
+        infer _Mail,
+        infer _AT
+      >
     ? ResourceCapability<At, ToCan<NS, K>, In>
     : Abilities[K] extends ResourceAbilities
     ? ResourceCapabilities<At, ToCan<NS, K>, Abilities[K]>
@@ -173,7 +183,13 @@ type ProviderOf<
     Result<infer Out, infer Fail>
   > & { uri: infer ID }
     ? (uri: ID, context: Context) => Await<Result<Out, Fail>>
-    : Abilities[K] extends Task<infer In, infer Out, infer Fail, infer URI>
+    : Abilities[K] extends Task<
+        infer In,
+        infer Out,
+        infer Fail,
+        infer _Mail,
+        infer URI
+      >
     ? (uri: URI, input: In, context: Context) => Await<Result<Out, Fail>>
     : Abilities[K] extends ResourceAbilities
     ? ProviderOf<Abilities[K], Context>
@@ -188,8 +204,14 @@ type With<
     Result<infer Out, infer Fail>
   >
     ? Reader<Result<Out, Fail>> & { uri: ID }
-    : Abilities[K] extends Task<infer In, infer Out, infer Fail, URI>
-    ? Task<In, Out, Fail, ID>
+    : Abilities[K] extends Task<
+        infer In,
+        infer Out,
+        infer Fail,
+        infer Mail,
+        infer _At
+      >
+    ? Task<In, Out, Fail, Mail, ID>
     : Abilities[K] extends ResourceAbilities
     ? With<ID, Abilities[K]>
     : never
@@ -206,7 +228,7 @@ type Query<ID extends URI = URI> =
       ...Selector<ID, API.Ability, unknown, unknown, { error: true }>[]
     ]
 
-interface Batch<Q> {
+export interface Batch<Q> {
   query: Q
 
   decode(): {
@@ -240,7 +262,13 @@ export type From<
     Result<infer Out, infer Fail>
   >
     ? () => Selector<At, K extends '*' ? K : `./${K}`, void, Out, Fail>
-    : Abilities[K] extends Task<infer In, infer Out, infer Fail>
+    : Abilities[K] extends Task<
+        infer In,
+        infer Out,
+        infer Fail,
+        infer _Mail,
+        infer _At
+      >
     ? (input: Input<In>) => Selector<At, `${Can}/${K}`, In, Out, Fail>
     : Abilities[K] extends ResourceAbilities
     ? From<At, Can extends '' ? K : `${Can}/${K}`, Abilities[K]>
@@ -265,7 +293,7 @@ export type Source =
   | Reader
   // If query source takes an input and returns output it is defined
   // as ability
-  | Task
+  | Task<unknown, unknown, { error: true }, unknown, URI>
 
 export interface Selector<
   At extends URI,
@@ -354,13 +382,13 @@ export interface CreateAgent<ID extends DID> {
 
 export interface AgentConnect<
   ID extends DID,
-  Capabilities extends Resource = never
+  Abilities extends ResourceAbilities = {}
 > {
   principal: API.Principal<ID>
 
   delegations?: Delegation[]
 
-  capabilities?: Capabilities
+  capabilities?: Resource<URI, Abilities>
 }
 
 /**
@@ -375,9 +403,9 @@ export interface Agent<
   signer: Signer<ID>
   context: Context
 
-  connect<ID extends DID, Capabilities extends Resource>(
-    options: AgentConnect<ID, Capabilities>
-  ): AgentConnection<ID, Capabilities>
+  connect<ID extends DID, Abilities extends ResourceAbilities>(
+    options: AgentConnect<ID, Abilities>
+  ): AgentConnection<ID, Abilities>
 
   /**
    * Attaches some context to the agent.
@@ -405,12 +433,13 @@ export type QueryEndpoint<
 
 export interface AgentConnection<
   ID extends DID,
-  Capabilities extends Resource
+  Abilities extends ResourceAbilities
 > {
   did(): ID
-  capabilities: Capabilities
 
-  query: Capabilities['query']
+  resource<At extends URI>(uri: At): From<At, '', Abilities>
+
+  query: Resource<URI, Abilities>['query']
 }
 
 export interface HandlerInput<T extends ParsedCapability, Context extends {}> {
@@ -420,3 +449,12 @@ export interface HandlerInput<T extends ParsedCapability, Context extends {}> {
   invocation: API.ServiceInvocation<T>
   agent: Agent<DID, Context>
 }
+
+type Unit = Partial<{ [key: string]: never }>
+export type Outcome<T, X> = KeyedUnion<{ ok: T } | { error: X }>
+
+type Empty<T> = {
+  [K in keyof T]?: never
+}
+
+type KeyedUnion<T> = Empty<T> & T
