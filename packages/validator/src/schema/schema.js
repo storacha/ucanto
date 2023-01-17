@@ -2,6 +2,8 @@ import * as Schema from './type.js'
 
 export * from './type.js'
 
+const UNIT = Object.freeze({})
+
 /**
  * @abstract
  * @template [T=unknown]
@@ -158,6 +160,20 @@ class Never extends API {
   read(input) {
     return typeError({ expect: 'never', actual: input })
   }
+
+  /**
+   * @returns {IPLD.Type}
+   */
+  toIPLDSchema() {
+    return {
+      union: {
+        members: [],
+        representation: {
+          keyed: UNIT,
+        },
+      },
+    }
+  }
 }
 
 /**
@@ -180,6 +196,14 @@ class Unknown extends API {
   }
   toString() {
     return 'unknown()'
+  }
+  /**
+   * @returns {IPLD.Type}
+   */
+  toIPLDSchema() {
+    return {
+      any: UNIT,
+    }
   }
 }
 
@@ -214,6 +238,22 @@ class Nullable extends API {
   }
   toString() {
     return `${this.settings}.nullable()`
+  }
+  /**
+   * @returns {IPLD.Type}
+   */
+  toIPLDSchema() {
+    return {
+      union: {
+        members: ['Null', this.reader.toIPLDSchema()],
+        representation: {
+          kinded: {
+            null: 'Null',
+            value: this.reader.toIPLDSchema(),
+          },
+        },
+      },
+    }
   }
 }
 
@@ -335,6 +375,14 @@ class ArrayOf extends API {
   toString() {
     return `array(${this.element})`
   }
+  toIPLDSchema() {
+    return {
+      list: {
+        valueType: this.settings.toIPLDSchema(),
+        valueNullable: this.settings.isNullable,
+      },
+    }
+  }
 }
 
 /**
@@ -389,6 +437,23 @@ class Tuple extends API {
   toString() {
     return `tuple([${this.shape.map(reader => reader.toString()).join(', ')}])`
   }
+
+  toIPLDSchema() {
+    const fields = {}
+    const fieldOrder = []
+
+    for (const [name, field] of Object.entries(this.shape)) {
+      fields[name] = field.toIPLDSchema()
+      fieldOrder.push(name)
+    }
+
+    return {
+      struct: {
+        fields,
+        representation: { tuple: { fieldOrder } },
+      },
+    }
+  }
 }
 
 /**
@@ -421,6 +486,15 @@ class Enum extends API {
   }
   toString() {
     return this.settings.type
+  }
+
+  toIPLDSchema() {
+    return {
+      enum: {
+        members: [...this.settings.variants].sort(),
+        representation: { string: {} },
+      },
+    }
   }
 }
 
@@ -1131,7 +1205,6 @@ class TypeError extends SchemaError {
 export const typeError = data => new TypeError(data)
 
 /**
- *
  * @param {unknown} value
  */
 const displayTypeName = value => {
