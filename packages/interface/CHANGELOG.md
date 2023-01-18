@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/interface-v4.0.3...interface-v4.1.0) (2023-01-18)
+
+
+### Features
+
+* delegation.toJSON ([#186](https://www.github.com/web3-storage/ucanto/issues/186)) ([f8ffa74](https://www.github.com/web3-storage/ucanto/commit/f8ffa74bcbb1376b54633003a7c2609f70135c70))
+* update multiformats ([#197](https://www.github.com/web3-storage/ucanto/issues/197)) ([b92a6c6](https://www.github.com/web3-storage/ucanto/commit/b92a6c6f5c066890a25e62205ff9848b1fb8dde1))
+
+
+### Bug Fixes
+
+* toJSON behavior on the ucan.data ([#185](https://www.github.com/web3-storage/ucanto/issues/185)) ([d1ee6b6](https://www.github.com/web3-storage/ucanto/commit/d1ee6b6a0044d53359f0e20f631e3b86e4b94ab3))
+
 ### [4.0.3](https://www.github.com/web3-storage/ucanto/compare/interface-v4.0.2...interface-v4.0.3) (2022-12-14)
 
 
