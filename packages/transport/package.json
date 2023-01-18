@@ -33,7 +33,7 @@
     "@ipld/dag-cbor": "^8.0.0",
     "@ucanto/core": "^4.0.3",
     "@ucanto/interface": "^4.0.3",
-    "multiformats": "^10.0.2"
+    "multiformats": "^11.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
@@ -45,7 +45,7 @@
     "mocha": "^10.1.0",
     "nyc": "^15.1.0",
     "playwright-test": "^8.1.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.9.4"
   },
   "type": "module",
   "typesVersions": {
