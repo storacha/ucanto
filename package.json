@@ -31,10 +31,5 @@
     "semi": false,
     "singleQuote": true,
     "arrowParens": "avoid"
-  },
-  "pnpm": {
-    "overrides": {
-      "multiformats": "^10.0.2"
-    }
   }
 }
