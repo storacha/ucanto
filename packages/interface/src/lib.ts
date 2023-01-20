@@ -173,6 +173,7 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   version: UCAN.Version
 
   toJSON(): DelegationJSON<this>
+  delegate(): Await<Delegation<C>>
 }
 
 export type DelegationJSON<T extends Delegation = Delegation> = ToJSON<
@@ -229,13 +230,14 @@ export interface InvocationOptions<C extends Capability = Capability>
   capability: C
 }
 
-export interface IssuedInvocation<C extends Capability = Capability>
-  extends DelegationOptions<[C]> {
-  readonly issuer: Signer
+export interface IssuedInvocation<C extends Capability = Capability> {
+  readonly issuer: Principal
   readonly audience: Principal
   readonly capabilities: [C]
 
   readonly proofs: Proof[]
+
+  delegate(): Await<Delegation<[C]>>
 }
 
 export type ServiceInvocation<

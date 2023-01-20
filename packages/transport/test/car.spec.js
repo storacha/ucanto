@@ -1,7 +1,14 @@
 import { test, assert } from './test.js'
 import * as CAR from '../src/car.js'
 import * as CBOR from '../src/cbor.js'
-import { delegate, Delegation, UCAN, parseLink, isLink } from '@ucanto/core'
+import {
+  delegate,
+  invoke,
+  Delegation,
+  UCAN,
+  parseLink,
+  isLink,
+} from '@ucanto/core'
 import * as UTF8 from '../src/utf8.js'
 import { alice, bob, mallory, service } from './fixtures.js'
 import { CarReader } from '@ipld/car/reader'
@@ -15,18 +22,16 @@ test('encode / decode', async () => {
   const expiration = 1654298135
 
   const request = await CAR.encode([
-    {
+    invoke({
       issuer: alice,
       audience: bob,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       expiration,
       proofs: [],
-    },
+    }),
   ])
 
   assert.deepEqual(request.headers, {
@@ -58,17 +63,15 @@ test('encode / decode', async () => {
 
 test('decode requires application/car contet type', async () => {
   const { body } = await CAR.encode([
-    {
+    invoke({
       issuer: alice,
       audience: bob,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [],
-    },
+    }),
   ])
 
   try {
@@ -87,18 +90,16 @@ test('decode requires application/car contet type', async () => {
 test('accepts Content-Type as well', async () => {
   const expiration = UCAN.now() + 90
   const request = await CAR.encode([
-    {
+    invoke({
       issuer: alice,
       audience: bob,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [],
       expiration,
-    },
+    }),
   ])
 
   const [invocation] = await CAR.decode({
@@ -121,6 +122,8 @@ test('accepts Content-Type as well', async () => {
     expiration,
   })
 
+  assert.deepEqual({ ...request }, { ...(await CAR.encode([delegation])) })
+
   assert.deepEqual(invocation.bytes, delegation.bytes)
 })
 
@@ -139,18 +142,16 @@ test('delegated proofs', async () => {
   const expiration = UCAN.now() + 90
 
   const outgoing = await CAR.encode([
-    {
+    invoke({
       issuer: bob,
       audience: service,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [proof],
       expiration,
-    },
+    }),
   ])
 
   const reader = await CarReader.fromBytes(outgoing.body)
@@ -194,18 +195,16 @@ test('omit proof', async () => {
   const expiration = UCAN.now() + 90
 
   const outgoing = await CAR.encode([
-    {
+    invoke({
       issuer: bob,
       audience: service,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [proof.cid],
       expiration,
-    },
+    }),
   ])
 
   const reader = await CarReader.fromBytes(outgoing.body)

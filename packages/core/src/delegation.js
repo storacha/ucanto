@@ -131,6 +131,10 @@ export class Delegation {
     return it(this)
   }
 
+  delegate() {
+    return this
+  }
+
   /**
    * @returns {API.DelegationJSON<this>}
    */

@@ -1,6 +1,6 @@
 import { test, assert } from './test.js'
 import * as JWT from '../src/jwt.js'
-import { delegate, Delegation, UCAN } from '@ucanto/core'
+import { delegate, invoke, Delegation, UCAN } from '@ucanto/core'
 import * as UTF8 from '../src/utf8.js'
 import { alice, bob, mallory, service } from './fixtures.js'
 import * as API from '@ucanto/interface'
@@ -19,18 +19,16 @@ test('encode / decode', async () => {
   const { cid, jwt } = fixtures.basic
 
   const request = await JWT.encode([
-    {
+    invoke({
       issuer: alice,
       audience: bob,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       expiration: NOW,
       proofs: [],
-    },
+    }),
   ])
 
   const expect = {
@@ -94,18 +92,16 @@ test('delegated proofs', async () => {
   const expiration = UCAN.now() + 90
 
   const outgoing = await JWT.encode([
-    {
+    invoke({
       issuer: bob,
       audience: service,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [proof],
       expiration,
-    },
+    }),
   ])
 
   assert.equal(Object.keys(outgoing.headers).length, 3)
@@ -145,18 +141,16 @@ test('omit proof', async () => {
   const expiration = UCAN.now() + 90
 
   const outgoing = await JWT.encode([
-    {
+    invoke({
       issuer: bob,
       audience: service,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [proof.cid],
       expiration,
-    },
+    }),
   ])
 
   assert.equal(Object.keys(outgoing.headers).length, 2)
@@ -196,18 +190,16 @@ test('thorws on invalid heard', async () => {
   const expiration = UCAN.now() + 90
 
   const request = await JWT.encode([
-    {
+    invoke({
       issuer: bob,
       audience: service,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [proof],
       expiration,
-    },
+    }),
   ])
 
   const { [`x-auth-${proof.cid}`]: jwt, ...headers } = request.headers
@@ -242,18 +234,16 @@ test('leaving out root throws', async () => {
   const expiration = UCAN.now() + 90
 
   const request = await JWT.encode([
-    {
+    invoke({
       issuer: bob,
       audience: service,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
       proofs: [proof],
       expiration,
-    },
+    }),
   ])
 
   const { cid } = await delegate({

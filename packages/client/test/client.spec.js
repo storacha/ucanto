@@ -7,7 +7,7 @@ import * as Service from './service.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import fetch from '@web-std/fetch'
 
-test('encode inovocation', async () => {
+test('encode invocation', async () => {
   /** @type {Client.ConnectionView<Service.Service>} */
   const connection = Client.connect({
     id: w3,
@@ -220,6 +220,43 @@ test('execute', async () => {
   const [r1] = await connection.execute(add)
   assert.deepEqual(r1, {
     with: alice.did(),
+    link: car.cid,
+    status: 'upload',
+    url: 'http://localhost:9090/',
+  })
+})
+
+test('execute with delegations', async () => {
+  const car = await CAR.codec.write({
+    roots: [await CBOR.codec.write({ hello: 'world ' })],
+  })
+
+  const add = Client.invoke({
+    issuer: bob,
+    audience: w3,
+    capability: {
+      can: 'store/add',
+      with: bob.did(),
+      nb: { link: car.cid },
+    },
+    proofs: [],
+  })
+
+  const [e1] = await connection.execute(await add.delegate())
+
+  assert.deepEqual(e1, {
+    error: true,
+    name: 'UnknownDIDError',
+    message: `DID ${bob.did()} has no account`,
+    did: bob.did(),
+  })
+
+  // fake register alice
+  service.access.accounts.register(bob.did(), 'did:email:bob@web.mail', car.cid)
+
+  const [r1] = await connection.execute(await add.delegate())
+  assert.deepEqual(r1, {
+    with: bob.did(),
     link: car.cid,
     status: 'upload',
     url: 'http://localhost:9090/',
