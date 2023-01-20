@@ -122,7 +122,7 @@ test('accepts Content-Type as well', async () => {
     expiration,
   })
 
-  CAR.encode([delegation])
+  assert.deepEqual({ ...request }, { ...(await CAR.encode([delegation])) })
 
   assert.deepEqual(invocation.bytes, delegation.bytes)
 })
