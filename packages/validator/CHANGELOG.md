@@ -1,5 +1,18 @@
 # Changelog
 
+### [4.1.1](https://www.github.com/web3-storage/ucanto/compare/validator-v4.1.0...validator-v4.1.1) (2023-01-20)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^4.1.0 to ^4.2.0
+    * @ucanto/interface bumped from ^4.1.0 to ^4.2.0
+  * devDependencies
+    * @ucanto/client bumped from ^4.1.0 to ^4.2.0
+    * @ucanto/principal bumped from ^4.1.0 to ^4.1.1
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/validator-v4.0.3...validator-v4.1.0) (2023-01-18)
 
 

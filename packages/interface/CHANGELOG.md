@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.0](https://www.github.com/web3-storage/ucanto/compare/interface-v4.1.0...interface-v4.2.0) (2023-01-20)
+
+
+### Features
+
+* support execution of materialized invocations ([#199](https://www.github.com/web3-storage/ucanto/issues/199)) ([275bc24](https://www.github.com/web3-storage/ucanto/commit/275bc2439d81d0822c03ac62ba56f63d965d2622))
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/interface-v4.0.3...interface-v4.1.0) (2023-01-18)
 
 
