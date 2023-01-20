@@ -44,6 +44,7 @@ export type Type = Variant<{
   int: IntType
   float: FloatType
   any: AnyType
+  null: NullType
   unit: UnitType
   link: LinkType
   map: MapType
@@ -77,6 +78,7 @@ export type TypeKind =
   | 'struct'
   | 'enum'
   | 'unit'
+  | 'null'
   | 'any'
 
 /**
@@ -192,6 +194,7 @@ export type MapRepresentation = Variant<{
   advanced: AdvancedDataLayoutName
 }>
 
+Uint8Array.from({ buffer: new ArrayBuffer(10), byteOffset: 0, byteLength: 10 })
 /**
  * `MapAsStringPairs` describes that a map should be encoded as a
  * string of delimited "k/v" entries, e.g. "k1=v1,k2=v2".
@@ -292,7 +295,7 @@ export type LinkType<T = { any: AnyType }> = {
  * you must _always_ explicitly specify a representation strategy when defining unions!
  */
 export type UnionType = {
-  members: UnionMember[]
+  members: [UnionMember, ...UnionMember[]]
   representation: UnionRepresentation
 }
 
@@ -370,7 +373,7 @@ export type UnionRepresentation = Variant<{
 export type KindedUnionRepresentation<
   RepresentationKind extends string = string
 > = {
-  [Key in RepresentationKind]: UnionMember
+  // [Key in RepresentationKind]: UnionMember
 }
 
 /**
@@ -619,7 +622,7 @@ export type StructRepresentation = Variant<{
  * 'implicit' options.
  */
 export type StructAsMap = {
-  fields?: StructAsMapFields }
+  fields?: StructAsMapFields
 }
 
 export type StructAsMapFields = { [Key: FieldName]: StructAsMapFieldDetails }
@@ -701,8 +704,6 @@ export type StructAsStringJoin = {
   join: string
   fieldOrder?: StructFieldOrder
 }
-
-
 
 /**
  * StructAsListPairs describes that a struct, should be encoded as
@@ -826,6 +827,23 @@ export type UnitRepresentation = null | true | false | {} // emptymap
  * https://github.com/ipld/specs/issues/318 for some discussion of this.
  */
 export type AnyType = {}
+
+/**
+ * @see https://github.com/ipld/ipld/issues/266
+ */
+export type NullType = {}
+
+export type NullableType<T> = {
+  union: {
+    members: [{ null: NullType }, T]
+    representation: {
+      kinded: {
+        Null: { null: NullType }
+        Value: T
+      }
+    }
+  }
+}
 
 /**
  * `CopyType` describes a special "copy" unit that indicates that a type name

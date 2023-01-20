@@ -6,13 +6,15 @@ export * as The from './api.js'
 /**
  * @template {The.IPLD.Type} Type
  * @param {Type} json
- * @returns {The.Schema<The.TypeFromJSON<Type>, unknown>}
+ * @returns {The.Schema<The.TypeFromJSON<Type>>}
  */
 export const fromJSON = json => {
   const [type, value] = match(/** @type {The.IPLD.Type} */ (json))
   switch (type) {
     case 'any':
       return /** @type {The.Schema<any>} */ (TheUnknown)
+    case 'null':
+      return /** @type {The.Schema<any>} */ (TheNull)
     case 'bool':
       return /** @type {The.Schema<any>} */ (TheBoolean)
     case 'string':
@@ -20,9 +22,9 @@ export const fromJSON = json => {
     case 'bytes':
       return /** @type {The.Schema<any>} */ (TheBytes)
     case 'int':
-      return /** @type {The.Schema<any>} */ (TheInteger)
+      return /** @type {The.Schema<any>} */ (Integer)
     case 'float':
-      return /** @type {The.Schema<any>} */ (TheFloat)
+      return /** @type {The.Schema<any>} */ (Float)
     case 'map':
       return /** @type {The.Schema<any>} */ (MapSchema.fromJSON({ map: value }))
     default:
@@ -31,15 +33,15 @@ export const fromJSON = json => {
 }
 
 /**
- * @template {{}} T
- * @template {unknown} U
- * @template {The.Schema<T, U>} Schema
- * @implements {The.Schema<T|null, U|null>}
+ * @template T
+ * @template U
+ * @template {The.IPLD.Type} E
+ * @implements {The.Schema<T|null, U|null, The.IPLD.NullableType<E>>}
  */
 class Nullable {
   /**
    * @param {object} source
-   * @param {Schema} source.schema
+   * @param {The.Schema<T, U, E>} source.schema
    */
   constructor({ schema }) {
     this.valueSchema = schema
@@ -70,19 +72,24 @@ class Nullable {
   }
 
   /**
-   *
-   * @returns {The.IPLD.Type}
+   * @returns {The.Schema<T|null, U|null, The.IPLD.NullableType<E>>}
    */
+  nullable() {
+    return this
+  }
 
+  /**
+   * @returns {The.IPLD.NullableType<E>}
+   */
   toJSON() {
-    const unit = { unit: { representation: null } }
+    const type = this.valueSchema.toJSON()
     return {
       union: {
-        members: [unit, this.valueSchema.toJSON()],
+        members: [TheNull.toJSON(), type],
         representation: {
           kinded: {
-            null: unit,
-            value: this.valueSchema.toJSON(),
+            Null: TheNull.toJSON(),
+            Value: type,
           },
         },
       },
@@ -90,6 +97,63 @@ class Nullable {
   }
 }
 
+/**
+ * @template T
+ * @template U
+ * @template {The.IPLD.Type} E
+ * @param {The.Schema<T, U, E>} schema
+ * @returns {The.Schema<T|null, U|null, The.IPLD.NullableType<E>>}
+ */
+export const nullable = schema => new Nullable({ schema })
+
+/**
+ * @implements {The.Schema<null, null, {null:The.IPLD.NullType }>}
+ */
+const NullSchema = class Null {
+  /**
+   * @param {unknown} source
+   * @returns {The.Result<null, The.ConformanceError>}
+   */
+  conform(source) {
+    if (source === null) {
+      return { ok: null }
+    } else {
+      return kindError({ schema: TheNull, value: source })
+    }
+  }
+
+  /**
+   * @param {null} view
+   */
+  encode(view) {
+    return this.conform(view)
+  }
+
+  /**
+   * @param {null} model
+   */
+  decode(model) {
+    return this.conform(model)
+  }
+
+  nullable() {
+    return this
+  }
+
+  /**
+   * @returns {{null:The.IPLD.NullType }}
+   */
+  toJSON() {
+    return { null: {} }
+  }
+}
+
+const TheNull = new NullSchema()
+export const Null = TheNull
+
+/**
+ * @implements {The.Schema<unknown>}
+ */
 const UnknownSchema = class Unknown {
   /**
    * @param {unknown} source
@@ -112,19 +176,26 @@ const UnknownSchema = class Unknown {
     return this.conform(model)
   }
 
+  nullable() {
+    return nullable(this)
+  }
+
   toJSON() {
     return { any: {} }
   }
 }
 
-/** @type {The.Schema<unknown, unknown, The.ConformanceError, { any: The.IPLD.AnyType }>} */
 const TheUnknown = new UnknownSchema()
 
 export const unknown = () => TheUnknown
 
+/**
+ * @implements {The.Schema<boolean>}
+ */
 const BooleanSchema = class Boolean {
   /**
    * @param {unknown} input
+   * @returns {The.Result<boolean, The.ConformanceError>}
    */
   conform(input) {
     switch (input) {
@@ -132,7 +203,7 @@ const BooleanSchema = class Boolean {
       case false:
         return { ok: input }
       default:
-        return { error: new KindError({ schema: TheBoolean, value: input }) }
+        return kindError({ schema: TheBoolean, value: input })
     }
   }
 
@@ -150,28 +221,32 @@ const BooleanSchema = class Boolean {
     return this.conform(model)
   }
 
+  nullable() {
+    return nullable(this)
+  }
+
   toJSON() {
     return { bool: {} }
   }
 }
 
-/** @type {The.Schema<boolean, boolean, The.ConformanceError, { bool: The.IPLD.BooleanType }>} */
 const TheBoolean = new BooleanSchema()
 
 export const Boolean = TheBoolean
 export const boolean = () => Boolean
 
 /**
- * @implements {The.Schema<string, unknown, KindError>}
+ * @implements {The.Schema<string>}
  */
 const StringSchema = class String {
   /**
    * @param {unknown} input
+   * @returns {The.Result<string, The.ConformanceError>}
    */
   conform(input) {
     return typeof input === 'string'
       ? { ok: input }
-      : { error: new KindError({ schema: TheString, value: input }) }
+      : kindError({ schema: TheString, value: input })
   }
 
   /**
@@ -179,6 +254,10 @@ const StringSchema = class String {
    */
   encode(view) {
     return this.conform(view)
+  }
+
+  nullable() {
+    return nullable(this)
   }
 
   /**
@@ -193,19 +272,22 @@ const StringSchema = class String {
   }
 }
 
-/** @type {The.Schema<string, string, The.ConformanceError, { string: The.IPLD.StringType }>} */
 const TheString = new StringSchema()
 export { TheString as String }
 export const string = () => TheString
 
+/**
+ * @implements {The.Schema<Uint8Array>}
+ */
 const BytesSchema = class Bytes {
   /**
    * @param {unknown} input
+   * @returns {The.Result<Uint8Array, The.ConformanceError>}
    */
   conform(input) {
     return input instanceof Uint8Array
       ? { ok: input }
-      : { error: new KindError({ schema: TheBytes, value: input }) }
+      : kindError({ schema: TheBytes, value: input })
   }
 
   /**
@@ -222,24 +304,31 @@ const BytesSchema = class Bytes {
     return this.conform(model)
   }
 
+  nullable() {
+    return nullable(this)
+  }
+
   toJSON() {
     return { bytes: { representation: { bytes: {} } } }
   }
 }
 
-/** @type {The.Schema<Uint8Array, Uint8Array, The.ConformanceError, { bytes: The.IPLD.BytesType }>} */
 const TheBytes = new BytesSchema()
-export const Bytes = TheBytes
-export const bytes = () => TheBytes
+const Bytes = TheBytes
+export const bytes = () => Bytes
 
+/**
+ * @implements {The.Schema<The.integer>}
+ */
 const IntegerSchema = class Integer {
   /**
    * @param {unknown} input
+   * @returns {The.Result<The.integer, The.ConformanceError>}
    */
   conform(input) {
     return typeof input === 'number' && Number.isInteger(input)
       ? { ok: input }
-      : { error: kindError({ schema: TheInteger, value: input }) }
+      : kindError({ schema: this, value: input })
   }
 
   /**
@@ -256,25 +345,31 @@ const IntegerSchema = class Integer {
     return this.conform(model)
   }
 
+  nullable() {
+    return nullable(this)
+  }
+
   toJSON() {
     return { int: {} }
   }
 }
 
-/** @type  {The.Schema<The.integer, The.integer, The.ConformanceError, { int: The.IPLD.IntType }>} */
-const TheInteger = new IntegerSchema()
+export const Integer = new IntegerSchema()
 
-export const Integer = TheInteger
-export const integer = () => TheInteger
+export const integer = () => Integer
 
+/**
+ * @implements {The.Schema<The.float>}
+ */
 const FloatSchema = class FloatSchema {
   /**
    * @param {unknown} input
+   * @returns {The.Result<The.float, The.ConformanceError>}
    */
   conform(input) {
     return typeof input === 'number' && Number.isFinite(input)
       ? { ok: input }
-      : { error: kindError({ schema: Float, value: input }) }
+      : kindError({ schema: this, value: input })
   }
 
   /**
@@ -291,31 +386,32 @@ const FloatSchema = class FloatSchema {
     return this.conform(model)
   }
 
+  nullable() {
+    return nullable(this)
+  }
+
   toJSON() {
     return { float: {} }
   }
 }
 
-/**
- * @type {The.Schema<The.float, The.float, The.ConformanceError, { float: The.IPLD.FloatType }>}
- */
-const TheFloat = new FloatSchema()
-export const float = () => TheFloat
-export const Float = TheFloat
+export const Float = new FloatSchema()
+export const float = () => Float
 
 /**
- * @template {string} Key
- * @template {unknown} Value
- * @template {The.Schema<Value, any>} ValueSchema
- * @template {The.Schema<Key, any>} KeySchema
- * @implements {The.Schema<Record<Key, Value>>}
+ * @template {string} KeyView
+ * @template {string} KeyModel
+ * @template {unknown} ValueView
+ * @template {unknown} ValueModel
+ * @template {The.IPLD.Type} [KeyType={string:The.IPLD.StringType}]
+ * @template {The.IPLD.Type} [ValueType={any:The.IPLD.AnyType}]
+ * @implements {The.Schema<Record<KeyView, ValueView>, Record<KeyModel, ValueModel>>}
  */
 class MapSchema {
   /**
-   *
    * @param {object} settings
-   * @param {KeySchema} settings.key
-   * @param {ValueSchema} settings.value
+   * @param {The.Schema<KeyView, KeyModel, KeyType>} settings.key
+   * @param {The.Schema<ValueView, ValueModel, ValueType>} settings.value
    */
   constructor({ key, value }) {
     this.key = key
@@ -324,17 +420,15 @@ class MapSchema {
 
   /**
    * @param {unknown} source
-   * @returns {The.Result<Record<Key, Value>, The.ConformanceError>}
+   * @returns {The.Result<Record<KeyView, ValueView>, The.ConformanceError>}
    */
   conform(source) {
     const schema = this
     if (typeof source != 'object' || source === null || Array.isArray(source)) {
-      return {
-        error: kindError({
-          schema,
-          value: source,
-        }),
-      }
+      return kindError({
+        schema,
+        value: source,
+      })
     }
 
     const { key, value } = this
@@ -355,41 +449,125 @@ class MapSchema {
       }
     }
 
-    return { ok: /** @type {Record<Key, Value>} */ (source) }
+    return { ok: /** @type {Record<KeyView, ValueView>} */ (source) }
   }
 
   /**
-   * @param {Record<Key, Value>} view
+   * @param {Record<KeyView, ValueView>} view
+   * @returns {The.Result<Record<KeyModel, ValueModel>, The.ConformanceError>}
    */
   encode(view) {
-    return this.conform(view)
+    const schema = this
+    if (typeof view != 'object' || view === null || Array.isArray(view)) {
+      return kindError({
+        schema,
+        value: view,
+      })
+    }
+
+    const model = /** @type {Record<KeyModel, ValueModel>} */ ({})
+    const { key, value } = this
+
+    for (const [k, v] of Object.entries(view)) {
+      const keyResult = key.encode(/** @type {KeyView} */ (k))
+      if (keyResult.error) {
+        return {
+          error: memberError({ schema, at: k, cause: keyResult.error }),
+        }
+      }
+
+      const valueResult = value.encode(v)
+      if (valueResult.error) {
+        return {
+          error: memberError({ schema, at: k, cause: valueResult.error }),
+        }
+      }
+
+      model[keyResult.ok] = valueResult.ok
+    }
+
+    return { ok: model }
   }
   /**
-   * @param {Record<Key, Value>} model
+   * @param {Record<KeyModel, ValueModel>} model
    */
   decode(model) {
-    return this.conform(model)
+    const schema = this
+    if (typeof model != 'object' || model === null || Array.isArray(model)) {
+      return kindError({
+        schema,
+        value: model,
+      })
+    }
+
+    const view = /** @type {Record<KeyView, ValueView>} */ ({})
+    const { key, value } = this
+
+    for (const [k, v] of Object.entries(view)) {
+      const keyResult = key.decode(/** @type {KeyModel} */ (k))
+      if (keyResult.error) {
+        return {
+          error: memberError({ schema, at: k, cause: keyResult.error }),
+        }
+      }
+
+      const valueResult = value.decode(v)
+      if (valueResult.error) {
+        return {
+          error: memberError({ schema, at: k, cause: valueResult.error }),
+        }
+      }
+
+      view[keyResult.ok] = valueResult.ok
+    }
+
+    return { ok: view }
   }
 
   /**
    * @returns {{
-   *  map: {
-   *    keyType: The.ToIPLDSchema<KeySchema>,
-   *    valueType: The.ToIPLDSchema<ValueSchema>
-   *    valueNullable: false
-   *  }
+   *  map:
+   *    ValueType extends The.IPLD.NullableType<infer T>
+   *    ? { keyType: KeyType, valueType: T, valueNullable: true }
+   *    : { keyType: KeyType, valueType: ValueType, valueNullable: false }
    * }}
    */
   toJSON() {
-    return {
-      map: {
-        keyType: /** @type {The.ToIPLDSchema<KeySchema>} */ (this.key.toJSON()),
-        valueType: /** @type {The.ToIPLDSchema<ValueSchema>} */ (
-          this.value.toJSON()
-        ),
-        valueNullable: false,
-      },
-    }
+    const keyType = this.key.toJSON()
+    const type = this.value.toJSON()
+
+    const memberType =
+      type.union &&
+      type.union.representation.kinded &&
+      type.union.members.length === 2 &&
+      type.union.members[0].null &&
+      type.union.members[1]
+
+    const [valueType, valueNullable] = memberType
+      ? [memberType, true]
+      : [type, false]
+
+    // @ts-expect-error
+    return { map: { keyType, valueType, valueNullable } }
+  }
+
+  /**
+   *
+   * @returns {MapAsList<KeyView, KeyModel, ValueView, ValueModel, KeyType, ValueType>}
+   */
+  asList() {
+    return new MapAsList({ schema: this })
+  }
+
+  /**
+   * @template {string} Inner
+   * @template {string} Entry
+   * @param {object} options
+   * @param {Inner} options.innerDelimiter
+   * @param {Entry} options.entryDelimiter
+   */
+  asString({ innerDelimiter, entryDelimiter }) {
+    return new MapAsString({ schema: this, innerDelimiter, entryDelimiter })
   }
 
   /**
@@ -402,21 +580,253 @@ class MapSchema {
       ? /** @type {The.Schema<string>} */ (fromJSON(map.keyType))
       : TheString
     const value = map.valueType ? fromJSON(map.valueType) : TheUnknown
-    return /** @type {The.Schema<any>} */ (new MapSchema({ key, value }))
+    const schema = new MapSchema({ key, value })
+
+    if (map.representation) {
+      const [type, value] = match(map.representation)
+      switch (type) {
+        case 'listpairs':
+          return schema.asList()
+        case 'stringpairs':
+          return schema.asString()
+        default:
+          throw new Error(`Advanced layout are not supported`)
+      }
+    } else {
+      return schema
+    }
   }
 }
 
 /**
- * @template {string} Key
- * @template {unknown} Value
+ * @template {string} KeyView
+ * @template {string} KeyModel
+ * @template {unknown} ValueView
+ * @template {unknown} ValueModel
+ * @template {The.IPLD.Type} [KeyType={string:The.IPLD.StringType}]
+ * @template {The.IPLD.Type} [ValueType={any:The.IPLD.AnyType}]
+ * @implements {The.Schema<Record<KeyView, ValueView>, [KeyModel, ValueModel][]>}
+ */
+class MapAsList {
+  /**
+   * @param {object} settings
+   * @param {MapSchema<KeyView, KeyModel, ValueView, ValueModel, KeyType, ValueType>} settings.schema
+   */
+  constructor({ schema }) {
+    this.schema = schema
+  }
+
+  /**
+   * @param {unknown} source
+   */
+  conform(source) {
+    return this.schema.conform(source)
+  }
+
+  /**
+   * @param {Record<KeyView, ValueView>} view
+   */
+  encode(view) {
+    const result = this.schema.encode(view)
+    if (result.error) {
+      return result
+    } else {
+      return {
+        ok: /** @type {[KeyModel, ValueModel][]} */ (Object.entries(result.ok)),
+      }
+    }
+  }
+
+  /**
+   * @param {[KeyModel, ValueModel][]} model
+   */
+  decode(model) {
+    const schema = this
+    if (!Array.isArray(model)) {
+      return kindError({
+        schema,
+        value: model,
+      })
+    }
+
+    const view = /** @type {Record<KeyView, ValueView>} */ ({})
+    const { key, value } = this.schema
+
+    for (const [at, [k, v]] of model.entries()) {
+      const keyResult = key.decode(/** @type {KeyModel} */ (k))
+      if (keyResult.error) {
+        return {
+          error: memberError({
+            schema,
+            at,
+            cause: memberError({ schema, at: 0, cause: keyResult.error }),
+          }),
+        }
+      }
+
+      const valueResult = value.decode(v)
+      if (valueResult.error) {
+        return {
+          error: memberError({
+            schema,
+            at,
+            cause: memberError({ schema, at: 1, cause: valueResult.error }),
+          }),
+        }
+      }
+
+      view[keyResult.ok] = valueResult.ok
+    }
+
+    return { ok: view }
+  }
+
+  toJSON() {
+    return {
+      map: {
+        ...this.schema.toJSON().map,
+        representation: {
+          listpairs: {},
+        },
+      },
+    }
+  }
+}
+
+/**
+ * @template {string} KeyView
+ * @template {string} KeyModel
+ * @template {unknown} ValueView
+ * @template {unknown} ValueModel
+ * @template {string} Inner
+ * @template {string} Entry
+ * @template {The.IPLD.Type} [KeyType={string:The.IPLD.StringType}]
+ * @template {The.IPLD.Type} [ValueType={any:The.IPLD.AnyType}]
+ * @implements {The.Schema<Record<KeyView, ValueView>, `${string}`>}
+ */
+class MapAsString {
+  /**
+   * @param {object} settings
+   * @param {Inner} settings.innerDelimiter
+   * @param {Entry} settings.entryDelimiter
+   * @param {MapSchema<KeyView, KeyModel, ValueView, ValueModel, KeyType, ValueType>} settings.schema
+   */
+  constructor({ schema, innerDelimiter, entryDelimiter }) {
+    this.schema = schema
+    this.innerDelimiter = innerDelimiter
+    this.entryDelimiter = entryDelimiter
+  }
+
+  /**
+   * @param {unknown} source
+   */
+  conform(source) {
+    return this.schema.conform(source)
+  }
+
+  /**
+   * @param {Record<KeyView, ValueView>} view
+   */
+  encode(view) {
+    const result = this.schema.encode(view)
+    if (result.error) {
+      return result
+    } else {
+      const { innerDelimiter, entryDelimiter } = this
+      const entries = []
+      for (const [key, value] of Object.entries(result.ok)) {
+        entries.push(`${key}${innerDelimiter}${value}`)
+      }
+
+      const ok =
+        /** @type {`${string}${Inner}${string}`|`${string}${Inner}${string}${Entry}${string}`} */ (
+          entries.join(entryDelimiter)
+        )
+
+      return { ok }
+    }
+  }
+
+  /**
+   * @param {string} model
+   * @returns {The.Result<Record<KeyView, ValueView>, The.ConformanceError>}
+   */
+  decode(model) {
+    const schema = this
+    if (typeof model !== 'string') {
+      return kindError({
+        schema,
+        value: model,
+      })
+    }
+
+    const { entryDelimiter, innerDelimiter } = this
+    const { key, value } = this.schema
+
+    const view = /** @type {Record<KeyView, ValueView>} */ ({})
+    const offset = 0
+    for (const entry of model.split(entryDelimiter)) {
+      const n = entry.indexOf(innerDelimiter)
+
+      const [k, v] = [entry.slice(0, n), entry.slice(n + 1)]
+
+      const keyResult = key.decode(/** @type {KeyModel} */ (k))
+      if (keyResult.error) {
+        return {
+          error: memberError({
+            schema,
+            at: offset,
+            cause: keyResult.error,
+          }),
+        }
+      }
+
+      const valueResult = value.decode(/** @type {ValueModel} */ (v))
+      if (valueResult.error) {
+        return {
+          error: memberError({
+            schema,
+            at: offset + n + 1,
+            cause: valueResult.error,
+          }),
+        }
+      }
+
+      view[keyResult.ok] = valueResult.ok
+    }
+
+    return { ok: view }
+  }
+
+  toJSON() {
+    return {
+      map: {
+        ...this.schema.toJSON().map,
+        representation: {
+          stringpairs: {
+            innerDelim: this.innerDelimiter,
+            entryDelim: this.entryDelimiter,
+          },
+        },
+      },
+    }
+  }
+}
+
+/**
+ * @template {string} KeyView
+ * @template ValueView
+ * @template {string} KeyModel
+ * @template {unknown} ValueModel
+ * @template {The.IPLD.Type} [KeyType={string:The.IPLD.StringType}]
+ * @template {The.IPLD.Type} [ValueType={any:The.IPLD.AnyType}]
  * @param {object} source
- * @param {The.Schema<Key, unknown>} [source.key]
- * @param {The.Schema<Value, unknown>} [source.value]
- * @returns {The.Schema<Record<Key, Value>, Record<Key, Value>>}
+ * @param {The.Schema<KeyView, KeyModel, KeyType>} [source.key]
+ * @param {The.Schema<ValueView, ValueModel, ValueType>} [source.value]
  */
 export const map = ({
-  key = /** @type {The.Schema<Key, unknown>} */ (TheString),
-  value = /** @type {The.Schema<Value, unknown>} */ (TheUnknown),
+  key = /** @type {any} */ (TheString),
+  value = /** @type {any} */ (TheUnknown),
 } = {}) => new MapSchema({ key, value })
 
 class ConformanceError extends Error {
@@ -485,9 +895,11 @@ class KindError extends ConformanceError {
  * @param {object} source
  * @param {The.Schema} source.schema
  * @param {unknown} source.value
- * @returns {The.ConformanceError}
+ * @returns {{ error: The.ConformanceError }}
  */
-export const kindError = source => new KindError(source)
+export const kindError = source => ({
+  error: new KindError(source),
+})
 
 /**
  * @param {object} options

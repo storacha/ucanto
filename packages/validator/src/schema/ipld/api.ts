@@ -1,19 +1,19 @@
 import { Phantom, Link, API } from '@ucanto/interface'
-import { Infer, Integer, unknown } from '../schema.js'
+import { Infer, Integer, nullable, unknown } from '../schema.js'
 import * as IPLD from './ipld.js'
+import { The } from './schema.js'
 
 export type { Phantom, IPLD }
 
 export interface Schema<
   View = unknown,
-  Model extends unknown = View,
-  X extends ConformanceError = ConformanceError,
+  Model = View,
   Type extends IPLD.Type = IPLD.Type
 > {
-  conform(view: unknown): Result<View, X>
+  conform(view: unknown): Result<View, ConformanceError>
 
-  encode(view: View): Result<Model, X>
-  decode(model: Model): Result<View, X>
+  encode(view: View): Result<Model, ConformanceError>
+  decode(model: Model): Result<View, ConformanceError>
 
   toJSON(): Type
 }

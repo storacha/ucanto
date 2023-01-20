@@ -205,12 +205,12 @@ test('Schema.map({ value: Schema.integer() })', () => {
   })
 
   assert.deepEqual(
-    schema,
     Schema.fromJSON({
       map: {
         valueType: { int: {} },
       },
-    })
+    }),
+    schema
   )
 
   assert.deepEqual(schema.toJSON(), {
@@ -249,4 +249,90 @@ test('Schema.map({ value: Schema.integer() })', () => {
   })
 })
 
-test('Schema.map({ value: Schema.integer().nullable()', () => {})
+test('Schema.map({ value: Schema.integer().nullable()', () => {
+  const schema = Schema.map({
+    value: Schema.integer().nullable(),
+  })
+
+  assert.deepEqual(schema.toJSON(), {
+    map: {
+      keyType: { string: {} },
+      valueType: { int: {} },
+      valueNullable: true,
+    },
+  })
+})
+
+test('Schema.map({ value: Schema.integer().nullable() }).asList()', () => {
+  const schema = Schema.map({
+    value: Schema.integer().nullable(),
+  }).asList()
+
+  assert.deepEqual(schema.encode({ x: 1, y: 2, z: null }), {
+    ok: [
+      ['x', 1],
+      ['y', 2],
+      ['z', null],
+    ],
+  })
+
+  assert.deepEqual(
+    schema.decode([
+      ['x', 1],
+      ['y', 2],
+      ['z', null],
+    ]),
+    {
+      ok: {
+        x: 1,
+        y: 2,
+        z: null,
+      },
+    }
+  )
+
+  assert.deepEqual(schema.toJSON(), {
+    map: {
+      keyType: { string: {} },
+      valueType: { int: {} },
+      valueNullable: true,
+      representation: {
+        listpairs: {},
+      },
+    },
+  })
+})
+
+test('Schema.map({ value: Schema.string() }).asString({ .. })', () => {
+  const schema = Schema.map({
+    value: Schema.string(),
+  }).asString({
+    innerDelimiter: '=',
+    entryDelimiter: '&',
+  })
+
+  assert.deepEqual(schema.encode({ x: '1', y: '2' }), {
+    ok: `x=1&y=2`,
+  })
+
+  assert.deepEqual(schema.decode(`x=1&y=2`), {
+    ok: {
+      x: '1',
+      y: '2',
+    },
+  })
+
+  assert.deepEqual(schema.toJSON(), {
+    map: {
+      keyType: { string: {} },
+      valueType: { string: {} },
+      valueNullable: false,
+      representation: {
+        stringpairs: {
+          innerDelim: '=',
+          entryDelim: '&',
+        },
+      },
+    },
+  })
+})
