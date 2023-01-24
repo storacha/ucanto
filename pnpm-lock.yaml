@@ -49,8 +49,8 @@ importers:
 
   packages/core:
     specifiers:
-      '@ipld/car': ^5.0.0
-      '@ipld/dag-cbor': ^8.0.0
+      '@ipld/car': ^5.0.3
+      '@ipld/dag-cbor': ^9.0.0
       '@ipld/dag-ucan': ^3.2.0
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
@@ -65,7 +65,7 @@ importers:
       typescript: ^4.9.4
     dependencies:
       '@ipld/car': 5.0.3
-      '@ipld/dag-cbor': 8.0.1
+      '@ipld/dag-cbor': 9.0.0
       '@ipld/dag-ucan': 3.2.0
       '@ucanto/interface': link:../interface
       multiformats: 11.0.1
@@ -168,7 +168,7 @@ importers:
   packages/transport:
     specifiers:
       '@ipld/car': ^5.0.3
-      '@ipld/dag-cbor': ^8.0.0
+      '@ipld/dag-cbor': ^9.0.0
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
       '@ucanto/core': ^4.1.0
@@ -184,7 +184,7 @@ importers:
       typescript: ^4.9.4
     dependencies:
       '@ipld/car': 5.0.3
-      '@ipld/dag-cbor': 8.0.1
+      '@ipld/dag-cbor': 9.0.0
       '@ucanto/core': link:../core
       '@ucanto/interface': link:../interface
       multiformats: 11.0.1
