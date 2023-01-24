@@ -167,7 +167,7 @@ importers:
 
   packages/transport:
     specifiers:
-      '@ipld/car': ^5.0.0
+      '@ipld/car': ^5.0.3
       '@ipld/dag-cbor': ^8.0.0
       '@types/chai': ^4.3.3
       '@types/mocha': ^9.1.0
@@ -202,7 +202,7 @@ importers:
 
   packages/validator:
     specifiers:
-      '@ipld/car': ^5.0.0
+      '@ipld/car': ^5.0.3
       '@ipld/dag-cbor': ^8.0.0
       '@types/chai': ^4.3.3
       '@types/chai-subset': ^1.3.3
