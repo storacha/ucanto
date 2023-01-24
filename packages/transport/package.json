@@ -29,7 +29,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/car": "^5.0.0",
+    "@ipld/car": "^5.0.3",
     "@ipld/dag-cbor": "^9.0.0",
     "@ucanto/core": "^4.1.0",
     "@ucanto/interface": "^4.1.0",
