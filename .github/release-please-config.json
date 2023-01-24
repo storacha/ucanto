@@ -2,6 +2,7 @@
   "plugins": [
     "node-workspace"
   ],
+  "last-release-sha": "e6f8d809f4e06fc2920dcb28e1b5926bb73f4e46",
   "bootstrap-sha": "f814e75a89d3ed7c3488a8cb7af8d94f0cfba440",
   "packages": {
     "packages/principal": {},
