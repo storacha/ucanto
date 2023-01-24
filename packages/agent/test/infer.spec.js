@@ -105,6 +105,15 @@ const testW3protocol = async ({ Agent }) => {
     },
   })
 
+  const t1 = store.from('did:key:zAlice').store.add({}).select({
+    with: true,
+  })
+
+  const t2 = { ...t1.decode(new Uint8Array()) }
+  if (!t2.error) {
+    t2.with
+  }
+
   const upload = Agent.resource(Space, {
     upload: {
       _: Unit,
@@ -122,6 +131,8 @@ const testW3protocol = async ({ Agent }) => {
       }),
     },
   })
+
+  upload.from('did:key:zAlice').upload.list({})
 
   const Info = Schema.struct({
     did: DID,
@@ -185,7 +196,7 @@ const testW3protocol = async ({ Agent }) => {
     capabilities: upload.and(debug),
   })
 
-  const space = worker.capabilities.from('did:key:zSpace')
+  const space = worker.resource('did:key:zSpace')
 
   const listUploads = await space.upload
     .list({

@@ -42,13 +42,11 @@ export interface Task<
   In extends unknown = unknown,
   Out extends unknown = unknown,
   Fail extends { error: true } = { error: true },
-  Event extends unknown = never,
   With extends URI = URI
 > {
   uri: With
 
   in: Reader<In>
-  event: Reader<Event>
 
   ok: Reader<Out>
   error: Reader<Fail>
@@ -58,20 +56,17 @@ export interface Task<
 export type CreateTask<
   In = unknown,
   Out = unknown,
-  Fail extends { error: true } = { error: true },
-  Mail = unknown
-> = TaskWithInput<In, Out, Fail, Mail> | TaskWithoutInput<Out, Fail, Mail>
+  Fail extends { error: true } = { error: true }
+> = TaskWithInput<In, Out, Fail> | TaskWithoutInput<Out, Fail>
 
-export interface TaskWithInput<In, Out, Fail extends { error: true }, Mail> {
+export interface TaskWithInput<In, Out, Fail extends { error: true }> {
   in: Reader<In>
   out: Reader<Result<Out, Fail>>
-  mail?: Reader<Mail>
 }
 
-export interface TaskWithoutInput<Out, Fail extends { error: true }, Mail> {
+export interface TaskWithoutInput<Out, Fail extends { error: true }> {
   in?: undefined
   out: Reader<Result<Out, Fail>>
-  mail?: Reader<Mail>
 }
 
 export interface CapabilitySchema<
@@ -92,15 +87,15 @@ export interface Resource<
   // id: ID
   // abilities: Abilities
 
-  // capabilities: ResourceCapabilities<ID, '', Abilities>
+  capabilities: ResourceCapabilities<ID, '', Abilities>
   from<At extends ID>(at: At): From<At, '', Abilities>
   query<Q>(query: Q): Batch<Q>
 
   with<CTX>(context: CTX): Resource<ID, Abilities, Context & CTX>
 
-  provide<P extends ProviderOf<Abilities, Context>>(
-    provider: P
-  ): Provider<ID, Abilities, Context>
+  // provide<P extends ProviderOf<Abilities, Context>>(
+  //   provider: P
+  // ): Provider<ID, Abilities, Context>
 
   and<
     ID2 extends URI,
@@ -120,13 +115,7 @@ export type ResourceCapabilities<
     Result<infer In, infer Fail>
   >
     ? ResourceCapability<At, ToCan<NS, K>, In>
-    : Abilities[K] extends Task<
-        infer In,
-        infer _Out,
-        infer _Fail,
-        infer _Mail,
-        infer _AT
-      >
+    : Abilities[K] extends Task<infer In, infer _Out, infer _Fail, infer _AT>
     ? ResourceCapability<At, ToCan<NS, K>, In>
     : Abilities[K] extends ResourceAbilities
     ? ResourceCapabilities<At, ToCan<NS, K>, Abilities[K]>
@@ -175,7 +164,7 @@ export interface Provider<
   context: Context
 }
 
-type ProviderOf<
+export type ProviderOf<
   Abilities extends ResourceAbilities = ResourceAbilities,
   Context extends {} = {}
 > = {
@@ -183,13 +172,7 @@ type ProviderOf<
     Result<infer Out, infer Fail>
   > & { uri: infer ID }
     ? (uri: ID, context: Context) => Await<Result<Out, Fail>>
-    : Abilities[K] extends Task<
-        infer In,
-        infer Out,
-        infer Fail,
-        infer _Mail,
-        infer URI
-      >
+    : Abilities[K] extends Task<infer In, infer Out, infer Fail, infer URI>
     ? (uri: URI, input: In, context: Context) => Await<Result<Out, Fail>>
     : Abilities[K] extends ResourceAbilities
     ? ProviderOf<Abilities[K], Context>
@@ -204,14 +187,8 @@ type With<
     Result<infer Out, infer Fail>
   >
     ? Reader<Result<Out, Fail>> & { uri: ID }
-    : Abilities[K] extends Task<
-        infer In,
-        infer Out,
-        infer Fail,
-        infer Mail,
-        infer _At
-      >
-    ? Task<In, Out, Fail, Mail, ID>
+    : Abilities[K] extends Task<infer In, infer Out, infer Fail, infer _At>
+    ? Task<In, Out, Fail, ID>
     : Abilities[K] extends ResourceAbilities
     ? With<ID, Abilities[K]>
     : never
@@ -262,13 +239,7 @@ export type From<
     Result<infer Out, infer Fail>
   >
     ? () => Selector<At, K extends '*' ? K : `./${K}`, void, Out, Fail>
-    : Abilities[K] extends Task<
-        infer In,
-        infer Out,
-        infer Fail,
-        infer _Mail,
-        infer _At
-      >
+    : Abilities[K] extends Task<infer In, infer Out, infer Fail, infer _At>
     ? (input: Input<In>) => Selector<At, `${Can}/${K}`, In, Out, Fail>
     : Abilities[K] extends ResourceAbilities
     ? From<At, Can extends '' ? K : `${Can}/${K}`, Abilities[K]>
@@ -293,7 +264,7 @@ export type Source =
   | Reader
   // If query source takes an input and returns output it is defined
   // as ability
-  | Task<unknown, unknown, { error: true }, unknown, URI>
+  | Task<unknown, unknown, { error: true }, URI>
 
 export interface Selector<
   At extends URI,
@@ -420,7 +391,7 @@ export interface Agent<
   provide<At extends URI, Abilities extends ResourceAbilities>(
     capabilities: Resource<At, Abilities>,
     provider: ProviderOf<Abilities, Context>
-  ): Agent<ID, Context, Abilities & Resource<At, Abilities>['abilities']>
+  ): Agent<ID, Context, Abilities & Resource<At, Abilities>>
 
   resource<At extends URI>(uri: At): From<At, '', Abilities>
 

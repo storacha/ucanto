@@ -30,7 +30,6 @@ export const task = options =>
   /** @type {any} */ ({
     in: options.in,
     out: options.out,
-    mail: options.mail,
   })
 
 /**
@@ -58,7 +57,7 @@ class Resource {
 
   /**
    * @param {object} source
-   * @param {API.Reader<URI>} source.uri
+   * @param {API.Reader<URI>} source.resource
    * @param {Abilities} source.abilities
    * @param {Context} source.context
    */
@@ -70,11 +69,12 @@ class Resource {
   }
 
   /**
-   * @param {URI} at
-   * @returns {API.From<URI, '', Abilities>},
+   * @template {URI} At
+   * @param {At} at
+   * @returns {API.From<At, '', Abilities>},
    */
   from(at) {
-    const uri = this.source.uri.read(at)
+    const uri = this.source.resource.read(at)
     if (uri.error) {
       throw uri
     }
@@ -83,7 +83,7 @@ class Resource {
       this.#API = gen('', this.source.abilities)
     }
 
-    return new this.#API({ uri })
+    return new this.#API({ uri: /** @type {At} */ (uri) })
   }
   /**
    * @template Q
@@ -114,12 +114,20 @@ class Resource {
    */
   and(other) {
     return new Resource({
-      uri: Schema.or(this.source.uri, other.source.uri),
+      resource: Schema.or(this.source.resource, other.source.resource),
       context: { ...this.source.context, ...other.source.context },
       // we need to actually merge these
       abilities: { ...this.source.abilities, ...other.source.abilities },
     })
   }
+
+  // /**
+  //  * @template {API.ProviderOf<Abilities, Context>} Provider
+  //  * @param {Provider} provider
+  //  */
+  // provide(provider) {
+
+  // }
 }
 
 /**
@@ -134,40 +142,46 @@ const gen = (at, abilities) => {
    * @template {{ uri: API.URI }} State
    */
   class ResourceAPI {
-    #state
     /**
      * @param {State} state
      */
     constructor(state) {
-      this.#state = state
+      this.state = state
     }
   }
 
+  /** @type {PropertyDescriptorMap} */
   const descriptor = {}
 
   for (const [key, source] of Object.entries(abilities)) {
-    const path = `${at}/key`
+    const path = `${at}/${key}`
     if (isReader(source)) {
       descriptor[key] = {
-        get: function () {
-          const selector = new Selector(this.#state, { path, source })
-          Object.defineProperty(this, key, { value: selector })
-          return selector
+        value: function () {
+          return new Selector(this.state, { path, schema: source })
+          // Object.defineProperty(this, key, { value: selector })
+          // return selector
         },
       }
     } else if (isTask(source)) {
       descriptor[key] = {
-        get: function () {
-          const selector = new TaskSelector(this.$state, { path, source })
-          Object.defineProperty(this, key, { value: selector })
-          return selector
+        value: function (input) {
+          return new TaskSelector({
+            with: this.state.uri,
+            path,
+            schema: source,
+            input,
+            in: source.in.read(input),
+          })
+          // Object.defineProperty(this, key, { value: selector })
+          // return selector
         },
       }
     } else {
       const SubAPI = gen(path, source)
       descriptor[key] = {
         get: function () {
-          const selector = new SubAPI(this.$state)
+          const selector = new SubAPI(this.state)
           Object.defineProperty(this, key, { value: selector })
           return selector
         },
@@ -177,7 +191,37 @@ const gen = (at, abilities) => {
 
   Object.defineProperties(ResourceAPI.prototype, descriptor)
 
-  return ResourceAPI
+  return /** @type {any} */ (ResourceAPI)
+}
+
+class Selector {
+  /**
+   * @param {{ uri: API.URI }} state
+   */
+  constructor(state, { path, source }) {
+    this.path = path
+    this.source = source
+    this.state = state
+  }
+}
+
+class TaskSelector {
+  /**
+   * @param {object} state
+   */
+  constructor(source) {
+    this.source = source
+  }
+
+  get with() {
+    return this.source.with
+  }
+  get can() {
+    return this.source.path.slice(1)
+  }
+  get in() {
+    return this.source.in
+  }
 }
 
 /**
@@ -185,11 +229,21 @@ const gen = (at, abilities) => {
  * @param {Reader|unknown} value
  * @returns {value is Reader}
  */
-const isReader = value => true
+const isReader = value =>
+  value != null &&
+  typeof value === 'object' &&
+  'read' in value &&
+  typeof value.read === 'function'
 
 /**
  * @template {API.Task} Task
  * @param {Task|unknown} value
  * @returns {value is Task}
  */
-const isTask = value => true
+const isTask = value =>
+  value != null &&
+  typeof value === 'object' &&
+  'in' in value &&
+  isReader(value.in) &&
+  'out' in value &&
+  isReader(value.out)
