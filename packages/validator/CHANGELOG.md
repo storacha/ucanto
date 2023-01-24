@@ -13,6 +13,19 @@
 
 * error messages on invalid proofs ([#187](https://www.github.com/web3-storage/ucanto/issues/187)) ([cb1a3bc](https://www.github.com/web3-storage/ucanto/commit/cb1a3bca9d51c95f369f28f1c2be46ee213ed053))
 
+## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/validator-v4.0.3...validator-v4.1.0) (2023-01-24)
+
+
+### Features
+
+* implement dictionary schema ([#192](https://www.github.com/web3-storage/ucanto/issues/192)) ([a872395](https://www.github.com/web3-storage/ucanto/commit/a8723950a42636b5da658c4e8272a46a7a899e6d))
+* update multiformats ([#197](https://www.github.com/web3-storage/ucanto/issues/197)) ([b92a6c6](https://www.github.com/web3-storage/ucanto/commit/b92a6c6f5c066890a25e62205ff9848b1fb8dde1))
+
+
+### Bug Fixes
+
+* error messages on invalid proofs ([#187](https://www.github.com/web3-storage/ucanto/issues/187)) ([cb1a3bc](https://www.github.com/web3-storage/ucanto/commit/cb1a3bca9d51c95f369f28f1c2be46ee213ed053))
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/validator-v4.0.3...validator-v4.1.0) (2023-01-18)
 
 

@@ -7,6 +7,13 @@
 
 * update multiformats ([#197](https://www.github.com/web3-storage/ucanto/issues/197)) ([b92a6c6](https://www.github.com/web3-storage/ucanto/commit/b92a6c6f5c066890a25e62205ff9848b1fb8dde1))
 
+## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/server-v4.0.3...server-v4.1.0) (2023-01-24)
+
+
+### Features
+
+* update multiformats ([#197](https://www.github.com/web3-storage/ucanto/issues/197)) ([b92a6c6](https://www.github.com/web3-storage/ucanto/commit/b92a6c6f5c066890a25e62205ff9848b1fb8dde1))
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/server-v4.0.3...server-v4.1.0) (2023-01-18)
 
 
