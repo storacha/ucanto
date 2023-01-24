@@ -10,3 +10,6 @@ export {
 } from './link.js'
 export * as UCAN from '@ipld/dag-ucan'
 export * as DID from '@ipld/dag-ucan/did'
+export * from './capability.js'
+export * from './error.js'
+export * as Schema from './schema.js'

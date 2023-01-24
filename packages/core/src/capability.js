@@ -7,7 +7,8 @@ import {
   DelegationError as MatchError,
   Failure,
 } from './error.js'
-import { invoke, delegate } from '@ucanto/core'
+import { invoke } from './invocation.js'
+import { delegate } from './delegation.js'
 
 /**
  * @template {API.Ability} A

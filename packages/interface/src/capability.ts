@@ -166,7 +166,8 @@ export type InferCaveatParams<T> = keyof T extends never
     }
 
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
-  extends CapabilityParser<M> {
+  extends CapabilityParser<M>,
+    Reader<M['value']> {
   readonly can: M['value']['can']
 
   create(
