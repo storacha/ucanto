@@ -1,5 +1,14 @@
 # Changelog
 
+### [4.1.1](https://www.github.com/web3-storage/ucanto/compare/principal-v4.1.0...principal-v4.1.1) (2023-01-20)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^4.1.0 to ^4.2.0
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/principal-v4.0.3...principal-v4.1.0) (2023-01-18)
 
 
