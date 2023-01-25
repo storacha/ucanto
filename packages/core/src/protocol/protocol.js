@@ -17,19 +17,20 @@ const build = tasks => {
 
   for (const task of tasks) {
     const path = task.can.split('/')
-    const name = path.pop()
-    if (!name) {
+    if (path.length < 2) {
       throw new RangeError(
         `Expected task that has a valid 'can' field instead got '${task.can}'`
       )
     }
+    const name = /** @type {string} */ (path.pop())
+    const key = name === '*' ? '_' : name
     const namespace = buildNamespace(abilities, path)
-    if (namespace[name] && namespace[name] !== task) {
+    if (namespace[key] && namespace[key] !== task) {
       throw new RangeError(
         `All tasks must have unique 'can' fields, but multiple tasks with "can: '${task.can}'" had been provided`
       )
     }
-    namespace[name] = task
+    namespace[key] = task
   }
 
   return abilities
@@ -44,10 +45,12 @@ const buildNamespace = (source, path) => {
   /** @type {Record<string, unknown>} */
   let target = source
   for (const name of path) {
-    if (target[name] == null) {
-      target[name] = {}
+    if (name !== '.') {
+      if (target[name] == null) {
+        target[name] = {}
+      }
+      target = /** @type {Record<string, unknown>} */ (target[name])
     }
-    target = /** @type {Record<string, unknown>} */ (target[name])
   }
   return target
 }

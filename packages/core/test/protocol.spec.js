@@ -3,6 +3,8 @@ import { capability, Failure, Schema, protocol } from '../src/lib.js'
 import * as API from '@ucanto/interface'
 import * as Store from './capabilities/store.js'
 import * as Upload from './capabilities/upload.js'
+import * as Access from './capabilities/access.js'
+import { access } from '../src/validator.js'
 
 /**
  * @template T
@@ -73,6 +75,13 @@ const upload = {
   }),
 }
 
+const ucanto = {
+  update: Schema.task({
+    in: Access.session,
+    ok: Schema.struct({}),
+  }),
+}
+
 test('task api', () => {
   assert.deepInclude(store.add, {
     can: 'store/add',
@@ -104,4 +113,49 @@ test('protocol derives capabilities', () => {
   ])
 
   assert.deepEqual(w3.abilities, { store, upload })
+})
+
+test('protocol handles ./update', () => {
+  const w3 = protocol([store.add, store.list, store.remove, ucanto.update])
+
+  assert.deepEqual(w3.abilities, { store, ...ucanto })
+})
+
+test('conflicting capabilities', () => {
+  assert.throws(
+    () =>
+      protocol([
+        store.add,
+        store.list,
+        Schema.task({ in: Store.add, ok: Schema.struct({}) }),
+      ]),
+    /multiple tasks with "can: 'store\/add'/
+  )
+})
+
+test('requires namespace', () => {
+  assert.throws(
+    () =>
+      protocol([
+        Schema.task({
+          in: capability({
+            // @ts-expect-error
+            can: 'boom',
+            with: Schema.DID,
+            nb: {},
+          }),
+          ok: Schema.struct({}),
+        }),
+      ]),
+    /valid 'can' field instead got 'boom'/
+  )
+})
+
+test('maps * to _', () => {
+  const any = Schema.task({ in: Store._, ok: Store._ })
+  const w3 = protocol([store.add, store.list, store.remove, any])
+
+  assert.deepEqual(w3.abilities, {
+    store: { ...store, _: any },
+  })
 })

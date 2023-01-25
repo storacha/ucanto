@@ -27,6 +27,10 @@ type InferAbility<T> = T extends Task<infer C>
 type InferNamespacedAbility<
   Path extends string,
   T extends Task
-> = Path extends `${infer Key}/${infer Rest}`
-  ? { [K in Key]: InferNamespacedAbility<Rest, T> }
-  : { [K in Path]: T }
+> = Path extends `./${infer Rest}`
+  ? InferNamespacedAbility<Rest, T>
+  : Path extends `${infer Key}/${infer Rest}`
+  ? { [K in EscapeKey<Key>]: InferNamespacedAbility<Rest, T> }
+  : { [K in EscapeKey<Path>]: T }
+
+type EscapeKey<Key extends string> = Key extends '*' ? '_' : Key
