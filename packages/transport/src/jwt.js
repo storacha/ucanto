@@ -21,7 +21,7 @@ export const encode = async batch => {
   /** @type {string[]} */
   const body = []
   for (const invocation of batch) {
-    const delegation = await Delegation.delegate(invocation)
+    const delegation = await invocation.delegate()
 
     body.push(`${delegation.cid}`)
     for (const proof of iterate(delegation)) {

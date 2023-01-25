@@ -20,7 +20,7 @@ export const encode = async (invocations, options) => {
   const roots = []
   const blocks = new Map()
   for (const invocation of invocations) {
-    const delegation = await Delegation.delegate(invocation, options)
+    const delegation = await invocation.delegate()
     roots.push(delegation.root)
     for (const block of delegation.export()) {
       blocks.set(block.cid.toString(), block)

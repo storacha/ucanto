@@ -249,3 +249,22 @@ test('toJSON delegation chain', async () => {
     },
   })
 })
+
+test('.delegate() return same value', async () => {
+  const ucan = await delegate({
+    issuer: alice,
+    audience: w3,
+    capabilities: [
+      {
+        with: alice.did(),
+        can: 'test/echo',
+        nb: {
+          message: 'data:1',
+        },
+      },
+    ],
+    expiration: Infinity,
+  })
+
+  assert.equal(ucan.delegate(), ucan)
+})
