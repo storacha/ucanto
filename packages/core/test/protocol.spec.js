@@ -1,190 +1,107 @@
 import { test, assert } from './test.js'
-import * as Protocol from '../src/protocol.js'
-import { capability, Failure, Schema } from '../src/lib.js'
+import { capability, Failure, Schema, protocol } from '../src/lib.js'
 import * as API from '@ucanto/interface'
-import { equalWith, equalLink } from './util.js'
+import * as Store from './capabilities/store.js'
+import * as Upload from './capabilities/upload.js'
 
 /**
- * Represents the top `{ can: '*', with: 'did:key:zAlice' }` capability, which we often
- * also call account linking.
- *
- * @see {@link https://github.com/ucan-wg/spec#52-top}
+ * @template T
+ * @param {API.Reader<T>} item
  */
-export const top = capability({
-  can: '*',
-  with: Schema.DID,
+const list = item =>
+  Schema.struct({
+    cursor: Schema.string().optional(),
+    size: Schema.integer(),
+    results: Schema.array(item),
+  })
+
+const car = Schema.struct({
+  link: Schema.Link,
+  size: Schema.integer(),
+  origin: Schema.Link.optional(),
 })
 
-/**
- * Capability can only be delegated (but not invoked) allowing audience to
- * derived any `store/` prefixed capability for the (memory) space identified
- * by did:key in the `with` field.
- */
-export const store = top.derive({
-  to: capability({
-    can: 'store/*',
-    /**
-     * did:key identifier of the (memory) space where CAR is intended to
-     * be stored.
-     */
-    with: Schema.DID,
+const unit = Schema.struct({})
+
+const up = Schema.struct({
+  root: Schema.Link,
+  shards: Upload.CARLink.array().optional(),
+})
+
+const CARAdded = Schema.struct({
+  status: 'done',
+  with: Schema.DID.match({ method: 'key' }),
+  link: Schema.Link,
+})
+
+const CARReceiving = Schema.struct({
+  status: 'upload',
+  with: Schema.DID.match({ method: 'key' }),
+  link: Schema.Link,
+  url: Schema.URI,
+})
+
+// roughly based on https://github.com/web3-storage/w3protocol/blob/6e83725072ee093dda16549675b9ac943ea096b7/packages/upload-client/src/types.ts#L30-L41
+
+const store = {
+  add: Schema.task({
+    in: Store.add,
+    ok: CARAdded.or(CARReceiving),
   }),
-  /**
-   * `store/*` can be derived from the `*` capability as long as `with` field
-   * is the same.
-   */
-  derives: equalWith,
-})
+  list: Schema.task({
+    in: Store.list,
+    ok: list(car),
+  }),
+  remove: Schema.task({
+    in: Store.remove,
+    ok: unit,
+  }),
+}
 
-// Right now ucanto does not yet has native `*` support, which means
-// `store/add` can not be derived from `*` event though it can be
-// derived from `store/*`. As a workaround we just define base capability
-// here so all store capabilities could be derived from either `*` or
-// `store/*`.
-const base = top.or(store)
+const upload = {
+  add: Schema.task({
+    in: Upload.add,
+    ok: up,
+  }),
+  list: Schema.task({
+    in: Upload.list,
+    ok: list(up),
+  }),
+  remove: Schema.task({
+    in: Upload.remove,
+    ok: up,
+  }),
+}
 
-const add = base.derive({
-  to: capability({
+test('task api', () => {
+  assert.deepInclude(store.add, {
     can: 'store/add',
-    /**
-     * did:key identifier of the (memory) space where CAR is intended to
-     * be stored.
-     */
-    with: Schema.DID,
-    nb: {
-      /**
-       * CID of the CAR file to be stored. Service will provision write target
-       * for this exact CAR file for agent to PUT or POST it. Attempt to write
-       * any other content will fail.
-       */
-      link: Schema.Link,
-      /**
-       * Size of the CAR file to be stored. Service will provision write target
-       * for this exact size. Attempt to write a larger CAR file will fail.
-       */
-      size: Schema.integer(),
-      /**
-       * Agent may optionally provide a link to a related CAR file using `origin`
-       * field. This is useful when storing large DAGs, agent could shard it
-       * across multiple CAR files and then link each shard with a previous one.
-       *
-       * Providing this relation tells service that given CAR is shard of the
-       * larger DAG as opposed to it being intentionally partial DAG. When DAG is
-       * not sharded, there will be only one `store/add` with `origin` left out.
-       */
-      origin: Schema.Link.optional(),
-    },
-    derives: (claim, from) => {
-      const result = equalLink(claim, from)
-      if (result.error) {
-        return result
-      } else if (claim.nb.size !== undefined && from.nb.size !== undefined) {
-        return claim.nb.size > from.nb.size
-          ? new Failure(
-              `Size constraint violation: ${claim.nb.size} > ${from.nb.size}`
-            )
-          : true
-      } else {
-        return true
-      }
-    },
-  }),
-  /**
-   * `store/add` can be derived from the `store/*` & `*` capability
-   * as long as the `with` fields match.
-   */
-  derives: equalWith,
-})
+    with: Schema.DID.match({ method: 'key' }),
+    in: Store.add,
+    out: Schema.result({ ok: CARAdded.or(CARReceiving) }),
+  })
 
-/**
- * Capability can be used to remove the stored CAR file from the (memory)
- * space identified by `with` field.
- */
-export const remove = base.derive({
-  to: capability({
+  assert.deepInclude(store.remove, {
     can: 'store/remove',
-    /**
-     * did:key identifier of the (memory) space where CAR is intended to
-     * be stored.
-     */
-    with: URI.match({ protocol: 'did:' }),
-    nb: {
-      /**
-       * CID of the CAR file to be removed from the store.
-       */
-      link: Link,
-    },
-    derives: equalLink,
-  }),
-  /**
-   * `store/remove` can be derived from the `store/*` & `*` capability
-   * as long as the `with` fields match.
-   */
-  derives: equalWith,
+    with: Schema.URI.match({ protocol: 'did:' }),
+    in: Store.remove,
+    out: Schema.result({ ok: unit }),
+  })
 })
 
-/**
- * Capability can be invoked to request a list of stored CAR files in the
- * (memory) space identified by `with` field.
- */
-export const list = base.derive({
-  to: capability({
-    can: 'store/list',
-    /**
-     * did:key identifier of the (memory) space where CAR is intended to
-     * be stored.
-     */
-    with: URI.match({ protocol: 'did:' }),
-    nb: {
-      /**
-       * A pointer that can be moved back and forth on the list.
-       * It can be used to paginate a list for instance.
-       */
-      cursor: Schema.string().optional(),
-      /**
-       * Maximum number of items per page.
-       */
-      size: Schema.integer().optional(),
-    },
-    derives: (claimed, delegated) => {
-      if (claimed.with !== delegated.with) {
-        return new Failure(
-          `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
-        )
-      }
-      return true
-    },
-  }),
-  /**
-   * `store/list` can be derived from the `store/*` & `*` capability
-   * as long as the `with` fields match.
-   */
-  derives: equalWith,
-})
+test('protocol derives capabilities', () => {
+  const w3Store = protocol([store.add, store.list, store.remove])
 
-test('api', () => {
-  const api = Protocol.protocol([
-    Protocol.task({
-      in: add,
-      ok: Schema.struct({ link: Schema.Link }),
-    }),
-    Protocol.task({
-      in: list,
-      ok: Schema.struct({
-        cursor: Schema.string().optional(),
-        results: Schema.array(
-          Schema.struct({
-            link: Schema.Link,
-            size: Schema.integer(),
-          })
-        ),
-      }),
-    }),
-    Protocol.task({
-      in: remove,
-      ok: Schema.struct({}),
-    }),
+  assert.deepEqual(w3Store.abilities, { store })
+
+  const w3 = protocol([
+    store.add,
+    store.list,
+    store.remove,
+    upload.add,
+    upload.list,
+    upload.remove,
   ])
 
-  const out = { ...api.out.read({}) }
+  assert.deepEqual(w3.abilities, { store, upload })
 })

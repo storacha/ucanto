@@ -116,6 +116,13 @@ class Capability extends Unit {
   }
 
   /**
+   * @type {API.Reader<R>}
+   */
+  get with() {
+    return this.descriptor.with
+  }
+
+  /**
    * @param {unknown} source
    */
   read(source) {
@@ -387,6 +394,10 @@ class Derive extends Unit {
   get can() {
     return this.to.can
   }
+  get with() {
+    return this.to.with
+  }
+
   /**
    * @param {API.Source} capability
    * @returns {API.MatchResult<API.DerivedMatch<T, M>>}

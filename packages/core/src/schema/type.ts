@@ -1,4 +1,9 @@
-import { Failure as Error, Result, Phantom } from '@ucanto/interface'
+import {
+  Failure as Error,
+  Result,
+  Capability,
+  Phantom,
+} from '@ucanto/interface'
 
 export interface Reader<
   O = unknown,
@@ -140,3 +145,14 @@ type RequiredKeys<T extends object> = {
 type OptionalKeys<T extends object> = {
   [k in keyof T]: undefined extends T[k] ? k : never
 }[keyof T] & {}
+
+export interface Task<
+  In extends Capability = Capability,
+  Out extends Result<unknown, { error: true }> = Result<unknown, Error>
+> {
+  can: In['can']
+  with: Reader<In['with']>
+  in: Reader<In>
+
+  out: Reader<Out>
+}

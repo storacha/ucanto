@@ -165,9 +165,15 @@ export type InferCaveatParams<T> = keyof T extends never
       [K in keyof T]: T[K] extends { toJSON(): infer U } ? U : T[K]
     }
 
+export interface CapabilitySchema<T extends Capability> extends Reader<T> {
+  readonly can: T['can']
+
+  readonly with: Reader<T['with']>
+}
+
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   extends CapabilityParser<M>,
-    Reader<M['value']> {
+    CapabilitySchema<M['value']> {
   readonly can: M['value']['can']
 
   create(

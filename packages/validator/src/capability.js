@@ -231,6 +231,14 @@ class Capability extends Unit {
   }
 
   /**
+   * @type {API.Reader<R>}
+   */
+
+  get with() {
+    return this.descriptor.with
+  }
+
+  /**
    * @param {API.Source} source
    * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
@@ -385,6 +393,9 @@ class Derive extends Unit {
   }
   get can() {
     return this.to.can
+  }
+  get with() {
+    return this.to.with
   }
   /**
    * @param {API.Source} capability

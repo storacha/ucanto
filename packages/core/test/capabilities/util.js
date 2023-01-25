@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import { Failure } from '../src/lib.js'
+import { Failure } from '../../src/lib.js'
 
 /**
  * @template {API.ParsedCapability<"store/add"|"store/remove", API.URI<'did:'>, {link?: API.Link<unknown, number, number, 0|1>}>} T
@@ -40,4 +40,29 @@ export function equalWith(child, parent) {
       `Can not derive ${child.can} with ${child.with} from ${parent.with}`
     )
   )
+}
+
+/**
+ * @param {unknown} child
+ * @param {unknown} parent
+ * @param {string} constraint
+ */
+
+export function equal(child, parent, constraint) {
+  if (parent === undefined || parent === '*') {
+    return true
+  } else if (String(child) === String(parent)) {
+    return true
+  } else {
+    return new Failure(
+      `Constrain violation: ${child} violates imposed ${constraint} constraint ${parent}`
+    )
+  }
+}
+
+/**
+ * @param {API.Failure | true} value
+ */
+export function fail(value) {
+  return value === true ? undefined : value
 }
