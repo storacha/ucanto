@@ -1,7 +1,7 @@
 import * as API from '@ucanto/interface'
-import { capability, Schema } from '@ucanto/core'
 import { Verifier } from '@ucanto/principal'
 import { InvalidAudience } from '@ucanto/core/validator'
+export { capability, Schema } from '@ucanto/core'
 export {
   Failure,
   MalformedCapability,

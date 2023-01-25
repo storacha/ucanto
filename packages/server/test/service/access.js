@@ -6,7 +6,7 @@ export const id = w3
 
 const registerCapability = Server.capability({
   can: 'identity/register',
-  with: Server.URI.match({ protocol: 'mailto:' }),
+  with: Server.Schema.URI.match({ protocol: 'mailto:' }),
   derives: (claimed, delegated) =>
     claimed.with === delegated.with ||
     new Server.Failure(
@@ -16,7 +16,7 @@ const registerCapability = Server.capability({
 
 const linkCapability = Server.capability({
   can: 'identity/link',
-  with: Server.URI,
+  with: Server.Schema.URI,
   derives: (claimed, delegated) =>
     claimed.with === delegated.with ||
     new Server.Failure(
@@ -26,7 +26,7 @@ const linkCapability = Server.capability({
 
 const identifyCapability = Server.capability({
   can: 'identity/identify',
-  with: Server.URI,
+  with: Server.Schema.URI,
   derives: (claimed, delegated) =>
     claimed.with === delegated.with ||
     delegated.with === 'ucan:*' ||
