@@ -7,7 +7,6 @@ import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { test, assert } from './test.js'
 import * as Access from './service/access.js'
 import { Verifier } from '@ucanto/principal/ed25519'
-import { UnavailableProof } from '@ucanto/validator'
 
 const context = {
   id: w3,
@@ -20,10 +19,6 @@ const context = {
   canIssue: (capability, issuer) =>
     capability.with === issuer || issuer == w3.did(),
   principal: Verifier,
-  /**
-   * @param {API.UCANLink} link
-   */
-  resolve: link => new UnavailableProof(link),
 }
 
 test('invocation', async () => {

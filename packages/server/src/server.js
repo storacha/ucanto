@@ -1,13 +1,12 @@
 import * as API from '@ucanto/interface'
-import { InvalidAudience } from '@ucanto/validator'
+import { capability, Schema } from '@ucanto/core'
 import { Verifier } from '@ucanto/principal'
+import { InvalidAudience } from '@ucanto/core/validator'
 export {
-  capability,
-  URI,
-  Link,
   Failure,
   MalformedCapability,
-} from '@ucanto/validator'
+  InvalidAudience,
+} from '@ucanto/core/validator'
 
 /**
  * Creates a connection to a service.

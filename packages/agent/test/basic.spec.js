@@ -1,6 +1,6 @@
 import * as API from '../src/api.js'
 import { DID as Principal } from '@ucanto/core'
-import { capability, Schema, DID, URI, Text, Link } from '@ucanto/validator'
+import { capability, Schema } from '@ucanto/core'
 import { ed25519 } from '@ucanto/principal'
 import { CAR } from '@ucanto/transport'
 import { result, task } from '../src/agent.js'
@@ -8,7 +8,7 @@ import * as Agent from '../src/agent.js'
 import { test, assert } from './test.js'
 
 test('create resource', () => {
-  const Space = DID.match({ method: 'key' })
+  const Space = Schema.DID.match({ method: 'key' })
   const Unit = Schema.struct({})
   const Echo = Schema.struct({
     message: Schema.string(),

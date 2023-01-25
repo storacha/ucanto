@@ -103,7 +103,6 @@
     { "path": "../interface" },
     { "path": "../core" },
     { "path": "../transport" },
-    { "path": "../client" },
-    { "path": "../validator" }
+    { "path": "../client" }
   ]
 }

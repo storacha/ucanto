@@ -1,10 +1,12 @@
-import { capability, URI, Link, Schema } from '../src/lib.js'
-import { invoke, parseLink } from '@ucanto/core'
+import { capability, Schema } from '../src/lib.js'
+import { invoke, parseLink } from '../src/lib.js'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
+
+const { URI, Link } = Schema
 
 /**
  * @template {API.Capabilities} C
@@ -41,6 +43,8 @@ test('capability selects matches', () => {
       }
     },
   })
+
+  assert.deepEqual(read.with, URI.match({ protocol: 'file:' }))
 
   const d1 = delegate([
     { can: 'file/read', with: 'space://zAlice' },
@@ -213,6 +217,8 @@ test('derived capability chain', () => {
       )
     },
   })
+
+  assert.deepEqual(register.with, URI.match({ protocol: 'mailto:' }))
 
   const d1 = delegate([
     {
@@ -2061,6 +2067,117 @@ test('default derive with nb', () => {
           },
         },
       ],
+    }
+  )
+})
+
+test('capability .read', () => {
+  const data = URI.match({ protocol: 'data:' })
+  const echo = capability({
+    can: 'test/echo',
+    with: URI.match({ protocol: 'did:' }),
+    nb: {
+      message: URI.match({ protocol: 'data:' }),
+    },
+  })
+
+  assert.match(
+    echo
+      .read({
+        with: 'file://gozala/path',
+        nb: {
+          message: 'data:hello',
+        },
+        bar: 1,
+      })
+      .toString(),
+    /Invalid 'with' - Expected did: URI/
+  )
+  assert.match(
+    echo
+      .read({
+        with: 'file://gozala/path',
+        nb: {
+          message: 'data:hello',
+        },
+        bar: 1,
+      })
+      .toString(),
+    /Invalid 'with' - Expected did: URI/
+  )
+
+  assert.match(
+    echo
+      .read({
+        with: alice.did(),
+      })
+      .toString(),
+    /Invalid 'nb.message' - Expected URI but got undefined/
+  )
+
+  assert.match(
+    echo
+      .read({
+        with: alice.did(),
+        nb: {
+          message: 'echo:foo',
+        },
+      })
+      .toString(),
+    /Invalid 'nb.message' - Expected data: URI instead got echo:foo/
+  )
+
+  assert.deepEqual(
+    echo.create({ with: alice.did(), nb: { message: 'data:hello' } }),
+    {
+      can: 'test/echo',
+      with: alice.did(),
+      nb: {
+        message: 'data:hello',
+      },
+    }
+  )
+
+  assert.deepEqual(
+    echo.read({
+      with: new URL(alice.did()),
+      nb: { message: 'data:hello' },
+    }),
+    {
+      can: 'test/echo',
+      with: alice.did(),
+      nb: {
+        message: 'data:hello',
+      },
+    }
+  )
+})
+
+test('derived capability .read', () => {
+  const A = capability({
+    can: 'invoke/a',
+    with: Schema.URI,
+  })
+
+  const AA = A.derive({
+    to: capability({
+      can: 'derive/a',
+      with: Schema.URI,
+    }),
+    derives: (b, a) =>
+      b.with === a.with ? true : new Failure(`with don't match`),
+  })
+
+  assert.equal(AA.can, 'derive/a')
+  assert.deepEqual(AA.with, Schema.URI)
+
+  assert.deepEqual(
+    AA.read({
+      with: 'data:a',
+    }),
+    {
+      can: 'derive/a',
+      with: 'data:a',
     }
   )
 })

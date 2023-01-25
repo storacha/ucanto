@@ -9,7 +9,6 @@
     "packages/core": {},
     "packages/interface": {},
     "packages/server": {},
-    "packages/transport": {},
-    "packages/validator": {}
+    "packages/transport": {}
   }
 }

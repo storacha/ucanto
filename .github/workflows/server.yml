@@ -10,7 +10,6 @@ on:
       - 'packages/core/**'
       - 'packages/transport/**'
       - 'packages/client/**'
-      - 'packages/validator/**'
       - 'packages/server/**'
   pull_request:
     branches:
@@ -20,7 +19,6 @@ on:
       - 'packages/core/**'
       - 'packages/transport/**'
       - 'packages/client/**'
-      - 'packages/validator/**'
       - 'packages/server/**'
       - '.github/workflows/server.yml'
 jobs:

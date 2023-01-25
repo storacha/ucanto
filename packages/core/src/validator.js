@@ -1,31 +1,30 @@
 import * as API from '@ucanto/interface'
-import { isDelegation, UCAN } from '@ucanto/core'
+// import { isDelegation, UCAN, Schema } from '@ucanto/core'
+import { isDelegation } from './delegation.js'
+import * as UCAN from '@ipld/dag-ucan'
 import { capability } from './capability.js'
-import * as Schema from './schema.js'
+import { DID, literal } from './schema.js'
 import {
-  UnavailableProof,
-  InvalidAudience,
+  InvalidSignature,
   Expired,
   NotValidBefore,
-  InvalidSignature,
+  UnavailableProof,
+  InvalidAudience,
+  DIDKeyResolutionError,
   DelegationError,
   Failure,
   MalformedCapability,
-  DIDKeyResolutionError,
   li,
 } from './error.js'
 
+export { DID }
 export {
   Failure,
   UnavailableProof,
   MalformedCapability,
+  InvalidAudience,
   DIDKeyResolutionError as DIDResolutionError,
 }
-
-export { capability } from './capability.js'
-import { DID } from './schema.js'
-export * from './schema.js'
-export { Schema }
 
 /**
  * @param {UCAN.Link} proof
@@ -516,7 +515,7 @@ const resolveVerifier = async (did, delegation, config) => {
 const resolveDIDFromProofs = async (did, delegation, config) => {
   const update = Top.derive({
     to: capability({
-      with: Schema.literal(config.authority.did()),
+      with: literal(config.authority.did()),
       can: './update',
       nb: { key: DID.match({ method: 'key' }) },
     }),
@@ -542,5 +541,3 @@ const Top = capability({
 const equalWith = (to, from) =>
   to.with === from.with ||
   new Failure(`Claimed ${to.with} can not be derived from ${from.with}`)
-
-export { InvalidAudience }

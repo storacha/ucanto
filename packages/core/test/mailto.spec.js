@@ -1,10 +1,7 @@
 import { test, assert } from './test.js'
-import { access, DID } from '../src/lib.js'
-import { capability, URI, Link, Schema } from '../src/lib.js'
-import { Failure } from '../src/error.js'
+import { access, DID } from '../src/validator.js'
+import { capability, delegate } from '../src/lib.js'
 import { ed25519, Verifier } from '@ucanto/principal'
-import * as Client from '@ucanto/client'
-import * as Core from '@ucanto/core'
 
 import { alice, bob, mallory, service } from './fixtures.js'
 const w3 = service.withDID('did:web:web3.storage')
@@ -63,7 +60,7 @@ test('delegated ./update', async () => {
   const manager = await ed25519.generate()
   const worker = await ed25519.generate()
 
-  const authority = await Core.delegate({
+  const authority = await delegate({
     issuer: manager,
     audience: worker,
     capabilities: [
@@ -74,7 +71,7 @@ test('delegated ./update', async () => {
     ],
     expiration: Infinity,
     proofs: [
-      await Core.delegate({
+      await delegate({
         issuer: w3,
         audience: manager,
         capabilities: [
@@ -156,7 +153,7 @@ test('fail invalid ./update proof', async () => {
     with: w3.did(),
     nb: { key: alice.did() },
     proofs: [
-      await Core.delegate({
+      await delegate({
         issuer: w3,
         audience: service,
         capabilities: [

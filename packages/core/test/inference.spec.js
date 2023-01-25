@@ -1,12 +1,14 @@
-import * as Voucher from './voucher.js'
+import * as Voucher from './capabilities/voucher.js'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-import { capability, URI, Link, DID } from '../src/lib.js'
-import * as API from './types.js'
+import { capability, Schema } from '../src/lib.js'
+import * as API from '@ucanto/interface'
 
-test('execute capabilty', () =>
+const { URI, Link, DID } = Schema
+
+test('execute capability', () =>
   /**
-   * @param {API.ConnectionView<API.Service>} connection
+   * @param {API.ConnectionView<Voucher.Service>} connection
    */
   async connection => {
     const claim = Voucher.Claim.invoke({
@@ -55,7 +57,7 @@ test('execute capabilty', () =>
 
 test('can access fields on the proof', () =>
   /**
-   * @param {API.Delegation<[API.VoucherRedeem]>} proof
+   * @param {API.Delegation<[Voucher.VoucherRedeem]>} proof
    */
   proof => {
     const redeem = Voucher.Redeem.invoke({
@@ -73,7 +75,7 @@ test('can access fields on the proof', () =>
 
 test('use InferInvokedCapability', () =>
   /**
-   * @param {API.ConnectionView<API.Service>} connection
+   * @param {API.ConnectionView<Voucher.Service>} connection
    * @param {API.InferInvokedCapability<typeof Voucher.Redeem>} capability
    */
   async (connection, capability) => {

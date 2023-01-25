@@ -1,5 +1,7 @@
 import { equalWith, canDelegateURI, canDelegateLink, fail } from './util.js'
-import { capability, URI, Text, Link, DID } from '../src/lib.js'
+import { capability, Schema } from '../../src/lib.js'
+const { URI, Text, Link, DID } = Schema
+export * from './voucher/types.js'
 
 export const Voucher = capability({
   can: 'voucher/*',

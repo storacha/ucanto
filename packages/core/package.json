@@ -75,6 +75,22 @@
     "./delegation": {
       "types": "./dist/src/delegation.d.ts",
       "import": "./src/delegation.js"
+    },
+    "./schema": {
+      "types": "./dist/src/schema.d.ts",
+      "import": "./src/schema.js"
+    },
+    "./capability": {
+      "types": "./dist/src/capability.d.ts",
+      "import": "./src/capability.js"
+    },
+    "./validator": {
+      "types": "./dist/src/validator.d.ts",
+      "import": "./src/validator.js"
+    },
+    "./error": {
+      "types": "./dist/src/error.d.ts",
+      "import": "./src/error.js"
     }
   },
   "c8": {

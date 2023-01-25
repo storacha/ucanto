@@ -132,7 +132,7 @@ class Capability extends Unit {
         result
       )
     } catch (error) {
-      return /** @type {any} */ (error).cause
+      return /** @type {any} */ (error)
     }
   }
 

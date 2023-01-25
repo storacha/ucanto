@@ -12,7 +12,7 @@ for (const { input, schema, expect, inputLabel, skip, only } of fixtures()) {
     } else {
       assert.deepEqual(
         result,
-        // if expcted value is set to undefined use input
+        // if expected value is set to undefined use input
         expect.value === undefined ? input : expect.value
       )
     }
@@ -24,7 +24,7 @@ for (const { input, schema, expect, inputLabel, skip, only } of fixtures()) {
     } else {
       assert.deepEqual(
         schema.from(input),
-        // if expcted value is set to undefined use input
+        // if expected value is set to undefined use input
         expect.value === undefined ? input : expect.value
       )
     }
@@ -62,7 +62,7 @@ test('string startsWith & endsWith', () => {
   assert.equal(hello.read('hello world'), 'hello world')
 })
 
-test('string startsWtih', () => {
+test('string startsWith', () => {
   /** @type {Schema.StringSchema<`hello${string}`>} */
   // @ts-expect-error - catches invalid type
   const bad = Schema.string()
@@ -238,7 +238,7 @@ test('literal("foo").default("bar") throws', () => {
   )
 })
 
-test('default on litral has default', () => {
+test('default on literal has default', () => {
   const schema = Schema.literal('foo').default()
   assert.equal(schema.read(undefined), 'foo')
 })
@@ -262,6 +262,16 @@ test('.element of array', () => {
   assert.equal(Schema.array(schema).element, schema)
 })
 
+test('.key & .value of dictionary', () => {
+  const value = Schema.struct({})
+  const key = Schema.enum(['x', 'y'])
+  const schema = Schema.dictionary({ value, key })
+
+  assert.deepEqual(schema.value, value)
+  assert.deepEqual(schema.key, key)
+
+  assert.deepEqual(Schema.dictionary({ value }).key, Schema.string())
+})
 test('struct', () => {
   const Point = Schema.struct({
     type: 'Point',
@@ -585,7 +595,7 @@ test('default throws on invalid default', () => {
 test('unknown with default', () => {
   assert.throws(
     () => Schema.unknown().default(undefined),
-    /undefined is not a vaild default/
+    /undefined is not a valid default/
   )
 })
 

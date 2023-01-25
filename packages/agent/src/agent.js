@@ -1,5 +1,5 @@
 import * as API from '../src/api.js'
-import { Schema, URI } from '@ucanto/validator'
+import { Schema } from '@ucanto/core'
 
 export const fail = Schema.struct({ error: true })
 

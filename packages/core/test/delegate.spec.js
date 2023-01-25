@@ -1,12 +1,18 @@
-import { capability, DID, URI, Link, unknown, Schema } from '../src/lib.js'
-import { invoke, parseLink, delegate, UCAN } from '@ucanto/core'
+import {
+  capability,
+  Schema,
+  invoke,
+  parseLink,
+  delegate,
+  UCAN,
+} from '../src/lib.js'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
 import { the } from '../src/util.js'
 import { CID } from 'multiformats'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-
+const { DID, URI, Link } = Schema
 const echo = capability({
   can: 'test/echo',
   with: DID.match({ method: 'key' }),

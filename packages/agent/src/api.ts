@@ -26,7 +26,7 @@ import {
   IssuedInvocationView,
 } from '@ucanto/interface'
 
-import { Schema } from '@ucanto/validator'
+import { Schema } from '@ucanto/core'
 
 // This is the interface of the module we'll have
 export interface AgentModule {

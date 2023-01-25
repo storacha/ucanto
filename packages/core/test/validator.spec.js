@@ -1,13 +1,12 @@
 import { test, assert } from './test.js'
-import { access, claim } from '../src/lib.js'
-import { capability, URI, Link } from '../src/lib.js'
-import { Failure } from '../src/error.js'
+import { access, claim } from '../src/validator.js'
+import { capability, delegate } from '../src/lib.js'
+import { URI, Link } from '../src/schema.js'
+import { Failure, UnavailableProof } from '../src/error.js'
 import { Verifier } from '@ucanto/principal'
-import * as Client from '@ucanto/client'
 
 import { alice, bob, mallory, service, service as w3 } from './fixtures.js'
-import { UCAN, DID as Principal } from '@ucanto/core'
-import { UnavailableProof } from '../src/error.js'
+import { UCAN, DID as Principal } from '../src/lib.js'
 
 const storeAdd = capability({
   can: 'store/add',
@@ -156,7 +155,7 @@ test('unauthorized / invalid signature', async () => {
 })
 
 test('unauthorized / unknown capability', async () => {
-  const invocation = await Client.delegate({
+  const invocation = await delegate({
     issuer: alice,
     audience: w3,
     capabilities: [
@@ -436,7 +435,7 @@ test('invalid claim / invalid signature', async () => {
 })
 
 test('invalid claim / unknown capability', async () => {
-  const delegation = await Client.delegate({
+  const delegation = await delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
@@ -477,7 +476,7 @@ test('invalid claim / unknown capability', async () => {
 
 test('invalid claim / malformed capability', async () => {
   const badDID = `bib:${alice.did().slice(4)}`
-  const delegation = await Client.delegate({
+  const delegation = await delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
@@ -489,7 +488,7 @@ test('invalid claim / malformed capability', async () => {
   })
 
   const nb = { link: Link.parse('bafkqaaa') }
-  const invocation = await Client.delegate({
+  const invocation = await delegate({
     issuer: bob,
     audience: w3,
     capabilities: [
