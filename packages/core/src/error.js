@@ -34,6 +34,7 @@ export class EscalatedCapability extends Failure {
     this.claimed = claimed
     this.delegated = delegated
     this.cause = cause
+    /** @type {'EscalatedCapability'} */
     this.name = 'EscalatedCapability'
   }
   describe() {
