@@ -1,5 +1,18 @@
 # Changelog
 
+### [4.1.1](https://www.github.com/web3-storage/ucanto/compare/client-v4.1.0...client-v4.1.1) (2023-01-27)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^4.1.0 to ^4.2.1
+  * devDependencies
+    * @ucanto/principal bumped from ^4.1.0 to ^4.1.1
+    * @ucanto/core bumped from ^4.1.0 to ^4.1.1
+    * @ucanto/transport bumped from ^4.1.0 to ^4.1.1
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/client-v4.0.3...client-v4.1.0) (2023-01-24)
 
 

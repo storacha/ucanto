@@ -1,5 +1,13 @@
 # Changelog
 
+### [4.2.1](https://www.github.com/web3-storage/ucanto/compare/interface-v4.1.0...interface-v4.2.1) (2023-01-27)
+
+
+### Miscellaneous Chores
+
+* release 4.2.0 ([f8fa009](https://www.github.com/web3-storage/ucanto/commit/f8fa0091c16e4bdf512f0d4b73b53bfce474210b))
+* release 4.2.1 ([55e3681](https://www.github.com/web3-storage/ucanto/commit/55e36813750fc2ee14f7cc07b1451ff57e32abc2))
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/interface-v4.0.3...interface-v4.1.0) (2023-01-24)
 
 
