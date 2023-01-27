@@ -8,8 +8,7 @@
     "packages/client",
     "packages/server",
     "packages/transport",
-    "packages/principal",
-    "packages/validator"
+    "packages/principal"
   ],
   "scripts": {
     "format": "prettier --write '**/*.{js,ts,yml,json}' --ignore-path .gitignore",

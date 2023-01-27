@@ -8,9 +8,9 @@ import { test, assert } from './test.js'
 
 const storeAdd = Server.capability({
   can: 'store/add',
-  with: Server.URI.match({ protocol: 'did:' }),
+  with: Server.Schema.URI.match({ protocol: 'did:' }),
   nb: {
-    link: Server.Link.match().optional(),
+    link: Server.Schema.Link.match().optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
@@ -33,9 +33,9 @@ const storeAdd = Server.capability({
 })
 const storeRemove = Server.capability({
   can: 'store/remove',
-  with: Server.URI.match({ protocol: 'did:' }),
+  with: Server.Schema.URI.match({ protocol: 'did:' }),
   nb: {
-    link: Server.Link.match().optional(),
+    link: Server.Schema.Link.match().optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {

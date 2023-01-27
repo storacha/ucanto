@@ -4,7 +4,6 @@ import fixtures from './schema/fixtures.js'
 
 for (const { input, schema, expect, inputLabel, skip, only } of fixtures()) {
   const unit = skip ? test.skip : only ? test.only : test
-
   unit(`${schema}.read(${inputLabel})`, () => {
     const result = schema.read(input)
 
@@ -273,7 +272,6 @@ test('.key & .value of dictionary', () => {
 
   assert.deepEqual(Schema.dictionary({ value }).key, Schema.string())
 })
-
 test('struct', () => {
   const Point = Schema.struct({
     type: 'Point',
@@ -597,7 +595,7 @@ test('default throws on invalid default', () => {
 test('unknown with default', () => {
   assert.throws(
     () => Schema.unknown().default(undefined),
-    /undefined is not a vaild default/
+    /undefined is not a valid default/
   )
 })
 

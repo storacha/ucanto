@@ -1,5 +1,5 @@
 import * as API from './api.js'
-import { access } from '@ucanto/validator'
+import { access } from '@ucanto/core/validator'
 
 /**
  * @template {API.Ability} A

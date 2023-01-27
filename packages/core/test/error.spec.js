@@ -8,7 +8,7 @@ import {
   NotValidBefore,
 } from '../src/error.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-import { delegate, UCAN } from '@ucanto/core'
+import { delegate, UCAN } from '../src/lib.js'
 
 test('Failure', () => {
   const error = new Failure('boom!')

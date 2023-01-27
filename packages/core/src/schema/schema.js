@@ -128,7 +128,7 @@ export class API {
     // we also check that fallback is not undefined because that is the point
     // of having a fallback
     if (fallback === undefined) {
-      throw new Error(`Value of type undefined is not a vaild default`)
+      throw new Error(`Value of type undefined is not a valid default`)
     }
 
     const schema = new Default({

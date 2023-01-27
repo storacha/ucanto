@@ -38,9 +38,11 @@
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^9.1.0",
+    "@types/chai-subset": "^1.3.3",
     "@ucanto/principal": "^4.1.0",
     "c8": "^7.11.0",
     "chai": "^4.3.6",
+    "chai-subset": "^1.6.0",
     "mocha": "^10.1.0",
     "nyc": "^15.1.0",
     "playwright-test": "^8.1.1",
@@ -75,6 +77,22 @@
     "./delegation": {
       "types": "./dist/src/delegation.d.ts",
       "import": "./src/delegation.js"
+    },
+    "./schema": {
+      "types": "./dist/src/schema.d.ts",
+      "import": "./src/schema.js"
+    },
+    "./capability": {
+      "types": "./dist/src/capability.d.ts",
+      "import": "./src/capability.js"
+    },
+    "./validator": {
+      "types": "./dist/src/validator.d.ts",
+      "import": "./src/validator.js"
+    },
+    "./error": {
+      "types": "./dist/src/error.d.ts",
+      "import": "./src/error.js"
     }
   },
   "c8": {

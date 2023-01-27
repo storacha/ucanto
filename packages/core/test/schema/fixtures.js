@@ -22,7 +22,7 @@ import { string, unknown } from '../../src/schema.js'
  * never: ExpectGroup
  * string: ExpectGroup,
  * boolean: ExpectGroup
- * strartsWithHello: ExpectGroup
+ * startsWithHello: ExpectGroup
  * endsWithWorld: ExpectGroup
  * startsWithHelloEndsWithWorld: ExpectGroup
  * number: ExpectGroup
@@ -71,9 +71,9 @@ export const fixture = ({ in: input, got = input, array, ...expect }) => ({
   never: { any: fail({ expect: 'never', got }), ...expect.never },
   string: { any: fail({ expect: 'string', got }), ...expect.string },
   boolean: { any: fail({ expect: 'boolean', got }), ...expect.boolean },
-  strartsWithHello: {
+  startsWithHello: {
     any: fail({ expect: 'string', got }),
-    ...expect.strartsWithHello,
+    ...expect.startsWithHello,
   },
   endsWithWorld: {
     any: fail({ expect: 'string', got }),
@@ -147,7 +147,7 @@ export const source = [
     unknown: { any: pass() },
     literal: { hello: { any: pass() } },
     stringOrNumber: { any: pass() },
-    strartsWithHello: { any: fail.as(`expect .* "Hello" .* got "hello"`) },
+    startsWithHello: { any: fail.as(`expect .* "Hello" .* got "hello"`) },
     endsWithWorld: { any: fail.as(`expect .* "world" .* got "hello"`) },
     startsWithHelloEndsWithWorld: {
       any: fail.as(`expect .* "Hello" .* got "hello"`),
@@ -159,7 +159,7 @@ export const source = [
     string: { any: pass() },
     unknown: { any: pass() },
     stringOrNumber: { any: pass() },
-    strartsWithHello: { any: fail.as(`expect .* "Hello" .* got "Green"`) },
+    startsWithHello: { any: fail.as(`expect .* "Hello" .* got "Green"`) },
     endsWithWorld: { any: fail.as(`expect .* "world" .* got "Green"`) },
     startsWithHelloEndsWithWorld: {
       any: fail.as(`expect .* "Hello" .* got "Green"`),
@@ -174,7 +174,7 @@ export const source = [
     string: { any: pass() },
     unknown: { any: pass() },
     stringOrNumber: { any: pass() },
-    strartsWithHello: { any: pass() },
+    startsWithHello: { any: pass() },
     endsWithWorld: { any: pass() },
     startsWithHelloEndsWithWorld: {
       any: pass(),
@@ -864,7 +864,7 @@ export const scenarios = fixture => [
   },
   {
     schema: Schema.string().startsWith('Hello'),
-    expect: fixture.strartsWithHello.any || fixture.string.any || fixture.any,
+    expect: fixture.startsWithHello.any || fixture.string.any || fixture.any,
   },
   {
     schema: Schema.string().endsWith('world'),
@@ -904,12 +904,10 @@ export const scenarios = fixture => [
 
     expect: fixture.intDict?.any || fixture.dict?.any || fixture.any,
   },
-
   {
     schema: Schema.dictionary({ value: unknown() }),
     expect: fixture.dict?.any || fixture.any,
   },
-
   {
     schema: Schema.dictionary({
       value: unknown(),

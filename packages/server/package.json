@@ -29,8 +29,7 @@
   },
   "dependencies": {
     "@ucanto/core": "^4.1.0",
-    "@ucanto/interface": "^4.1.0",
-    "@ucanto/validator": "^4.1.0"
+    "@ucanto/interface": "^4.1.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",

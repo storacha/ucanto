@@ -1,1 +1,8 @@
-{"packages/client":"4.1.0","packages/core":"4.1.0","packages/interface":"4.1.0","packages/principal":"4.1.0","packages/server":"4.1.0","packages/transport":"4.1.0","packages/validator":"4.1.0"}
+{
+  "packages/client": "4.1.0",
+  "packages/core": "4.1.0",
+  "packages/interface": "4.1.0",
+  "packages/principal": "4.1.0",
+  "packages/server": "4.1.0",
+  "packages/transport": "4.1.0"
+}

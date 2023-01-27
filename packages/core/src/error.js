@@ -1,5 +1,4 @@
 import * as API from '@ucanto/interface'
-import { the } from './util.js'
 import { isLink } from 'multiformats/link'
 
 /**
@@ -35,7 +34,8 @@ export class EscalatedCapability extends Failure {
     this.claimed = claimed
     this.delegated = delegated
     this.cause = cause
-    this.name = the('EscalatedCapability')
+    /** @type {'EscalatedCapability'} */
+    this.name = 'EscalatedCapability'
   }
   describe() {
     return `Constraint violation: ${this.cause.message}`
@@ -52,7 +52,8 @@ export class DelegationError extends Failure {
    */
   constructor(causes, context) {
     super()
-    this.name = the('InvalidClaim')
+    /** @type {'InvalidClaim'} */
+    this.name = 'InvalidClaim'
     this.causes = causes
     this.context = context
   }
@@ -80,45 +81,6 @@ export class DelegationError extends Failure {
 }
 
 /**
- * @implements {API.InvalidSignature}
- */
-export class InvalidSignature extends Failure {
-  /**
-   * @param {API.Delegation} delegation
-   * @param {API.Verifier} verifier
-   */
-  constructor(delegation, verifier) {
-    super()
-    this.name = the('InvalidSignature')
-    this.delegation = delegation
-    this.verifier = verifier
-  }
-  get issuer() {
-    return this.delegation.issuer
-  }
-  get audience() {
-    return this.delegation.audience
-  }
-  get key() {
-    return this.verifier.toDIDKey()
-  }
-  describe() {
-    const issuer = this.issuer.did()
-    const key = this.key
-    return (
-      issuer.startsWith('did:key')
-        ? [
-            `Proof ${this.delegation.cid} does not has a valid signature from ${key}`,
-          ]
-        : [
-            `Proof ${this.delegation.cid} issued by ${issuer} does not has a valid signature from ${key}`,
-            `  ℹ️ Probably issuer signed with a different key, which got rotated, invalidating delegations that were issued with prior keys`,
-          ]
-    ).join('\n')
-  }
-}
-
-/**
  * @implements {API.UnavailableProof}
  */
 export class UnavailableProof extends Failure {
@@ -128,7 +90,8 @@ export class UnavailableProof extends Failure {
    */
   constructor(link, cause) {
     super()
-    this.name = the('UnavailableProof')
+    /** @type {'UnavailableProof'}  */
+    this.name = 'UnavailableProof'
     this.link = link
     this.cause = cause
   }
@@ -149,7 +112,8 @@ export class DIDKeyResolutionError extends Failure {
    */
   constructor(did, cause) {
     super()
-    this.name = the('DIDKeyResolutionError')
+    /** @type {'DIDKeyResolutionError'} */
+    this.name = 'DIDKeyResolutionError'
     this.did = did
     this.cause = cause
   }
@@ -171,7 +135,8 @@ export class InvalidAudience extends Failure {
    */
   constructor(audience, delegation) {
     super()
-    this.name = the('InvalidAudience')
+    /** @type {'InvalidAudience'} */
+    this.name = 'InvalidAudience'
     this.audience = audience
     this.delegation = delegation
   }
@@ -201,7 +166,8 @@ export class MalformedCapability extends Failure {
    */
   constructor(capability, cause) {
     super()
-    this.name = the('MalformedCapability')
+    /** @type {'MalformedCapability'} */
+    this.name = 'MalformedCapability'
     this.capability = capability
     this.cause = cause
   }
@@ -221,7 +187,8 @@ export class UnknownCapability extends Failure {
    */
   constructor(capability) {
     super()
-    this.name = the('UnknownCapability')
+    /** @type {'UnknownCapability'} */
+    this.name = 'UnknownCapability'
     this.capability = capability
   }
   /* c8 ignore next 3 */
@@ -236,7 +203,8 @@ export class Expired extends Failure {
    */
   constructor(delegation) {
     super()
-    this.name = the('Expired')
+    /** @type {'Expired'} */
+    this.name = 'Expired'
     this.delegation = delegation
   }
   describe() {
@@ -254,35 +222,6 @@ export class Expired extends Failure {
       name,
       message,
       expiredAt,
-      stack,
-    }
-  }
-}
-
-export class NotValidBefore extends Failure {
-  /**
-   * @param {API.Delegation & { notBefore: number }} delegation
-   */
-  constructor(delegation) {
-    super()
-    this.name = the('NotValidBefore')
-    this.delegation = delegation
-  }
-  describe() {
-    return `Proof ${this.delegation.cid} is not valid before ${new Date(
-      this.delegation.notBefore * 1000
-    )}`
-  }
-  get validAt() {
-    return this.delegation.notBefore
-  }
-  toJSON() {
-    const { error, name, validAt, message, stack } = this
-    return {
-      error,
-      name,
-      message,
-      validAt,
       stack,
     }
   }
@@ -306,6 +245,76 @@ const format = (capability, space) =>
     },
     space
   )
+
+/**
+ * @implements {API.InvalidSignature}
+ */
+export class InvalidSignature extends Failure {
+  /**
+   * @param {API.Delegation} delegation
+   * @param {API.Verifier} verifier
+   */
+  constructor(delegation, verifier) {
+    super()
+    /** @type {'InvalidSignature'} */
+    this.name = 'InvalidSignature'
+    this.delegation = delegation
+    this.verifier = verifier
+  }
+  get issuer() {
+    return this.delegation.issuer
+  }
+  get audience() {
+    return this.delegation.audience
+  }
+  get key() {
+    return this.verifier.toDIDKey()
+  }
+  describe() {
+    const issuer = this.issuer.did()
+    const key = this.key
+    return (
+      issuer.startsWith('did:key')
+        ? [
+            `Proof ${this.delegation.cid} does not has a valid signature from ${key}`,
+          ]
+        : [
+            `Proof ${this.delegation.cid} issued by ${issuer} does not has a valid signature from ${key}`,
+            `  ℹ️ Probably issuer signed with a different key, which got rotated, invalidating delegations that were issued with prior keys`,
+          ]
+    ).join('\n')
+  }
+}
+
+export class NotValidBefore extends Failure {
+  /**
+   * @param {API.Delegation & { notBefore: number }} delegation
+   */
+  constructor(delegation) {
+    super()
+    /** @type {'NotValidBefore'} */
+    this.name = 'NotValidBefore'
+    this.delegation = delegation
+  }
+  describe() {
+    return `Proof ${this.delegation.cid} is not valid before ${new Date(
+      this.delegation.notBefore * 1000
+    )}`
+  }
+  get validAt() {
+    return this.delegation.notBefore
+  }
+  toJSON() {
+    const { error, name, validAt, message, stack } = this
+    return {
+      error,
+      name,
+      message,
+      validAt,
+      stack,
+    }
+  }
+}
 
 /**
  * @param {string} message

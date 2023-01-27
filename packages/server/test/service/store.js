@@ -7,9 +7,9 @@ import { service as issuer } from '../fixtures.js'
 
 const addCapability = Server.capability({
   can: 'store/add',
-  with: Server.URI.match({ protocol: 'did:' }),
+  with: Server.Schema.URI.match({ protocol: 'did:' }),
   nb: {
-    link: Server.Link.match().optional(),
+    link: Server.Schema.Link.match().optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
@@ -33,9 +33,9 @@ const addCapability = Server.capability({
 
 const removeCapability = Server.capability({
   can: 'store/remove',
-  with: Server.URI.match({ protocol: 'did:' }),
+  with: Server.Schema.URI.match({ protocol: 'did:' }),
   nb: {
-    link: Server.Link.match().optional(),
+    link: Server.Schema.Link.match().optional(),
   },
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {

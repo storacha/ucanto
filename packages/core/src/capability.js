@@ -7,7 +7,8 @@ import {
   DelegationError as MatchError,
   Failure,
 } from './error.js'
-import { invoke, delegate } from '@ucanto/core'
+import { invoke } from './invocation.js'
+import { delegate } from './delegation.js'
 
 /**
  * @template {API.Ability} A
@@ -112,6 +113,27 @@ class Capability extends Unit {
   constructor(descriptor) {
     super()
     this.descriptor = { derives, ...descriptor }
+  }
+
+  /**
+   * @type {API.Reader<R>}
+   */
+  get with() {
+    return this.descriptor.with
+  }
+
+  /**
+   * @param {unknown} source
+   */
+  read(source) {
+    try {
+      const result = this.create(/** @type {any} */ (source))
+      return /** @type {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.Failure>} */ (
+        result
+      )
+    } catch (error) {
+      return /** @type {any} */ (error)
+    }
   }
 
   /**
@@ -345,6 +367,13 @@ class Derive extends Unit {
   }
 
   /**
+   * @param {unknown} source
+   */
+  read(source) {
+    return this.to.read(source)
+  }
+
+  /**
    * @type {typeof this.to['create']}
    */
   create(options) {
@@ -365,6 +394,10 @@ class Derive extends Unit {
   get can() {
     return this.to.can
   }
+  get with() {
+    return this.to.with
+  }
+
   /**
    * @param {API.Source} capability
    * @returns {API.MatchResult<API.DerivedMatch<T, M>>}

@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import { create, createLegacy, isLink, parse } from '@ucanto/core/link'
+import { create, createLegacy, isLink, parse } from '../link.js'
 import * as Schema from './schema.js'
 
 export { create, createLegacy, isLink, parse }

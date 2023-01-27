@@ -53,11 +53,13 @@ importers:
       '@ipld/dag-cbor': ^9.0.0
       '@ipld/dag-ucan': ^3.2.0
       '@types/chai': ^4.3.3
+      '@types/chai-subset': ^1.3.3
       '@types/mocha': ^9.1.0
       '@ucanto/interface': ^4.1.0
       '@ucanto/principal': ^4.1.0
       c8: ^7.11.0
       chai: ^4.3.6
+      chai-subset: ^1.6.0
       mocha: ^10.1.0
       multiformats: ^11.0.0
       nyc: ^15.1.0
@@ -71,10 +73,12 @@ importers:
       multiformats: 11.0.1
     devDependencies:
       '@types/chai': 4.3.4
+      '@types/chai-subset': 1.3.3
       '@types/mocha': 9.1.1
       '@ucanto/principal': link:../principal
       c8: 7.12.0
       chai: 4.3.7
+      chai-subset: 1.6.0
       mocha: 10.2.0
       nyc: 15.1.0
       playwright-test: 8.1.2
@@ -132,7 +136,6 @@ importers:
       '@ucanto/interface': ^4.1.0
       '@ucanto/principal': ^4.1.0
       '@ucanto/transport': ^4.1.0
-      '@ucanto/validator': ^4.1.0
       '@web-std/fetch': ^4.1.0
       '@web-std/file': ^3.0.2
       c8: ^7.11.0
@@ -146,7 +149,6 @@ importers:
     dependencies:
       '@ucanto/core': link:../core
       '@ucanto/interface': link:../interface
-      '@ucanto/validator': link:../validator
     devDependencies:
       '@types/chai': 4.3.4
       '@types/chai-subset': 1.3.3
@@ -195,45 +197,6 @@ importers:
       '@web-std/fetch': 4.1.0
       c8: 7.12.0
       chai: 4.3.7
-      mocha: 10.2.0
-      nyc: 15.1.0
-      playwright-test: 8.1.2
-      typescript: 4.9.4
-
-  packages/validator:
-    specifiers:
-      '@ipld/car': ^5.0.3
-      '@ipld/dag-cbor': ^8.0.0
-      '@types/chai': ^4.3.3
-      '@types/chai-subset': ^1.3.3
-      '@types/mocha': ^9.1.0
-      '@ucanto/client': ^4.1.0
-      '@ucanto/core': ^4.1.0
-      '@ucanto/interface': ^4.1.0
-      '@ucanto/principal': ^4.1.0
-      c8: ^7.11.0
-      chai: ^4.3.6
-      chai-subset: ^1.6.0
-      mocha: ^10.1.0
-      multiformats: ^11.0.0
-      nyc: ^15.1.0
-      playwright-test: ^8.1.1
-      typescript: ^4.9.4
-    dependencies:
-      '@ipld/car': 5.0.3
-      '@ipld/dag-cbor': 8.0.1
-      '@ucanto/core': link:../core
-      '@ucanto/interface': link:../interface
-      multiformats: 11.0.1
-    devDependencies:
-      '@types/chai': 4.3.4
-      '@types/chai-subset': 1.3.3
-      '@types/mocha': 9.1.1
-      '@ucanto/client': link:../client
-      '@ucanto/principal': link:../principal
-      c8: 7.12.0
-      chai: 4.3.7
-      chai-subset: 1.6.0
       mocha: 10.2.0
       nyc: 15.1.0
       playwright-test: 8.1.2
@@ -460,14 +423,6 @@ packages:
       cborg: 1.10.0
       multiformats: 11.0.1
       varint: 6.0.0
-    dev: false
-
-  /@ipld/dag-cbor/8.0.1:
-    resolution: {integrity: sha512-mHRuzgGXNk0Y5W7nNQdN37qJiig1Kdgf92icBVFRUNtBc9Ezl5DIdWfiGWBucHBrhqPBncxoH3As9cHPIRozxA==}
-    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
-    dependencies:
-      cborg: 1.10.0
-      multiformats: 11.0.1
     dev: false
 
   /@ipld/dag-cbor/9.0.0:
