@@ -1,5 +1,16 @@
 # Changelog
 
+### [4.1.1](https://www.github.com/web3-storage/ucanto/compare/core-v4.1.0...core-v4.1.1) (2023-01-27)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^4.1.0 to ^4.2.1
+  * devDependencies
+    * @ucanto/principal bumped from ^4.1.0 to ^4.1.1
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/core-v4.0.3...core-v4.1.0) (2023-01-24)
 
 
