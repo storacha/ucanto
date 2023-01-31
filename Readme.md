@@ -180,9 +180,12 @@ const demo1 = async connection => {
 Just like the server, the client has a pluggable transport layer which you provide when you create a connection. We could create an in-process connection with our service simply by providing service as a channel:
 
 ```ts
+import * as CAR from "@ucanto/transport/car"
+import * as CBOR from "@ucanto/transport/cbor"
+
 const connection = Client.connect({
-  encoder: Transport.CAR, // encode as CAR because server decods from car
-  decoder: Transport.CBOR, // decode as CBOR because server encodes as CBOR
+  encoder: CAR, // encode as CAR because server decods from car
+  decoder: CBOR, // decode as CBOR because server encodes as CBOR
   channel: server(), // simply pass the server
 })
 ```
@@ -190,13 +193,15 @@ const connection = Client.connect({
 In practice you probably would want client/server communication to happen across the wire, or at least across processes. You can bring your own transport channel, or choose an existing one. For example:
 
 ```ts
-import Transport from '@ucanto/transport'
+import * as CAR from "@ucanto/transport/car"
+import * as CBOR from "@ucanto/transport/cbor"
+import * as HTTP from "@ucanto/transport/http"
 
 const connection = Client.connect({
-  encoder: Transport.CAR, // encode as CAR because server decodes from car
-  decoder: Transport.CBOR, // decode as CBOR because server encodes as CBOR
+  encoder: CAR, // encode as CAR because server decodes from car
+  decoder: CBOR, // decode as CBOR because server encodes as CBOR
   /** @type {Transport.Channel<ReturnType<typeof service>>} */
-  channel: Transport.HTTP.open({ url: new URL(process.env.SERVICE_URL) }),
+  channel: HTTP.open({ url: new URL(process.env.SERVICE_URL) }),
 })
 ```
 
