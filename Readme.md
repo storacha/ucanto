@@ -91,13 +91,13 @@ The library comes with several transport layer codecs you can pick from, but you
 import * as Server from "@ucanto/server"
 import * as CAR from "@ucanto/transport/car"
 import * as CBOR from "@ucanto/transport/cbor"
-import { SigningPrincipal } from "@ucanto/principal"
+import { ed25519 } from "@ucanto/principal"
 import * as HTTP from "node:http"
 import * as Buffer from "node:buffer"
 
 export const server = (context { store = new Map() } : { store: Map<string, string> }) =>
   Server.create({
-    id: await SigningPrincipal.derive(process.env.SERVICE_SECRET),
+    id: ed25519.Signer.parse(process.env.SERVICE_SECRET),
     service: service(context),
     decoder: CAR,
     encoder: CBOR,
@@ -119,7 +119,6 @@ In nodejs we could expose our service as follows:
 
 ```ts
 export const listen = ({ port = 8080, context = new Map() }) => {
-  const fileServer = server(context)
 
   HTTP.createServer(async (request, response) => {
     const chunks = []
@@ -146,13 +145,13 @@ invoking the `file/link` capability we've defined earlier:
 
 ```ts
 import * as Client from '@ucanto/client'
-import { SigningPrincipal, Principal } from '@ucanto/principal'
+import { ed25519 } from '@ucanto/principal'
 import { CID } from 'multiformats'
 
 // Service will have a well known DID
-const service = Principal.parse(process.env.SERVICE_ID)
+const service = ed25519.Verifier.parse(process.env.SERVICE_ID)
 // Client keypair
-const issuer = SigningPrincipal.parse(process.env.MY_KEPAIR)
+const issuer = ed25519.Signer.parse(process.env.MY_KEPAIR)
 
 const demo1 = async connection => {
   const me = await Client.invoke({
@@ -165,7 +164,7 @@ const demo1 = async connection => {
     },
   })
 
-  const result = await me.execute(connection)
+  const result = await connection.execute([me])
   if (result.error) {
     console.error('oops', result)
   } else {
@@ -191,9 +190,7 @@ const connection = Client.connect({
 In practice you probably would want client/server communication to happen across the wire, or at least across processes. You can bring your own transport channel, or choose an existing one. For example:
 
 ```ts
-import * as HTTP from '@ucanto/transport/http'
-import * as CAR from '@ucanto/transport/car'
-import * as CBOR from '@ucanto/transport/cbor'
+import Transport from '@ucanto/transport'
 
 const connection = Client.connect({
   encoder: Transport.CAR, // encode as CAR because server decodes from car
@@ -210,13 +207,13 @@ const connection = Client.connect({
 The library supports batch invocations and takes care of all the nitty gritty details when it comes to UCAN delegation chains, specifically taking chains apart to encode as blocks in CAR and putting them back together into a chain on the other side. All you need to do is provide a delegation in the proofs:
 
 ```ts
-import { SigningPrincipal, Principal } from '@ucanto/principal'
+import { ed25519 } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 import { CID } from 'multiformats'
 
-const service = Principal.parse(process.env.SERVICE_DID)
-const alice = SigningPrincipal.parse(process.env.ALICE_KEYPAIR)
-const bob = SigningPrincipal.parse(process.env.BOB_KEYPAIR)
+const service = ed25519.Verifier.parse(process.env.SERVICE_DID)
+const alice = ed25519.Signer.parse(process.env.ALICE_KEYPAIR)
+const bob = ed25519.Signer.parse(process.env.BOB_KEYPAIR)
 
 const demo2 = async connection => {
   // Alice delegates capability to mutate FS under bob's namespace
