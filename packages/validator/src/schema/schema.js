@@ -458,6 +458,7 @@ class Dictionary extends API {
  * @param {object} shape
  * @param {Schema.Reader<V, I>} shape.value
  * @param {Schema.Reader<K, string>} [shape.key]
+ * @returns {Schema.DictionarySchema<V, K, I>}
  */
 export const dictionary = ({ value, key = string() }) =>
   new Dictionary({ value, key })
