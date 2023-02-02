@@ -26,6 +26,7 @@ export interface Channel<T extends Record<string, any>> extends Phantom<T> {
   request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
     request: HTTPRequest<I>
   ): Await<HTTPResponse<InferServiceInvocations<I, T>>>
+  url: URL
 }
 
 export interface RequestEncoder {
