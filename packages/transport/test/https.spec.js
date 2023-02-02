@@ -87,6 +87,15 @@ if (typeof globalThis.fetch === 'undefined') {
 test('should expose url', async () => {
     const channel = HTTP.open({
       url: new URL('https://ucan.xyz/'),
+      fetch: async (url, init) => {
+        return {
+          ok: true,
+          status: 200,
+          url,
+          arrayBuffer: () => UTF8.encode('pong').buffer,
+          headers: new Map([['content-type', 'text/plain']]),
+        }
+      },
     })
     assert.equal(channel.url.toString(), 'https://ucan.xyz/')
 })
