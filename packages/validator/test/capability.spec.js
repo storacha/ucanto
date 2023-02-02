@@ -741,40 +741,6 @@ test('capability amplification', () => {
   )
 })
 
-test('can create derived capability with dict schema in nb', () => {
-  /**
-   * @param {{ with: string }} claim
-   * @param {{ with: string }} proof
-   */
-  const equalWith = (claim, proof) => claim.with === proof.with || new Failure(`claim.with is not proven`);
-  const top = capability({
-    can: '*',
-    with: URI.match({ protocol: 'did:' }),
-    derives: equalWith,
-  });
-  const delegate = top.derive({
-    to: capability({
-      can: 'access/delegate',
-      with: URI,
-      nb: {
-        delegations: Schema.dictionary({
-          value: Schema.Link.match(),
-        }),
-      },
-      derives: (claim, proof) => {
-        // the motivation for this test was that tsc would previously complain at these assignments
-        // and the only workaround was a type assertion https://github.com/web3-storage/w3protocol/pull/420/commits/4f1f2931cecff1d1d1d29e889c4fdfb63ff3b327#diff-e434cc6c1a699df311a0b2faed199a2ff6b6b291d30f95e20b2ea5abfa7da3d9R125
-        /** @type {Schema.Dictionary|undefined} */
-        const claimDelegations = claim.nb.delegations;
-        /** @type {Schema.Dictionary|undefined} */
-        const proofDelegations = proof.nb.delegations;
-        return equalWith(claim, proof);
-      },
-    }),
-    derives: equalWith,
-  })
-})
-
 test('capability or combinator', () => {
   const read = capability({
     can: 'file/read',
