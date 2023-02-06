@@ -229,7 +229,7 @@ export const delegate = async (
  * @returns {IterableIterator<API.Block>}
  */
 
-const exportDAG = function* (root, blocks) {
+export const exportDAG = function* (root, blocks) {
   for (const link of decode(root).proofs) {
     // Check if block is included in this delegation
     const root = /** @type {UCAN.Block} */ (blocks.get(link.toString()))
@@ -296,4 +296,4 @@ const proofs = delegation => {
   return proofs
 }
 
-export { exportDAG as export, importDAG as import, Delegation as View }
+export { Delegation as View }
