@@ -340,7 +340,7 @@ test('import delegation', async () => {
     ],
   })
 
-  const replica = Delegation.import(original.export())
+  const replica = Delegation.importDAG(original.export())
   assert.deepEqual(replica, original)
 
   assert.equal(replica.issuer.did(), alice.did())
@@ -355,7 +355,7 @@ test('import delegation', async () => {
 
 test('import empty delegation', async () => {
   assert.throws(
-    () => Delegation.import([]),
+    () => Delegation.importDAG([]),
     /Empty DAG can not be turned into a delegation/
   )
 })
@@ -406,7 +406,7 @@ test('issue chained delegation', async () => {
 
   assert.deepEqual([...invocation.export()], [proof.root, invocation.root])
 
-  assert.deepEqual(Delegation.import(invocation.export()), invocation)
+  assert.deepEqual(Delegation.importDAG(invocation.export()), invocation)
 })
 
 test('delegation with with nested proofs', async () => {
@@ -451,7 +451,7 @@ test('delegation with with nested proofs', async () => {
     'exports all the blocks'
   )
 
-  assert.deepEqual(Delegation.import(invocation.export()), invocation)
+  assert.deepEqual(Delegation.importDAG(invocation.export()), invocation)
 })
 
 test('delegation with external proof', async () => {
@@ -486,7 +486,7 @@ test('delegation with external proof', async () => {
     'exports all the blocks'
   )
 
-  assert.deepEqual(Delegation.import(invocation.export()), invocation)
+  assert.deepEqual(Delegation.importDAG(invocation.export()), invocation)
 })
 
 test('delegation with several proofs', async () => {
@@ -546,7 +546,7 @@ test('delegation with several proofs', async () => {
     'exports all the blocks'
   )
 
-  assert.deepEqual(Delegation.import(invocation.export()), invocation)
+  assert.deepEqual(Delegation.importDAG(invocation.export()), invocation)
 })
 
 test('delegation iterate over proofs', async () => {
