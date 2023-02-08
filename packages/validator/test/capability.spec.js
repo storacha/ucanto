@@ -1981,7 +1981,7 @@ test('default derive', () => {
           can: 'test/a',
           value: {
             can: 'test/a',
-            with: 'file:///home/bob/photo',
+            with: 'file:///home/bob/*',
             nb: {},
           },
         },

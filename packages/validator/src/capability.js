@@ -669,37 +669,31 @@ const resolveAbility = (pattern, can, fallback) => {
 }
 
 /**
- /**
- * Resolves resource `pattern` of the delegated capability from the resource
- * `uri` of the claimed capability. If pattern matches returns claimed resource
- * `uri` otherwise returns `null`.
+ * Resolves `source` resource of the delegated capability from the resource
+ * `uri` of the claimed capability. If `source` is `"ucan:*""` or matches `uri`
+ * then it returns `uri` back otherwise it returns `fallback`.
  *
  * @example
  * ```js
- * resolveResource('did:*', 'did:key:zAlice', null) // => 'did:key:zAlice'
- * resolveAbility('https:*', 'https://example.com', null) // => 'https://example.com'
- * resolveAbility('https:*', 'did:key:zAlice', null) // => null
- * resolveAbility('https://web.storage/public/*', 'https://web.storage/photos/me.png', null)
- * // => null
- * resolveAbility('https://web.storage/public/*', 'https://web.storage/public/me.png', null)
- * // => https://web.storage/public/me.png
+ * resolveResource('ucan:*', 'did:key:zAlice', null) // => 'did:key:zAlice'
+ * resolveAbility('ucan:*', 'https://example.com', null) // => 'https://example.com'
+ * resolveAbility('did:*', 'did:key:zAlice', null) // => null
+ * resolveAbility('did:key:zAlice', 'did:key:zAlice', null) // => did:key:zAlice
  * ```
  * @template {string} T
  * @template U
  * @param {T} uri
- * @param {string} pattern
+ * @param {string} source
  * @param {U} fallback
  * @returns {T|U}
  */
-const resolveResource = (pattern, uri, fallback) => {
-  switch (pattern) {
+const resolveResource = (source, uri, fallback) => {
+  switch (source) {
     case uri:
+    case 'ucan:*':
       return uri
     default:
-      return (pattern.endsWith('/*') || pattern.endsWith(':*')) &&
-        uri.startsWith(pattern.slice(0, -1))
-        ? uri
-        : fallback
+      return fallback
   }
 }
 

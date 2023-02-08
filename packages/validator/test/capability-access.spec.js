@@ -51,7 +51,7 @@ test('validates with patterns', async () => {
     audience: bob,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: '*',
       },
     ],
@@ -93,7 +93,7 @@ test('validates with patterns in chain', async () => {
     audience: mallory,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: '*',
       },
     ],
@@ -166,7 +166,7 @@ test('invalid proof chain', async () => {
     audience: mallory,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: '*',
         nb: {
           link: '*',
@@ -208,7 +208,7 @@ test('restrictions in chain are respected', async () => {
     audience: bob,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: '*',
       },
     ],
@@ -219,7 +219,7 @@ test('restrictions in chain are respected', async () => {
     audience: mallory,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: 'dev/*',
       },
     ],
@@ -231,7 +231,7 @@ test('restrictions in chain are respected', async () => {
     audience: jordan,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: '*',
       },
     ],
@@ -293,7 +293,7 @@ test('unknown caveats do not apply', async () => {
     audience: bob,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: '*',
         nb: {
           message: 'hello',
@@ -380,7 +380,7 @@ test('can pattern requires delimiter', async () => {
     audience: bob,
     capabilities: [
       {
-        with: 'did:*',
+        with: 'ucan:*',
         can: 'dev/p*',
       },
     ],
