@@ -2,6 +2,17 @@ import * as Schema from './type.js'
 
 export * from './type.js'
 
+const defaultGroup = {
+  /**
+   *
+   * @param {unknown} group
+   * @param {unknown} member
+   * @returns {boolean}
+   */
+  includes(group, member) {
+    return group == member
+  },
+}
 /**
  * @abstract
  * @template [T=unknown]
@@ -13,8 +24,9 @@ export * from './type.js'
 export class API {
   /**
    * @param {Settings} settings
+   * @param {Schema.Group<T, T>} group
    */
-  constructor(settings) {
+  constructor(settings, group = defaultGroup) {
     /** @protected */
     this.settings = settings
   }
@@ -128,6 +140,19 @@ export class API {
   }
 
   /**
+   * @param {Schema.Group<T, T>} group
+   * @returns {Schema.Schema<T, I>}
+   */
+  with(group) {
+    return /** @type {Schema.Schema<T, I>} */ (
+      new SchemaWithGroup({
+        base: this,
+        group,
+      })
+    )
+  }
+
+  /**
    * @template {string} Kind
    * @param {Kind} [kind]
    * @returns {Schema.Schema<Schema.Branded<T, Kind>, I>}
@@ -180,6 +205,9 @@ class Never extends API {
   includes() {
     // never is included in any other group
     return true
+  }
+  with() {
+    return this
   }
 }
 
@@ -1069,6 +1097,33 @@ class Refine extends API {
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
+  }
+}
+
+/**
+ * @template T
+ * @template [I=unknown]
+ * @extends {API<T, I, { base: Schema.Reader<T, I>, group: Schema.Group<T, T> }>}
+ * @implements {Schema.Schema<T, I>}
+ */
+
+class SchemaWithGroup extends API {
+  /**
+   * @param {I} input
+   * @param {{ base: Schema.Reader<T, I> }} settings
+   */
+  readWith(input, { base }) {
+    return base.read(input)
+  }
+  toString() {
+    return `${this.settings.base})`
+  }
+  /**
+   * @param {T} group
+   * @param {T} member
+   */
+  includes(group, member) {
+    return this.settings.group.includes(group, member)
   }
 }
 

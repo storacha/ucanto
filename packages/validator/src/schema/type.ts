@@ -51,9 +51,11 @@ export interface Schema<
   is(value: unknown): value is O
   from(value: I): O
 
-  derive<Q, I, X extends { error: true }, U>(
-    schema: GroupReader<Q, I, X, U>
-  ): DerivedSchema<Q, O, I, X>
+  with(options: Group<O, O>): Schema<O, I>
+
+  // derive<Q, I, X extends { error: true }, U>(
+  //   schema: GroupReader<Q, I, X, U>
+  // ): DerivedSchema<Q, O, I, X>
 }
 
 export interface DefaultSchema<
