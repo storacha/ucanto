@@ -221,7 +221,7 @@ class Capability extends Unit {
    * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
   match(source) {
-    const result = parse(this, source)
+    const result = parseInvokedCapability(this, source)
     return result.error ? result : new Match(source, result, this.descriptor)
   }
   toString() {
@@ -432,7 +432,7 @@ class Match {
     const errors = []
     const matches = []
     for (const capability of capabilities) {
-      const result = parse(this, capability, true)
+      const result = parseDelegatedCapability(this, this.value, capability)
       if (!result.error) {
         const claim = this.descriptor.derives(this.value, result)
         if (claim.error) {
@@ -635,29 +635,52 @@ class AndMatch {
 }
 
 /**
- * Parses capability `source` using a provided capability `parser`. By default
- * invocation parsing occurs, which respects a capability schema, failing if
- * any non-optional field is missing. If `optional` argument is `true` it will
- * parse capability as delegation, in this case all `nb` fields are considered
- * optional.
+ * @template {string} T
+ * @param {T} match
+ * @param {string} pattern
+ * @returns {T|null}
+ */
+const matchAbility = (match, pattern) =>
+  match === pattern
+    ? match
+    : pattern === '*'
+    ? match
+    : pattern.endsWith('/*') && match.startsWith(pattern.slice(0, -1))
+    ? match
+    : null
+
+/**
+ * @template {string} T
+ * @param {T} match
+ * @param {string} pattern
+ * @returns {T|null}
+ */
+const matchURI = (match, pattern) =>
+  match === pattern
+    ? match
+    : (pattern.endsWith('/*') || pattern.endsWith(':*')) &&
+      match.startsWith(pattern.slice(0, -1))
+    ? match
+    : null
+
+/**
+ * Parses capability `source` using a provided capability `parser`.
  *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
  * @param {{descriptor: API.Descriptor<A, R, C>}} parser
  * @param {API.Source} source
- * @param {boolean} [optional=false]
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
-
-const parse = (parser, source, optional = false) => {
+const parseInvokedCapability = (parser, source) => {
   const { can, with: withReader, nb: readers } = parser.descriptor
   const { delegation } = source
   const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
     source.capability
   )
 
-  if (capability.can !== can) {
+  if (can !== capability.can) {
     return new UnknownCapability(capability)
   }
 
@@ -666,25 +689,105 @@ const parse = (parser, source, optional = false) => {
     return new MalformedCapability(capability, uri)
   }
 
-  const nb = /** @type {API.InferCaveats<C>} */ ({})
+  const nb = parseNB(capability, readers)
+  if (nb.error) {
+    return nb
+  }
 
+  return new CapabilityView(
+    can,
+    uri,
+    /** @type {API.InferCaveats<C>} */ (nb),
+    delegation
+  )
+}
+
+/**
+ * Takes capability `parser`, `parsed` capability and a `source` capability from
+ * which `parsed` capability supposed be derived. Unlike `parseInvokedCapability`
+ * all `nb` fields are optional and `can` and `with` fields are treated as
+ * patters. If `can` / `with` of the source capability are patterns parsed
+ * capability will inherit value from the `parsed` capability.
+ *
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @param {{descriptor: API.Descriptor<A, R, C>}} parser
+ * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} parsed
+ * @param {API.Source} source
+ * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
+ */
+
+const parseDelegatedCapability = (
+  { descriptor },
+  parsed,
+  { capability, delegation }
+) => {
+  // If capability uses pattern like `*` or `store/*` we just use the `can` of
+  // the parser.
+  const can = matchAbility(parsed.can, capability.can)
+  if (can == null) {
+    return new UnknownCapability(capability)
+  }
+
+  // If we are parsing capability from the proof we have a parsed capability.
+  // In such case we match original `with` against the one in the proof, which
+  // may be `*` or a `did:*`. If we have a match we use `with` from the original
+  // capability otherwise we parse whatever's in the proof.
+  const matchedURI = matchURI(parsed.with, capability.with)
+  const uri = descriptor.with.read(matchedURI || capability.with)
+  if (uri.error) {
+    return new MalformedCapability(capability, uri)
+  }
+
+  const nb = parseNB(capability, descriptor.nb, { ...parsed.nb })
+  if (nb.error) {
+    return nb
+  }
+
+  return new CapabilityView(
+    can,
+    uri,
+    /** @type {API.InferCaveats<C>} */ (nb),
+    delegation
+  )
+}
+
+/**
+ * Parses `nb` field of the provided `capability` with given set of `readers`.
+ * If `implicit` argument is provided it will treat all fields as optional and
+ * fall back to an implicit field. If `implicit` is not provided it will fail
+ * if any non-optional field is missing.
+ *
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @param {API.Capability<A, R>} capability
+ * @param {C|undefined} readers
+ * @param {Partial<API.InferCaveats<C>>} [implicit]
+ * @returns {API.Result<API.InferCaveats<C>, API.MalformedCapability>}
+ */
+const parseNB = (capability, readers, implicit) => {
+  const nb = /** @type {API.InferCaveats<C>} */ ({})
   if (readers) {
     /** @type {Partial<API.InferCaveats<C>>} */
     const caveats = capability.nb || {}
     for (const [name, reader] of entries(readers)) {
       const key = /** @type {keyof caveats & keyof nb & string} */ (name)
-      if (key in caveats || !optional) {
+      if (key in caveats || !implicit) {
         const result = reader.read(caveats[key])
         if (result?.error) {
           return new MalformedCapability(capability, result)
         } else if (result != null) {
           nb[key] = /** @type {any} */ (result)
         }
+      } else if (key in implicit) {
+        nb[key] = /** @type {nb[key]} */ (implicit[key])
       }
     }
   }
 
-  return new CapabilityView(can, capability.with, nb, delegation)
+  return nb
 }
 
 /**
