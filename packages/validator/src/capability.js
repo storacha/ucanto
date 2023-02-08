@@ -221,7 +221,7 @@ class Capability extends Unit {
    * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
   match(source) {
-    const result = parseInvokedCapability(this, source)
+    const result = parseCapability(this, source)
     return result.error ? result : new Match(source, result, this.descriptor)
   }
   toString() {
@@ -432,7 +432,7 @@ class Match {
     const errors = []
     const matches = []
     for (const capability of capabilities) {
-      const result = parseDelegatedCapability(this, this.value, capability)
+      const result = resolveCapability(this, this.value, capability)
       if (!result.error) {
         const claim = this.descriptor.derives(this.value, result)
         if (claim.error) {
@@ -635,36 +635,76 @@ class AndMatch {
 }
 
 /**
- * @template {string} T
- * @param {T} match
+ * Resolves ability `pattern` of the delegated capability from the ability
+ * of the claimed capability. If pattern matches returns claimed ability
+ * otherwise returns given `fallback`.
+ *
+ * @example
+ * ```js
+ * resolveAbility('*', 'store/add', null) // => 'store/add'
+ * resolveAbility('store/*', 'store/add', null) // => 'store/add'
+ * resolveAbility('store/add', 'store/add', null) // => 'store/add'
+ * resolveAbility('store/', 'store/add', null) // => null
+ * resolveAbility('store/a*', 'store/add', null) // => null
+ * resolveAbility('store/list', 'store/add', null) // => null
+ * ```
+ *
+ * @template {API.Ability} T
+ * @template U
  * @param {string} pattern
- * @returns {T|null}
+ * @param {T} can
+ * @param {U} fallback
+ * @returns {T|U}
  */
-const matchAbility = (match, pattern) =>
-  match === pattern
-    ? match
-    : pattern === '*'
-    ? match
-    : pattern.endsWith('/*') && match.startsWith(pattern.slice(0, -1))
-    ? match
-    : null
+const resolveAbility = (pattern, can, fallback) => {
+  switch (pattern) {
+    case can:
+    case '*':
+      return can
+    default:
+      return pattern.endsWith('/*') && can.startsWith(pattern.slice(0, -1))
+        ? can
+        : fallback
+  }
+}
 
 /**
+ /**
+ * Resolves resource `pattern` of the delegated capability from the resource
+ * `uri` of the claimed capability. If pattern matches returns claimed resource
+ * `uri` otherwise returns `null`.
+ *
+ * @example
+ * ```js
+ * resolveResource('did:*', 'did:key:zAlice', null) // => 'did:key:zAlice'
+ * resolveAbility('https:*', 'https://example.com', null) // => 'https://example.com'
+ * resolveAbility('https:*', 'did:key:zAlice', null) // => null
+ * resolveAbility('https://web.storage/public/*', 'https://web.storage/photos/me.png', null)
+ * // => null
+ * resolveAbility('https://web.storage/public/*', 'https://web.storage/public/me.png', null)
+ * // => https://web.storage/public/me.png
+ * ```
  * @template {string} T
- * @param {T} match
+ * @template U
+ * @param {T} uri
  * @param {string} pattern
- * @returns {T|null}
+ * @param {U} fallback
+ * @returns {T|U}
  */
-const matchURI = (match, pattern) =>
-  match === pattern
-    ? match
-    : (pattern.endsWith('/*') || pattern.endsWith(':*')) &&
-      match.startsWith(pattern.slice(0, -1))
-    ? match
-    : null
+const resolveResource = (pattern, uri, fallback) => {
+  switch (pattern) {
+    case uri:
+      return uri
+    default:
+      return (pattern.endsWith('/*') || pattern.endsWith(':*')) &&
+        uri.startsWith(pattern.slice(0, -1))
+        ? uri
+        : fallback
+  }
+}
 
 /**
- * Parses capability `source` using a provided capability `parser`.
+ * Parses capability from the `source` using a provided `parser`.
  *
  * @template {API.Ability} A
  * @template {API.URI} R
@@ -673,7 +713,7 @@ const matchURI = (match, pattern) =>
  * @param {API.Source} source
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
-const parseInvokedCapability = (parser, source) => {
+const parseCapability = (parser, source) => {
   const { can, with: withReader, nb: readers } = parser.descriptor
   const { delegation } = source
   const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
@@ -703,44 +743,43 @@ const parseInvokedCapability = (parser, source) => {
 }
 
 /**
- * Takes capability `parser`, `parsed` capability and a `source` capability from
- * which `parsed` capability supposed be derived. Unlike `parseInvokedCapability`
- * all `nb` fields are optional and `can` and `with` fields are treated as
- * patters. If `can` / `with` of the source capability are patterns parsed
- * capability will inherit value from the `parsed` capability.
+ * Resolves delegated capability `source` from the `claimed` capability using
+ * provided capability `parser`. It is similar to `parseCapability` except
+ * `source` here is treated as capability pattern which is matched against the
+ * `claimed` capability. This means we resolve `can` and `with` fields from the
+ * `claimed` capability and inherit all missing `nb` fields from the claimed
+ * capability.
  *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
  * @param {{descriptor: API.Descriptor<A, R, C>}} parser
- * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} parsed
+ * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} claimed
  * @param {API.Source} source
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
 
-const parseDelegatedCapability = (
-  { descriptor },
-  parsed,
+const resolveCapability = (
+  { descriptor: schema },
+  claimed,
   { capability, delegation }
 ) => {
-  // If capability uses pattern like `*` or `store/*` we just use the `can` of
-  // the parser.
-  const can = matchAbility(parsed.can, capability.can)
+  const can = resolveAbility(capability.can, claimed.can, null)
   if (can == null) {
     return new UnknownCapability(capability)
   }
 
-  // If we are parsing capability from the proof we have a parsed capability.
-  // In such case we match original `with` against the one in the proof, which
-  // may be `*` or a `did:*`. If we have a match we use `with` from the original
-  // capability otherwise we parse whatever's in the proof.
-  const matchedURI = matchURI(parsed.with, capability.with)
-  const uri = descriptor.with.read(matchedURI || capability.with)
+  const resource = resolveResource(
+    capability.with,
+    claimed.with,
+    capability.with
+  )
+  const uri = schema.with.read(resource)
   if (uri.error) {
     return new MalformedCapability(capability, uri)
   }
 
-  const nb = parseNB(capability, descriptor.nb, { ...parsed.nb })
+  const nb = parseNB(capability, schema.nb, { ...claimed.nb })
   if (nb.error) {
     return nb
   }
