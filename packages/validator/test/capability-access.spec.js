@@ -45,7 +45,7 @@ const capabilities = {
   },
 }
 
-test('validates with patters', async () => {
+test('validates with patterns', async () => {
   const proof = await Core.delegate({
     issuer: alice,
     audience: bob,
@@ -76,7 +76,7 @@ test('validates with patters', async () => {
   assert.equal(result.error, undefined)
 })
 
-test('validates with patters in chain', async () => {
+test('validates with patterns in chain', async () => {
   const top = await Core.delegate({
     issuer: alice,
     audience: bob,
