@@ -30,14 +30,14 @@ export { Schema }
 /**
  * @param {UCAN.Link} proof
  */
-const unavailable = proof => new UnavailableProof(proof)
+export const unavailable = proof => new UnavailableProof(proof)
 
 /**
  *
  * @param {UCAN.DID} did
  * @returns {API.DIDKeyResolutionError}
  */
-const failDIDKeyResolution = did => new DIDKeyResolutionError(did)
+export const failDIDKeyResolution = did => new DIDKeyResolutionError(did)
 
 /**
  * @param {Required<API.ClaimOptions>} config
@@ -68,7 +68,7 @@ const resolveMatch = async (match, config) => {
  * @param {API.Proof[]} proofs
  * @param {Required<API.ProofResolver>} config
  */
-const resolveProofs = async (proofs, config) => {
+export const resolveProofs = async (proofs, config) => {
   /** @type {API.Result<API.Delegation, API.UnavailableProof>[]} */
   const delegations = []
   const promises = []
@@ -148,7 +148,7 @@ const resolveSources = async ({ delegation }, config) => {
  * @param {API.ParsedCapability} capability
  * @param {API.DID} issuer
  */
-const isSelfIssued = (capability, issuer) => capability.with === issuer
+export const isSelfIssued = (capability, issuer) => capability.with === issuer
 
 /**
  * Finds a valid path in a proof chain of the given `invocation` by exploring
@@ -447,7 +447,7 @@ class Unauthorized extends Failure {
  * @param {Required<API.ClaimOptions>} config
  * @returns {Promise<API.Result<T, API.InvalidProof|API.DIDKeyResolutionError>>}
  */
-const validate = async (delegation, config) => {
+export const validate = async (delegation, config) => {
   if (UCAN.isExpired(delegation.data)) {
     return new Expired(
       /** @type {API.Delegation & {expiration: number}} */ (delegation)
