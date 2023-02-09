@@ -4,7 +4,7 @@ import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { capability, URI, Link, DID, Failure, Schema } from '../src/lib.js'
 import * as API from './types.js'
 
-test('execute capabilty', () =>
+test('execute capability', () =>
   /**
    * @param {API.ConnectionView<API.Service>} connection
    */
@@ -98,19 +98,17 @@ test('infers nb fields optional', () => {
   capability({
     can: 'test/nb',
     with: DID.match({ method: 'key' }),
-    nb: {
+    nb: Schema.struct({
       msg: URI.match({ protocol: 'data:' }),
-    },
+    }),
     derives: (claim, proof) => {
       /** @type {string} */
-      // @ts-expect-error - may be undefined
       const _1 = claim.nb.msg
 
       /** @type {API.URI<"data:">|undefined} */
       const _2 = claim.nb.msg
 
       /** @type {string} */
-      // @ts-expect-error - may be undefined
       const _3 = proof.nb.msg
 
       /** @type {API.URI<"data:">|undefined} */
@@ -125,16 +123,16 @@ test('infers nb fields in derived capability', () => {
   capability({
     can: 'test/base',
     with: DID.match({ method: 'key' }),
-    nb: {
+    nb: Schema.struct({
       msg: URI.match({ protocol: 'data:' }),
-    },
+    }),
   }).derive({
     to: capability({
       can: 'test/derived',
       with: DID.match({ method: 'key' }),
-      nb: {
+      nb: Schema.struct({
         bar: URI.match({ protocol: 'data:' }),
-      },
+      }),
     }),
     derives: (claim, proof) => {
       /** @type {string} */
@@ -160,26 +158,26 @@ test('infers nb fields in derived capability', () => {
   const A = capability({
     can: 'test/a',
     with: DID.match({ method: 'key' }),
-    nb: {
+    nb: Schema.struct({
       a: URI.match({ protocol: 'data:' }),
-    },
+    }),
   })
 
   const B = capability({
     can: 'test/b',
     with: DID.match({ method: 'key' }),
-    nb: {
+    nb: Schema.struct({
       b: URI.match({ protocol: 'data:' }),
-    },
+    }),
   })
 
   A.and(B).derive({
     to: capability({
       can: 'test/c',
       with: DID.match({ method: 'key' }),
-      nb: {
+      nb: Schema.struct({
         c: URI.match({ protocol: 'data:' }),
-      },
+      }),
     }),
     derives: (claim, [a, b]) => {
       /** @type {string} */
@@ -211,9 +209,9 @@ test('infers nb fields in derived capability', () => {
     const A = capability({
       can: 'test/a',
       with: DID.match({ method: 'key' }),
-      nb: {
+      nb: Schema.struct({
         a: URI.match({ protocol: 'data:' }),
-      },
+      }),
     })
 
     const a = await A.delegate({
@@ -248,29 +246,30 @@ test('can create derived capability with dict schema in nb', () => {
    * @param {{ with: string }} claim
    * @param {{ with: string }} proof
    */
-  const equalWith = (claim, proof) => claim.with === proof.with || new Failure(`claim.with is not proven`);
+  const equalWith = (claim, proof) =>
+    claim.with === proof.with || new Failure(`claim.with is not proven`)
   const top = capability({
     can: '*',
     with: URI.match({ protocol: 'did:' }),
     derives: equalWith,
-  });
+  })
   const delegate = top.derive({
     to: capability({
       can: 'access/delegate',
       with: URI,
-      nb: {
+      nb: Schema.struct({
         delegations: Schema.dictionary({
           value: Schema.Link.match(),
         }),
-      },
+      }),
       derives: (claim, proof) => {
         // the motivation for this test was that tsc would previously complain at these assignments
         // and the only workaround was a type assertion https://github.com/web3-storage/w3protocol/pull/420/commits/4f1f2931cecff1d1d1d29e889c4fdfb63ff3b327#diff-e434cc6c1a699df311a0b2faed199a2ff6b6b291d30f95e20b2ea5abfa7da3d9R125
         /** @type {Schema.Dictionary|undefined} */
-        const claimDelegations = claim.nb.delegations;
+        const claimDelegations = claim.nb.delegations
         /** @type {Schema.Dictionary|undefined} */
-        const proofDelegations = proof.nb.delegations;
-        return equalWith(claim, proof);
+        const proofDelegations = proof.nb.delegations
+        return equalWith(claim, proof)
       },
     }),
     derives: equalWith,

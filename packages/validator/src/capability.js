@@ -7,16 +7,38 @@ import {
   DelegationError as MatchError,
   Failure,
 } from './error.js'
-import { invoke, delegate } from '@ucanto/core'
+import { invoke, delegate, DID } from '@ucanto/core'
+import * as Schema from './schema.js'
+
+/**
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @typedef {{
+ * can: A
+ * with: API.Reader<R, API.Resource, API.Failure>
+ * nb?: Schema.MapRepresentation<C, unknown>
+ * derives?: (claim: {can:A, with: R, nb: C}, proof:{can:A, with:R, nb:C}) => API.Result<true, API.Failure>
+ * }} Descriptor
+ */
 
 /**
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} [C={}]
- * @param {API.Descriptor<A, R, C>} descriptor
+ * @param {Descriptor<A, R, C>} descriptor
+ 
  * @returns {API.TheCapabilityParser<API.CapabilityMatch<A, R, C>>}
  */
-export const capability = descriptor => new Capability(descriptor)
+export const capability = ({
+  derives = defaultDerives,
+  nb = defaultNBSchema,
+  ...etc
+}) => new Capability({ derives, nb, ...etc })
+
+const defaultNBSchema =
+  /** @type {Schema.MapRepresentation<any>} */
+  (Schema.struct({}))
 
 /**
  * @template {API.Match} M
@@ -102,25 +124,30 @@ class Unit extends View {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @implements {API.TheCapabilityParser<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
- * @extends {Unit<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
+ * @implements {API.TheCapabilityParser<API.DirectMatch<API.ParsedCapability<A, R, C>>>}
+ * @extends {Unit<API.DirectMatch<API.ParsedCapability<A, R, C>>>}
  */
 class Capability extends Unit {
   /**
-   * @param {API.Descriptor<A, R, C>} descriptor
+   * @param {Required<Descriptor<A, R, C>>} descriptor
    */
   constructor(descriptor) {
     super()
-    this.descriptor = { derives, ...descriptor }
+    this.descriptor = descriptor
+    this.schema = Schema.struct({
+      can: Schema.literal(descriptor.can),
+      with: descriptor.with,
+      nb: descriptor.nb,
+    })
   }
 
   /**
-   * @param {API.InferCreateOptions<R, API.InferCaveats<C>>} options
+   * @param {API.InferCreateOptions<R, C>} options
    */
   create(options) {
     const { descriptor, can } = this
     const decoders = descriptor.nb
-    const data = /** @type {API.InferCaveats<C>} */ (options.nb || {})
+    const data = /** @type {C} */ (options.nb || {})
 
     const resource = descriptor.with.read(options.with)
     if (resource.error) {
@@ -129,51 +156,36 @@ class Capability extends Unit {
       })
     }
 
-    const capabality =
-      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */
-      ({ can, with: resource })
-
-    for (const [name, decoder] of Object.entries(decoders || {})) {
-      const key = /** @type {keyof data & string} */ (name)
-      const value = decoder.read(data[key])
-      if (value?.error) {
-        throw Object.assign(
-          new Error(`Invalid 'nb.${key}' - ${value.message}`),
-          { cause: value }
-        )
-      } else if (value !== undefined) {
-        const nb =
-          capabality.nb ||
-          (capabality.nb = /** @type {API.InferCaveats<C>} */ ({}))
-
-        const key = /** @type {keyof nb} */ (name)
-        nb[key] = /** @type {typeof nb[key]} */ (value)
-      }
+    const nb = descriptor.nb.read(data)
+    if (nb.error) {
+      throw Object.assign(new Error(`Invalid 'nb' - ${nb.message}`), {
+        cause: nb,
+      })
     }
 
-    return capabality
+    return createCapability({ can, with: resource, nb })
   }
 
   /**
-   * @param {API.InferInvokeOptions<R, API.InferCaveats<C>>} options
+   * @param {API.InferInvokeOptions<R, C>} options
    */
   invoke({ with: with_, nb, ...options }) {
     return invoke({
       ...options,
       capability: this.create(
-        /** @type {API.InferCreateOptions<R, API.InferCaveats<C>>} */
+        /** @type {API.InferCreateOptions<R, C>} */
         ({ with: with_, nb })
       ),
     })
   }
 
   /**
-   * @param {API.InferDelegationOptions<R, API.InferCaveats<C>>} options
+   * @param {API.InferDelegationOptions<R, C>} options
+   * @returns {Promise<API.Delegation<[API.InferDelegatedCapability<API.ParsedCapability<A, R, C>>]>>}
    */
-  async delegate({ with: with_, nb, ...options }) {
+  async delegate({ nb: input = {}, with: with_, ...options }) {
     const { descriptor, can } = this
     const readers = descriptor.nb
-    const data = /** @type {API.InferCaveats<C>} */ (nb || {})
 
     const resource = descriptor.with.read(with_)
     if (resource.error) {
@@ -182,32 +194,15 @@ class Capability extends Unit {
       })
     }
 
-    const capabality =
-      /** @type {API.ParsedCapability<A, R, API.InferCaveats<C>>} */
-      ({ can, with: resource })
-
-    for (const [name, reader] of Object.entries(readers || {})) {
-      const key = /** @type {keyof data & string} */ (name)
-      const source = data[key]
-      // omit undefined fields in the delegation
-      const value = source === undefined ? source : reader.read(data[key])
-      if (value?.error) {
-        throw Object.assign(
-          new Error(`Invalid 'nb.${key}' - ${value.message}`),
-          { cause: value }
-        )
-      } else if (value !== undefined) {
-        const nb =
-          capabality.nb ||
-          (capabality.nb = /** @type {API.InferCaveats<C>} */ ({}))
-
-        const key = /** @type {keyof nb} */ (name)
-        nb[key] = /** @type {typeof nb[key]} */ (value)
-      }
+    const nb = descriptor.nb.partial().read(input)
+    if (nb.error) {
+      throw Object.assign(new Error(`Invalid 'nb' - ${nb.message}`), {
+        cause: nb,
+      })
     }
 
-    return await delegate({
-      capabilities: [capabality],
+    return delegate({
+      capabilities: [createCapability({ can, with: resource, nb })],
       ...options,
     })
   }
@@ -218,15 +213,38 @@ class Capability extends Unit {
 
   /**
    * @param {API.Source} source
-   * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
+   * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, C>>>}
    */
   match(source) {
-    const result = parseCapability(this, source)
+    const result = parseCapability(this.descriptor, source)
     return result.error ? result : new Match(source, result, this.descriptor)
   }
   toString() {
     return JSON.stringify({ can: this.descriptor.can })
   }
+}
+
+/**
+ * @template {API.ParsedCapability} T
+ * @param {T} source
+ */
+
+const createCapability = ({ can, with: with_, nb }) =>
+  /** @type {API.InferCapability<T>} */ ({
+    can,
+    with: with_,
+    ...(isEmpty(nb) ? {} : { nb }),
+  })
+
+/**
+ * @param {object} object
+ * @returns {object is {}}
+ */
+const isEmpty = object => {
+  for (const _ in object) {
+    return false
+  }
+  return true
 }
 
 /**
@@ -386,18 +404,18 @@ class Derive extends Unit {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @implements {API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>}
+ * @implements {API.DirectMatch<API.ParsedCapability<A, R, C>>}
  */
 class Match {
   /**
    * @param {API.Source} source
-   * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} value
-   * @param {API.Descriptor<A, R, C>} descriptor
+   * @param {API.ParsedCapability<A, R, C>} value
+   * @param {Required<Descriptor<A, R, C>>} descriptor
    */
   constructor(source, value, descriptor) {
     this.source = [source]
     this.value = value
-    this.descriptor = { derives, ...descriptor }
+    this.descriptor = descriptor
   }
   get can() {
     return this.value.can
@@ -413,7 +431,7 @@ class Match {
 
   /**
    * @param {API.CanIssue} context
-   * @returns {API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>|null}
+   * @returns {API.DirectMatch<API.ParsedCapability<A, R, C>>|null}
    */
   prune(context) {
     if (context.canIssue(this.value, this.source[0].delegation.issuer.did())) {
@@ -425,14 +443,14 @@ class Match {
 
   /**
    * @param {API.Source[]} capabilities
-   * @returns {API.Select<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
+   * @returns {API.Select<API.DirectMatch<API.ParsedCapability<A, R, C>>>}
    */
   select(capabilities) {
     const unknown = []
     const errors = []
     const matches = []
     for (const capability of capabilities) {
-      const result = resolveCapability(this, this.value, capability)
+      const result = resolveCapability(this.descriptor, this.value, capability)
       if (!result.error) {
         const claim = this.descriptor.derives(this.value, result)
         if (claim.error) {
@@ -703,37 +721,29 @@ const resolveResource = (source, uri, fallback) => {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @param {{descriptor: API.Descriptor<A, R, C>}} parser
+ * @param {Required<Descriptor<A, R, C>>} descriptor
  * @param {API.Source} source
- * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
+ * @returns {API.Result<API.ParsedCapability<A, R, C>, API.InvalidCapability>}
  */
-const parseCapability = (parser, source) => {
-  const { can, with: withReader, nb: readers } = parser.descriptor
+const parseCapability = (descriptor, source) => {
   const { delegation } = source
-  const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
-    source.capability
-  )
+  const capability = /** @type {API.Capability<A, R, C>} */ (source.capability)
 
-  if (can !== capability.can) {
+  if (descriptor.can !== capability.can) {
     return new UnknownCapability(capability)
   }
 
-  const uri = withReader.read(capability.with)
+  const uri = descriptor.with.read(capability.with)
   if (uri.error) {
     return new MalformedCapability(capability, uri)
   }
 
-  const nb = parseNB(capability, readers)
+  const nb = descriptor.nb.read(capability.nb || {})
   if (nb.error) {
-    return nb
+    return new MalformedCapability(capability, nb)
   }
 
-  return new CapabilityView(
-    can,
-    uri,
-    /** @type {API.InferCaveats<C>} */ (nb),
-    delegation
-  )
+  return new CapabilityView(descriptor.can, uri, nb, delegation)
 }
 
 /**
@@ -747,17 +757,13 @@ const parseCapability = (parser, source) => {
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @param {{descriptor: API.Descriptor<A, R, C>}} parser
- * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} claimed
+ * @param {Required<Descriptor<A, R, C>>} descriptor
+ * @param {API.ParsedCapability<A, R, C>} claimed
  * @param {API.Source} source
- * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
+ * @returns {API.Result<API.ParsedCapability<A, R, C>, API.InvalidCapability>}
  */
 
-const resolveCapability = (
-  { descriptor: schema },
-  claimed,
-  { capability, delegation }
-) => {
+const resolveCapability = (descriptor, claimed, { capability, delegation }) => {
   const can = resolveAbility(capability.can, claimed.can, null)
   if (can == null) {
     return new UnknownCapability(capability)
@@ -768,59 +774,21 @@ const resolveCapability = (
     claimed.with,
     capability.with
   )
-  const uri = schema.with.read(resource)
+  const uri = descriptor.with.read(resource)
   if (uri.error) {
     return new MalformedCapability(capability, uri)
   }
 
-  const nb = parseNB(capability, schema.nb, { ...claimed.nb })
+  const nb = descriptor.nb.read({
+    ...claimed.nb,
+    ...capability.nb,
+  })
+
   if (nb.error) {
-    return nb
+    return new MalformedCapability(capability, nb)
   }
 
-  return new CapabilityView(
-    can,
-    uri,
-    /** @type {API.InferCaveats<C>} */ (nb),
-    delegation
-  )
-}
-
-/**
- * Parses `nb` field of the provided `capability` with given set of `readers`.
- * If `implicit` argument is provided it will treat all fields as optional and
- * fall back to an implicit field. If `implicit` is not provided it will fail
- * if any non-optional field is missing.
- *
- * @template {API.Ability} A
- * @template {API.URI} R
- * @template {API.Caveats} C
- * @param {API.Capability<A, R>} capability
- * @param {C|undefined} readers
- * @param {Partial<API.InferCaveats<C>>} [implicit]
- * @returns {API.Result<API.InferCaveats<C>, API.MalformedCapability>}
- */
-const parseNB = (capability, readers, implicit) => {
-  const nb = /** @type {API.InferCaveats<C>} */ ({})
-  if (readers) {
-    /** @type {Partial<API.InferCaveats<C>>} */
-    const caveats = capability.nb || {}
-    for (const [name, reader] of entries(readers)) {
-      const key = /** @type {keyof caveats & keyof nb & string} */ (name)
-      if (key in caveats || !implicit) {
-        const result = reader.read(caveats[key])
-        if (result?.error) {
-          return new MalformedCapability(capability, result)
-        } else if (result != null) {
-          nb[key] = /** @type {any} */ (result)
-        }
-      } else if (key in implicit) {
-        nb[key] = /** @type {nb[key]} */ (implicit[key])
-      }
-    }
-  }
-
-  return nb
+  return new CapabilityView(can, uri, nb, delegation)
 }
 
 /**
@@ -832,7 +800,7 @@ class CapabilityView {
   /**
    * @param {A} can
    * @param {R} with_
-   * @param {API.InferCaveats<C>} nb
+   * @param {C} nb
    * @param {API.Delegation} delegation
    */
   constructor(can, with_, nb, delegation) {
@@ -913,7 +881,7 @@ const selectGroup = (self, capabilities) => {
  * @param {U} delegated
  * @return {API.Result<true, API.Failure>}
  */
-const derives = (claimed, delegated) => {
+const defaultDerives = (claimed, delegated) => {
   if (delegated.with.endsWith('*')) {
     if (!claimed.with.startsWith(delegated.with.slice(0, -1))) {
       return new Failure(

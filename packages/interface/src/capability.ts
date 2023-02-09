@@ -18,7 +18,7 @@ import {
 } from './lib.js'
 
 export interface Source {
-  capability: Capability
+  capability: { can: Ability; with: URI; nb?: Caveats }
   delegation: Delegation
   index: number
 }
@@ -67,7 +67,7 @@ export interface Reader<
 }
 
 export interface Caveats {
-  [key: string]: Reader<any, unknown>
+  [key: string]: unknown
 }
 
 export type MatchResult<M extends Match> = Result<M, InvalidCapability>
@@ -171,7 +171,7 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
 
   create(
     input: InferCreateOptions<M['value']['with'], M['value']['nb']>
-  ): M['value']
+  ): InferCapability<M['value']>
 
   /**
    * Creates an invocation of this capability. Function throws exception if
@@ -180,7 +180,7 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
 
   invoke(
     options: InferInvokeOptions<M['value']['with'], M['value']['nb']>
-  ): IssuedInvocationView<M['value']>
+  ): IssuedInvocationView<InferCapability<M['value']>>
 
   /**
    * Creates a delegation of this capability. Please note that all the
@@ -189,8 +189,21 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
    */
   delegate(
     options: InferDelegationOptions<M['value']['with'], M['value']['nb']>
-  ): Promise<Delegation<[ToDeriveClaim<M['value']>]>>
+  ): Promise<Delegation<[InferDelegatedCapability<M['value']>]>>
 }
+
+/**
+ * When we encode capability in IPLD we normalize by removing empty `nb`
+ */
+export type InferCapability<T extends ParsedCapability> =
+  keyof T['nb'] extends never
+    ? { can: T['can']; with: T['with'] }
+    : { can: T['can']; with: T['with']; nb: T['nb'] }
+
+export type InferDelegatedCapability<T extends ParsedCapability> =
+  keyof T['nb'] extends never
+    ? { can: T['can']; with: T['with'] }
+    : { can: T['can']; with: T['with']; nb: Partial<T['nb']> }
 
 export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
   // If capability has no NB we want to prevent passing it into
@@ -312,13 +325,15 @@ export type InferMatch<Members extends unknown[]> = Members extends []
   ? [M, ...InferMatch<Rest>]
   : never
 
-export type ParsedCapability<
+export interface ParsedCapability<
   Can extends Ability = Ability,
   Resource extends URI = URI,
-  C extends object = {}
-> = keyof C extends never
-  ? { can: Can; with: Resource; nb?: C }
-  : { can: Can; with: Resource; nb: C }
+  C extends Caveats = {}
+> {
+  can: Can
+  with: Resource
+  nb: C
+}
 
 export type InferCaveats<C> = Optionalize<{
   [K in keyof C]: C[K] extends Reader<infer T, unknown, infer _> ? T : never
@@ -327,24 +342,24 @@ export type InferCaveats<C> = Optionalize<{
 export interface Descriptor<
   A extends Ability,
   R extends URI,
-  C extends Caveats
+  C extends Record<string, unknown>
 > {
   can: A
   with: Reader<R, Resource, Failure>
 
-  nb?: C
+  nb?: Reader<C, unknown>
 
-  derives?: Derives<
-    ToDeriveClaim<ParsedCapability<A, R, InferCaveats<C>>>,
-    ToDeriveClaim<ParsedCapability<A, R, InferCaveats<C>>>
-  >
+  derives?: (
+    claim: { can: A; with: R; nb: C },
+    proof: { can: A; with: R; nb: Partial<C> }
+  ) => Result<true, Failure>
 }
 
 export interface CapabilityMatch<
   A extends Ability,
   R extends URI,
   C extends Caveats
-> extends DirectMatch<ParsedCapability<A, R, InferCaveats<C>>> {}
+> extends DirectMatch<ParsedCapability<A, R, C>> {}
 
 export interface CanIssue {
   /**

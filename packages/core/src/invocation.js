@@ -37,9 +37,15 @@ class IssuedInvocation {
 
     /**
      * @readonly
-     * @type {[Capability]}
      */
-    this.capabilities = [capability]
+    this.capabilities =
+      /** @type {[Required<Capability>]} */
+      ([
+        {
+          nb: {},
+          ...capability,
+        },
+      ])
 
     this.expiration = expiration
     this.lifetimeInSeconds = lifetimeInSeconds

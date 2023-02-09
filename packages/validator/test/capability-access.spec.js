@@ -14,10 +14,10 @@ const capabilities = {
     add: capability({
       can: 'store/add',
       with: DID,
-      nb: {
+      nb: Schema.struct({
         link: Link,
         size: Schema.integer().optional(),
-      },
+      }),
       derives: (claim, proof) => {
         if (claim.with !== proof.with) {
           return new Failure('with field does not match')
@@ -38,9 +38,9 @@ const capabilities = {
     ping: capability({
       can: 'dev/ping',
       with: DID,
-      nb: {
+      nb: Schema.struct({
         message: Schema.string(),
-      },
+      }),
     }),
   },
 }

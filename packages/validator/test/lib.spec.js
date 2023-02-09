@@ -1,5 +1,5 @@
 import { test, assert } from './test.js'
-import { access, claim } from '../src/lib.js'
+import { access, claim, Schema } from '../src/lib.js'
 import { capability, URI, Link } from '../src/lib.js'
 import { Failure } from '../src/error.js'
 import { Verifier } from '@ucanto/principal'
@@ -12,10 +12,10 @@ import { UnavailableProof } from '../src/error.js'
 const storeAdd = capability({
   can: 'store/add',
   with: URI.match({ protocol: 'did:' }),
-  nb: {
+  nb: Schema.struct({
     link: Link,
     origin: Link.optional(),
-  },
+  }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
       return new Failure(

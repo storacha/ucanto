@@ -1,5 +1,5 @@
 import { equalWith, canDelegateURI, canDelegateLink, fail } from './util.js'
-import { capability, URI, Text, Link, DID } from '../src/lib.js'
+import { capability, URI, Text, Link, DID, Schema } from '../src/lib.js'
 
 export const Voucher = capability({
   can: 'voucher/*',
@@ -10,11 +10,11 @@ export const Claim = Voucher.derive({
   to: capability({
     can: 'voucher/claim',
     with: DID.match({ method: 'key' }),
-    nb: {
+    nb: Schema.struct({
       product: Link,
       identity: URI.match({ protocol: 'mailto:' }),
       service: DID,
-    },
+    }),
     derives: (child, parent) => {
       return (
         fail(equalWith(child, parent)) ||
@@ -31,9 +31,9 @@ export const Claim = Voucher.derive({
 export const Redeem = capability({
   can: 'voucher/redeem',
   with: URI.match({ protocol: 'did:' }),
-  nb: {
+  nb: Schema.struct({
     product: Text,
     identity: Text,
     account: URI.match({ protocol: 'did:' }),
-  },
+  }),
 })
