@@ -158,6 +158,10 @@ class Never extends API {
   read(input) {
     return typeError({ expect: 'never', actual: input })
   }
+
+  partial() {
+    return this
+  }
 }
 
 /**
@@ -177,6 +181,12 @@ class Unknown extends API {
    */
   read(input) {
     return /** @type {Schema.ReadResult<unknown>}*/ (input)
+  }
+  /**
+   * @returns {Schema.Schema<Partial<unknown>, I>}
+   */
+  partial() {
+    return /** @type {Schema.Schema<Partial<unknown>, I>} */ (this)
   }
   toString() {
     return 'unknown()'
@@ -435,7 +445,10 @@ class Dictionary extends API {
         return memberError({ at: k, cause: valueResult })
       }
 
-      dict[keyResult] = valueResult
+      // skip undefined because they mess up CBOR and are generally useless.
+      if (valueResult !== undefined) {
+        dict[keyResult] = valueResult
+      }
     }
 
     return dict
@@ -445,6 +458,14 @@ class Dictionary extends API {
   }
   get value() {
     return this.settings.value
+  }
+
+  partial() {
+    const { key, value } = this.settings
+    return new Dictionary({
+      key,
+      value: optional(value),
+    })
   }
   toString() {
     return `dictionary(${this.settings})`
@@ -1069,6 +1090,17 @@ class Struct extends API {
     }
 
     return struct
+  }
+
+  /**
+   * @returns {Schema.MapRepresentation<Partial<Schema.InferStruct<U>>> & Schema.StructSchema}
+   */
+  partial() {
+    return new Struct(
+      Object.fromEntries(
+        Object.entries(this.shape).map(([key, value]) => [key, optional(value)])
+      )
+    )
   }
 
   /** @type {U} */
