@@ -158,10 +158,6 @@ class Never extends API {
   read(input) {
     return typeError({ expect: 'never', actual: input })
   }
-
-  partial() {
-    return this
-  }
 }
 
 /**
@@ -181,12 +177,6 @@ class Unknown extends API {
    */
   read(input) {
     return /** @type {Schema.ReadResult<unknown>}*/ (input)
-  }
-  /**
-   * @returns {Schema.Schema<Partial<unknown>, I>}
-   */
-  partial() {
-    return /** @type {Schema.Schema<Partial<unknown>, I>} */ (this)
   }
   toString() {
     return 'unknown()'
