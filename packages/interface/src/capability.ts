@@ -12,9 +12,7 @@ import {
   Await,
   IssuedInvocationView,
   UCANOptions,
-  DIDKey,
   Verifier,
-  API,
 } from './lib.js'
 
 export interface Source {
@@ -80,17 +78,12 @@ export type InvalidCapability = UnknownCapability | MalformedCapability
 export interface DerivedMatch<T, M extends Match>
   extends Match<T, M | DerivedMatch<T, M>> {}
 
-export interface DeriveSelector<M extends Match, T extends ParsedCapability> {
-  to: TheCapabilityParser<DirectMatch<T>>
-  derives: Derives<ToDeriveClaim<T>, ToDeriveProof<M['value']>>
-}
-
 /**
  * Utility type is used to infer the type of the capability passed into
- * `derives` handler. It simply makes all `nb` fileds optional because
+ * `derives` handler. It simply makes all `nb` fields optional because
  * in delegation all `nb` fields could be left out implying no restrictions.
  */
-export type ToDeriveClaim<T extends ParsedCapability> =
+type ToDeriveClaim<T extends ParsedCapability> =
   | T
   | ParsedCapability<T['can'], T['with'], Partial<T['nb']>>
 
@@ -101,18 +94,18 @@ export type ToDeriveClaim<T extends ParsedCapability> =
  * all `nb` fields optional, because in delegation all `nb` fields could be
  * left out implying no restrictions.
  */
-export type ToDeriveProof<T> = T extends ParsedCapability
+export type InferDeriveProof<T> = T extends ParsedCapability
   ? // If it a capability we just make `nb` partial
-    ToDeriveClaim<T>
+    InferDelegatedCapability<T>
   : // otherwise we need to map tuple
-    ToDeriveProofs<T>
+    InferDeriveProofs<T>
 
 /**
  * Another helper type which is equivalent of `ToDeriveClaim` except it works
  * on tuple of capabilities.
  */
-type ToDeriveProofs<T> = T extends [infer U, ...infer E]
-  ? [ToDeriveClaim<U & ParsedCapability>, ...ToDeriveProofs<E>]
+type InferDeriveProofs<T> = T extends [infer U, ...infer E]
+  ? [ToDeriveClaim<U & ParsedCapability>, ...InferDeriveProofs<E>]
   : T extends never[]
   ? []
   : never
@@ -154,16 +147,11 @@ export interface View<M extends Match> extends Matcher<M>, Selector<M> {
    * })
    * ```
    */
-  derive<T extends ParsedCapability>(
-    options: DeriveSelector<M, T>
-  ): TheCapabilityParser<DerivedMatch<T, M>>
+  derive<T extends ParsedCapability>(options: {
+    to: TheCapabilityParser<DirectMatch<T>>
+    derives: Derives<T, InferDeriveProof<M['value']>>
+  }): TheCapabilityParser<DerivedMatch<T, M>>
 }
-
-export type InferCaveatParams<T> = keyof T extends never
-  ? never | undefined
-  : {
-      [K in keyof T]: T[K] extends { toJSON(): infer U } ? U : T[K]
-    }
 
 export interface TheCapabilityParser<M extends Match<ParsedCapability>>
   extends CapabilityParser<M> {
@@ -177,7 +165,6 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
    * Creates an invocation of this capability. Function throws exception if
    * non-optional fields are omitted.
    */
-
   invoke(
     options: InferInvokeOptions<M['value']['with'], M['value']['nb']>
   ): IssuedInvocationView<InferCapability<M['value']>>
@@ -193,13 +180,19 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
 }
 
 /**
- * When we encode capability in IPLD we normalize by removing empty `nb`
+ * When normalize capabilities by removing `nb` if it is a `{}`. This type
+ * does that normalization at the type level.
  */
 export type InferCapability<T extends ParsedCapability> =
   keyof T['nb'] extends never
     ? { can: T['can']; with: T['with'] }
     : { can: T['can']; with: T['with']; nb: T['nb'] }
 
+/**
+ * In delegation capability all the `nb` fields are optional. This type maps
+ * capability type (as it would be in the invocation) to the form it will be
+ * in the delegation.
+ */
 export type InferDelegatedCapability<T extends ParsedCapability> =
   keyof T['nb'] extends never
     ? { can: T['can']; with: T['with'] }
@@ -207,7 +200,7 @@ export type InferDelegatedCapability<T extends ParsedCapability> =
 
 export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
   // If capability has no NB we want to prevent passing it into
-  // .create funciton so we make `nb` as optional `never` type so
+  // .create function so we make `nb` as optional `never` type so
   // it can not be satisfied
   keyof C extends never ? { with: R; nb?: never } : { with: R; nb: C }
 
@@ -226,22 +219,13 @@ export type InferDelegationOptions<
 }
 
 export type EmptyObject = { [key: string | number | symbol]: never }
-type Optionalize<T> = InferRequried<T> & InferOptional<T>
-
-type InferOptional<T> = {
-  [K in keyof T as T[K] | undefined extends T[K] ? K : never]?: T[K]
-}
-
-type InferRequried<T> = {
-  [K in keyof T as T[K] | undefined extends T[K] ? never : K]: T[K]
-}
 
 export interface CapabilityParser<M extends Match = Match> extends View<M> {
   /**
    * Defines capability that is either `this` or the the given `other`. This
    * allows you to compose multiple capabilities into one so that you could
    * validate any of one of them without having to maintain list of supported
-   * capabilities. It is especially useful when dealiving with derived
+   * capabilities. It is especially useful when dealing with derived
    * capability chains when you might derive capability from either one or the
    * other.
    */
@@ -295,7 +279,7 @@ export interface CapabilitiesParser<M extends Match[] = Match[]>
   extends View<Amplify<M>> {
   /**
    * Creates new capability group containing capabilities from this group and
-   * provedid `other` capability. This method complements `and` method on
+   * provided `other` capability. This method complements `and` method on
    * `Capability` to allow chaining e.g. `read.and(write).and(modify)`.
    */
   and<W extends Match>(other: MatchSelector<W>): CapabilitiesParser<[...M, W]>
@@ -333,22 +317,6 @@ export interface ParsedCapability<
   can: Can
   with: Resource
   nb: C
-}
-
-export interface Descriptor<
-  A extends Ability,
-  R extends URI,
-  C extends Record<string, unknown>
-> {
-  can: A
-  with: Reader<R, Resource, Failure>
-
-  nb?: Reader<C, unknown>
-
-  derives?: (
-    claim: { can: A; with: R; nb: C },
-    proof: { can: A; with: R; nb: Partial<C> }
-  ) => Result<true, Failure>
 }
 
 export interface CapabilityMatch<

@@ -7,7 +7,7 @@ import {
   DelegationError as MatchError,
   Failure,
 } from './error.js'
-import { invoke, delegate, DID } from '@ucanto/core'
+import { invoke, delegate } from '@ucanto/core'
 import * as Schema from './schema.js'
 
 /**
@@ -59,7 +59,11 @@ export const and = (...selectors) => new And(selectors)
 /**
  * @template {API.Match} M
  * @template {API.ParsedCapability} T
- * @param {API.DeriveSelector<M, T> & { from: API.MatchSelector<M> }} options
+ * @param {object} source
+ * @param {API.MatchSelector<M>} source.from
+ * @param {API.TheCapabilityParser<API.DirectMatch<T>>} source.to
+ * @param {API.Derives<T, API.InferDeriveProof<M['value']>>} source.derives
+ 
  * @returns {API.TheCapabilityParser<API.DerivedMatch<T, M>>}
  */
 export const derive = ({ from, to, derives }) => new Derive(from, to, derives)
@@ -87,7 +91,9 @@ class View {
 
   /**
    * @template {API.ParsedCapability} U
-   * @param {API.DeriveSelector<M, U>} options
+   * @param {object} source
+   * @param {API.TheCapabilityParser<API.DirectMatch<U>>} source.to
+   * @param {API.Derives<U, API.InferDeriveProof<M['value']>>} source.derives
    * @returns {API.TheCapabilityParser<API.DerivedMatch<U, M>>}
    */
   derive({ derives, to }) {
@@ -355,7 +361,7 @@ class Derive extends Unit {
   /**
    * @param {API.MatchSelector<M>} from
    * @param {API.TheCapabilityParser<API.DirectMatch<T>>} to
-   * @param {API.Derives<API.ToDeriveClaim<T>, API.ToDeriveProof<M['value']>>} derives
+   * @param {API.Derives<T, API.InferDeriveProof<M['value']>>} derives
    */
   constructor(from, to, derives) {
     super()
@@ -499,7 +505,7 @@ class DerivedMatch {
   /**
    * @param {API.DirectMatch<T>} selected
    * @param {API.MatchSelector<M>} from
-   * @param {API.Derives<API.ToDeriveClaim<T>, API.ToDeriveProof<M['value']>>} derives
+   * @param {API.Derives<T, API.InferDeriveProof<M['value']>>} derives
    */
   constructor(selected, from, derives) {
     this.selected = selected

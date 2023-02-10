@@ -136,11 +136,8 @@ test('infers nb fields in derived capability', () => {
     }),
     derives: (claim, proof) => {
       /** @type {string} */
-      // @ts-expect-error - may be undefined
+      /** @type {API.URI<"data:">} */
       const _1 = claim.nb.bar
-
-      /** @type {API.URI<"data:">|undefined} */
-      const _2 = claim.nb.bar
 
       /** @type {string} */
       // @ts-expect-error - may be undefined
@@ -180,11 +177,7 @@ test('infers nb fields in derived capability', () => {
       }),
     }),
     derives: (claim, [a, b]) => {
-      /** @type {string} */
-      // @ts-expect-error - may be undefined
-      const _1 = claim.nb.c
-
-      /** @type {API.URI<"data:">|undefined} */
+      /** @type {API.URI<"data:">} */
       const _2 = claim.nb.c
 
       /** @type {string} */
