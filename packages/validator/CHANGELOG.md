@@ -1,5 +1,37 @@
 # Changelog
 
+### [4.2.3](https://www.github.com/web3-storage/ucanto/compare/validator-v4.1.0...validator-v4.2.3) (2023-02-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* wildcard support in capabilies (#218)
+
+### Features
+
+* wildcard support in capabilies ([#218](https://www.github.com/web3-storage/ucanto/issues/218)) ([545d9c2](https://www.github.com/web3-storage/ucanto/commit/545d9c25d9bd8000eaff4978432bc1bbba14654e))
+
+
+### Bug Fixes
+
+* add [@returns](https://www.github.com/returns) to @ucanto/validator Schema.dictionary() to avoid problematic inference when using derives ([#215](https://www.github.com/web3-storage/ucanto/issues/215)) ([620421d](https://www.github.com/web3-storage/ucanto/commit/620421d450a82d165301ae8d0ebad1ec041db636))
+
+
+### Miscellaneous Chores
+
+* release 4.2.3 ([5dc8158](https://www.github.com/web3-storage/ucanto/commit/5dc8158341cd668304c94a4b83e1d9b9affae410))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^4.1.0 to ^4.2.3
+    * @ucanto/interface bumped from ^4.1.0 to ^4.2.3
+  * devDependencies
+    * @ucanto/client bumped from ^4.1.0 to ^4.2.3
+    * @ucanto/principal bumped from ^4.1.0 to ^4.2.3
+
 ## [4.1.0](https://www.github.com/web3-storage/ucanto/compare/validator-v4.0.3...validator-v4.1.0) (2023-01-24)
 
 
