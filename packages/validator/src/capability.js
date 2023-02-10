@@ -225,6 +225,8 @@ class Capability extends Unit {
 }
 
 /**
+ * Normalizes capability by removing empty nb field.
+ *
  * @template {API.ParsedCapability} T
  * @param {T} source
  */
