@@ -1907,6 +1907,8 @@ test('derived capability match & select', () => {
       b.with === a.with ? true : new Failure(`with don't match`),
   })
 
+  assert.equal(AA.can, 'derive/a')
+
   const proof = {
     issuer: alice,
     fake: { thing: 'thing' },
