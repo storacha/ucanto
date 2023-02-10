@@ -702,16 +702,18 @@ test('invalid claim / invalid sub delegation', async () => {
     capability: storeAdd,
   })
 
+  const capability = `{"can":"store/add","with":"${w3.did()}","nb":${JSON.stringify(
+    nb
+  )}}`
+
   assert.containSubset(result, {
     name: 'Unauthorized',
     message: `Claim ${storeAdd} is not authorized
-  - Capability {"can":"store/add","with":"${w3.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+  - Capability ${capability} is not authorized because:
     - Capability can not be (self) issued by '${mallory.did()}'
-    - Capability {"can":"store/add","with":"${w3.did()}"} is not authorized because:
+    - Capability ${capability} is not authorized because:
       - Capability can not be (self) issued by '${bob.did()}'
-      - Capability {"can":"store/add","with":"${w3.did()}"} is not authorized because:
+      - Capability ${capability} is not authorized because:
         - Capability can not be (self) issued by '${alice.did()}'
         - Delegated capability not found`,
   })

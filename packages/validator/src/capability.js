@@ -221,7 +221,7 @@ class Capability extends Unit {
    * @returns {API.MatchResult<API.DirectMatch<API.ParsedCapability<A, R, API.InferCaveats<C>>>>}
    */
   match(source) {
-    const result = parse(this, source)
+    const result = parseCapability(this, source)
     return result.error ? result : new Match(source, result, this.descriptor)
   }
   toString() {
@@ -432,7 +432,7 @@ class Match {
     const errors = []
     const matches = []
     for (const capability of capabilities) {
-      const result = parse(this, capability, true)
+      const result = resolveCapability(this, this.value, capability)
       if (!result.error) {
         const claim = this.descriptor.derives(this.value, result)
         if (claim.error) {
@@ -635,29 +635,86 @@ class AndMatch {
 }
 
 /**
- * Parses capability `source` using a provided capability `parser`. By default
- * invocation parsing occurs, which respects a capability schema, failing if
- * any non-optional field is missing. If `optional` argument is `true` it will
- * parse capability as delegation, in this case all `nb` fields are considered
- * optional.
+ * Resolves ability `pattern` of the delegated capability from the ability
+ * of the claimed capability. If pattern matches returns claimed ability
+ * otherwise returns given `fallback`.
+ *
+ * @example
+ * ```js
+ * resolveAbility('*', 'store/add', null) // => 'store/add'
+ * resolveAbility('store/*', 'store/add', null) // => 'store/add'
+ * resolveAbility('store/add', 'store/add', null) // => 'store/add'
+ * resolveAbility('store/', 'store/add', null) // => null
+ * resolveAbility('store/a*', 'store/add', null) // => null
+ * resolveAbility('store/list', 'store/add', null) // => null
+ * ```
+ *
+ * @template {API.Ability} T
+ * @template U
+ * @param {string} pattern
+ * @param {T} can
+ * @param {U} fallback
+ * @returns {T|U}
+ */
+const resolveAbility = (pattern, can, fallback) => {
+  switch (pattern) {
+    case can:
+    case '*':
+      return can
+    default:
+      return pattern.endsWith('/*') && can.startsWith(pattern.slice(0, -1))
+        ? can
+        : fallback
+  }
+}
+
+/**
+ * Resolves `source` resource of the delegated capability from the resource
+ * `uri` of the claimed capability. If `source` is `"ucan:*""` or matches `uri`
+ * then it returns `uri` back otherwise it returns `fallback`.
+ *
+ * @example
+ * ```js
+ * resolveResource('ucan:*', 'did:key:zAlice', null) // => 'did:key:zAlice'
+ * resolveAbility('ucan:*', 'https://example.com', null) // => 'https://example.com'
+ * resolveAbility('did:*', 'did:key:zAlice', null) // => null
+ * resolveAbility('did:key:zAlice', 'did:key:zAlice', null) // => did:key:zAlice
+ * ```
+ * @template {string} T
+ * @template U
+ * @param {T} uri
+ * @param {string} source
+ * @param {U} fallback
+ * @returns {T|U}
+ */
+const resolveResource = (source, uri, fallback) => {
+  switch (source) {
+    case uri:
+    case 'ucan:*':
+      return uri
+    default:
+      return fallback
+  }
+}
+
+/**
+ * Parses capability from the `source` using a provided `parser`.
  *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
  * @param {{descriptor: API.Descriptor<A, R, C>}} parser
  * @param {API.Source} source
- * @param {boolean} [optional=false]
  * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
  */
-
-const parse = (parser, source, optional = false) => {
+const parseCapability = (parser, source) => {
   const { can, with: withReader, nb: readers } = parser.descriptor
   const { delegation } = source
   const capability = /** @type {API.Capability<A, R, API.InferCaveats<C>>} */ (
     source.capability
   )
 
-  if (capability.can !== can) {
+  if (can !== capability.can) {
     return new UnknownCapability(capability)
   }
 
@@ -666,25 +723,104 @@ const parse = (parser, source, optional = false) => {
     return new MalformedCapability(capability, uri)
   }
 
-  const nb = /** @type {API.InferCaveats<C>} */ ({})
+  const nb = parseNB(capability, readers)
+  if (nb.error) {
+    return nb
+  }
 
+  return new CapabilityView(
+    can,
+    uri,
+    /** @type {API.InferCaveats<C>} */ (nb),
+    delegation
+  )
+}
+
+/**
+ * Resolves delegated capability `source` from the `claimed` capability using
+ * provided capability `parser`. It is similar to `parseCapability` except
+ * `source` here is treated as capability pattern which is matched against the
+ * `claimed` capability. This means we resolve `can` and `with` fields from the
+ * `claimed` capability and inherit all missing `nb` fields from the claimed
+ * capability.
+ *
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @param {{descriptor: API.Descriptor<A, R, C>}} parser
+ * @param {API.ParsedCapability<A, R, API.InferCaveats<C>>} claimed
+ * @param {API.Source} source
+ * @returns {API.Result<API.ParsedCapability<A, R, API.InferCaveats<C>>, API.InvalidCapability>}
+ */
+
+const resolveCapability = (
+  { descriptor: schema },
+  claimed,
+  { capability, delegation }
+) => {
+  const can = resolveAbility(capability.can, claimed.can, null)
+  if (can == null) {
+    return new UnknownCapability(capability)
+  }
+
+  const resource = resolveResource(
+    capability.with,
+    claimed.with,
+    capability.with
+  )
+  const uri = schema.with.read(resource)
+  if (uri.error) {
+    return new MalformedCapability(capability, uri)
+  }
+
+  const nb = parseNB(capability, schema.nb, { ...claimed.nb })
+  if (nb.error) {
+    return nb
+  }
+
+  return new CapabilityView(
+    can,
+    uri,
+    /** @type {API.InferCaveats<C>} */ (nb),
+    delegation
+  )
+}
+
+/**
+ * Parses `nb` field of the provided `capability` with given set of `readers`.
+ * If `implicit` argument is provided it will treat all fields as optional and
+ * fall back to an implicit field. If `implicit` is not provided it will fail
+ * if any non-optional field is missing.
+ *
+ * @template {API.Ability} A
+ * @template {API.URI} R
+ * @template {API.Caveats} C
+ * @param {API.Capability<A, R>} capability
+ * @param {C|undefined} readers
+ * @param {Partial<API.InferCaveats<C>>} [implicit]
+ * @returns {API.Result<API.InferCaveats<C>, API.MalformedCapability>}
+ */
+const parseNB = (capability, readers, implicit) => {
+  const nb = /** @type {API.InferCaveats<C>} */ ({})
   if (readers) {
     /** @type {Partial<API.InferCaveats<C>>} */
     const caveats = capability.nb || {}
     for (const [name, reader] of entries(readers)) {
       const key = /** @type {keyof caveats & keyof nb & string} */ (name)
-      if (key in caveats || !optional) {
+      if (key in caveats || !implicit) {
         const result = reader.read(caveats[key])
         if (result?.error) {
           return new MalformedCapability(capability, result)
         } else if (result != null) {
           nb[key] = /** @type {any} */ (result)
         }
+      } else if (key in implicit) {
+        nb[key] = /** @type {nb[key]} */ (implicit[key])
       }
     }
   }
 
-  return new CapabilityView(can, capability.with, nb, delegation)
+  return nb
 }
 
 /**
