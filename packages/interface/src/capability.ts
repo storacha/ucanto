@@ -335,10 +335,6 @@ export interface ParsedCapability<
   nb: C
 }
 
-export type InferCaveats<C> = Optionalize<{
-  [K in keyof C]: C[K] extends Reader<infer T, unknown, infer _> ? T : never
-}>
-
 export interface Descriptor<
   A extends Ability,
   R extends URI,
