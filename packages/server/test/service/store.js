@@ -4,13 +4,14 @@ import { provide } from '../../src/handler.js'
 import * as API from './api.js'
 import * as Access from './access.js'
 import { service as issuer } from '../fixtures.js'
+import { Schema } from '@ucanto/validator/src/lib.js'
 
 const addCapability = Server.capability({
   can: 'store/add',
   with: Server.URI.match({ protocol: 'did:' }),
-  nb: {
+  nb: Schema.struct({
     link: Server.Link.match().optional(),
-  },
+  }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
       return new Server.Failure(
@@ -34,9 +35,9 @@ const addCapability = Server.capability({
 const removeCapability = Server.capability({
   can: 'store/remove',
   with: Server.URI.match({ protocol: 'did:' }),
-  nb: {
+  nb: Schema.struct({
     link: Server.Link.match().optional(),
-  },
+  }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
       return new Server.Failure(

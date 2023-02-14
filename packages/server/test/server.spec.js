@@ -5,13 +5,14 @@ import * as CBOR from '@ucanto/transport/cbor'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import * as Service from '../../client/test/service.js'
 import { test, assert } from './test.js'
+import { Schema } from '@ucanto/validator'
 
 const storeAdd = Server.capability({
   can: 'store/add',
   with: Server.URI.match({ protocol: 'did:' }),
-  nb: {
+  nb: Schema.struct({
     link: Server.Link.match().optional(),
-  },
+  }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
       return new Server.Failure(
@@ -34,9 +35,9 @@ const storeAdd = Server.capability({
 const storeRemove = Server.capability({
   can: 'store/remove',
   with: Server.URI.match({ protocol: 'did:' }),
-  nb: {
+  nb: Schema.struct({
     link: Server.Link.match().optional(),
-  },
+  }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
       return new Server.Failure(

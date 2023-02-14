@@ -17,9 +17,9 @@ const claim = capability({
 const update = capability({
   can: './update',
   with: DID,
-  nb: {
+  nb: Schema.struct({
     key: DID.match({ method: 'key' }),
-  },
+  }),
 })
 
 test('validate mailto', async () => {

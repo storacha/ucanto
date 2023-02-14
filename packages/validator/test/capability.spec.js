@@ -797,9 +797,9 @@ test('parse with nb', () => {
   const storeAdd = capability({
     can: 'store/add',
     with: URI.match({ protocol: 'did:' }),
-    nb: {
+    nb: Schema.struct({
       link: Link.match().optional(),
-    },
+    }),
     derives: (claimed, delegated) => {
       if (claimed.with !== delegated.with) {
         return new Failure(
@@ -842,7 +842,10 @@ test('parse with nb', () => {
               nb: { link: 5 },
             },
             cause: {
-              message: 'Expected link to be a CID instead of 5',
+              name: 'FieldError',
+              cause: {
+                message: 'Expected link to be a CID instead of 5',
+              },
             },
           },
         ],
@@ -1201,9 +1204,9 @@ test('capability create with nb', () => {
   const echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
-    nb: {
+    nb: Schema.struct({
       message: URI.match({ protocol: 'data:' }),
-    },
+    }),
   })
 
   assert.throws(() => {
@@ -1222,7 +1225,7 @@ test('capability create with nb', () => {
     echo.create({
       with: alice.did(),
     })
-  }, /Invalid 'nb.message' - Expected URI but got undefined/)
+  }, /Expected URI but got undefined/)
 
   assert.throws(() => {
     echo.create({
@@ -1232,7 +1235,7 @@ test('capability create with nb', () => {
         message: 'echo:foo',
       },
     })
-  }, /Invalid 'nb.message' - Expected data: URI instead got echo:foo/)
+  }, /Expected data: URI instead got echo:foo/)
 
   assert.deepEqual(
     echo.create({ with: alice.did(), nb: { message: 'data:hello' } }),
@@ -1421,9 +1424,9 @@ test('invoke capability (with nb)', () => {
   const echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
-    nb: {
+    nb: Schema.struct({
       message: URI.match({ protocol: 'data:' }),
-    },
+    }),
   })
 
   assert.throws(() => {
@@ -1445,7 +1448,7 @@ test('invoke capability (with nb)', () => {
       audience: w3,
       with: alice.did(),
     })
-  }, /Invalid 'nb.message' - Expected URI but got undefined/)
+  }, /Expected URI but got undefined/)
 
   assert.throws(() => {
     echo.create({
@@ -1455,7 +1458,7 @@ test('invoke capability (with nb)', () => {
         message: 'echo:foo',
       },
     })
-  }, /Invalid 'nb.message' - Expected data: URI instead got echo:foo/)
+  }, /Expected data: URI instead got echo:foo/)
 
   assert.deepEqual(
     echo.invoke({
@@ -1503,10 +1506,10 @@ test('capability with optional caveats', async () => {
   const Echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
-    nb: {
+    nb: Schema.struct({
       message: URI.match({ protocol: 'data:' }),
       meta: Link.match().optional(),
-    },
+    }),
   })
 
   const echo = await Echo.invoke({
@@ -1619,17 +1622,17 @@ test('.and(...).match', () => {
   const A = capability({
     can: 'test/ab',
     with: URI,
-    nb: {
+    nb: Schema.struct({
       a: Schema.Text,
-    },
+    }),
   })
 
   const B = capability({
     can: 'test/ab',
     with: URI,
-    nb: {
+    nb: Schema.struct({
       b: Schema.Text,
-    },
+    }),
   })
 
   const AB = A.and(B)
@@ -1731,17 +1734,17 @@ test('and with diff nb', () => {
   const A = capability({
     can: 'test/me',
     with: URI,
-    nb: {
+    nb: Schema.struct({
       a: Schema.Text,
-    },
+    }),
   })
 
   const B = capability({
     can: 'test/me',
     with: URI,
-    nb: {
+    nb: Schema.struct({
       b: Schema.Text,
-    },
+    }),
   })
 
   const AB = A.and(B)
@@ -1792,8 +1795,6 @@ test('derived capability DSL', () => {
     derives: (b, a) =>
       b.with === a.with ? true : new Failure(`with don't match`),
   })
-
-  assert.equal(AA.can, 'derive/a')
 
   assert.deepEqual(
     AA.create({
@@ -1855,9 +1856,9 @@ test('capability match', () => {
   const echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
-    nb: {
+    nb: Schema.struct({
       message: URI.match({ protocol: 'data:' }),
-    },
+    }),
   })
 
   const m3 = echo.match(
@@ -1905,6 +1906,8 @@ test('derived capability match & select', () => {
     derives: (b, a) =>
       b.with === a.with ? true : new Failure(`with don't match`),
   })
+
+  assert.equal(AA.can, 'derive/a')
 
   const proof = {
     issuer: alice,
@@ -2021,9 +2024,9 @@ test('default derive with nb', () => {
   const Profile = capability({
     can: 'profile/set',
     with: Schema.URI.match({ protocol: 'file:' }),
-    nb: {
+    nb: Schema.struct({
       mime: Schema.Text,
-    },
+    }),
   })
 
   const pic = Profile.match(

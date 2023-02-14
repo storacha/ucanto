@@ -10,9 +10,9 @@ import { alice, bob, mallory, service as w3 } from './fixtures.js'
 const echo = capability({
   can: 'test/echo',
   with: DID.match({ method: 'key' }),
-  nb: {
+  nb: Schema.struct({
     message: URI.match({ protocol: 'data:' }),
-  },
+  }),
 })
 const expiration = UCAN.now() + 100
 
@@ -48,6 +48,13 @@ test('delegate can omit constraints', async () => {
 })
 
 test('delegate can specify constraints', async () => {
+  const t1 = await echo.delegate({
+    with: alice.did(),
+    issuer: alice,
+    audience: w3,
+    expiration,
+  })
+
   assert.deepEqual(
     await echo.delegate({
       with: alice.did(),
@@ -172,10 +179,7 @@ test('errors on invalid nb', async () => {
     })
     assert.fail('must fail')
   } catch (error) {
-    assert.match(
-      String(error),
-      /Invalid 'nb.message' - Expected data: URI instead got echo:foo/
-    )
+    assert.match(String(error), /Expected data: URI instead got echo:foo/)
   }
 })
 
@@ -183,10 +187,10 @@ test('capability with optional caveats', async () => {
   const Echo = capability({
     can: 'test/echo',
     with: URI.match({ protocol: 'did:' }),
-    nb: {
+    nb: Schema.struct({
       message: URI.match({ protocol: 'data:' }),
       meta: Link.match().optional(),
-    },
+    }),
   })
 
   const echo = await Echo.delegate({
@@ -241,9 +245,9 @@ const nbchild = parent.derive({
   to: capability({
     can: 'test/child',
     with: Schema.DID.match({ method: 'key' }),
-    nb: {
+    nb: Schema.struct({
       limit: Schema.integer(),
-    },
+    }),
   }),
   derives: (b, a) =>
     b.with === a.with ? true : new Failure(`with don't match`),

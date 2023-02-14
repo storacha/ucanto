@@ -47,8 +47,8 @@ export const canDelegateLink = (child, parent) => {
  * Checks that `with` on claimed capability is the same as `with`
  * in delegated capability. Note this will ignore `can` field.
  *
- * @param {API.ParsedCapability} child
- * @param {API.ParsedCapability} parent
+ * @param {{can: API.Ability, with: string}} child
+ * @param {{can: API.Ability, with: string}} parent
  */
 export function equalWith(child, parent) {
   return (

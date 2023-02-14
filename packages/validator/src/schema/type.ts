@@ -44,10 +44,28 @@ export interface ArraySchema<T, I = unknown> extends Schema<T[], I> {
   element: Reader<T, I>
 }
 
+/**
+ * In IPLD Schema types may have different [representation]s, this interface
+ * represents all the types that have a map representation and defines
+ * extensions relevant to such types.
+ * [representation]: https://ipld.io/docs/schemas/features/representation-strategies/
+ */
+export interface MapRepresentation<
+  V extends Record<string, unknown>,
+  I = unknown
+> extends Schema<V, I> {
+  /**
+   * Returns equivalent schema in which all of the fields are optional.
+   */
+  partial(): MapRepresentation<Partial<V>, I>
+}
+
 export interface DictionarySchema<V, K extends string, I = unknown>
-  extends Schema<Dictionary<K, V>, I> {
+  extends MapRepresentation<Dictionary<K, V>, I> {
   key: Reader<K, string>
   value: Reader<V, I>
+
+  partial(): DictionarySchema<V | undefined, K, I>
 }
 
 export type Dictionary<
@@ -78,14 +96,24 @@ export interface NumberSchema<
 export interface StructSchema<
   U extends { [key: string]: Reader } = {},
   I extends unknown = unknown
-> extends Schema<InferStruct<U>, I> {
+> extends MapRepresentation<InferStruct<U>, I> {
   shape: U
 
   create(input: MarkEmptyOptional<InferStructSource<U>>): InferStruct<U>
   extend<E extends { [key: string]: Reader }>(
     extension: E
   ): StructSchema<U & E, I>
+
+  partial(): MapRepresentation<Partial<InferStruct<U>>, I> & StructSchema
 }
+
+export type InferOptionalStructShape<U extends { [key: string]: Reader }> = {
+  [K in keyof U]: InferOptionalReader<U[K]>
+}
+
+export type InferOptionalReader<R extends Reader> = R extends Reader<infer T>
+  ? Reader<T | undefined>
+  : R
 
 export interface StringSchema<O extends string, I = unknown>
   extends Schema<O, I> {

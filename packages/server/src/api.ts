@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import { InferCaveats, CanIssue, ParsedCapability } from '@ucanto/interface'
+import { CanIssue, ParsedCapability } from '@ucanto/interface'
 
 export * from '@ucanto/interface'
 
@@ -23,8 +23,8 @@ export interface ProviderContext<
   R extends API.URI = API.URI,
   C extends API.Caveats = API.Caveats
 > {
-  capability: API.ParsedCapability<A, R, API.InferCaveats<C>>
-  invocation: API.Invocation<API.Capability<A, R, API.InferCaveats<C>>>
+  capability: API.ParsedCapability<A, R, C>
+  invocation: API.Invocation<API.Capability<A, R, C>>
 
   context: API.InvocationContext
 }

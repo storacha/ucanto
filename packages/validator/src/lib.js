@@ -130,11 +130,13 @@ const resolveSources = async ({ delegation }, config) => {
           // otherwise create source objects for it's capabilities, so we could
           // track which proof in which capability the are from.
           for (const capability of proof.capabilities) {
-            sources.push({
-              capability,
-              delegation: proof,
-              index,
-            })
+            sources.push(
+              /** @type {API.Source} */ ({
+                capability,
+                delegation: proof,
+                index,
+              })
+            )
           }
         }
       }
@@ -160,9 +162,9 @@ const isSelfIssued = (capability, issuer) => capability.with === issuer
  * @template {API.URI} R
  * @template {R} URI
  * @template {API.Caveats} C
- * @param {API.Invocation<API.Capability<A, URI, API.InferCaveats<C>>>} invocation
- * @param {API.ValidationOptions<API.ParsedCapability<A, R, API.InferCaveats<C>>>} options
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
+ * @param {API.Invocation<API.Capability<A, URI, C>>} invocation
+ * @param {API.ValidationOptions<API.ParsedCapability<A, R, C>>} options
+ * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, C>>, API.Unauthorized>>}
  */
 export const access = async (invocation, { capability, ...config }) =>
   claim(capability, [invocation], config)
@@ -176,10 +178,10 @@ export const access = async (invocation, { capability, ...config }) =>
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, API.InferCaveats<C>>>>} capability
+ * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} capability
  * @param {API.Proof[]} proofs
  * @param {API.ClaimOptions} config
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, API.InferCaveats<C>>>, API.Unauthorized>>}
+ * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, C>>, API.Unauthorized>>}
  */
 export const claim = async (
   capability,
@@ -210,11 +212,13 @@ export const claim = async (
 
     if (!delegation.error) {
       for (const [index, capability] of delegation.capabilities.entries()) {
-        sources.push({
-          capability,
-          delegation,
-          index,
-        })
+        sources.push(
+          /** @type {API.Source} */ ({
+            capability,
+            delegation,
+            index,
+          })
+        )
       }
     } else {
       invalidProofs.push(delegation)
@@ -518,7 +522,7 @@ const resolveDIDFromProofs = async (did, delegation, config) => {
     to: capability({
       with: Schema.literal(config.authority.did()),
       can: './update',
-      nb: { key: DID.match({ method: 'key' }) },
+      nb: Schema.struct({ key: DID.match({ method: 'key' }) }),
     }),
     derives: equalWith,
   })
