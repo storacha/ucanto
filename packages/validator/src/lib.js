@@ -2,12 +2,14 @@ import * as API from '@ucanto/interface'
 import { isDelegation, UCAN } from '@ucanto/core'
 import { capability } from './capability.js'
 import * as Schema from './schema.js'
+import * as CBOR from '@ipld/dag-cbor'
 import {
   UnavailableProof,
   InvalidAudience,
   Expired,
   NotValidBefore,
   InvalidSignature,
+  SessionEscalation,
   DelegationError,
   Failure,
   MalformedCapability,
@@ -23,7 +25,6 @@ export {
 }
 
 export { capability } from './capability.js'
-import { DID } from './schema.js'
 export * from './schema.js'
 export { Schema }
 
@@ -449,7 +450,7 @@ class Unauthorized extends Failure {
  * @template {API.Delegation} T
  * @param {T} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<T, API.InvalidProof|API.DIDKeyResolutionError>>}
+ * @returns {Promise<API.Result<T, API.InvalidProof|API.SessionEscalation|API.DIDKeyResolutionError>>}
  */
 const validate = async (delegation, config) => {
   if (UCAN.isExpired(delegation.data)) {
@@ -464,79 +465,100 @@ const validate = async (delegation, config) => {
     )
   }
 
-  return await verifySignature(delegation, config)
+  return await verifyAuthenticity(delegation, config)
 }
 
 /**
  * @template {API.Delegation} T
  * @param {T} delegation
  * @param {Required<API.ClaimOptions>} config
+ * @returns {Promise<API.Result<T, API.InvalidSignature|API.SessionEscalation|API.DIDKeyResolutionError>>}
+ */
+const verifyAuthenticity = async (delegation, config) => {
+  const issuer = delegation.issuer.did()
+  // If the issuer is a did:key we just verify a signature
+  if (issuer.startsWith('did:key:')) {
+    return verifySignature(delegation, config.principal.parse(issuer))
+  }
+  // If the issuer is the root authority we use authority itself to verify
+  else if (issuer === config.authority.did()) {
+    return verifySignature(delegation, config.authority)
+  } else {
+    // If issuer needs to be resolved, we first see attempt to resolve
+    // authorized capabilities from the embedded session.
+    const capabilities = await resolveAuthorizedCapabilities(delegation, config)
+    // If we managed to resolve some capabilities verify that capabilities
+    // delegated are the ones authorized
+    if (capabilities) {
+      // Adequate way to compare here would be to compute CIDs and compare them,
+      // however that would byte encoding data that was decoded from bytes
+      // then hashing then serializing to string. Instead we just format
+      // operands as JSON to avoid unnecessary work, which is also safe given
+      // that we know both were decoded from CBOR.
+      if (
+        JSON.stringify(capabilities) !== JSON.stringify(delegation.capabilities)
+      ) {
+        return new SessionEscalation(delegation, capabilities)
+      } else {
+        return delegation
+      }
+    }
+    // If session isn't found we try resolve did:key from the DID instead
+    // and use that to verify the signature
+    else {
+      const verifier = await config.resolveDIDKey(issuer)
+      if (verifier.error) {
+        return verifier
+      } else {
+        return verifySignature(delegation, config.principal.parse(verifier))
+      }
+    }
+  }
+}
+
+/**
+ * @template {API.Delegation} T
+ * @param {T} delegation
+ * @param {API.Verifier} verifier
  * @returns {Promise<API.Result<T, API.InvalidSignature|API.DIDKeyResolutionError>>}
  */
-const verifySignature = async (delegation, config) => {
-  const did = delegation.issuer.did()
-  const verifier = await resolveVerifier(did, delegation, config)
-
-  if (verifier.error) {
-    return verifier
-  }
-
+const verifySignature = async (delegation, verifier) => {
   const valid = await UCAN.verifySignature(delegation.data, verifier)
   return valid ? delegation : new InvalidSignature(delegation, verifier)
 }
 
 /**
- * @param {API.DID} did
+ * Attempts to find an authorization session - an `./update` capability
+ * delegation issued by the `config.authority` where `nb.aud` is the DID
+ * matching the delegation audience. If no match found returns `null`
+ * otherwise returns DAG-JSON encoded `nb.att` of the session so it could
+ * be validated
+ *
  * @param {API.Delegation} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<API.Verifier, API.DIDKeyResolutionError>>}
+ * @returns {Promise<API.Capabilities|null>}
  */
-const resolveVerifier = async (did, delegation, config) => {
-  if (did === config.authority.did()) {
-    return config.authority
-  } else if (did.startsWith('did:key:')) {
-    return config.principal.parse(did)
-  } else {
-    // First we attempt to resolve key from the embedded proofs
-    const local = await resolveDIDFromProofs(did, delegation, config)
-    const result = !local?.error
-      ? local
-      : // If failed to resolve because there is an invalid proof propagate error
-      (local?.cause?.failedProofs?.length || 0) > 0
-      ? local
-      : // otherwise either use resolved key or if not found attempt to resolve
-        // did externally
-        await config.resolveDIDKey(did)
-    return result.error ? result : config.principal.parse(result).withDID(did)
-  }
-}
-
-/**
- * @param {API.DID} did
- * @param {API.Delegation} delegation
- * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<API.DIDKey, API.DIDKeyResolutionError>>}
- */
-const resolveDIDFromProofs = async (did, delegation, config) => {
-  const update = Top.derive({
-    to: capability({
-      with: Schema.literal(config.authority.did()),
-      can: './update',
-      nb: Schema.struct({ key: DID.match({ method: 'key' }) }),
+const resolveAuthorizedCapabilities = async (delegation, config) => {
+  const update = capability({
+    with: Schema.literal(config.authority.did()),
+    can: './update',
+    nb: Schema.struct({
+      aud: Schema.literal(delegation.audience.did()),
+      att: Schema.unknown().array(),
     }),
-    derives: equalWith,
   })
 
   const result = await claim(update, delegation.proofs, config)
-  return !result.error
-    ? result.match.value.nb.key
-    : new DIDKeyResolutionError(did, result)
-}
+  if (!result.error) {
+    const {
+      nb: { aud, att },
+    } = result.match.value
 
-const Top = capability({
-  can: '*',
-  with: DID,
-})
+    return /** @type {API.Capabilities} */ (att)
+  } else {
+    return null
+  }
+}
 
 /**
  * @param {API.Capability} to

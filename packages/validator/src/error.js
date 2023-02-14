@@ -80,6 +80,22 @@ export class DelegationError extends Failure {
 }
 
 /**
+ * @implements {API.SessionEscalation}
+ */
+export class SessionEscalation extends Failure {
+  /**
+   * @param {API.Delegation} delegation
+   * @param {API.Capability[]} capabilities
+   */
+  constructor(delegation, capabilities) {
+    super()
+    this.name = the('SessionEscalation')
+    this.delegation = delegation
+    this.authorized = capabilities
+  }
+}
+
+/**
  * @implements {API.InvalidSignature}
  */
 export class InvalidSignature extends Failure {

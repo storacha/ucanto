@@ -18,18 +18,22 @@ const update = capability({
   can: './update',
   with: DID,
   nb: Schema.struct({
-    key: DID.match({ method: 'key' }),
+    aud: DID.match({ method: 'key' }),
+    att: Schema.struct({
+      can: Schema.string(),
+      with: Schema.URI,
+    }).array(),
   }),
 })
 
-test('validate mailto', async () => {
-  const account = alice.withDID('did:mailto:alice@web.mail')
+test.only('validate mailto', async () => {
+  const account = alice.withDID('did:mailto:web.mail:alice')
 
   const auth = await update.delegate({
     issuer: w3,
     audience: account,
     with: w3.did(),
-    nb: { key: alice.did() },
+    nb: { aud: alice.did(), att: [{ can: '*', with: 'ucan:*' }] },
     expiration: Infinity,
   })
 
@@ -47,6 +51,8 @@ test('validate mailto', async () => {
     principal: Verifier,
   })
 
+  console.log(result)
+
   assert.containSubset(result, {
     match: {
       value: {
@@ -59,7 +65,7 @@ test('validate mailto', async () => {
 })
 
 test('delegated ./update', async () => {
-  const account = alice.withDID('did:mailto:alice@web.mail')
+  const account = alice.withDID('did:mailto:web.mail:alice')
   const manager = await ed25519.generate()
   const worker = await ed25519.generate()
 
@@ -121,7 +127,7 @@ test('delegated ./update', async () => {
 })
 
 test('fail without ./update proof', async () => {
-  const account = alice.withDID('did:mailto:alice@web.mail')
+  const account = alice.withDID('did:mailto:web.mail:alice')
 
   const inv = claim.invoke({
     audience: w3,
@@ -142,12 +148,12 @@ test('fail without ./update proof', async () => {
 
   assert.match(
     result.toString(),
-    /Unable to resolve 'did:mailto:alice@web.mail'/
+    /Unable to resolve 'did:mailto:web.mail:alice'/
   )
 })
 
 test('fail invalid ./update proof', async () => {
-  const account = alice.withDID('did:mailto:alice@web.mail')
+  const account = alice.withDID('did:mailto:web.mail:alice')
   const service = await ed25519.generate()
 
   const auth = await update.delegate({

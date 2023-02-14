@@ -436,6 +436,12 @@ export interface InvalidSignature extends Failure {
   readonly delegation: Delegation
 }
 
+export interface SessionEscalation extends Failure {
+  readonly name: 'SessionEscalation'
+  readonly delegation: Delegation
+  readonly authorized: UCAN.Capability[]
+}
+
 /**
  * Error produces by invalid proof
  */
@@ -444,6 +450,7 @@ export type InvalidProof =
   | NotValidBefore
   | InvalidSignature
   | InvalidAudience
+  | SessionEscalation
   | DIDKeyResolutionError
   | UnavailableProof
 
