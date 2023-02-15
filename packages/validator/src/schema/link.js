@@ -1,5 +1,6 @@
 import * as API from '@ucanto/interface'
 import { create, createLegacy, isLink, parse } from '@ucanto/core/link'
+import { base32 } from 'multiformats/bases/base32'
 import * as Schema from './schema.js'
 
 export { create, createLegacy, isLink, parse }
@@ -8,7 +9,11 @@ export { create, createLegacy, isLink, parse }
  * @template {number} [Code=number]
  * @template {number} [Alg=number]
  * @template {1|0} [Version=0|1]
- * @typedef {{code?:Code, algorithm?:Alg, version?:Version}} Settings
+ * @typedef {{
+ * code?:Code,
+ * version?:Version
+ * multihash?: {code?: Alg, digest?: Uint8Array}
+ * }} Settings
  */
 
 /**
@@ -24,7 +29,7 @@ class LinkSchema extends Schema.API {
    * @param {Settings<Code, Alg, Version>} settings
    * @returns {Schema.ReadResult<API.Link<unknown, Code, Alg, Version>>}
    */
-  readWith(cid, { code, algorithm, version }) {
+  readWith(cid, { code, multihash = {}, version }) {
     if (cid == null) {
       return Schema.error(`Expected link but got ${cid} instead`)
     } else {
@@ -36,17 +41,31 @@ class LinkSchema extends Schema.API {
             `Expected link to be CID with 0x${code.toString(16)} codec`
           )
         }
-        if (algorithm != null && cid.multihash.code !== algorithm) {
+
+        if (multihash.code != null && cid.multihash.code !== multihash.code)
           return Schema.error(
-            `Expected link to be CID with 0x${algorithm.toString(
+            `Expected link to be CID with 0x${multihash.code.toString(
               16
             )} hashing algorithm`
           )
-        }
 
         if (version != null && cid.version !== version) {
           return Schema.error(
             `Expected link to be CID version ${version} instead of ${cid.version}`
+          )
+        }
+
+        const [expectDigest, actualDigest] =
+          multihash.digest != null
+            ? [
+                base32.baseEncode(multihash.digest),
+                base32.baseEncode(cid.multihash.digest),
+              ]
+            : ['', '']
+
+        if (expectDigest !== actualDigest) {
+          return Schema.error(
+            `Expected link with "${expectDigest}" hash digest instead of "${actualDigest}"`
           )
         }
 
