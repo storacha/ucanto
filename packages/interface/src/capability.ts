@@ -414,7 +414,7 @@ export interface DIDKeyResolutionError extends Failure {
   readonly name: 'DIDKeyResolutionError'
   readonly did: UCAN.DID
 
-  readonly cause?: Unauthorized
+  readonly cause?: Failure
 }
 
 export interface Expired extends Failure {
@@ -439,7 +439,7 @@ export interface InvalidSignature extends Failure {
 export interface SessionEscalation extends Failure {
   readonly name: 'SessionEscalation'
   readonly delegation: Delegation
-  readonly authorized: UCAN.Capability[]
+  readonly cause: Failure
 }
 
 /**

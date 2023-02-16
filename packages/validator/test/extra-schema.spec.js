@@ -158,7 +158,7 @@ test('URI.from', () => {
     })
 
     test(`Link.match({ algorithm: 0x12 }).read(${input})`, () => {
-      const link = Link.match({ algorithm: 0x12 })
+      const link = Link.match({ multihash: { code: 0x12 } })
       assert.containSubset(link.read(input), out3 || input)
     })
 

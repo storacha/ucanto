@@ -5,6 +5,8 @@ import { Failure } from '../src/error.js'
 import { ed25519, Verifier } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 import * as Core from '@ucanto/core'
+import * as CBOR from '@ipld/dag-cbor'
+import { Delegation } from '@ucanto/core'
 
 import { alice, bob, mallory, service } from './fixtures.js'
 const w3 = service.withDID('did:web:web3.storage')
@@ -18,40 +20,32 @@ const update = capability({
   can: './update',
   with: DID,
   nb: Schema.struct({
-    aud: DID.match({ method: 'key' }),
-    att: Schema.struct({
-      can: Schema.string(),
-      with: Schema.URI,
-    }).array(),
+    authorization: Schema.link(),
   }),
 })
 
-test.only('validate mailto', async () => {
+test('validate mailto', async () => {
   const account = alice.withDID('did:mailto:web.mail:alice')
-
-  const auth = await update.delegate({
-    issuer: w3,
-    audience: account,
-    with: w3.did(),
-    nb: { aud: alice.did(), att: [{ can: '*', with: 'ucan:*' }] },
-    expiration: Infinity,
-  })
-
-  const inv = claim.invoke({
-    audience: w3,
+  const proof = await Delegation.authorize({
     issuer: account,
-    with: account.did(),
-    expiration: Infinity,
-    proofs: [auth],
+    audience: alice,
+    capabilities: [claim.create({ with: account.did() })],
   })
 
-  const result = await access(await inv.delegate(), {
+  const session = await proof.issue({ issuer: w3 })
+
+  const task = claim.invoke({
+    issuer: alice,
+    audience: w3,
+    with: account.did(),
+    proofs: [session],
+  })
+
+  const result = await access(await task.delegate(), {
     authority: w3,
     capability: claim,
     principal: Verifier,
   })
-
-  console.log(result)
 
   assert.containSubset(result, {
     match: {
@@ -93,19 +87,23 @@ test('delegated ./update', async () => {
     ],
   })
 
-  const auth = await update.delegate({
+  const session = await Delegation.authorize({
+    issuer: account,
+    audience: bob,
+    capabilities: [claim.create({ with: account.did() })],
+    expiration: Infinity,
+  })
+
+  const auth = await session.issue({
     issuer: worker,
-    audience: account,
-    with: w3.did(),
-    nb: { key: alice.did() },
+    authority: w3,
     proofs: [authority],
   })
 
   const request = claim.invoke({
     audience: w3,
-    issuer: account,
+    issuer: bob,
     with: account.did(),
-    expiration: Infinity,
     proofs: [auth],
   })
 
@@ -154,13 +152,19 @@ test('fail without ./update proof', async () => {
 
 test('fail invalid ./update proof', async () => {
   const account = alice.withDID('did:mailto:web.mail:alice')
+  const agent = bob
   const service = await ed25519.generate()
 
-  const auth = await update.delegate({
+  const auth = await Delegation.authorize({
+    issuer: account,
+    audience: agent,
+    capabilities: [claim.create({ with: account.did() })],
+    expiration: Infinity,
+  })
+
+  const session = await auth.issue({
     issuer: service,
-    audience: account,
-    with: w3.did(),
-    nb: { key: alice.did() },
+    authority: w3,
     proofs: [
       await Core.delegate({
         issuer: w3,
@@ -177,10 +181,9 @@ test('fail invalid ./update proof', async () => {
 
   const request = claim.invoke({
     audience: w3,
-    issuer: account,
+    issuer: agent,
     with: account.did(),
-    expiration: Infinity,
-    proofs: [auth],
+    proofs: [session],
   })
 
   const result = await access(await request.delegate(), {
@@ -194,8 +197,32 @@ test('fail invalid ./update proof', async () => {
     name: 'Unauthorized',
   })
 
-  assert.match(
-    result.toString(),
-    /did:web:web3.storage can not be derived from did:key/
-  )
+  assert.match(result.toString(), /has an invalid session/)
+})
+
+test('resolve key', async () => {
+  const account = alice.withDID('did:mailto:web.mail:alice')
+
+  const inv = claim.invoke({
+    audience: w3,
+    issuer: account,
+    with: account.did(),
+  })
+
+  const result = await access(await inv.delegate(), {
+    authority: w3,
+    capability: claim,
+    resolveDIDKey: _ => alice.did(),
+    principal: Verifier,
+  })
+
+  assert.containSubset(result, {
+    match: {
+      value: {
+        can: 'access/claim',
+        with: account.did(),
+        nb: {},
+      },
+    },
+  })
 })

@@ -1,6 +1,9 @@
 import * as UCAN from '@ipld/dag-ucan'
+import { from as toPrincipal } from '@ipld/dag-ucan/did'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
+import * as CBOR from '@ipld/dag-cbor'
+import { sha256 } from 'multiformats/hashes/sha2'
 
 /**
  * @deprecated
@@ -220,6 +223,182 @@ export const delegate = async (
   Object.defineProperties(delegation, { proofs: { value: proofs } })
 
   return delegation
+}
+
+/**
+ * @template {API.Capabilities} Capabilities
+ * @param {object} input
+ * @param {API.Principal} input.issuer - Authorizing principal
+ * @param {API.Principal} input.audience - Agent been authorized
+ * @param {Capabilities} input.capabilities - Capabilities delegated
+ * @param {number} [input.lifetimeInSeconds]
+ * @param {UCAN.UTCUnixTimestamp} [input.expiration]
+ * @param {UCAN.UTCUnixTimestamp} [input.notBefore]
+ * @param {UCAN.Fact[]} [input.facts]
+ * @param {UCAN.Nonce} [input.nonce]
+ */
+export const authorize = async ({
+  issuer,
+  audience,
+  capabilities,
+  lifetimeInSeconds = 30,
+  expiration = UCAN.now() + lifetimeInSeconds,
+  notBefore,
+  facts = [],
+  nonce,
+}) => {
+  const value = {
+    iss: toPrincipal(issuer.did()),
+    aud: toPrincipal(audience.did()),
+    att: capabilities,
+    exp: expiration === Infinity ? null : expiration,
+    ...(facts.length > 0 && { fct: facts }),
+    // need to omit optionals or CBOR will throw
+    ...(notBefore && { nbf: notBefore }),
+    ...(nonce && { nnc: nonce }),
+  }
+  const bytes = CBOR.encode(value)
+  /** @type {API.Link<AuthorizationModel<Capabilities>, typeof CBOR.code, typeof sha256.code>} */
+  const cid = Link.create(CBOR.code, await sha256.digest(bytes))
+  return new Authorization({ bytes, cid, value })
+}
+
+/**
+ * @template {API.Capabilities} Capabilities
+ * @typedef {{
+ * iss: UCAN.PrincipalView
+ * aud: UCAN.PrincipalView
+ * att: Capabilities
+ * exp: UCAN.UTCUnixTimestamp | null
+ * fct?: UCAN.Fact[]
+ * nbf?: UCAN.UTCUnixTimestamp
+ * nnc?: UCAN.Nonce
+ * }} AuthorizationModel
+ */
+
+/**
+ * @template {API.Capabilities} Capabilities
+ */
+class Authorization {
+  /**
+   * @param {object} root
+   * @param {AuthorizationModel<Capabilities>} root.value
+   * @param {API.ByteView<AuthorizationModel<Capabilities>>} root.bytes
+   * @param {API.Link<AuthorizationModel<Capabilities>, typeof CBOR.code, typeof sha256.code>} root.cid
+   */
+  constructor(root) {
+    this.root = root
+  }
+  get cid() {
+    return this.root.cid
+  }
+  get issuer() {
+    return this.root.value.iss
+  }
+  get audience() {
+    return this.root.value.aud
+  }
+  /**
+   * @returns {number}
+   */
+  get expiration() {
+    const { exp } = this.root.value
+    return exp === null ? Infinity : exp
+  }
+  get capabilities() {
+    return this.root.value.att
+  }
+
+  /**
+   * @returns {undefined|number}
+   */
+  get notBefore() {
+    return this.root.value.nbf
+  }
+  /**
+   * @returns {undefined|string}
+   */
+  get nonce() {
+    return this.root.value.nnc
+  }
+
+  /**
+   * @returns {API.Fact[]}
+   */
+  get facts() {
+    return this.root.value.fct || []
+  }
+
+  /**
+   * @param {object} options
+   * @param {API.Signer} options.issuer
+   * @param {API.Principal} [options.authority]
+   * @param {API.Proof[]} [options.proofs]
+   * @param {API.UCAN.UTCUnixTimestamp} [options.expiration]
+   * @param {API.UCAN.UTCUnixTimestamp} [options.notBefore]
+   */
+
+  async issue({
+    issuer,
+    authority = issuer,
+    proofs = [],
+    expiration = Infinity,
+    notBefore = this.notBefore,
+  }) {
+    const proof = await delegate({
+      issuer,
+      audience: this.issuer,
+      capabilities: [
+        {
+          can: './update',
+          with: authority.did(),
+          nb: { authorization: this.cid },
+        },
+      ],
+      expiration,
+      notBefore,
+      proofs,
+    })
+
+    return await delegate({
+      issuer: issuer.withDID(this.issuer.did()),
+      audience: this.audience,
+      capabilities: this.capabilities,
+      expiration: this.expiration,
+      notBefore: this.notBefore,
+      nonce: this.nonce,
+      facts: this.facts,
+      proofs: [proof],
+    })
+  }
+}
+
+/**
+ * Issues an authorization session for the given `delegation`. If issuer is
+ * different from authority proofs of delegation from authority must be supplied.
+ *
+ *
+ * @template {API.Capabilities} C
+ * @param {API.Delegation<C>} delegation
+ */
+export const deriveAuthorizationLink = async delegation => {
+  // Authorization is a CID of the UCAN without proofs and signature. Proofs are
+  // omitted because authorization itself will be added to proofs (which would
+  // cause a cycle) and we do not want to restrict proofs in authorization (it's
+  // ok if agents add more proofs because they'll be verified anyway). We omit
+  // signature because authorization is essentially a delegated signature.
+  const { prf, s, nbf, nnc, ...session } = delegation.data.model
+  return Link.create(
+    CBOR.code,
+    await sha256.digest(
+      CBOR.encode({
+        ...session,
+        // need to omit optionals or CBOR will throw
+        ...(nbf && { nbf }),
+        ...(nnc && { nnc }),
+      })
+    )
+  )
 }
 
 /**

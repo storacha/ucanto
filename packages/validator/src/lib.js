@@ -1,8 +1,7 @@
 import * as API from '@ucanto/interface'
-import { isDelegation, UCAN } from '@ucanto/core'
+import { isDelegation, Delegation, UCAN } from '@ucanto/core'
 import { capability } from './capability.js'
 import * as Schema from './schema.js'
-import * as CBOR from '@ipld/dag-cbor'
 import {
   UnavailableProof,
   InvalidAudience,
@@ -465,7 +464,7 @@ const validate = async (delegation, config) => {
     )
   }
 
-  return await verifyAuthenticity(delegation, config)
+  return await verifyAuthorization(delegation, config)
 }
 
 /**
@@ -474,7 +473,7 @@ const validate = async (delegation, config) => {
  * @param {Required<API.ClaimOptions>} config
  * @returns {Promise<API.Result<T, API.InvalidSignature|API.SessionEscalation|API.DIDKeyResolutionError>>}
  */
-const verifyAuthenticity = async (delegation, config) => {
+const verifyAuthorization = async (delegation, config) => {
   const issuer = delegation.issuer.did()
   // If the issuer is a did:key we just verify a signature
   if (issuer.startsWith('did:key:')) {
@@ -484,33 +483,26 @@ const verifyAuthenticity = async (delegation, config) => {
   else if (issuer === config.authority.did()) {
     return verifySignature(delegation, config.authority)
   } else {
-    // If issuer needs to be resolved, we first see attempt to resolve
-    // authorized capabilities from the embedded session.
-    const capabilities = await resolveAuthorizedCapabilities(delegation, config)
-    // If we managed to resolve some capabilities verify that capabilities
-    // delegated are the ones authorized
-    if (capabilities) {
-      // Adequate way to compare here would be to compute CIDs and compare them,
-      // however that would byte encoding data that was decoded from bytes
-      // then hashing then serializing to string. Instead we just format
-      // operands as JSON to avoid unnecessary work, which is also safe given
-      // that we know both were decoded from CBOR.
-      if (
-        JSON.stringify(capabilities) !== JSON.stringify(delegation.capabilities)
-      ) {
-        return new SessionEscalation(delegation, capabilities)
-      } else {
-        return delegation
-      }
+    // If issuer is not a did:key principal nor configured authority, we
+    // attempt to resolve embedded authorization session from authority.
+    const session = await verifySession(delegation, config)
+    // If we have valid session we consider authorization valid
+    if (!session.error) {
+      return delegation
+    } else if (session.failedProofs.length > 0) {
+      return new SessionEscalation({ delegation, cause: session })
     }
-    // If session isn't found we try resolve did:key from the DID instead
+    // Otherwise we try to resolve did:key from the DID instead
     // and use that to verify the signature
     else {
       const verifier = await config.resolveDIDKey(issuer)
       if (verifier.error) {
         return verifier
       } else {
-        return verifySignature(delegation, config.principal.parse(verifier))
+        return verifySignature(
+          delegation,
+          config.principal.parse(verifier).withDID(issuer)
+        )
       }
     }
   }
@@ -529,44 +521,25 @@ const verifySignature = async (delegation, verifier) => {
 
 /**
  * Attempts to find an authorization session - an `./update` capability
- * delegation issued by the `config.authority` where `nb.aud` is the DID
- * matching the delegation audience. If no match found returns `null`
- * otherwise returns DAG-JSON encoded `nb.att` of the session so it could
- * be validated
+ * delegation where `with` matches `config.authority` and `nb.authorization`
+ * matches give delegation.
  *
  * @param {API.Delegation} delegation
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Capabilities|null>}
  */
-const resolveAuthorizedCapabilities = async (delegation, config) => {
+const verifySession = async (delegation, config) => {
+  const { cid } = await Delegation.authorize(delegation)
+
+  // Create a schema that will match an authorization for this exact delegation
   const update = capability({
     with: Schema.literal(config.authority.did()),
     can: './update',
     nb: Schema.struct({
-      aud: Schema.literal(delegation.audience.did()),
-      att: Schema.unknown().array(),
+      authorization: Schema.link(cid),
     }),
   })
 
-  const result = await claim(update, delegation.proofs, config)
-  if (!result.error) {
-    const {
-      nb: { aud, att },
-    } = result.match.value
-
-    return /** @type {API.Capabilities} */ (att)
-  } else {
-    return null
-  }
+  return await claim(update, delegation.proofs, config)
 }
-
-/**
- * @param {API.Capability} to
- * @param {API.Capability} from
- */
-
-const equalWith = (to, from) =>
-  to.with === from.with ||
-  new Failure(`Claimed ${to.with} can not be derived from ${from.with}`)
 
 export { InvalidAudience }
