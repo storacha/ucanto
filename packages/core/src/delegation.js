@@ -226,6 +226,10 @@ export const delegate = async (
 }
 
 /**
+ * Takes a delegation data and derives an authorization, which in nutshell is
+ * a CID of the delegation without proofs and signature. Here we return a view
+ * of the authorization that provides some sugar along the way.
+ *
  * @template {API.Capabilities} Capabilities
  * @param {object} input
  * @param {API.Principal} input.issuer - Authorizing principal
@@ -330,6 +334,9 @@ class Authorization {
   }
 
   /**
+   * Issues an authorized delegation, that is delegation that contains
+   * authorization session in the proofs.
+   *
    * @param {object} options
    * @param {API.Signer} options.issuer
    * @param {API.Principal} [options.authority]
@@ -371,34 +378,6 @@ class Authorization {
       proofs: [proof],
     })
   }
-}
-
-/**
- * Issues an authorization session for the given `delegation`. If issuer is
- * different from authority proofs of delegation from authority must be supplied.
- *
- *
- * @template {API.Capabilities} C
- * @param {API.Delegation<C>} delegation
- */
-export const deriveAuthorizationLink = async delegation => {
-  // Authorization is a CID of the UCAN without proofs and signature. Proofs are
-  // omitted because authorization itself will be added to proofs (which would
-  // cause a cycle) and we do not want to restrict proofs in authorization (it's
-  // ok if agents add more proofs because they'll be verified anyway). We omit
-  // signature because authorization is essentially a delegated signature.
-  const { prf, s, nbf, nnc, ...session } = delegation.data.model
-  return Link.create(
-    CBOR.code,
-    await sha256.digest(
-      CBOR.encode({
-        ...session,
-        // need to omit optionals or CBOR will throw
-        ...(nbf && { nbf }),
-        ...(nnc && { nnc }),
-      })
-    )
-  )
 }
 
 /**
