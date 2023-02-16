@@ -97,5 +97,5 @@ test('should expose url', async () => {
         }
       },
     })
-    assert.equal(channel.url.toString(), 'https://ucan.xyz/')
+    assert.equal(channel.url?.toString(), 'https://ucan.xyz/')
 })
