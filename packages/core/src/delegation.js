@@ -226,9 +226,9 @@ export const delegate = async (
 }
 
 /**
- * Takes a delegation data and derives an authorization, which in nutshell is
+ * Takes a delegation data and derives a permit, which in nutshell is
  * a CID of the delegation without proofs and signature. Here we return a view
- * of the authorization that provides some sugar along the way.
+ * of the permit that provides some sugar along the way.
  *
  * @template {API.Capabilities} Capabilities
  * @param {object} input
@@ -241,7 +241,7 @@ export const delegate = async (
  * @param {UCAN.Fact[]} [input.facts]
  * @param {UCAN.Nonce} [input.nonce]
  */
-export const authorize = async ({
+export const permit = async ({
   issuer,
   audience,
   capabilities,
@@ -264,7 +264,7 @@ export const authorize = async ({
   const bytes = CBOR.encode(value)
   /** @type {API.Link<AuthorizationModel<Capabilities>, typeof CBOR.code, typeof sha256.code>} */
   const cid = Link.create(CBOR.code, await sha256.digest(bytes))
-  return new Authorization({ bytes, cid, value })
+  return new Permit({ bytes, cid, value })
 }
 
 /**
@@ -283,7 +283,7 @@ export const authorize = async ({
 /**
  * @template {API.Capabilities} Capabilities
  */
-class Authorization {
+class Permit {
   /**
    * @param {object} root
    * @param {AuthorizationModel<Capabilities>} root.value
@@ -345,7 +345,7 @@ class Authorization {
    * @param {API.UCAN.UTCUnixTimestamp} [options.notBefore]
    */
 
-  async issue({
+  async authorize({
     issuer,
     authority = issuer,
     proofs = [],
@@ -359,7 +359,7 @@ class Authorization {
         {
           can: './update',
           with: authority.did(),
-          nb: { authorization: this.cid },
+          nb: { permit: this.cid },
         },
       ],
       expiration,

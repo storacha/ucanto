@@ -26,13 +26,13 @@ const update = capability({
 
 test('validate mailto', async () => {
   const account = alice.withDID('did:mailto:web.mail:alice')
-  const proof = await Delegation.authorize({
+  const proof = await Delegation.permit({
     issuer: account,
     audience: alice,
     capabilities: [claim.create({ with: account.did() })],
   })
 
-  const session = await proof.issue({ issuer: w3 })
+  const session = await proof.authorize({ issuer: w3 })
 
   const task = claim.invoke({
     issuer: alice,
@@ -87,14 +87,14 @@ test('delegated ./update', async () => {
     ],
   })
 
-  const session = await Delegation.authorize({
+  const session = await Delegation.permit({
     issuer: account,
     audience: bob,
     capabilities: [claim.create({ with: account.did() })],
     expiration: Infinity,
   })
 
-  const auth = await session.issue({
+  const auth = await session.authorize({
     issuer: worker,
     authority: w3,
     proofs: [authority],
@@ -155,14 +155,14 @@ test('fail invalid ./update proof', async () => {
   const agent = bob
   const service = await ed25519.generate()
 
-  const auth = await Delegation.authorize({
+  const auth = await Delegation.permit({
     issuer: account,
     audience: agent,
     capabilities: [claim.create({ with: account.did() })],
     expiration: Infinity,
   })
 
-  const session = await auth.issue({
+  const session = await auth.authorize({
     issuer: service,
     authority: w3,
     proofs: [

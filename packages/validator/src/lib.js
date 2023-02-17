@@ -521,21 +521,21 @@ const verifySignature = async (delegation, verifier) => {
 
 /**
  * Attempts to find an authorization session - an `./update` capability
- * delegation where `with` matches `config.authority` and `nb.authorization`
+ * delegation where `with` matches `config.authority` and `nb.permit`
  * matches give delegation.
  *
  * @param {API.Delegation} delegation
  * @param {Required<API.ClaimOptions>} config
  */
 const verifySession = async (delegation, config) => {
-  const { cid } = await Delegation.authorize(delegation)
+  const permit = await Delegation.permit(delegation)
 
   // Create a schema that will match an authorization for this exact delegation
   const update = capability({
     with: Schema.literal(config.authority.did()),
     can: './update',
     nb: Schema.struct({
-      authorization: Schema.link(cid),
+      permit: Schema.link(permit.cid),
     }),
   })
 
