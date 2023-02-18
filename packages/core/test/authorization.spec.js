@@ -45,6 +45,9 @@ test('basic authorize', async () => {
   assert.deepEqual(session.capabilities, permit.capabilities)
   assert.deepEqual(session.nonce, permit.nonce)
   assert.deepEqual(session.facts, permit.facts)
+  assert.deepEqual(session.signature.code, 0xd000)
+  assert.deepEqual(session.signature.algorithm, '')
+  assert.deepEqual(session.signature.raw, new Uint8Array())
 
   const [proof] = session.proofs
   if (!isDelegation(proof)) {

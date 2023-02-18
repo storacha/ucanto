@@ -7,6 +7,7 @@ import * as Client from '@ucanto/client'
 import * as Core from '@ucanto/core'
 import * as CBOR from '@ipld/dag-cbor'
 import { Delegation } from '@ucanto/core'
+import { base64 } from 'multiformats/bases/base64'
 
 import { alice, bob, mallory, service } from './fixtures.js'
 const w3 = service.withDID('did:web:web3.storage')
@@ -99,6 +100,12 @@ test('delegated ./update', async () => {
     authority: w3,
     proofs: [authority],
   })
+
+  assert.deepEqual(
+    auth.signature,
+    base64.baseDecode('gKADAA'),
+    'should have blank signature'
+  )
 
   const request = claim.invoke({
     audience: w3,

@@ -107,7 +107,7 @@ export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
    * the `audience` {@link Principal}.
    *
    */
-  issuer: Signer
+  issuer: UCAN.Signer
 
   /**
    * The `audience` for a {@link Delegation} is the party being delegated to, or the

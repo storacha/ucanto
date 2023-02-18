@@ -1,4 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
+import * as Signature from '@ipld/dag-ucan/signature'
 import { from as toPrincipal } from '@ipld/dag-ucan/did'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
@@ -149,6 +150,39 @@ export class Delegation {
         isDelegation(proof) ? proof : { '/': proof.toString() }
       ),
     })
+  }
+}
+
+/**
+ * Signer that produces empty signature regardless of the payload, which is used
+ * when signing delegations from `did:mailto` principal to signal that verifier
+ * needs to verify authorization interactively.
+ *
+ * @template {UCAN.DID} ID
+ * @implements {UCAN.Signer<ID, Signature.NON_STANDARD>}
+ */
+class AuthorizationSigner {
+  /**
+   * @param {UCAN.Principal<ID>} principal
+   */
+  constructor(principal) {
+    this.principal = principal
+  }
+  did() {
+    return this.principal.did()
+  }
+  /* c8 ignore next 3 */
+  get signatureCode() {
+    return Signature.NON_STANDARD
+  }
+  get signatureAlgorithm() {
+    return ''
+  }
+  sign() {
+    return Signature.createNonStandard(
+      this.signatureAlgorithm,
+      new Uint8Array(0)
+    )
   }
 }
 
@@ -368,7 +402,7 @@ class Permit {
     })
 
     return await delegate({
-      issuer: issuer.withDID(this.issuer.did()),
+      issuer: new AuthorizationSigner(this.issuer),
       audience: this.audience,
       capabilities: this.capabilities,
       expiration: this.expiration,
