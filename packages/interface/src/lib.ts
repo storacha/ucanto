@@ -288,7 +288,12 @@ export interface InvocationContext extends CanIssue {
   my?: (issuer: DID) => Capability[]
   resolve?: (proof: UCANLink) => Await<Result<Delegation, UnavailableProof>>
 
-  principal: PrincipalParser
+  principal: PrincipalParser,
+  /**
+   * A bag of key/value pairs. Can be used, for instance, to make HTTP headers available
+   * to invocation handlers.
+   */
+  metadata?: Record<string, any>
 }
 
 export type ResolveServiceMethod<

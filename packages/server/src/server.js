@@ -68,7 +68,7 @@ class Server {
  */
 export const handle = async (server, request) => {
   const invocations = await server.decoder.decode(request)
-  const result = await execute(invocations, server)
+  const result = await execute(invocations, server, request)
   return server.encoder.encode(result)
 }
 
@@ -78,16 +78,17 @@ export const handle = async (server, request) => {
  * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
  * @param {API.InferInvocations<I>} invocations
  * @param {API.ServerView<Service>} server
+ * @param {API.HTTPRequest} request
  * @returns {Promise<API.InferServiceInvocations<I, Service>>}
  */
-export const execute = async (invocations, server) => {
+export const execute = async (invocations, server, request) => {
   const results = []
   const input =
     /** @type {API.InferInvocation<API.ServiceInvocation<C, Service>>[]} */ (
       invocations
     )
   for (const invocation of input) {
-    results.push(await invoke(invocation, server))
+    results.push(await invoke(invocation, server, request))
   }
 
   return /** @type {API.InferServiceInvocations<I, Service>} */ (results)
@@ -98,9 +99,10 @@ export const execute = async (invocations, server) => {
  * @template {API.Capability} C
  * @param {API.InferInvocation<API.ServiceInvocation<C, Service>>} invocation
  * @param {API.ServerView<Service>} server
+ * @param {API.HTTPRequest} request
  * @returns {Promise<API.InferServiceInvocationReturn<C, Service>>}
  */
-export const invoke = async (invocation, server) => {
+export const invoke = async (invocation, server, request) => {
   // If invocation is not for our server respond with error
   if (invocation.audience.did() !== server.id.did()) {
     return /** @type {API.Result<any, API.InvalidAudience>} */ (
@@ -126,7 +128,7 @@ export const invoke = async (invocation, server) => {
     )
   } else {
     try {
-      return await handler[method](invocation, server.context)
+      return await handler[method](invocation, {...server.context, metadata: request.headers})
     } catch (error) {
       const err = new HandlerExecutionError(
         capability,
