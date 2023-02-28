@@ -33,7 +33,7 @@ export const read = input => schema.read(input)
  * @template {string} Method
  * @param {{method?: Method}} options
  */
-export const match = options =>
+export const match = (options = {}) =>
   /** @type {Schema.Schema<API.DID<Method> & API.URI<"did:">>} */ (
     Schema.string().refine(new DIDSchema(options.method))
   )

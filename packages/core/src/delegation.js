@@ -1,6 +1,10 @@
 import * as UCAN from '@ipld/dag-ucan'
+import * as Signature from '@ipld/dag-ucan/signature'
+import { from as toPrincipal } from '@ipld/dag-ucan/did'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
+import * as CBOR from '@ipld/dag-cbor'
+import { sha256 } from 'multiformats/hashes/sha2'
 
 /**
  * @deprecated

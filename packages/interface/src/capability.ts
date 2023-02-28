@@ -18,7 +18,6 @@ import {
 export interface Source {
   capability: { can: Ability; with: URI; nb?: Caveats }
   delegation: Delegation
-  index: number
 }
 
 export interface Match<T = unknown, M extends Match = UnknownMatch>
@@ -207,13 +206,13 @@ export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
 export type InferInvokeOptions<
   R extends Resource,
   C extends {} | undefined
-> = UCANOptions & { issuer: Signer } & InferCreateOptions<R, C>
+> = UCANOptions & { issuer: UCAN.Signer } & InferCreateOptions<R, C>
 
 export type InferDelegationOptions<
   R extends Resource,
   C extends {} | undefined
 > = UCANOptions & {
-  issuer: Signer
+  issuer: UCAN.Signer
   with: R
   nb?: Partial<InferCreateOptions<R, C>['nb']>
 }
@@ -414,7 +413,7 @@ export interface DIDKeyResolutionError extends Failure {
   readonly name: 'DIDKeyResolutionError'
   readonly did: UCAN.DID
 
-  readonly cause?: Unauthorized
+  readonly cause?: Failure
 }
 
 export interface Expired extends Failure {
@@ -436,6 +435,12 @@ export interface InvalidSignature extends Failure {
   readonly delegation: Delegation
 }
 
+export interface SessionEscalation extends Failure {
+  readonly name: 'SessionEscalation'
+  readonly delegation: Delegation
+  readonly cause: Failure
+}
+
 /**
  * Error produces by invalid proof
  */
@@ -444,6 +449,7 @@ export type InvalidProof =
   | NotValidBefore
   | InvalidSignature
   | InvalidAudience
+  | SessionEscalation
   | DIDKeyResolutionError
   | UnavailableProof
 

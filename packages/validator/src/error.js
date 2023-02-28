@@ -80,6 +80,30 @@ export class DelegationError extends Failure {
 }
 
 /**
+ * @implements {API.SessionEscalation}
+ */
+export class SessionEscalation extends Failure {
+  /**
+   * @param {object} source
+   * @param {API.Delegation} source.delegation
+   * @param {API.Failure} source.cause
+   */
+  constructor({ delegation, cause }) {
+    super()
+    this.name = the('SessionEscalation')
+    this.delegation = delegation
+    this.cause = cause
+  }
+  describe() {
+    const issuer = this.delegation.issuer.did()
+    return [
+      `Delegation ${this.delegation.cid} issued by ${issuer} has an invalid session`,
+      li(this.cause.message),
+    ].join('\n')
+  }
+}
+
+/**
  * @implements {API.InvalidSignature}
  */
 export class InvalidSignature extends Failure {
@@ -145,7 +169,7 @@ export class UnavailableProof extends Failure {
 export class DIDKeyResolutionError extends Failure {
   /**
    * @param {API.UCAN.DID} did
-   * @param {API.Unauthorized} [cause]
+   * @param {API.Failure} [cause]
    */
   constructor(did, cause) {
     super()
@@ -154,10 +178,7 @@ export class DIDKeyResolutionError extends Failure {
     this.cause = cause
   }
   describe() {
-    return [
-      `Unable to resolve '${this.did}' key`,
-      ...(this.cause ? [li(`Resolution failed: ${this.cause.message}`)] : []),
-    ].join('\n')
+    return `Unable to resolve '${this.did}' key`
   }
 }
 

@@ -2,12 +2,13 @@ import * as Schema from './schema.js'
 
 const schema = Schema.string()
 
-export const text = () => schema
-
 /**
- * @param {{pattern: RegExp}} options
+ * @param {{pattern: RegExp}} [options]
  */
-export const match = ({ pattern }) => schema.refine(new Match(pattern))
+export const match = options =>
+  options ? schema.refine(new Match(options.pattern)) : schema
+
+export const text = match
 
 /**
  * @param {unknown} input

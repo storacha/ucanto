@@ -56,6 +56,9 @@
       ],
       "rsa": [
         "dist/src/rsa.d.ts"
+      ],
+      "account": [
+        "dist/src/account.d.ts"
       ]
     }
   },
@@ -71,6 +74,10 @@
     "./rsa": {
       "types": "./dist/src/rsa.d.ts",
       "import": "./src/rsa.js"
+    },
+    "./account": {
+      "types": "./dist/src/account.d.ts",
+      "import": "./src/account.js"
     }
   },
   "c8": {
