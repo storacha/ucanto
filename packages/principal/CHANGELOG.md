@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.3](https://github.com/web3-storage/ucanto/compare/principal-v4.3.1...principal-v4.3.3) (2023-02-28)
+
+
+### Miscellaneous Chores
+
+* release 4.3.3 ([12ea70b](https://github.com/web3-storage/ucanto/commit/12ea70bbb06d43f7b98017e229f1e1af0dc2fa50))
+
 ## [4.3.1](https://github.com/web3-storage/ucanto/compare/principal-v4.3.0...principal-v4.3.1) (2023-02-28)
 
 
