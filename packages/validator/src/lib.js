@@ -566,9 +566,10 @@ const verifySignature = async (delegation, verifier) => {
 }
 
 /**
- * Attempts to find an authorization session - an `./update` capability
- * delegation where `with` matches `config.authority` and `nb.permit`
- * matches give delegation.
+ * Attempts to find an authorization session - an `ucan/attest` capability
+ * delegation where `with` matches `config.authority` and `nb.proof`
+ * matches given delegation.
+ * @see https://github.com/web3-storage/specs/blob/feat/auth+account/w3-session.md#authorization-session
  *
  * @param {API.Delegation} delegation
  * @param {API.Delegation[]} proofs

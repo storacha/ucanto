@@ -75,7 +75,7 @@ test('validate mailto', async () => {
   })
 })
 
-test('delegated ./update', async () => {
+test('delegated ucan/attest', async () => {
   const account = Account.from({ id: 'did:mailto:web.mail:alice' })
   const agent = alice
   const manager = await ed25519.generate()
