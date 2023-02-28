@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.3.0](https://github.com/web3-storage/ucanto/compare/client-v4.2.3...client-v4.3.0) (2023-02-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* update session API ([#227](https://github.com/web3-storage/ucanto/issues/227))
+
+### Features
+
+* update session API ([#227](https://github.com/web3-storage/ucanto/issues/227)) ([9bbb2f7](https://github.com/web3-storage/ucanto/commit/9bbb2f796fd57ebe1ecd2112de1927b23a1577bd))
+
+
+### Bug Fixes
+
+* reconfigure release-please ([#230](https://github.com/web3-storage/ucanto/issues/230)) ([c16e100](https://github.com/web3-storage/ucanto/commit/c16e10004a5d9f3071f9bfe833e3888851fe4202))
+
+
+### Miscellaneous Chores
+
+* release 4.3.0 ([b53bf3d](https://github.com/web3-storage/ucanto/commit/b53bf3d9fb582006598aa02ae4c534dfcc68c189))
+
 ### [4.2.3](https://www.github.com/web3-storage/ucanto/compare/client-v4.1.0...client-v4.2.3) (2023-02-08)
 
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## [4.3.0](https://github.com/web3-storage/ucanto/compare/interface-v4.2.3...interface-v4.3.0) (2023-02-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* update session API ([#227](https://github.com/web3-storage/ucanto/issues/227))
+* Use schema stuff in the capabilities instead of custom parsing ([#220](https://github.com/web3-storage/ucanto/issues/220))
+
+### Features
+
+* update session API ([#227](https://github.com/web3-storage/ucanto/issues/227)) ([9bbb2f7](https://github.com/web3-storage/ucanto/commit/9bbb2f796fd57ebe1ecd2112de1927b23a1577bd))
+* Use schema stuff in the capabilities instead of custom parsing ([#220](https://github.com/web3-storage/ucanto/issues/220)) ([8a578ae](https://github.com/web3-storage/ucanto/commit/8a578ae403f7270fc741f8aef07f1d3621fb29f9))
+
+
+### Miscellaneous Chores
+
+* release 4.3.0 ([b53bf3d](https://github.com/web3-storage/ucanto/commit/b53bf3d9fb582006598aa02ae4c534dfcc68c189))
+
 ### [4.2.3](https://www.github.com/web3-storage/ucanto/compare/interface-v4.1.0...interface-v4.2.3) (2023-02-08)
 
 
