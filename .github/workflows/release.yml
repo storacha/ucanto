@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install
+      - name: Setup 
         uses: pnpm/action-setup@v2.2.3
         with:
           version: 7
@@ -44,9 +44,9 @@ jobs:
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/
-          cache: 'pnpm'
 
       - name: Build
+        run: pnpm install
         run: pnpm run --if-present build
 
       - name: Publish
