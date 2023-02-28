@@ -224,7 +224,7 @@ export interface Invocation<C extends Capability = Capability>
 export interface InvocationOptions<C extends Capability = Capability>
   extends UCANOptions {
   /** The `issuer` of an invocation is the "caller" of the RPC method and the party that signs the invocation UCAN token. */
-  issuer: Signer
+  issuer: UCAN.Signer
 
   /** The {@link Capability} that is being invoked. */
   capability: C
