@@ -168,7 +168,6 @@ const resolveSources = async ({ delegation }, config) => {
           /** @type {API.Source} */ ({
             capability,
             delegation: proof,
-            index: -1,
           })
         )
       }

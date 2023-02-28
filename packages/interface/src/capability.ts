@@ -18,7 +18,6 @@ import {
 export interface Source {
   capability: { can: Ability; with: URI; nb?: Caveats }
   delegation: Delegation
-  index: number
 }
 
 export interface Match<T = unknown, M extends Match = UnknownMatch>
