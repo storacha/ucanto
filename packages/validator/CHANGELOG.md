@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.0](https://github.com/web3-storage/ucanto/compare/validator-v4.3.4...validator-v4.4.0) (2023-02-28)
+
+
+### Miscellaneous Chores
+
+* release 4.4.0 ([e47dbfc](https://github.com/web3-storage/ucanto/commit/e47dbfc04b8caa2e3024c960c556251fc5fd9df7))
+
 ## [4.3.4](https://github.com/web3-storage/ucanto/compare/validator-v4.3.3...validator-v4.3.4) (2023-02-28)
 
 
