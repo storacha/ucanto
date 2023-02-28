@@ -47,8 +47,9 @@ jobs:
           cache: 'pnpm'
 
       - name: Build
-        run: pnpm install
-        run: pnpm run --if-present build
+        run: |
+          pnpm install
+          pnpm run --if-present build
 
       - name: Publish
         run: pnpm -r publish --access=public
