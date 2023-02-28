@@ -2,7 +2,7 @@ import { test, assert } from './test.js'
 import { access, DID } from '../src/lib.js'
 import { capability, URI, Link, Schema } from '../src/lib.js'
 import { Failure } from '../src/error.js'
-import { ed25519, Verifier, Account } from '@ucanto/principal'
+import { ed25519, Verifier, Absentee } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 import * as Core from '@ucanto/core'
 import * as CBOR from '@ipld/dag-cbor'
@@ -30,7 +30,7 @@ const attest = capability({
 
 test('validate mailto', async () => {
   const agent = alice
-  const account = Account.from({ id: 'did:mailto:web.mail:alice' })
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
 
   const proof = await Delegation.delegate({
     issuer: account,
@@ -76,7 +76,7 @@ test('validate mailto', async () => {
 })
 
 test('delegated ucan/attest', async () => {
-  const account = Account.from({ id: 'did:mailto:web.mail:alice' })
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
   const agent = alice
   const manager = await ed25519.generate()
   const worker = await ed25519.generate()
@@ -159,7 +159,7 @@ test('delegated ucan/attest', async () => {
 })
 
 test('fail without proofs', async () => {
-  const account = Account.from({ id: 'did:mailto:web.mail:alice' })
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
 
   const inv = echo.invoke({
     audience: w3,
@@ -186,7 +186,7 @@ test('fail without proofs', async () => {
 })
 
 test('fail without session', async () => {
-  const account = Account.from({ id: 'did:mailto:web.mail:alice' })
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
   const agent = alice
 
   const proof = await Delegation.delegate({
@@ -222,7 +222,7 @@ test('fail without session', async () => {
 })
 
 test('fail invalid ucan/attest proof', async () => {
-  const account = Account.from({ id: 'did:mailto:web.mail:alice' })
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
   const agent = alice
   const service = await ed25519.generate()
 

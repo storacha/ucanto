@@ -6,16 +6,16 @@ import * as UCAN from '@ipld/dag-ucan'
  * @param {{id: ID }} id
  * @returns {UCAN.Signer<ID, Signature.NON_STANDARD>}
  */
-export const from = ({ id }) => new Account(id)
+export const from = ({ id }) => new Absentee(id)
 
 /**
- * An account is a special type of signer that produces empty signature, which
- * signals that verifier needs to verify authorization interactively.
+ * An absentee is a special type of signer that produces an absent signature,
+ * which signals that verifier needs to verify authorization interactively.
  *
  * @template {UCAN.DID} ID
  * @implements {UCAN.Signer<ID, Signature.NON_STANDARD>}
  */
-class Account {
+class Absentee {
   /**
    * @param {ID} id
    */
