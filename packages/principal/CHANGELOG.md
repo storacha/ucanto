@@ -1,5 +1,23 @@
 # Changelog
 
+## [5.0.0](https://www.github.com/web3-storage/ucanto/compare/principal-v4.2.3...principal-v5.0.0) (2023-02-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* update session API (#227)
+
+### Features
+
+* update session API ([#227](https://www.github.com/web3-storage/ucanto/issues/227)) ([9bbb2f7](https://www.github.com/web3-storage/ucanto/commit/9bbb2f796fd57ebe1ecd2112de1927b23a1577bd))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/interface bumped from ^4.2.3 to ^5.0.0
+
 ### [4.2.3](https://www.github.com/web3-storage/ucanto/compare/principal-v4.1.0...principal-v4.2.3) (2023-02-08)
 
 

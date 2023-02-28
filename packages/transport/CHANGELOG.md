@@ -1,5 +1,26 @@
 # Changelog
 
+## [5.0.0](https://www.github.com/web3-storage/ucanto/compare/transport-v4.2.3...transport-v5.0.0) (2023-02-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* update session API (#227)
+
+### Features
+
+* update session API ([#227](https://www.github.com/web3-storage/ucanto/issues/227)) ([9bbb2f7](https://www.github.com/web3-storage/ucanto/commit/9bbb2f796fd57ebe1ecd2112de1927b23a1577bd))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ucanto/core bumped from ^4.2.3 to ^5.0.0
+    * @ucanto/interface bumped from ^4.2.3 to ^5.0.0
+  * devDependencies
+    * @ucanto/principal bumped from ^4.2.3 to ^5.0.0
+
 ### [4.2.3](https://www.github.com/web3-storage/ucanto/compare/transport-v4.1.0...transport-v4.2.3) (2023-02-08)
 
 
