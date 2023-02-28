@@ -65,7 +65,6 @@ export const from = ({ id, keys }) => {
   throw new TypeError(`Unsupported archive format`)
 }
 
-from
 /**
  * @template {API.SignerImporter} O
  * @param {O} other

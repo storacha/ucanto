@@ -352,7 +352,7 @@ test('invalid claim / expired', async () => {
       { link }
     )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
-    - Capability can not be derived from prf:0 - ${delegation.cid} because:
+    - Capability can not be derived from prf:${delegation.cid} because:
       - Proof ${delegation.cid} has expired on ${new Date(expiration * 1000)}`,
   })
 })
@@ -391,7 +391,7 @@ test('invalid claim / not valid before', async () => {
       { link }
     )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
-    - Capability can not be derived from prf:0 - ${proof.cid} because:
+    - Capability can not be derived from prf:${proof.cid} because:
       - Proof ${proof.cid} is not valid before ${new Date(notBefore * 1000)}`,
   })
 })
@@ -430,7 +430,7 @@ test('invalid claim / invalid signature', async () => {
       { link }
     )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
-    - Capability can not be derived from prf:0 - ${proof.cid} because:
+    - Capability can not be derived from prf:${proof.cid} because:
       - Proof ${proof.cid} does not has a valid signature from ${alice.did()}`,
   })
 })
@@ -553,7 +553,7 @@ test('invalid claim / unavailable proof', async () => {
       nb
     )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
-    - Capability can not be derived from prf:0 - ${delegation.cid} because:
+    - Capability can not be derived from prf:${delegation.cid} because:
       - Linked proof '${
         delegation.cid
       }' is not included and could not be resolved`,
@@ -593,7 +593,7 @@ test('invalid claim / failed to resolve', async () => {
       nb
     )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
-    - Capability can not be derived from prf:0 - ${delegation.cid} because:
+    - Capability can not be derived from prf:${delegation.cid} because:
       - Linked proof '${
         delegation.cid
       }' is not included and could not be resolved
@@ -631,7 +631,7 @@ test('invalid claim / invalid audience', async () => {
       nb
     )}} is not authorized because:
     - Capability can not be (self) issued by '${mallory.did()}'
-    - Capability can not be derived from prf:0 - ${delegation.cid} because:
+    - Capability can not be derived from prf:${delegation.cid} because:
       - Delegation audience is '${bob.did()}' instead of '${mallory.did()}'`,
   })
 })
@@ -805,7 +805,7 @@ test('invalid claim / principal alignment', async () => {
       nb
     )}} is not authorized because:
     - Capability can not be (self) issued by '${mallory.did()}'
-    - Capability can not be derived from prf:0 - ${proof.cid} because:
+    - Capability can not be derived from prf:${proof.cid} because:
       - Delegation audience is '${bob.did()}' instead of '${mallory.did()}'`,
   })
 })
@@ -842,7 +842,7 @@ test('invalid claim / invalid delegation chain', async () => {
       nb
     )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
-    - Capability can not be derived from prf:0 - ${proof.cid} because:
+    - Capability can not be derived from prf:${proof.cid} because:
       - Delegation audience is '${w3.did()}' instead of '${bob.did()}'`,
   })
 })

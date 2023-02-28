@@ -207,13 +207,13 @@ export type InferCreateOptions<R extends Resource, C extends {} | undefined> =
 export type InferInvokeOptions<
   R extends Resource,
   C extends {} | undefined
-> = UCANOptions & { issuer: Signer } & InferCreateOptions<R, C>
+> = UCANOptions & { issuer: UCAN.Signer } & InferCreateOptions<R, C>
 
 export type InferDelegationOptions<
   R extends Resource,
   C extends {} | undefined
 > = UCANOptions & {
-  issuer: Signer
+  issuer: UCAN.Signer
   with: R
   nb?: Partial<InferCreateOptions<R, C>['nb']>
 }
