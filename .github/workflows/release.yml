@@ -11,7 +11,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     outputs:
-      releases_created: ${{steps.release-please.outputs.releases_created}}
+      releases_created: ${{steps.release.outputs.releases_created}}
     steps:
       - name: Running Release Please
         uses: google-github-actions/release-please-action@v3
