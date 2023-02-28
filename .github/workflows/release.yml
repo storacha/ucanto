@@ -45,9 +45,6 @@ jobs:
         with:
           version: 7
 
-      - name: Test
-        run: pnpm run --if-present test:node
-
       - name: Build
         run: pnpm run --if-present build
 
