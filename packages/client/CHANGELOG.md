@@ -1,5 +1,21 @@
 # Changelog
 
+## [4.3.1](https://github.com/web3-storage/ucanto/compare/client-v4.3.0...client-v4.3.1) (2023-02-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* cause release ([#235](https://github.com/web3-storage/ucanto/issues/235))
+
+### Features
+
+* cause release ([#235](https://github.com/web3-storage/ucanto/issues/235)) ([168ac01](https://github.com/web3-storage/ucanto/commit/168ac018b51e93998190d3196aec93fe44f082e5))
+
+
+### Miscellaneous Chores
+
+* release 4.3.1 ([5c76285](https://github.com/web3-storage/ucanto/commit/5c762859c53de307486a8cf5f7c517b24a66d0f4))
+
 ## [4.3.0](https://github.com/web3-storage/ucanto/compare/client-v4.2.3...client-v4.3.0) (2023-02-28)
 
 
