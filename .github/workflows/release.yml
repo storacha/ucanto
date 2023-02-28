@@ -47,6 +47,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Build
+        run: pnpm install
         run: pnpm run --if-present build
 
       - name: Publish
