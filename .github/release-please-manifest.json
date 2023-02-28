@@ -1,9 +1,9 @@
 {
-  "packages/client": "4.3.3",
-  "packages/core": "4.3.3",
-  "packages/interface": "4.3.3",
-  "packages/principal": "4.3.3",
-  "packages/server": "4.3.3",
-  "packages/transport": "4.3.3",
-  "packages/validator": "4.3.3"
+  "packages/client": "4.3.4",
+  "packages/core": "4.3.4",
+  "packages/interface": "4.3.4",
+  "packages/principal": "4.3.4",
+  "packages/server": "4.3.4",
+  "packages/transport": "4.3.4",
+  "packages/validator": "4.3.4"
 }

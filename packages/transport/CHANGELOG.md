@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.4](https://github.com/web3-storage/ucanto/compare/transport-v4.3.3...transport-v4.3.4) (2023-02-28)
+
+
+### Miscellaneous Chores
+
+* release 4.3.4 ([baad652](https://github.com/web3-storage/ucanto/commit/baad652ff7d9760d58bbada161b293e653e6d20e))
+
 ## [4.3.3](https://github.com/web3-storage/ucanto/compare/transport-v4.3.1...transport-v4.3.3) (2023-02-28)
 
 
