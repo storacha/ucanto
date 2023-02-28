@@ -1,1 +1,9 @@
-{"packages/client":"4.2.3","packages/core":"4.2.3","packages/interface":"4.2.3","packages/principal":"4.2.3","packages/server":"4.2.3","packages/transport":"4.2.3","packages/validator":"4.2.3"}
+{
+  "packages/client": "4.2.3",
+  "packages/core": "4.2.3",
+  "packages/interface": "4.2.3",
+  "packages/principal": "4.2.3",
+  "packages/server": "4.2.3",
+  "packages/transport": "4.2.3",
+  "packages/validator": "4.2.3"
+}
