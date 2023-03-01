@@ -206,3 +206,35 @@ test('checks for single capability invocation', async () => {
     ],
   })
 })
+
+test('test access/claim provider', async () => {
+  const server = Server.create({
+    id: w3,
+    service: { access: Access },
+    decoder: CAR,
+    encoder: CBOR,
+  })
+
+  /**
+   * @type {Client.ConnectionView<{
+   *  access: {
+   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], never>
+   *  }
+   * }>}
+   */
+  const client = Client.connect({
+    id: w3,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: server,
+  })
+
+  const claim = Access.claimCapability.invoke({
+    issuer: alice,
+    audience: w3,
+    with: alice.did(),
+  })
+
+  const result = await claim.execute(client)
+  assert.deepEqual(result, [])
+})

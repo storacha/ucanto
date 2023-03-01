@@ -1,5 +1,6 @@
 import * as Server from '../../src/server.js'
 import { provide } from '../../src/handler.js'
+import { DID } from '@ucanto/validator'
 import * as API from './api.js'
 import { service as w3 } from '../fixtures.js'
 export const id = w3
@@ -31,6 +32,11 @@ const identifyCapability = Server.capability({
     claimed.with === delegated.with ||
     delegated.with === 'ucan:*' ||
     new Server.Failure(`Can not derive ${claimed.with} from ${claimed.with}`),
+})
+
+export const claimCapability = Server.capability({
+  can: 'access/claim',
+  with: DID.match({ method: 'key' }).or(DID.match({ method: 'mailto' })),
 })
 
 /**
@@ -71,6 +77,13 @@ export const identify = provide(
     const did = /** @type {API.DID} */ (capability.with)
     const account = resolve(state, did)
     return account == null ? new UnknownIDError(did) : account
+  }
+)
+
+export const claim = provide(
+  claimCapability,
+  async function claim({ capability }) {
+    return []
   }
 )
 
