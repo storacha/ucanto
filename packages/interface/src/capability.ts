@@ -6,7 +6,6 @@ import {
   Failure,
   PrincipalParser,
   PrincipalResolver,
-  Signer,
   URI,
   UCANLink,
   Await,
@@ -182,10 +181,9 @@ export interface TheCapabilityParser<M extends Match<ParsedCapability>>
  * When normalize capabilities by removing `nb` if it is a `{}`. This type
  * does that normalization at the type level.
  */
-export type InferCapability<T extends ParsedCapability> =
-  keyof T['nb'] extends never
-    ? { can: T['can']; with: T['with'] }
-    : { can: T['can']; with: T['with']; nb: T['nb'] }
+export type InferCapability<T extends Capability> = keyof T['nb'] extends never
+  ? { can: T['can']; with: T['with'] }
+  : { can: T['can']; with: T['with']; nb: T['nb'] }
 
 /**
  * In delegation capability all the `nb` fields are optional. This type maps

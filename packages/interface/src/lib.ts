@@ -34,6 +34,7 @@ import {
   DIDKeyResolutionError,
   ParsedCapability,
   CapabilityParser,
+  InferCapability,
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
@@ -746,7 +747,9 @@ export type KeyArchive<Alg extends SigAlg = SigAlg> =
 
 export type InferInvokedCapability<
   C extends CapabilityParser<Match<ParsedCapability>>
-> = C extends CapabilityParser<Match<infer T>> ? T : never
+> = C extends CapabilityParser<Match<infer T>>
+  ? InferCapability<T & Capability>
+  : never
 
 export type Intersection<T> = (T extends any ? (i: T) => void : never) extends (
   i: infer I
