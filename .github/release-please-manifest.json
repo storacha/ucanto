@@ -1,9 +1,9 @@
 {
-  "packages/client": "4.4.0",
-  "packages/core": "4.4.0",
-  "packages/interface": "4.4.1",
-  "packages/principal": "4.4.0",
-  "packages/server": "4.4.1",
-  "packages/transport": "4.4.0",
-  "packages/validator": "4.4.0"
+  "packages/client": "5.0.0",
+  "packages/core": "5.0.0",
+  "packages/interface": "5.0.0",
+  "packages/principal": "5.0.0",
+  "packages/server": "5.0.0",
+  "packages/transport": "5.0.0",
+  "packages/validator": "5.0.0"
 }
