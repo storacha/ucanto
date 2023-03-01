@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.1](https://github.com/web3-storage/ucanto/compare/interface-v4.4.0...interface-v4.4.1) (2023-03-01)
+
+
+### Bug Fixes
+
+* .provide inference regression ([#242](https://github.com/web3-storage/ucanto/issues/242)) ([ab155b7](https://github.com/web3-storage/ucanto/commit/ab155b71024878b7f31cddd6031c45a0e8a2fff1))
+
 ## [4.4.0](https://github.com/web3-storage/ucanto/compare/interface-v4.3.4...interface-v4.4.0) (2023-02-28)
 
 
