@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.0](https://github.com/web3-storage/ucanto/compare/server-v4.4.1...server-v5.0.0) (2023-03-01)
+
+
+### Miscellaneous Chores
+
+* release 5.0.0 ([1f809a9](https://github.com/web3-storage/ucanto/commit/1f809a9d41494756e155ffb951864a8b26673642))
+
 ## [4.4.1](https://github.com/web3-storage/ucanto/compare/server-v4.4.0...server-v4.4.1) (2023-03-01)
 
 

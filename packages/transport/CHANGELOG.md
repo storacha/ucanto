@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.0](https://github.com/web3-storage/ucanto/compare/transport-v4.4.0...transport-v5.0.0) (2023-03-01)
+
+
+### Miscellaneous Chores
+
+* release 5.0.0 ([1f809a9](https://github.com/web3-storage/ucanto/commit/1f809a9d41494756e155ffb951864a8b26673642))
+
 ## [4.4.0](https://github.com/web3-storage/ucanto/compare/transport-v4.3.4...transport-v4.4.0) (2023-02-28)
 
 
