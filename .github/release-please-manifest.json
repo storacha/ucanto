@@ -2,7 +2,7 @@
   "packages/client": "5.0.0",
   "packages/core": "5.0.0",
   "packages/interface": "5.0.0",
-  "packages/principal": "5.0.1",
+  "packages/principal": "5.0.2",
   "packages/server": "5.0.0",
   "packages/transport": "5.0.0",
   "packages/validator": "5.0.0"
