@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.2](https://github.com/web3-storage/ucanto/compare/principal-v5.0.1...principal-v5.0.2) (2023-03-03)
+
+
+### Bug Fixes
+
+* expose multiformat ([#248](https://github.com/web3-storage/ucanto/issues/248)) ([9a74a0e](https://github.com/web3-storage/ucanto/commit/9a74a0e734809cfb38a7b4c976e0d7f2e4dcf4aa))
+
 ## [5.0.1](https://github.com/web3-storage/ucanto/compare/principal-v5.0.0...principal-v5.0.1) (2023-03-03)
 
 
