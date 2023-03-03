@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.1](https://github.com/web3-storage/ucanto/compare/principal-v5.0.0...principal-v5.0.1) (2023-03-03)
+
+
+### Bug Fixes
+
+* type mapping regression ([#246](https://github.com/web3-storage/ucanto/issues/246)) ([e992549](https://github.com/web3-storage/ucanto/commit/e992549c3268e13512176ff45c9ee8f04b153556))
+
 ## [5.0.0](https://github.com/web3-storage/ucanto/compare/principal-v4.4.0...principal-v5.0.0) (2023-03-01)
 
 
