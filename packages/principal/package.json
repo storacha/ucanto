@@ -59,6 +59,9 @@
       ],
       "absentee": [
         "dist/src/absentee.d.ts"
+      ],
+      "multiformat": [
+        "dist/src/multiformat.d.ts"
       ]
     }
   },
@@ -78,6 +81,10 @@
     "./absentee": {
       "types": "./dist/src/absentee.d.ts",
       "import": "./src/absentee.js"
+    },
+    "./multiformat": {
+      "types": "./dist/src/multiformat.d.ts",
+      "import": "./src/multiformat.js"
     }
   },
   "c8": {
