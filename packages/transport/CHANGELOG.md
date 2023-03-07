@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.0](https://github.com/web3-storage/ucanto/compare/transport-v5.0.0...transport-v5.1.0) (2023-03-07)
+
+
+### Features
+
+* implement sync car decode ([#253](https://github.com/web3-storage/ucanto/issues/253)) ([40acaac](https://github.com/web3-storage/ucanto/commit/40acaac52870a68a358370bb1b3a5f4f081943d7))
+
 ## [5.0.0](https://github.com/web3-storage/ucanto/compare/transport-v4.4.0...transport-v5.0.0) (2023-03-01)
 
 
