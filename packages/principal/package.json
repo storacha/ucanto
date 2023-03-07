@@ -28,20 +28,20 @@
   },
   "dependencies": {
     "@ipld/dag-ucan": "^3.2.0",
-    "@noble/ed25519": "^1.7.1",
+    "@noble/ed25519": "^1.7.3",
     "@ucanto/interface": "workspace:^",
     "multiformats": "^11.0.0",
     "one-webcrypto": "^1.0.3"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
-    "@types/mocha": "^9.1.0",
-    "c8": "^7.11.0",
+    "@types/mocha": "^10.0.1",
+    "c8": "^7.13.0",
     "chai": "^4.3.6",
     "mocha": "^10.1.0",
     "nyc": "^15.1.0",
-    "playwright-test": "^8.1.1",
-    "typescript": "^4.9.4"
+    "playwright-test": "^8.2.0",
+    "typescript": "^4.9.5"
   },
   "type": "module",
   "main": "src/lib.js",

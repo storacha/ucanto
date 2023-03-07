@@ -50,7 +50,7 @@ export const decode = async ({ headers, body }) => {
     )
   }
 
-  const { roots, blocks } = await CAR.decode(body)
+  const { roots, blocks } = CAR.decode(body)
 
   const invocations = []
 
