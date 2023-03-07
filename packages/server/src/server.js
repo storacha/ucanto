@@ -32,12 +32,10 @@ class Server {
     encoder,
     decoder,
     principal = Verifier,
-    canIssue = (capability, issuer) =>
-      capability.with === issuer || issuer === id.did(),
     ...rest
   }) {
     const { catch: fail, ...context } = rest
-    this.context = { id, principal, canIssue, ...context }
+    this.context = { id, principal, ...context }
     this.service = service
     this.encoder = encoder
     this.decoder = decoder
