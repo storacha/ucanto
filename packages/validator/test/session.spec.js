@@ -310,3 +310,47 @@ test('resolve key', async () => {
     },
   })
 })
+
+test('service can not delegate access to account', async () => {
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  // service should not be able to delegate access to account resource
+  const auth = await Delegation.delegate({
+    issuer: w3,
+    audience: alice,
+    capabilities: [
+      {
+        with: account.did(),
+        can: 'debug/echo',
+      },
+    ],
+  })
+
+  const session = await Delegation.delegate({
+    issuer: service,
+    audience: alice,
+    capabilities: [
+      {
+        with: w3.did(),
+        can: 'ucan/attest',
+        nb: { proof: auth.cid },
+      },
+    ],
+    proofs: [auth],
+  })
+
+  const request = echo.invoke({
+    audience: w3,
+    issuer: alice,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [auth, session],
+  })
+
+  const result = await access(await request.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+  })
+
+  assert.equal(result.error, true)
+})
