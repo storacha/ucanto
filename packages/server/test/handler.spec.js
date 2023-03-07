@@ -153,7 +153,11 @@ test('checks service id', async () => {
 
     const result = await invocation.execute(client)
 
-    assert.deepEqual(result, null)
+    assert.equal(result?.error, true)
+
+    assert.ok(
+      result?.message.includes(`can not be (self) issued by '${w3.did()}'`)
+    )
   }
 })
 

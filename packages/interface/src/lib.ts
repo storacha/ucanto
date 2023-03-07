@@ -284,9 +284,9 @@ export type InvocationError =
   | InvalidAudience
   | Unauthorized
 
-export interface InvocationContext extends CanIssue {
+export interface InvocationContext extends ValidatorOptions {
   id: Verifier
-  my?: (issuer: DID) => Capability[]
+
   resolve?: (proof: UCANLink) => Await<Result<Delegation, UnavailableProof>>
 
   principal: PrincipalParser
@@ -460,7 +460,6 @@ export interface ValidatorOptions {
   readonly principal?: PrincipalParser
 
   readonly canIssue?: CanIssue['canIssue']
-  readonly my?: InvocationContext['my']
   readonly resolve?: InvocationContext['resolve']
 }
 

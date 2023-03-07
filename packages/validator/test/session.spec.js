@@ -399,3 +399,34 @@ test('attest with an account did', async () => {
 
   assert.equal(result.error, true)
 })
+
+test('service can not delegate account resource', async () => {
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  const proof = await Delegation.delegate({
+    issuer: service,
+    audience: alice,
+    capabilities: [
+      {
+        can: 'debug/echo',
+        with: account.did(),
+      },
+    ],
+  })
+
+  const request = await echo.invoke({
+    issuer: alice,
+    audience: service,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [proof],
+  })
+
+  const result = await access(await request.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+  })
+
+  console.log(result)
+  assert.equal(result.error, true)
+})
