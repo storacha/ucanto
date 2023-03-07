@@ -45,7 +45,7 @@ class Writer {
    */
   flush(...rootBlocks) {
     const roots = []
-    for (const block of rootBlocks.reverse()) {
+    for (const block of rootBlocks) {
       const id = block.cid.toString(base32)
       if (!this.written.has(id)) {
         this.blocks.unshift(block)
