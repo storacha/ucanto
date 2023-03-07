@@ -45,7 +45,8 @@ class Writer {
    */
   flush(...rootBlocks) {
     const roots = []
-    for (const block of rootBlocks) {
+    // We reverse the roots so that the first root is the last block in the CAR
+    for (const block of rootBlocks.reverse()) {
       const id = block.cid.toString(base32)
       if (!this.written.has(id)) {
         this.blocks.unshift(block)
@@ -55,7 +56,9 @@ class Writer {
         })
         this.written.add(id)
       }
-      roots.push(/** @type {CarBufferWriter.CID} */ (block.cid))
+
+      // We unshift here because we want to preserve the order of the roots
+      roots.unshift(/** @type {CarBufferWriter.CID} */ (block.cid))
     }
 
     this.byteLength += CarBufferWriter.headerLength({ roots })
