@@ -1,6 +1,5 @@
 import * as API from '@ucanto/interface'
-import * as CARWriter from '@ipld/car/buffer-writer'
-import { CarReader } from '@ipld/car/reader'
+import { CarBufferReader, CarBufferWriter } from '@ipld/car'
 import { base32 } from 'multiformats/bases/base32'
 import { UCAN, createLink } from '@ucanto/core'
 import { sha256 } from 'multiformats/hashes/sha2'
@@ -33,8 +32,8 @@ class Writer {
       const id = block.cid.toString(base32)
       if (!this.written.has(id)) {
         this.blocks.push(block)
-        this.byteLength += CARWriter.blockLength(
-          /** @type {CARWriter.Block} */ (block)
+        this.byteLength += CarBufferWriter.blockLength(
+          /** @type {CarBufferWriter.Block} */ (block)
         )
         this.written.add(id)
       }
@@ -50,21 +49,21 @@ class Writer {
       const id = block.cid.toString(base32)
       if (!this.written.has(id)) {
         this.blocks.unshift(block)
-        this.byteLength += CARWriter.blockLength({
-          cid: /** @type {CARWriter.CID} */ (block.cid),
+        this.byteLength += CarBufferWriter.blockLength({
+          cid: /** @type {CarBufferWriter.CID} */ (block.cid),
           bytes: block.bytes,
         })
         this.written.add(id)
       }
-      roots.push(/** @type {CARWriter.CID} */ (block.cid))
+      roots.push(/** @type {CarBufferWriter.CID} */ (block.cid))
     }
 
-    this.byteLength += CARWriter.headerLength({ roots })
+    this.byteLength += CarBufferWriter.headerLength({ roots })
 
     const buffer = new ArrayBuffer(this.byteLength)
-    const writer = CARWriter.createWriter(buffer, { roots })
+    const writer = CarBufferWriter.createWriter(buffer, { roots })
 
-    for (const block of /** @type {CARWriter.Block[]} */ (this.blocks)) {
+    for (const block of /** @type {CarBufferWriter.Block[]} */ (this.blocks)) {
       writer.write(block)
     }
 
@@ -89,20 +88,22 @@ export const encode = ({ roots = [], blocks }) => {
 
 /**
  * @param {API.ByteView<Partial<Model>>} bytes
- * @returns {Promise<Model>}
+ * @returns {Model}
  */
-export const decode = async bytes => {
-  const reader = await /** @type {any} */ (CarReader.fromBytes(bytes))
-  /** @type {{_header: { roots: CARWriter.CID[] }, _keys: string[], _blocks: UCAN.Block[] }} */
-  const { _header, _blocks, _keys } = reader
+export const decode = bytes => {
+  const reader = CarBufferReader.fromBytes(bytes)
   const roots = []
   const blocks = new Map()
-  const index = _header.roots.map(cid => _keys.indexOf(String(cid)))
 
-  for (const [n, block] of _blocks.entries()) {
-    if (index.includes(n)) {
-      roots.push(/** @type {Block} */ (block))
-    } else {
+  for (const root of reader.getRoots()) {
+    const block = reader.get(root)
+    if (block) {
+      roots.push(block)
+    }
+  }
+
+  for (const block of reader.blocks()) {
+    if (!roots.includes(block)) {
       blocks.set(block.cid.toString(), block)
     }
   }
