@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.0.0](https://github.com/web3-storage/ucanto/compare/validator-v5.0.0...validator-v6.0.0) (2023-03-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove canIssue hook default from the server ([#251](https://github.com/web3-storage/ucanto/issues/251))
+
+### Features
+
+* implement sync car decode ([#253](https://github.com/web3-storage/ucanto/issues/253)) ([40acaac](https://github.com/web3-storage/ucanto/commit/40acaac52870a68a358370bb1b3a5f4f081943d7))
+* remove canIssue hook default from the server ([#251](https://github.com/web3-storage/ucanto/issues/251)) ([6e48019](https://github.com/web3-storage/ucanto/commit/6e48019b905787b64b194bc0de0b1cd2c2cc3edc))
+
 ## [5.0.0](https://github.com/web3-storage/ucanto/compare/validator-v4.4.0...validator-v5.0.0) (2023-03-01)
 
 
