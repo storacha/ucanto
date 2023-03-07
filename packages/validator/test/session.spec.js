@@ -326,7 +326,7 @@ test('service can not delegate access to account', async () => {
   })
 
   const session = await Delegation.delegate({
-    issuer: service,
+    issuer: w3,
     audience: alice,
     capabilities: [
       {
@@ -427,6 +427,5 @@ test('service can not delegate account resource', async () => {
     principal: Verifier,
   })
 
-  console.log(result)
   assert.equal(result.error, true)
 })
