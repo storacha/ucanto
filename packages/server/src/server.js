@@ -1,5 +1,4 @@
 import * as API from '@ucanto/interface'
-import { InvalidAudience } from '@ucanto/validator'
 import { Verifier } from '@ucanto/principal'
 export {
   capability,
@@ -99,13 +98,6 @@ export const execute = async (invocations, server) => {
  * @returns {Promise<API.InferServiceInvocationReturn<C, Service>>}
  */
 export const invoke = async (invocation, server) => {
-  // If invocation is not for our server respond with error
-  if (invocation.audience.did() !== server.id.did()) {
-    return /** @type {API.Result<any, API.InvalidAudience>} */ (
-      new InvalidAudience(server.id, invocation)
-    )
-  }
-
   // Invocation needs to have one single capability
   if (invocation.capabilities.length !== 1) {
     return /** @type {API.Result<any, InvocationCapabilityError>} */ (

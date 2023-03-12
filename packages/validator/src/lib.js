@@ -1,10 +1,10 @@
 import * as API from '@ucanto/interface'
-import { isDelegation, Delegation, UCAN } from '@ucanto/core'
+import { isDelegation, UCAN } from '@ucanto/core'
 import { capability } from './capability.js'
 import * as Schema from './schema.js'
 import {
   UnavailableProof,
-  InvalidAudience,
+  PrincipalAlignmentError,
   Expired,
   NotValidBefore,
   InvalidSignature,
@@ -146,7 +146,10 @@ const resolveSources = async ({ delegation }, config) => {
     // If proof does not delegate to a matching audience save an proof error.
     if (delegation.issuer.did() !== proof.audience.did()) {
       errors.push(
-        new ProofError(proof.cid, new InvalidAudience(delegation.issuer, proof))
+        new ProofError(
+          proof.cid,
+          new PrincipalAlignmentError(delegation.issuer, proof)
+        )
       )
     } else {
       proofs.push(proof)
@@ -592,5 +595,3 @@ const verifySession = async (delegation, proofs, config) => {
     config
   )
 }
-
-export { InvalidAudience }
