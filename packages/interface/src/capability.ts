@@ -398,8 +398,6 @@ export interface MalformedCapability extends Failure {
 
 export interface InvalidAudience extends Failure {
   readonly name: 'InvalidAudience'
-  readonly audience: UCAN.Principal
-  readonly delegation: Delegation
 }
 
 export interface UnavailableProof extends Failure {

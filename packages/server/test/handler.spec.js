@@ -1,13 +1,17 @@
 import * as Client from '@ucanto/client'
 import * as Server from '../src/server.js'
+import * as Provider from '../src/handler.js'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
 import * as API from '@ucanto/interface'
-import { alice, bob, mallory, service as w3 } from './fixtures.js'
+import { alice, bob, mallory, service } from './fixtures.js'
 import { test, assert } from './test.js'
 import * as Access from './service/access.js'
 import { Verifier } from '@ucanto/principal/ed25519'
-import { UnavailableProof } from '@ucanto/validator'
+import { Schema, UnavailableProof } from '@ucanto/validator'
+import { Absentee } from '@ucanto/principal'
+
+const w3 = service.withDID('did:web:web3.storage')
 
 const context = {
   id: w3,
@@ -29,7 +33,7 @@ const context = {
 test('invocation', async () => {
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob,
+    audience: w3,
     capabilities: [
       {
         can: 'identity/link',
@@ -63,7 +67,7 @@ test('delegated invocation fail', async () => {
 
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob,
+    audience: w3,
     capabilities: proof.capabilities,
     proofs: [proof],
   })
@@ -90,7 +94,7 @@ test('delegated invocation fail', async () => {
 
   const invocation = await Client.delegate({
     issuer: alice,
-    audience: bob,
+    audience: w3,
     capabilities: proof.capabilities,
     proofs: [proof],
   })
@@ -138,9 +142,17 @@ test('checks service id', async () => {
     assert.deepNestedInclude(result, {
       error: true,
       name: 'InvalidAudience',
-      audience: w3.did(),
-      delegation: { audience: mallory.did() },
     })
+    assert.equal(
+      result?.message.includes(w3.did()),
+      true,
+      'mentions expected audience'
+    )
+    assert.equal(
+      result?.message.includes(mallory.did()),
+      true,
+      'mentions actual audience'
+    )
   }
 
   {
@@ -241,4 +253,77 @@ test('test access/claim provider', async () => {
 
   const result = await claim.execute(client)
   assert.deepEqual(result, [])
+})
+
+test('handle did:mailto audiences', async () => {
+  const AccessRequest = Server.capability({
+    can: 'access/request',
+    with: Schema.did(),
+    nb: Schema.struct({
+      need: Schema.dictionary({
+        key: Schema.string(),
+        value: Schema.unknown().array(),
+      }),
+    }),
+  })
+
+  const handler = Provider.provideAdvanced({
+    audience: Schema.did({ method: 'mailto' }),
+    capability: AccessRequest,
+    handler: async input => {
+      return {
+        allow: input.capability.nb.need,
+      }
+    },
+  })
+
+  const request = await Client.delegate({
+    issuer: alice,
+    audience: Absentee.from({ id: 'did:mailto:web.mail:alice' }),
+    capabilities: [
+      {
+        can: 'access/request',
+        with: alice.did(),
+        nb: {
+          need: {
+            'store/*': [],
+          },
+        },
+      },
+    ],
+  })
+
+  const result = await handler(request, {
+    id: w3,
+    principal: Verifier,
+  })
+
+  assert.equal(result.error, undefined)
+
+  const badRequest = await Client.delegate({
+    issuer: alice,
+    audience: w3,
+    capabilities: [
+      {
+        can: 'access/request',
+        with: alice.did(),
+        nb: {
+          need: {
+            'store/*': [],
+          },
+        },
+      },
+    ],
+  })
+
+  const badAudience = await handler(badRequest, {
+    id: w3,
+    principal: Verifier,
+  })
+
+  assert.equal(badAudience.error, true)
+  assert.match(
+    badAudience.toString(),
+    /InvalidAudience.*Expected .*did:mailto:.*got.*did:web:/
+  )
 })

@@ -185,7 +185,7 @@ export class DIDKeyResolutionError extends Failure {
 /**
  * @implements {API.InvalidAudience}
  */
-export class InvalidAudience extends Failure {
+export class PrincipalAlignmentError extends Failure {
   /**
    * @param {API.UCAN.Principal} audience
    * @param {API.Delegation} delegation

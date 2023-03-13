@@ -2,7 +2,7 @@ import { test, assert } from './test.js'
 import * as API from '@ucanto/interface'
 import {
   Failure,
-  InvalidAudience,
+  PrincipalAlignmentError,
   InvalidSignature,
   Expired,
   NotValidBefore,
@@ -36,7 +36,7 @@ test('InvalidAudience', async () => {
     proofs: [],
   })
 
-  const error = new InvalidAudience(bob, delegation)
+  const error = new PrincipalAlignmentError(bob, delegation)
 
   assert.deepEqual(error.toJSON(), {
     error: true,
