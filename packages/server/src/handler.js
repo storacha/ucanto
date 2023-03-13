@@ -2,6 +2,11 @@ import * as API from './api.js'
 import { access, Schema, Failure } from '@ucanto/validator'
 
 /**
+ * Function that can be used to define given capability provider. It decorates
+ * passed handler and takes care of UCAN validation and only calls the handler
+ * when validation succeeds.
+ *
+ *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
@@ -15,6 +20,13 @@ export const provide = (capability, handler) =>
   provideAdvanced({ capability, handler })
 
 /**
+ * Function that can be used to define given capability provider. It decorates
+ * passed handler and takes care of UCAN validation and only calls the handler
+ * when validation succeeds. This is an advanced version of `provide` function
+ * which allowing you to pass additional `input.audience` schema so that handler
+ * could accept invocations for audiences other than the service itself. If
+ * `input.audience` is not provided behavior is the same as `provide` function.
+ *
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
