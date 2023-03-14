@@ -22,6 +22,71 @@ export const isLink =
 export const isDelegation = proof => !Link.isLink(proof)
 
 /**
+ * Takes on or more delegations and returns all delegated capabilities in
+ * UCAN 0.10 format, expanding all the special forms like `with: ucan:*` and
+ * `can: *` to an explicit forms.
+ *
+ * @template {[API.Delegation, ...API.Delegation[]]} T
+ * @param {T} delegations
+ * @returns {API.InferAllowedFromDelegations<T>}
+ */
+export const allows = (...delegations) => {
+  /** @type {API.Allows} */
+  let allow = {}
+  for (const delegation of delegations) {
+    for (const capability of delegation.capabilities) {
+      // If uri is `ucan:*` then we include own capabilities along with
+      // delegated
+      const capabilities =
+        capability.with === 'ucan:*'
+          ? iterateCapabilities(delegation)
+          : [capability]
+
+      for (const { with: uri, can, nb } of capabilities) {
+        const resource = allow[uri] || (allow[uri] = {})
+        const abilities = resource[can] || (resource[can] = [])
+        abilities.push({ ...Object(nb) })
+      }
+    }
+  }
+
+  return /** @type {API.InferAllowedFromDelegations<T>} */ (allow)
+}
+
+/**
+ * Function takes a delegation and iterates over all the capabilities expanding
+ * all the special forms like `with: ucan:*` and `can: *`.
+ *
+ * @param {API.Delegation} delegation
+ * @returns {Iterable<API.Capability>}
+ */
+const iterateCapabilities = function* ({ issuer, capabilities, proofs }) {
+  for (const { with: uri, can, nb } of capabilities) {
+    if (uri === 'ucan:*') {
+      yield {
+        with: issuer.did(),
+        can,
+        nb,
+      }
+
+      for (const proof of proofs) {
+        if (isDelegation(proof)) {
+          for (const capability of iterateCapabilities(proof)) {
+            yield {
+              with: capability.with,
+              can: can === '*' ? capability.can : can,
+              nb: { ...capability.nb, ...Object(nb) },
+            }
+          }
+        }
+      }
+    } else {
+      yield { with: uri, can, nb }
+    }
+  }
+}
+
+/**
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of
  * this as UCAN interface of the CAR.
  *
