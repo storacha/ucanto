@@ -1,10 +1,6 @@
 import * as UCAN from '@ipld/dag-ucan'
-import * as Signature from '@ipld/dag-ucan/signature'
-import { from as toPrincipal } from '@ipld/dag-ucan/did'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
-import * as CBOR from '@ipld/dag-cbor'
-import { sha256 } from 'multiformats/hashes/sha2'
 
 /**
  * @deprecated
@@ -20,6 +16,133 @@ export const isLink =
  * @return {proof is API.Delegation}
  */
 export const isDelegation = proof => !Link.isLink(proof)
+
+/**
+ * Takes one or more delegations and returns all delegated capabilities in
+ * UCAN 0.10 format, expanding all the special forms like `with: ucan:*` and
+ * `can: *` to explicit forms.
+ *
+ * Note that this function only considers included proofs and ignores linked
+ * proofs. It is up to the user of this function to resolve whatever proofs it
+ * needs and build delegation with them before calling this function.
+ *
+ * Also note that this function does not validate the delegations and may
+ * produce result containing capabilities that escalate, which for the validator
+ * perspective is no different from not including such capabilities.
+ *
+ * @template {[API.Delegation, ...API.Delegation[]]} T
+ * @param {T} delegations
+ * @returns {API.InferAllowedFromDelegations<T>}
+ */
+export const allows = (...delegations) => {
+  /** @type {API.Allows} */
+  let allow = {}
+  for (const delegation of delegations) {
+    for (const { with: uri, can, nb } of iterateCapabilities(delegation)) {
+      const resource = allow[uri] || (allow[uri] = {})
+      const abilities = resource[can] || (resource[can] = [])
+      abilities.push({ ...nb })
+    }
+  }
+
+  return /** @type {API.InferAllowedFromDelegations<T>} */ (allow)
+}
+
+/**
+ * Function takes a delegation and iterates over all the capabilities expanding
+ * all the special forms like `with: ucan:*` and `can: *`.
+ *
+ * Note that this function only considers proofs that are included in the
+ * delegation, linked proofs will not be resolved nor considered. It is up to
+ * the user of this function to resolve whatever proofs it needs to consider
+ * before calling this function.
+ *
+ * @param {API.Delegation} delegation
+ * @returns {Iterable<API.Capability>}
+ */
+const iterateCapabilities = function* ({ issuer, capabilities, proofs }) {
+  for (const own of capabilities) {
+    // If `with` field is set to  `ucan:*` it implies re-delegation of all own
+    // and delegated capabilities.
+    if (own.with === 'ucan:*') {
+      // Fist we include own capabilities. Note that we can not expand `can`
+      // because it implicitly covers all possible options in the universe.
+      yield {
+        ...own,
+        with: issuer.did(),
+      }
+
+      // Next we iterate over all delegated capabilities including ones that
+      // match ability in the `own.can` field.
+      for (const proof of proofs) {
+        // We only consider proofs that are included and ignore linked proofs.
+        if (isDelegation(proof)) {
+          for (const capability of iterateCapabilities(proof)) {
+            // We attempt to match `capability.can` against `own.can` field
+            // if there is a match we include the capability otherwise we skip
+            const can = matchAbility(capability.can, own.can)
+            if (can) {
+              yield {
+                ...capability,
+                can,
+                // We do not know capability semantics so it is impossible
+                // for us to eliminate capabilities that do not satisfy imposed
+                // caveats (`own.nb`). Therefore we optimistically assume that
+                // `own.nb` further constraints `capability.nb` and do a shallow
+                // merge of the two. As a result we may include capabilities
+                // that during validation will be considered invalid due to
+                // constraint violations. While that is not ideal validator
+                // will treat them as if they were omitted and therefore it
+                // is a reasonable compromise.
+                nb: { ...capability.nb, ...Object(own.nb) },
+              }
+            }
+          }
+        }
+      }
+    } else {
+      yield own
+    }
+  }
+}
+
+/**
+ * Function takes `can` field from the delegated capability and attempts to
+ * match it against `can` field of the claimed capability. If there is a match
+ * the function returns more specific `can` field of two, otherwise it returns
+ * `null`.
+ *
+ * @param {API.Ability} provided
+ * @param {API.Ability} claimed
+ */
+const matchAbility = (provided, claimed) => {
+  // If provided capability delegates all abilities we can derive any `can`
+  // from it so we return `claimed` as is.
+  if (provided === '*') {
+    return claimed
+  }
+  // If claimed capability delegates all abilities that includes any `can`
+  // so we return `provided` as is.
+  if (claimed === '*') {
+    return provided
+  }
+  // If claimed `can` is a pattern that includes `provided` `can` we return
+  // `provided` as is.
+  if (claimed.endsWith('/*') && provided.startsWith(claimed.slice(0, -1))) {
+    return provided
+  }
+  // If provided `can` is a pattern that includes `claimed` `can` we can derive
+  // `claimed` from it so we return `claimed` as is.
+  if (provided.endsWith('/*') && claimed.startsWith(provided.slice(0, -1))) {
+    return claimed
+  }
+  // If `can` fields are concrete and the same we have a match and can return it.
+  if (provided === claimed) {
+    return provided
+  }
+  // otherwise two are incompatible and we return null.
+  return null
+}
 
 /**
  * Represents UCAN chain view over the set of DAG UCAN nodes. You can think of

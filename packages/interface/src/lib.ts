@@ -177,6 +177,105 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   delegate(): Await<Delegation<C>>
 }
 
+/**
+ * Type representing a UCAN capability set in UCAN 0.10 format.
+ * @see https://github.com/ucan-wg/spec/blob/0.10/README.md#241-examples
+ */
+export type Allows<
+  URI extends Resource = Resource,
+  Abilities extends ResourceAbilities = ResourceAbilities
+> = {
+  [K in URI]: Abilities
+}
+
+/**
+ * Type representing a set of abilities for a specific resource. It is a map of
+ * abilities to a list of caveats. This type is used in representation of the
+ * UCAN capability set in UCAN 0.10 format.
+ */
+export type ResourceAbilities<
+  Can extends Ability = any,
+  Caveats extends Record<string, unknown> = Record<string, unknown>
+> = {
+  [K in Can]: Caveats[]
+}
+
+/**
+ * Utility type that infers union of two {@link ResourceAbilities}. Type is used
+ * to infer capabilities of the {@link Delegation}.
+ */
+export type JoinAbilities<
+  T extends ResourceAbilities,
+  U extends ResourceAbilities
+> = {
+  [K in keyof T | keyof U]: [
+    ...(K extends keyof T ? T[K] : []),
+    ...(K extends keyof U ? U[K] : [])
+  ]
+}
+
+/**
+ * Utility type that infers union of two {@link Allows}. Type is used to infer
+ * capabilities of the {@link Delegation}.
+ */
+export type JoinAllows<T extends Allows, U extends Allows> = {
+  [K in keyof T | keyof U]: JoinAbilities<
+    K extends keyof T ? (T[K] extends ResourceAbilities ? T[K] : {}) : {},
+    K extends keyof U ? (U[K] extends ResourceAbilities ? U[K] : {}) : {}
+  >
+}
+
+/**
+ * Utility type that infers set of capabilities delegated by one or more
+ * {@link Delegation}s in UCAN 0.10 format.
+ */
+export type InferAllowedFromDelegations<T extends [unknown, ...unknown[]]> =
+  T extends [infer A]
+    ? InferAllowedFromDelegation<A>
+    : T extends [infer A, infer B]
+    ? JoinAllows<InferAllowedFromDelegation<A>, InferAllowedFromDelegation<B>>
+    : T extends [infer A, infer B, ...infer Rest]
+    ? JoinAllows<
+        InferAllowedFromDelegation<A>,
+        InferAllowedFromDelegations<[B, ...Rest]>
+      >
+    : never
+
+/**
+ * Utility type that infers set of capabilities delegated by a single
+ * {@link Delegation}
+ */
+export type InferAllowedFromDelegation<T> = T extends Delegation<
+  infer Capabilities
+>
+  ? InferAllowedFromCapabilities<Capabilities>
+  : never
+
+/**
+ * Utility type that infers set of capabilities in UCAN 0.10 format from a
+ * {@link Capability} tuple.
+ */
+export type InferAllowedFromCapabilities<T> = T extends [infer A]
+  ? InferAllowedFromCapability<A>
+  : T extends [infer A, ...infer Rest]
+  ? JoinAllows<
+      InferAllowedFromCapability<A>,
+      InferAllowedFromCapabilities<Rest>
+    >
+  : never
+
+/**
+ * Utility type that infers set of capabilities in UCAN 0.10 format from a
+ * single {@link Capability}.
+ */
+export type InferAllowedFromCapability<T> = T extends Capability<
+  infer Can,
+  infer URI,
+  infer Caveats
+>
+  ? { [K in URI]: { [K in Can]: (Caveats & {})[] } }
+  : never
+
 export type DelegationJSON<T extends Delegation = Delegation> = ToJSON<
   T,
   {
