@@ -22,9 +22,9 @@ export const isLink =
 export const isDelegation = proof => !Link.isLink(proof)
 
 /**
- * Takes on or more delegations and returns all delegated capabilities in
+ * Takes one or more delegations and returns all delegated capabilities in
  * UCAN 0.10 format, expanding all the special forms like `with: ucan:*` and
- * `can: *` to an explicit forms.
+ * `can: *` to explicit forms.
  *
  * @template {[API.Delegation, ...API.Delegation[]]} T
  * @param {T} delegations
