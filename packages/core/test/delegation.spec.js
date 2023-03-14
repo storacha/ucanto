@@ -461,3 +461,37 @@ test('derive allow from multiple', async () => {
     },
   })
 })
+
+test('store/add from store/*', async () => {
+  const ucan = await Delegation.delegate({
+    issuer: bob,
+    audience: mallory,
+    capabilities: [
+      {
+        with: alice.did(),
+        can: 'store/add',
+      },
+    ],
+    proofs: [
+      await Delegation.delegate({
+        issuer: alice,
+        audience: bob,
+        capabilities: [
+          {
+            with: alice.did(),
+            can: 'store/*',
+            nb: {
+              size: 100,
+            },
+          },
+        ],
+      }),
+    ],
+  })
+
+  assert.deepEqual(Delegation.allows(ucan), {
+    [alice.did()]: {
+      'store/add': [{}],
+    },
+  })
+})
