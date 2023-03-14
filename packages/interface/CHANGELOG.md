@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.2.0](https://github.com/web3-storage/ucanto/compare/interface-v6.1.0...interface-v6.2.0) (2023-03-14)
+
+
+### Features
+
+* allow api inferring capabilities ([#259](https://github.com/web3-storage/ucanto/issues/259)) ([cd8cef8](https://github.com/web3-storage/ucanto/commit/cd8cef85dba4a612d9ff05abfa2b8dcfbc378499))
+
 ## [6.1.0](https://github.com/web3-storage/ucanto/compare/interface-v6.0.0...interface-v6.1.0) (2023-03-13)
 
 

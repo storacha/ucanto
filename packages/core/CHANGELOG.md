@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/web3-storage/ucanto/compare/core-v5.1.0...core-v5.2.0) (2023-03-14)
+
+
+### Features
+
+* allow api inferring capabilities ([#259](https://github.com/web3-storage/ucanto/issues/259)) ([cd8cef8](https://github.com/web3-storage/ucanto/commit/cd8cef85dba4a612d9ff05abfa2b8dcfbc378499))
+
 ## [5.1.0](https://github.com/web3-storage/ucanto/compare/core-v5.0.0...core-v5.1.0) (2023-03-07)
 
 
