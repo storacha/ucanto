@@ -1,10 +1,6 @@
 import * as UCAN from '@ipld/dag-ucan'
-import * as Signature from '@ipld/dag-ucan/signature'
-import { from as toPrincipal } from '@ipld/dag-ucan/did'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
-import * as CBOR from '@ipld/dag-cbor'
-import { sha256 } from 'multiformats/hashes/sha2'
 
 /**
  * @deprecated
@@ -26,6 +22,14 @@ export const isDelegation = proof => !Link.isLink(proof)
  * UCAN 0.10 format, expanding all the special forms like `with: ucan:*` and
  * `can: *` to explicit forms.
  *
+ * Note that this function only considers included proofs and ignores linked
+ * proofs. It is up to the user of this function to resolve whatever proofs it
+ * needs and build delegation with them before calling this function.
+ *
+ * Also note that this function does not validate the delegations and may
+ * produce result containing capabilities that escalate, which for the validator
+ * perspective is no different from not including such capabilities.
+ *
  * @template {[API.Delegation, ...API.Delegation[]]} T
  * @param {T} delegations
  * @returns {API.InferAllowedFromDelegations<T>}
@@ -45,6 +49,10 @@ export const allows = (...delegations) => {
       for (const { with: uri, can, nb } of capabilities) {
         const resource = allow[uri] || (allow[uri] = {})
         const abilities = resource[can] || (resource[can] = [])
+        // We call `Object(nb)` because according to the types `nb` is unknown
+        // even though at other layers we enforce it to be an object. This way
+        // we make TS happy and also handle cases where `nb` isn't an object
+        // e.g. because it was decoded from malformed block.
         abilities.push({ ...Object(nb) })
       }
     }
@@ -57,24 +65,48 @@ export const allows = (...delegations) => {
  * Function takes a delegation and iterates over all the capabilities expanding
  * all the special forms like `with: ucan:*` and `can: *`.
  *
+ * Note that this function only considers proofs that are included in the
+ * delegation, linked proofs will not be resolved nor considered. It is up to
+ * the user of this function to resolve whatever proofs it needs to consider
+ * before calling this function.
+ *
  * @param {API.Delegation} delegation
  * @returns {Iterable<API.Capability>}
  */
 const iterateCapabilities = function* ({ issuer, capabilities, proofs }) {
   for (const { with: uri, can, nb } of capabilities) {
+    // If `with` field is set to  `ucan:*` it implies re-delegation of all own
+    // and delegated capabilities.
     if (uri === 'ucan:*') {
+      // Here we yield own capabilities (which are not delegated). Also note
+      // that we can not expand `can: *` because it is impossible to list out
+      // all the capabilities that can exist.
       yield {
         with: issuer.did(),
         can,
         nb,
       }
 
+      // Here we yield delegated capabilities. If `can` is set to `*` then we
+      // expand it to the `can` of the delegated capabilities so it is clear
+      // what capabilities are being delegated. Also note that we do not
+      // consider `with: "ucan:*"` here because this is recursive walk which
+      // would have expanded it already.
       for (const proof of proofs) {
+        // We only consider delegation proofs that are included as opposed to
+        // linked because we have no way of resolving them.
         if (isDelegation(proof)) {
           for (const capability of iterateCapabilities(proof)) {
             yield {
               with: capability.with,
               can: can === '*' ? capability.can : can,
+              // We do not know semantics of this capability so it is impossible
+              // to do an accurate merge. Which is why we do a naive merge
+              // ensuring that all `nb` fields are present. As a result we may
+              // include a capability that escalates some constraints imposed
+              // by the delegated capability, which is not ideal but something
+              // that validator will reject which will behave same as if we have
+              // not included this capability in first place.
               nb: { ...capability.nb, ...Object(nb) },
             }
           }
