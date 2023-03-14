@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.0](https://github.com/web3-storage/ucanto/compare/interface-v6.0.0...interface-v6.1.0) (2023-03-13)
+
+
+### Features
+
+* configurable audience handlers ([#257](https://github.com/web3-storage/ucanto/issues/257)) ([f8d001c](https://github.com/web3-storage/ucanto/commit/f8d001cf721b0e96757fa372993f2fe6b6e8d520))
+
 ## [6.0.0](https://github.com/web3-storage/ucanto/compare/interface-v5.0.0...interface-v6.0.0) (2023-03-07)
 
 
