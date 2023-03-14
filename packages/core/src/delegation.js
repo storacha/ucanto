@@ -38,23 +38,10 @@ export const allows = (...delegations) => {
   /** @type {API.Allows} */
   let allow = {}
   for (const delegation of delegations) {
-    for (const capability of delegation.capabilities) {
-      // If uri is `ucan:*` then we include own capabilities along with
-      // delegated
-      const capabilities =
-        capability.with === 'ucan:*'
-          ? iterateCapabilities(delegation)
-          : [capability]
-
-      for (const { with: uri, can, nb } of capabilities) {
-        const resource = allow[uri] || (allow[uri] = {})
-        const abilities = resource[can] || (resource[can] = [])
-        // We call `Object(nb)` because according to the types `nb` is unknown
-        // even though at other layers we enforce it to be an object. This way
-        // we make TS happy and also handle cases where `nb` isn't an object
-        // e.g. because it was decoded from malformed block.
-        abilities.push({ ...Object(nb) })
-      }
+    for (const { with: uri, can, nb } of iterateCapabilities(delegation)) {
+      const resource = allow[uri] || (allow[uri] = {})
+      const abilities = resource[can] || (resource[can] = [])
+      abilities.push({ ...nb })
     }
   }
 
@@ -74,48 +61,87 @@ export const allows = (...delegations) => {
  * @returns {Iterable<API.Capability>}
  */
 const iterateCapabilities = function* ({ issuer, capabilities, proofs }) {
-  for (const { with: uri, can, nb } of capabilities) {
+  for (const own of capabilities) {
     // If `with` field is set to  `ucan:*` it implies re-delegation of all own
     // and delegated capabilities.
-    if (uri === 'ucan:*') {
-      // Here we yield own capabilities (which are not delegated). Also note
-      // that we can not expand `can: *` because it is impossible to list out
-      // all the capabilities that can exist.
+    if (own.with === 'ucan:*') {
+      // Fist we include own capabilities. Note that we can not expand `can`
+      // because it implicitly covers all possible options in the universe.
       yield {
+        ...own,
         with: issuer.did(),
-        can,
-        nb,
       }
 
-      // Here we yield delegated capabilities. If `can` is set to `*` then we
-      // expand it to the `can` of the delegated capabilities so it is clear
-      // what capabilities are being delegated. Also note that we do not
-      // consider `with: "ucan:*"` here because this is recursive walk which
-      // would have expanded it already.
+      // Next we iterate over all delegated capabilities including ones that
+      // match ability in the `own.can` field.
       for (const proof of proofs) {
-        // We only consider delegation proofs that are included as opposed to
-        // linked because we have no way of resolving them.
+        // We only consider proofs that are included and ignore linked proofs.
         if (isDelegation(proof)) {
           for (const capability of iterateCapabilities(proof)) {
-            yield {
-              with: capability.with,
-              can: can === '*' ? capability.can : can,
-              // We do not know semantics of this capability so it is impossible
-              // to do an accurate merge. Which is why we do a naive merge
-              // ensuring that all `nb` fields are present. As a result we may
-              // include a capability that escalates some constraints imposed
-              // by the delegated capability, which is not ideal but something
-              // that validator will reject which will behave same as if we have
-              // not included this capability in first place.
-              nb: { ...capability.nb, ...Object(nb) },
+            // We attempt to match `capability.can` against `own.can` field
+            // if there is a match we include the capability otherwise we skip
+            const can = matchAbility(capability.can, own.can)
+            if (can) {
+              yield {
+                ...capability,
+                can,
+                // We do not know capability semantics so it is impossible
+                // for us to eliminate capabilities that do not satisfy imposed
+                // caveats (`own.nb`). Therefore we optimistically assume that
+                // `own.nb` further constraints `capability.nb` and do a shallow
+                // merge of the two. As a result we may include capabilities
+                // that during validation will be considered invalid due to
+                // constraint violations. While that is not ideal validator
+                // will treat them as if they were omitted and therefore it
+                // is a reasonable compromise.
+                nb: { ...capability.nb, ...Object(own.nb) },
+              }
             }
           }
         }
       }
     } else {
-      yield { with: uri, can, nb }
+      yield own
     }
   }
+}
+
+/**
+ * Function takes `can` field from the delegated capability and attempts to
+ * match it against `can` field of the claimed capability. If there is a match
+ * the function returns more specific `can` field of two, otherwise it returns
+ * `null`.
+ *
+ * @param {API.Ability} provided
+ * @param {API.Ability} claimed
+ */
+const matchAbility = (provided, claimed) => {
+  // If provided capability delegates all abilities we can derive any `can`
+  // from it so we return `claimed` as is.
+  if (provided === '*') {
+    return claimed
+  }
+  // If claimed capability delegates all abilities that includes any `can`
+  // so we return `provided` as is.
+  if (claimed === '*') {
+    return provided
+  }
+  // If claimed `can` is a pattern that includes `provided` `can` we return
+  // `provided` as is.
+  if (claimed.endsWith('/*') && provided.startsWith(claimed.slice(0, -1))) {
+    return provided
+  }
+  // If provided `can` is a pattern that includes `claimed` `can` we can derive
+  // `claimed` from it so we return `claimed` as is.
+  if (provided.endsWith('/*') && claimed.startsWith(provided.slice(0, -1))) {
+    return claimed
+  }
+  // If `can` fields are concrete and the same we have a match and can return it.
+  if (provided === claimed) {
+    return provided
+  }
+  // otherwise two are incompatible and we return null.
+  return null
 }
 
 /**
