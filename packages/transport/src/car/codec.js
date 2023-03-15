@@ -1,5 +1,6 @@
 import * as API from '@ucanto/interface'
-import { CarBufferReader, CarBufferWriter } from '@ipld/car'
+import {  CarBufferReader } from '@ipld/car/buffer-reader'
+import * as CarBufferWriter from '@ipld/car/buffer-writer'
 import { base32 } from 'multiformats/bases/base32'
 import { UCAN, createLink } from '@ucanto/core'
 import { sha256 } from 'multiformats/hashes/sha2'
