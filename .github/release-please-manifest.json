@@ -4,6 +4,6 @@
   "packages/interface": "6.2.0",
   "packages/principal": "5.1.0",
   "packages/server": "6.1.0",
-  "packages/transport": "5.1.0",
+  "packages/transport": "5.1.1",
   "packages/validator": "6.1.0"
 }

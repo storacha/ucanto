@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.1](https://github.com/web3-storage/ucanto/compare/transport-v5.1.0...transport-v5.1.1) (2023-03-15)
+
+
+### Bug Fixes
+
+* car imports ([#262](https://github.com/web3-storage/ucanto/issues/262)) ([d3a7f91](https://github.com/web3-storage/ucanto/commit/d3a7f91e80c5885451014b6a85594d180f17125c))
+
 ## [5.1.0](https://github.com/web3-storage/ucanto/compare/transport-v5.0.0...transport-v5.1.0) (2023-03-07)
 
 
