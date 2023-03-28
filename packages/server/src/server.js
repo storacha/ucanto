@@ -7,6 +7,7 @@ export {
   Failure,
   MalformedCapability,
 } from '@ucanto/validator'
+import { Receipt } from '@ucanto/core'
 
 /**
  * Creates a connection to a service.
@@ -61,11 +62,11 @@ class Server {
  * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
  * @param {API.ServerView<T>} server
  * @param {API.HTTPRequest<I>} request
- * @returns {Promise<API.HTTPResponse<API.InferServiceInvocations<I, T>>>}
+ * @returns {Promise<API.HTTPResponse<API.InferWorkflowReceipts<I, T>>>}
  */
 export const handle = async (server, request) => {
-  const invocations = await server.decoder.decode(request)
-  const result = await execute(invocations, server)
+  const workflow = await server.decoder.decode(request)
+  const result = await execute(workflow, server)
   return server.encoder.encode(result)
 }
 
@@ -73,21 +74,22 @@ export const handle = async (server, request) => {
  * @template {Record<string, any>} Service
  * @template {API.Capability} C
  * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
- * @param {API.InferInvocations<I>} invocations
+ * @param {API.InferInvocations<I>} workflow
  * @param {API.ServerView<Service>} server
- * @returns {Promise<API.InferServiceInvocations<I, Service>>}
+ * @returns {Promise<API.InferWorkflowReceipts<I, Service> & API.Tuple<API.Receipt>>}
  */
-export const execute = async (invocations, server) => {
-  const results = []
+export const execute = async (workflow, server) => {
   const input =
     /** @type {API.InferInvocation<API.ServiceInvocation<C, Service>>[]} */ (
-      invocations
+      workflow
     )
-  for (const invocation of input) {
-    results.push(await invoke(invocation, server))
-  }
 
-  return /** @type {API.InferServiceInvocations<I, Service>} */ (results)
+  const promises = input.map(invocation => invoke(invocation, server))
+  const results = await Promise.all(promises)
+
+  return /** @type {API.InferWorkflowReceipts<I, Service> & API.Tuple<API.Receipt>} */ (
+    results
+  )
 }
 
 /**
@@ -95,14 +97,18 @@ export const execute = async (invocations, server) => {
  * @template {API.Capability} C
  * @param {API.InferInvocation<API.ServiceInvocation<C, Service>>} invocation
  * @param {API.ServerView<Service>} server
- * @returns {Promise<API.InferServiceInvocationReturn<C, Service>>}
+ * @returns {Promise<API.Receipt>}
  */
 export const invoke = async (invocation, server) => {
   // Invocation needs to have one single capability
   if (invocation.capabilities.length !== 1) {
-    return /** @type {API.Result<any, InvocationCapabilityError>} */ (
-      new InvocationCapabilityError(invocation.capabilities)
-    )
+    return await Receipt.issue({
+      issuer: server.id,
+      ran: invocation,
+      result: {
+        error: new InvocationCapabilityError(invocation.capabilities),
+      },
+    })
   }
 
   const [capability] = invocation.capabilities
@@ -111,21 +117,37 @@ export const invoke = async (invocation, server) => {
   const method = /** @type {string} */ (path.pop())
   const handler = resolve(server.service, path)
   if (handler == null || typeof handler[method] !== 'function') {
-    return /** @type {API.Result<any, API.HandlerNotFound>} */ (
-      new HandlerNotFound(capability)
-    )
+    return await Receipt.issue({
+      issuer: server.id,
+      ran: invocation,
+      result: {
+        /** @type {API.HandlerNotFound} */
+        error: new HandlerNotFound(capability),
+      },
+    })
   } else {
     try {
-      return await handler[method](invocation, server.context)
-    } catch (error) {
-      const err = new HandlerExecutionError(
+      const value = await handler[method](invocation, server.context)
+      return await Receipt.issue({
+        issuer: server.id,
+        ran: invocation,
+        result: /** @type {API.ReceiptResult<{}>} */ (
+          value?.error ? { error: value } : { ok: value || {} }
+        ),
+      })
+    } catch (cause) {
+      const error = new HandlerExecutionError(
         capability,
-        /** @type {Error} */ (error)
+        /** @type {Error} */ (cause)
       )
 
-      server.catch(err)
+      server.catch(error)
 
-      return /** @type {API.Result<any, API.HandlerExecutionError>} */ (err)
+      return await Receipt.issue({
+        issuer: server.id,
+        ran: invocation,
+        result: { error },
+      })
     }
   }
 }

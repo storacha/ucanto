@@ -131,10 +131,34 @@ export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
 }
 
 /**
+ * An interface for representing an IPLD DAG View that can be materialized into
+ * on demand. It is a useful abstraction that can be used to defer encoding of
+ * IPLD blocks.
+ */
+export interface IPLDViewBuilder<T extends unknown = unknown> {
+  /**
+   * Encodes all the blocks and creates a new IPLDView instance over them. Can
+   * be passed an multihasher to parameterize hashing algorithm.
+   *
+   * Please note that some `IPLDView`s also implement `IPLDViewBuilder`
+   * interface and they will discard any options.
+   */
+  buildIPLDView(options?: Transport.EncodeOptions): Await<IPLDView<T>>
+}
+
+export interface IPLDView<T extends unknown = unknown>
+  extends IPLDViewBuilder<T> {
+  buildIPLDView(): IPLDView<T>
+  root: Block<T>
+  iterateIPLDBlocks(): IterableIterator<Block>
+}
+
+/**
  * A materialized view of a UCAN delegation, which can be encoded into a UCAN token and
  * used as proof for an invocation or further delegations.
  */
-export interface Delegation<C extends Capabilities = Capabilities> {
+export interface Delegation<C extends Capabilities = Capabilities>
+  extends IPLDView<UCAN.UCAN<C>> {
   readonly root: UCANBlock<C>
   /**
    * Map of all the IPLD blocks that were included with this delegation DAG.
@@ -147,6 +171,7 @@ export interface Delegation<C extends Capabilities = Capabilities> {
    * Also note that map may contain blocks that are not part of this
    * delegation DAG. That is because `Delegation` is usually constructed as
    * view / selection over the CAR which may contain bunch of other blocks.
+   * @deprecated
    */
   readonly blocks: Map<string, Block>
 
@@ -155,6 +180,7 @@ export interface Delegation<C extends Capabilities = Capabilities> {
   readonly data: UCAN.View<C>
 
   asCID: UCANLink<C>
+  link(): UCANLink<C>
 
   export(): IterableIterator<Block>
 
@@ -318,6 +344,136 @@ export type LinkJSON<T extends UnknownLink = UnknownLink> = ToJSON<
 export interface Invocation<C extends Capability = Capability>
   extends Delegation<[C]> {}
 
+export interface OutcomeModel<
+  Ok extends {} = {},
+  Error extends {} = {},
+  Ran extends Invocation = Invocation
+> {
+  ran: ReturnType<Ran['link']>
+  out: ReceiptResult<Ok, Error>
+  fx: EffectsModel
+  meta: Meta
+  iss?: DID
+  prf: UCANLink[]
+}
+
+export interface Outcome<
+  Ok extends {} = {},
+  Error extends {} = {},
+  Ran extends Invocation = Invocation
+> extends IPLDView<OutcomeModel<Ok, Error, Ran>> {
+  link(): Link<OutcomeModel<Ok, Error, Ran>>
+  ran: Ran | ReturnType<Ran['link']>
+  out: ReceiptResult<Ok, Error>
+  fx: Effects
+  meta: Meta
+  issuer?: Principal
+  proofs: Proof[]
+}
+
+/**
+ * A receipt is an attestation of the Result and requested Effects by a task
+ * invocation. It is issued and signed by the task executor or its delegate.
+ *
+ * @see https://github.com/ucan-wg/invocation#8-receipt
+ */
+export interface ReceiptModel<
+  Ok extends {} = {},
+  Error extends {} = {},
+  Ran extends Invocation = Invocation
+> {
+  ocm: Link<OutcomeModel<Ok, Error, Ran>>
+  sig: Signature
+}
+
+export interface Receipt<
+  Ok extends {} = {},
+  Error extends {} = {},
+  Ran extends Invocation = Invocation,
+  Alg extends SigAlg = SigAlg
+> extends IPLDView<ReceiptModel<Ok, Error, Ran>> {
+  outcome: Outcome<Ok, Error, Ran>
+  ran: Ran | ReturnType<Ran['link']>
+  out: ReceiptResult<Ok, Error>
+  fx: Effects
+  meta: Meta
+
+  issuer?: Principal
+  proofs: Proof[]
+
+  signature: Signature<Link<OutcomeModel<Ok, Error, Ran>>, Alg>
+}
+
+export interface Meta extends Record<string, unknown> {}
+
+export interface EffectsModel {
+  fork: readonly Link<InstructionModel>[]
+  join?: Link<InstructionModel>
+}
+
+export interface Effects extends EffectsModel {}
+export interface InstructionModel<
+  Op extends Ability = Ability,
+  URI extends Resource = Resource,
+  Input extends Record<string, unknown> = Record<string, unknown>
+> {
+  op: Op
+  rsc: URI
+  input: Input
+  nnc: string
+}
+
+/**
+ * Defines result type as per invocation spec
+ *
+ * @see https://github.com/ucan-wg/invocation/#6-result
+ */
+
+export type ReceiptResult<T = unknown, X extends {} = {}> = Variant<{
+  ok: T
+  error: X
+}>
+
+/**
+ * Utility type for defining a [keyed union] type as in IPLD Schema. In practice
+ * this just works around typescript limitation that requires discriminant field
+ * on all variants.
+ *
+ * ```ts
+ * type Result<T, X> =
+ *   | { ok: T }
+ *   | { error: X }
+ *
+ * const demo = (result: Result<string, Error>) => {
+ *   if (result.ok) {
+ *   //  ^^^^^^^^^ Property 'ok' does not exist on type '{ error: Error; }`
+ *   }
+ * }
+ * ```
+ *
+ * Using `Variant` type we can define same union type that works as expected:
+ *
+ * ```ts
+ * type Result<T, X> = Variant<{
+ *   ok: T
+ *   error: X
+ * }>
+ *
+ * const demo = (result: Result<string, Error>) => {
+ *   if (result.ok) {
+ *     result.ok.toUpperCase()
+ *   }
+ * }
+ * ```
+ *
+ * [keyed union]:https://ipld.io/docs/schemas/features/representation-strategies/#union-keyed-representation
+ */
+export type Variant<U extends Record<string, unknown>> = {
+  [Key in keyof U]: { [K in Exclude<keyof U, Key>]?: never } & {
+    [K in Key]: U[Key]
+  }
+}[keyof U]
+
 /**
  * A {@link UCANOptions} instance that includes options specific to {@link Invocation}s.
  */
@@ -330,7 +486,8 @@ export interface InvocationOptions<C extends Capability = Capability>
   capability: C
 }
 
-export interface IssuedInvocation<C extends Capability = Capability> {
+export interface IssuedInvocation<C extends Capability = Capability>
+  extends IPLDViewBuilder<UCAN.UCAN<[C]>> {
   readonly issuer: Principal
   readonly audience: Principal
   readonly capabilities: [C]
@@ -429,6 +586,24 @@ export type InferServiceInvocationReturn<
     >
   : never
 
+export type InferServiceInvocationReceipt<
+  C extends Capability,
+  S extends Record<string, any>
+> = ResolveServiceMethod<S, C['can']> extends ServiceMethod<
+  infer _,
+  infer T,
+  infer X
+>
+  ? Receipt<
+      T & {},
+      | X
+      | HandlerNotFound
+      | HandlerExecutionError
+      | InvalidAudience
+      | Unauthorized
+    >
+  : never
+
 export type InferServiceInvocations<
   I extends unknown[],
   T extends Record<string, any>
@@ -438,12 +613,21 @@ export type InferServiceInvocations<
   ? [InferServiceInvocationReturn<C, T>, ...InferServiceInvocations<Rest, T>]
   : never
 
+export type InferWorkflowReceipts<
+  I extends unknown[],
+  T extends Record<string, any>
+> = I extends []
+  ? []
+  : I extends [ServiceInvocation<infer C, T>, ...infer Rest]
+  ? [InferServiceInvocationReceipt<C, T>, ...InferWorkflowReceipts<Rest, T>]
+  : never
+
 export interface IssuedInvocationView<C extends Capability = Capability>
   extends IssuedInvocation<C> {
-  delegate(): Promise<Delegation<[C]>>
+  delegate(): Await<Invocation<C>>
   execute<T extends InvocationService<C>>(
     service: ConnectionView<T>
-  ): Await<InferServiceInvocationReturn<C, T>>
+  ): Await<InferServiceInvocationReceipt<C, T>>
 }
 
 export type ServiceInvocations<T> = IssuedInvocation<any> &
@@ -531,7 +715,7 @@ export interface ConnectionView<T extends Record<string, any>>
     I extends Transport.Tuple<ServiceInvocation<C, T>>
   >(
     ...invocations: I
-  ): Await<InferServiceInvocations<I, T>>
+  ): Await<InferWorkflowReceipts<I, T>>
 }
 
 export interface InboundTransportOptions {
@@ -569,7 +753,7 @@ export interface ServerOptions
    * Service DID which will be used to verify that received invocation
    * audience matches it.
    */
-  readonly id: Verifier
+  readonly id: Signer
 }
 
 /**

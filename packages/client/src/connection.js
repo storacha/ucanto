@@ -8,7 +8,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
  * @param {API.ConnectionOptions<T>} options
  * @returns {API.ConnectionView<T>}
  */
-export const connect = (options) => new Connection(options)
+export const connect = options => new Connection(options)
 
 /**
  * @template {Record<string, any>} T
@@ -42,7 +42,7 @@ class Connection {
  * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
  * @param {API.Connection<T>} connection
  * @param {I} invocations
- * @returns {Promise<API.InferServiceInvocations<I, T>>}
+ * @returns {Promise<API.InferWorkflowReceipts<I, T>>}
  */
 export const execute = async (invocations, connection) => {
   const request = await connection.encoder.encode(invocations, connection)

@@ -75,6 +75,18 @@
     "./delegation": {
       "types": "./dist/src/delegation.d.ts",
       "import": "./src/delegation.js"
+    },
+    "./receipt": {
+      "types": "./dist/src/receipt.d.ts",
+      "import": "./src/receipt.js"
+    },
+    "./cbor": {
+      "types": "./dist/src/cbor.d.ts",
+      "import": "./src/cbor.js"
+    },
+    "./dag": {
+      "types": "./dist/src/dag.d.ts",
+      "import": "./src/dag.js"
     }
   },
   "c8": {

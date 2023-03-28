@@ -67,15 +67,15 @@ test('encode delegated invocation', async () => {
 
   const server = Server.create({
     service: Service.create(),
-    decoder: CAR,
-    encoder: CBOR,
+    decoder: CAR.request,
+    encoder: CAR.response,
     id: w3,
   })
 
   const connection = Client.connect({
     id: w3,
-    encoder: CAR,
-    decoder: CBOR,
+    encoder: CAR.request,
+    decoder: CAR.response,
     channel: server,
   })
 
@@ -115,23 +115,30 @@ test('encode delegated invocation', async () => {
     },
   })
 
-  const result = await Client.execute([add, remove], connection)
+  {
+    const result = await Client.execute([add, remove], connection)
 
-  assert.deepEqual(result, [
-    {
-      error: true,
+    assert.equal(result.length, 2)
+    const [r1, r2] = result
 
-      name: 'UnknownDIDError',
-      did: alice.did(),
-      message: `DID ${alice.did()} has no account`,
-    },
-    {
-      error: true,
-      name: 'UnknownDIDError',
-      did: alice.did(),
-      message: `DID ${alice.did()} has no account`,
-    },
-  ])
+    assert.deepEqual(r1.out, {
+      error: {
+        error: true,
+        name: 'UnknownDIDError',
+        did: alice.did(),
+        message: `DID ${alice.did()} has no account`,
+      },
+    })
+
+    assert.deepEqual(r2.out, {
+      error: {
+        error: true,
+        name: 'UnknownDIDError',
+        did: alice.did(),
+        message: `DID ${alice.did()} has no account`,
+      },
+    })
+  }
 
   const identify = Client.invoke({
     issuer: alice,
@@ -144,25 +151,32 @@ test('encode delegated invocation', async () => {
 
   const register = await identify.execute(connection)
 
-  assert.deepEqual(register, null)
+  assert.deepEqual(register.out, { ok: {} })
 
-  const result2 = await Client.execute([add, remove], connection)
+  {
+    const receipts = await Client.execute([add, remove], connection)
+    assert.deepEqual(receipts.length, 2)
+    const [r1, r2] = receipts
 
-  assert.deepEqual(result2, [
-    {
-      status: 'upload',
-      with: alice.did(),
-      link: car.cid,
-      url: 'http://localhost:9090/',
-    },
-    {
-      can: 'store/remove',
-      with: alice.did(),
-      nb: {
+    assert.deepEqual(r1.out, {
+      ok: {
+        status: 'upload',
+        with: alice.did(),
         link: car.cid,
+        url: 'http://localhost:9090/',
       },
-    },
-  ])
+    })
+
+    assert.deepEqual(r2.out, {
+      ok: {
+        can: 'store/remove',
+        with: alice.did(),
+        nb: {
+          link: car.cid,
+        },
+      },
+    })
+  }
 })
 
 test('unknown handler', async () => {

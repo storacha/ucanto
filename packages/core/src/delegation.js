@@ -177,6 +177,9 @@ export class Delegation {
   get cid() {
     return this.root.cid
   }
+  link() {
+    return this.root.cid
+  }
   get asCID() {
     return this.cid
   }
@@ -189,6 +192,10 @@ export class Delegation {
     return data
   }
   export() {
+    return exportDAG(this.root, this.blocks)
+  }
+
+  iterateIPLDBlocks() {
     return exportDAG(this.root, this.blocks)
   }
 
@@ -259,6 +266,10 @@ export class Delegation {
   }
 
   delegate() {
+    return this
+  }
+
+  buildIPLDView() {
     return this
   }
 

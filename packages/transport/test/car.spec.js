@@ -4,15 +4,14 @@ import * as CBOR from '../src/cbor.js'
 import {
   delegate,
   invoke,
+  Receipt,
   Delegation,
   UCAN,
   parseLink,
   isLink,
 } from '@ucanto/core'
-import * as UTF8 from '../src/utf8.js'
 import { alice, bob, mallory, service } from './fixtures.js'
 import { CarReader } from '@ipld/car/reader'
-import * as API from '@ucanto/interface'
 import { collect } from './util.js'
 
 test('encode / decode', async () => {
@@ -61,7 +60,7 @@ test('encode / decode', async () => {
   assert.deepEqual([expect], await CAR.decode(request), 'roundtrips')
 })
 
-test('decode requires application/car contet type', async () => {
+test('decode requires application/car content type', async () => {
   const { body } = await CAR.encode([
     invoke({
       issuer: alice,
@@ -237,7 +236,7 @@ test('codec', async () => {
     roots: [root],
   })
   const { blocks, roots } = await CAR.codec.decode(bytes)
-  assert.equal(blocks.size, 0)
+  assert.equal(blocks.size, 1)
   assert.deepEqual(roots, [root])
 
   const car = await CAR.codec.write({ roots: [root] })
@@ -257,4 +256,99 @@ test('car writer', async () => {
   const car = await CAR.codec.decode(bytes)
   assert.deepEqual(car.roots, [])
   assert.deepEqual([...car.blocks], [[hello.cid.toString(), hello]])
+})
+
+test('CAR.request encode / decode', async () => {
+  const cid = parseLink(
+    'bafyreiaxnmoptsqiehdff2blpptvdbenxcz6xgrbojw5em36xovn2xea4y'
+  )
+  const expiration = 1654298135
+
+  const request = await CAR.request.encode([
+    invoke({
+      issuer: alice,
+      audience: bob,
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+      },
+      expiration,
+      proofs: [],
+    }),
+  ])
+
+  assert.deepEqual(request.headers, {
+    'content-type': 'application/car',
+    accept: 'application/car',
+  })
+  const reader = await CarReader.fromBytes(request.body)
+
+  assert.deepEqual(
+    await reader.getRoots(),
+    // @ts-expect-error - CAR refers to old CID
+    [cid]
+  )
+
+  const expect = await Delegation.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
+    expiration,
+    proofs: [],
+  })
+
+  assert.deepEqual([expect], await CAR.request.decode(request), 'roundtrips')
+})
+
+test('CAR.response encode/decode', async () => {
+  const ran = await invoke({
+    issuer: bob,
+    audience: service,
+    capability: {
+      can: 'test/hello',
+      with: alice.did(),
+    },
+  }).delegate()
+
+  const receipt = await Receipt.issue({
+    issuer: alice,
+    result: {
+      ok: { hello: 'world' },
+    },
+    ran,
+    meta: { test: 'run' },
+  })
+
+  const message = await CAR.response.encode([receipt])
+  assert.deepEqual(message.headers, {
+    'content-type': 'application/car',
+  })
+
+  const reader = await CarReader.fromBytes(message.body)
+  assert.deepEqual(
+    await reader.getRoots(),
+    // @ts-expect-error - CAR refers to old CID
+    [receipt.root.cid]
+  )
+
+  const [received, ...other] = await CAR.response.decode(message)
+  assert.equal(other.length, 0)
+  assert.deepEqual(received.issuer, receipt.issuer)
+  assert.deepEqual(received.meta, receipt.meta)
+  assert.deepEqual(received.ran, receipt.ran)
+  assert.deepEqual(received.proofs, receipt.proofs)
+  assert.deepEqual(received.fx, receipt.fx)
+  assert.deepEqual(received.signature, receipt.signature)
+
+  assert.throws(() => {
+    CAR.response.decode({
+      headers: {},
+      body: message.body,
+    })
+  })
 })

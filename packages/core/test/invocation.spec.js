@@ -1,4 +1,4 @@
-import { invoke, UCAN } from '../src/lib.js'
+import { invoke, UCAN, Invocation } from '../src/lib.js'
 import { alice, service as w3 } from './fixtures.js'
 import { assert, test } from './test.js'
 
@@ -44,7 +44,7 @@ test('expired invocation', async () => {
     expiration,
   })
 
-  assert.deepNestedInclude(await invocation.delegate(), {
+  assert.deepNestedInclude(await invocation.buildIPLDView(), {
     capabilities: [
       {
         can: 'store/add',
@@ -67,7 +67,7 @@ test('invocation with notBefore', async () => {
     notBefore,
   })
 
-  assert.deepNestedInclude(await invocation.delegate(), {
+  assert.deepNestedInclude(await invocation.buildIPLDView(), {
     capabilities: [
       {
         can: 'store/add',
@@ -89,7 +89,7 @@ test('invocation with nonce', async () => {
     nonce: 'hello',
   })
 
-  assert.deepNestedInclude(await invocation.delegate(), {
+  assert.deepNestedInclude(await invocation.buildIPLDView(), {
     capabilities: [
       {
         can: 'store/add',
@@ -154,5 +154,6 @@ test('execute invocation', async () => {
     },
   })
 
+  // @ts-expect-error
   assert.deepEqual(result, { hello: 'world' })
 })

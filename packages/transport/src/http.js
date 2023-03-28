@@ -64,8 +64,8 @@ class Channel {
     return {
       headers: response.headers.entries
         ? Object.fromEntries(response.headers.entries())
-        /* c8 ignore next */
-        : {},
+        : /* c8 ignore next */
+          {},
       body: new Uint8Array(buffer),
     }
   }

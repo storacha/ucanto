@@ -1,8 +1,8 @@
 import * as API from '@ucanto/interface'
 import * as CBOR from '@ipld/dag-cbor'
-export { code, decode } from '@ipld/dag-cbor'
+export { code, name, decode } from '@ipld/dag-cbor'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { createLink, isLink } from '@ucanto/core'
+import { create as createLink, isLink } from 'multiformats/link'
 
 /**
  * @param {unknown} data

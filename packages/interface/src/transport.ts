@@ -7,8 +7,9 @@ import type { Phantom, Await } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import type {
   ServiceInvocation,
-  InferServiceInvocations,
+  InferWorkflowReceipts,
   InferInvocations,
+  Receipt,
 } from './lib.js'
 
 /**
@@ -25,7 +26,7 @@ export interface EncodeOptions {
 export interface Channel<T extends Record<string, any>> extends Phantom<T> {
   request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
     request: HTTPRequest<I>
-  ): Await<HTTPResponse<InferServiceInvocations<I, T>>>
+  ): Await<HTTPResponse<InferWorkflowReceipts<I, T>>>
 }
 
 export interface RequestEncoder {
@@ -42,11 +43,14 @@ export interface RequestDecoder {
 }
 
 export interface ResponseEncoder {
-  encode<I>(result: I, options?: EncodeOptions): Await<HTTPResponse<I>>
+  encode<I extends Tuple<Receipt>>(
+    result: I,
+    options?: EncodeOptions
+  ): Await<HTTPResponse<I>>
 }
 
 export interface ResponseDecoder {
-  decode<I>(response: HTTPResponse<I>): Await<I>
+  decode<I extends Tuple<Receipt>>(response: HTTPResponse<I>): Await<I>
 }
 
 export interface HTTPRequest<T = unknown> extends Phantom<T> {

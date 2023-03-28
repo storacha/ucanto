@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import {  CarBufferReader } from '@ipld/car/buffer-reader'
+import { CarBufferReader } from '@ipld/car/buffer-reader'
 import * as CarBufferWriter from '@ipld/car/buffer-writer'
 import { base32 } from 'multiformats/bases/base32'
 import { UCAN, createLink } from '@ucanto/core'
@@ -107,9 +107,9 @@ export const decode = bytes => {
   }
 
   for (const block of reader.blocks()) {
-    if (!roots.includes(block)) {
-      blocks.set(block.cid.toString(), block)
-    }
+    // if (!roots.includes(block)) {
+    blocks.set(block.cid.toString(), block)
+    // }
   }
 
   return { roots, blocks }

@@ -1,4 +1,9 @@
+export * as API from '@ucanto/interface'
 export * as Delegation from './delegation.js'
+export * as Invocation from './invocation.js'
+export * as Receipt from './receipt.js'
+import * as DAG from './dag.js'
+import * as CBOR from './cbor.js'
 export { delegate, isDelegation } from './delegation.js'
 export { invoke } from './invocation.js'
 export {
