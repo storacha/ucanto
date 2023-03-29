@@ -13,6 +13,7 @@ export const codec = CBOR
  * @template I
  * @param {I} result
  * @returns {API.HTTPResponse<I>}
+ * @deprecated
  */
 export const encode = result => {
   return {
@@ -27,6 +28,7 @@ export const encode = result => {
  * @template I
  * @param {API.HTTPResponse<I>} request
  * @returns {Promise<I>}
+ * @deprecated
  */
 export const decode = async ({ headers, body }) => {
   const contentType = headers['content-type'] || headers['Content-Type']

@@ -51,7 +51,7 @@ class Inbound {
         status: 406,
         message: `The requested resource cannot be served in the requested content type. Please specify a supported content type using the Accept header.`,
         headers: {
-          accept: Object.keys(this.encoders).join(', '),
+          accept: formatAcceptHeader(Object.values(this.encoders)),
         },
       },
     }
@@ -64,13 +64,22 @@ class Inbound {
    */
   constructor({ decoders = {}, encoders = {} }) {
     this.decoders = decoders
+
+    if (Object.keys(decoders).length === 0) {
+      throw new Error('At least one decoder MUST be provided')
+    }
+
     // We sort the encoders by preference, so that we can pick the most
     // preferred one when client accepts multiple content types.
     this.encoders = Object.entries(encoders)
-      .map(([contentType, encoder]) => {
-        return { ...parseMediaType(contentType), encoder }
+      .map(([mediaType, encoder]) => {
+        return { ...parseMediaType(mediaType), encoder }
       })
       .sort((a, b) => b.preference - a.preference)
+
+    if (this.encoders.length === 0) {
+      throw new Error('At least one encoder MUST be provided')
+    }
   }
 }
 
@@ -94,20 +103,19 @@ class Outbound {
   constructor({ decoders = {}, encoders = {} }) {
     this.decoders = decoders
 
+    if (Object.keys(decoders).length === 0) {
+      throw new Error('At least one decoder MUST be provided')
+    }
+
     // We sort the encoders by preference, so that we can pick the most
     // preferred one when client accepts multiple content types.
     this.encoders = Object.entries(encoders)
-      .map(([contentType, encoder]) => {
-        return { ...parseMediaType(contentType), encoder }
+      .map(([mediaType, encoder]) => {
+        return { ...parseMediaType(mediaType), encoder }
       })
       .sort((a, b) => b.preference - a.preference)
 
-    this.acceptType = this.encoders
-      .map(
-        ({ category, type, preference }) =>
-          `${category}/${type}${preference ? `;q=${preference}` : ''}`
-      )
-      .join(', ')
+    this.acceptType = formatAcceptHeader(this.encoders)
 
     if (this.encoders.length === 0) {
       throw new Error('At least one encoder MUST be provided')
@@ -156,21 +164,30 @@ class Outbound {
 }
 
 /**
- *
+ * @typedef {{ category: string, type: string, preference: number }} Media
  * @param {string} source
- * @returns {{ category: string, type: string, preference: number }}
+ * @returns {Media}
  */
 export const parseMediaType = source => {
-  const [mediaType = '*/*', mediaRange = 'q=0'] = source.trim().split(';')
+  const [mediaType = '*/*', mediaRange = ''] = source.trim().split(';')
   const [category = '*', type = '*'] = mediaType.split('/')
   const params = new URLSearchParams(mediaRange)
   const preference = parseFloat(params.get('q') || '0')
   return {
     category,
     type,
+    /* c8 ignore next */
     preference: isNaN(preference) ? 0 : preference,
   }
 }
+
+/**
+ * @param {Media} media
+ */
+export const formatMediaType = ({ category, type, preference }) =>
+  /** @type {MediaType}  */ (
+    `${category}/${type}${preference ? `;q=${preference}` : ''}`
+  )
 
 /**
  * @param {string} source
@@ -180,3 +197,9 @@ export const parseAcceptHeader = source =>
     .split(',')
     .map(parseMediaType)
     .sort((a, b) => b.preference - a.preference)
+
+/**
+ * @param {Media[]} source
+ */
+export const formatAcceptHeader = source =>
+  source.map(formatMediaType).join(', ')
