@@ -130,8 +130,12 @@ export const invoke = async (invocation, server) => {
       return await Receipt.issue({
         issuer: server.id,
         ran: invocation,
+        // handler returns result in a different format from the receipt
+        // so we convert it here. We also need to handle the case where
+        // the handler `null` or `undefined` is returned which in receipt
+        // form at is unit type `{}`.
         result: /** @type {API.ReceiptResult<{}>} */ (
-          value?.error ? { error: value } : { ok: value || {} }
+          value?.error ? { error: value } : { ok: value == null ? {} : value }
         ),
       })
     } catch (cause) {
