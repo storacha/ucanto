@@ -1,7 +1,6 @@
 import * as API from '@ucanto/interface'
 import * as Invocation from '../invocation.js'
-import { Delegation } from '../lib.js'
-import * as DID from '@ipld/dag-ucan/did'
+import { Delegation, DID } from '../lib.js'
 import * as DAG from '../dag.js'
 
 /**

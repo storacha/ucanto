@@ -1,7 +1,6 @@
 import * as API from '@ucanto/interface'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { parseLink, Receipt } from '@ucanto/core'
-import * as Signature from '@ipld/dag-ucan/signature'
+import { Receipt, Signature } from '@ucanto/core'
 
 /**
  * Creates a connection to a service.

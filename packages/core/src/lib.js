@@ -15,3 +15,4 @@ export {
 } from './link.js'
 export * as UCAN from '@ipld/dag-ucan'
 export * as DID from '@ipld/dag-ucan/did'
+export * as Signature from '@ipld/dag-ucan/signature'
