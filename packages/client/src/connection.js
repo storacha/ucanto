@@ -1,5 +1,7 @@
 import * as API from '@ucanto/interface'
 import { sha256 } from 'multiformats/hashes/sha2'
+import { parseLink, Receipt } from '@ucanto/core'
+import * as Signature from '@ipld/dag-ucan/signature'
 
 /**
  * Creates a connection to a service.
@@ -21,8 +23,7 @@ class Connection {
   constructor(options) {
     this.id = options.id
     this.options = options
-    this.encoder = options.encoder
-    this.decoder = options.decoder
+    this.codec = options.codec
     this.channel = options.channel
     this.hasher = options.hasher || sha256
   }
@@ -41,12 +42,36 @@ class Connection {
  * @template {Record<string, any>} T
  * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
  * @param {API.Connection<T>} connection
- * @param {I} invocations
+ * @param {I} workflow
  * @returns {Promise<API.InferWorkflowReceipts<I, T>>}
  */
-export const execute = async (invocations, connection) => {
-  const request = await connection.encoder.encode(invocations, connection)
+export const execute = async (workflow, connection) => {
+  const request = await connection.codec.encode(workflow, connection)
   const response = await connection.channel.request(request)
-  const result = await connection.decoder.decode(response)
-  return result
+  try {
+    return await connection.codec.decode(response)
+  } catch (error) {
+    const { message, ...cause } = /** @type {Error} */ (error)
+    const receipts = []
+    for await (const invocation of workflow) {
+      const { cid } = await invocation.delegate()
+      const receipt = await Receipt.issue({
+        ran: cid,
+        result: { error: { ...cause, message } },
+        // @ts-expect-error
+        issuer: {
+          did() {
+            return connection.id.did()
+          },
+          sign(payload) {
+            return Signature.createNonStandard('', new Uint8Array())
+          },
+        },
+      })
+
+      receipts.push(receipt)
+    }
+
+    return /** @type {any} */ (receipts)
+  }
 }

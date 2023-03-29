@@ -683,17 +683,20 @@ export interface HandlerExecutionError extends Failure {
 
 export type API<T> = T[keyof T]
 
-export interface OutboundTransportOptions {
-  readonly encoder: Transport.RequestEncoder
-  readonly decoder: Transport.ResponseDecoder
-}
+export interface OutboundCodec
+  extends Transport.RequestEncoder,
+    Transport.ResponseDecoder {}
+
+/** @deprecated */
+export interface OutboundTransportOptions extends OutboundCodec {}
+
 export interface ConnectionOptions<T extends Record<string, any>>
-  extends Transport.EncodeOptions,
-    OutboundTransportOptions {
+  extends Transport.EncodeOptions {
   /**
    * DID of the target service.
    */
   readonly id: Principal
+  readonly codec: OutboundCodec
   readonly channel: Transport.Channel<T>
 }
 
@@ -709,7 +712,7 @@ export interface Connection<T extends Record<string, any>>
 
 export interface ConnectionView<T extends Record<string, any>>
   extends Connection<T> {
-  id: Principal
+  id: Signer
   execute<
     C extends Capability,
     I extends Transport.Tuple<ServiceInvocation<C, T>>
@@ -718,7 +721,7 @@ export interface ConnectionView<T extends Record<string, any>>
   ): Await<InferWorkflowReceipts<I, T>>
 }
 
-export interface InboundTransportOptions {
+export interface InboundAcceptCodec {
   /**
    * Request decoder which is will be used by a server to decode HTTP Request
    * into an invocation `Batch` that will be executed using a `service`.
@@ -730,6 +733,19 @@ export interface InboundTransportOptions {
    * request.
    */
   readonly encoder: Transport.ResponseEncoder
+}
+
+export interface InboundCodec {
+  accept(
+    request: Transport.HTTPRequest
+  ): ReceiptResult<InboundAcceptCodec, HTTPError>
+}
+
+export interface HTTPError {
+  readonly status: number
+  readonly statusText?: string
+  readonly headers?: Record<string, string>
+  readonly message?: string
 }
 
 /**
@@ -746,14 +762,14 @@ export interface ValidatorOptions {
   readonly resolve?: InvocationContext['resolve']
 }
 
-export interface ServerOptions
-  extends InboundTransportOptions,
-    ValidatorOptions {
+export interface ServerOptions extends ValidatorOptions {
   /**
    * Service DID which will be used to verify that received invocation
    * audience matches it.
    */
   readonly id: Signer
+
+  readonly codec: InboundCodec
 }
 
 /**

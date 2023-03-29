@@ -2,6 +2,7 @@ import * as Client from '@ucanto/client'
 import * as Server from '../src/lib.js'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
+import * as Transport from '@ucanto/transport'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import * as Service from '../../client/test/service.js'
 import { test, assert } from './test.js'
@@ -67,15 +68,13 @@ test('encode delegated invocation', async () => {
 
   const server = Server.create({
     service: Service.create(),
-    decoder: CAR.request,
-    encoder: CAR.response,
+    codec: CAR.inbound,
     id: w3,
   })
 
   const connection = Client.connect({
     id: w3,
-    encoder: CAR.request,
-    decoder: CAR.response,
+    codec: CAR.outbound,
     channel: server,
   })
 
@@ -183,14 +182,12 @@ test('unknown handler', async () => {
   const server = Server.create({
     id: w3,
     service: Service.create(),
-    decoder: CAR,
-    encoder: CBOR,
+    codec: CAR.inbound,
   })
 
   const connection = Client.connect({
     id: w3,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: server,
   })
 
@@ -206,13 +203,17 @@ test('unknown handler', async () => {
   // @ts-expect-error - reporst that service has no such capability
   const error = await register.execute(connection)
 
-  assert.deepNestedInclude(error, {
-    error: true,
-    name: 'HandlerNotFound',
-    message: `service does not implement {can: "access/register"} handler`,
-    capability: {
-      can: 'access/register',
-      with: 'did:email:alice@mail.com',
+  assert.containSubset(error, {
+    out: {
+      error: {
+        error: true,
+        name: 'HandlerNotFound',
+        message: `service does not implement {can: "access/register"} handler`,
+        capability: {
+          can: 'access/register',
+          with: 'did:email:alice@mail.com',
+        },
+      },
     },
   })
 
@@ -227,13 +228,17 @@ test('unknown handler', async () => {
 
   // @ts-expect-error - reporst that service has no such capability
   const error2 = await boom.execute(connection)
-  assert.deepNestedInclude(error2, {
-    error: true,
-    name: 'HandlerNotFound',
-    message: `service does not implement {can: "test/boom"} handler`,
-    capability: {
-      can: 'test/boom',
-      with: 'about:me',
+  assert.containSubset(error2, {
+    out: {
+      error: {
+        error: true,
+        name: 'HandlerNotFound',
+        message: `service does not implement {can: "test/boom"} handler`,
+        capability: {
+          can: 'test/boom',
+          with: 'about:me',
+        },
+      },
     },
   })
 })
@@ -243,22 +248,20 @@ test('execution error', async () => {
     service: {
       test: {
         /**
-         * @param {Server.Invocation<{can: "test/boom", with:string}>} _
+         * @param {Server.API.Invocation<{can: "test/boom", with:string}>} _
          */
         boom(_) {
           throw new Server.Failure('Boom')
         },
       },
     },
-    decoder: CAR,
-    encoder: CBOR,
+    codec: CAR.inbound,
     id: w3,
   })
 
   const connection = Client.connect({
     id: w3,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: server,
   })
 
@@ -271,19 +274,24 @@ test('execution error', async () => {
     },
   })
 
-  const error = await boom.execute(connection)
+  const receipt = await boom.execute(connection)
 
-  assert.containSubset(error, {
-    error: true,
-    name: 'HandlerExecutionError',
-    message: `service handler {can: "test/boom"} error: Boom`,
-    capability: {
-      can: 'test/boom',
-      with: alice.did(),
-    },
-    cause: {
-      message: 'Boom',
-      name: 'Error',
+  assert.containSubset(receipt, {
+    issuer: w3.verifier,
+    out: {
+      error: {
+        error: true,
+        name: 'HandlerExecutionError',
+        message: `service handler {can: "test/boom"} error: Boom`,
+        capability: {
+          can: 'test/boom',
+          with: alice.did(),
+        },
+        cause: {
+          message: 'Boom',
+          name: 'Error',
+        },
+      },
     },
   })
 })
@@ -295,15 +303,13 @@ test('did:web server', async () => {
 
   const server = Server.create({
     service: Service.create(),
-    decoder: CAR,
-    encoder: CBOR,
+    codec: CAR.inbound,
     id: w3.withDID('did:web:web3.storage'),
   })
 
   const connection = Client.connect({
     id: server.id,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: server,
   })
 
@@ -316,7 +322,57 @@ test('did:web server', async () => {
     },
   })
 
-  const register = await identify.execute(connection)
+  const receipt = await identify.execute(connection)
 
-  assert.deepEqual(register, null)
+  assert.containSubset(receipt, {
+    out: {
+      ok: {},
+    },
+  })
+
+  assert.deepEqual(receipt.issuer?.did(), server.id.did())
+})
+
+test('unsupported content-type', async () => {
+  const server = Server.create({
+    service: Service.create(),
+    id: w3.withDID('did:web:web3.storage'),
+    codec: Transport.inbound({
+      decoders: {
+        'application/workflow+car': CAR.request,
+      },
+      encoders: {
+        'application/car': CAR.response,
+      },
+    }),
+  })
+
+  const connection = Client.connect({
+    id: server.id,
+    codec: CAR.outbound,
+    channel: server,
+  })
+
+  const identify = Client.invoke({
+    issuer: alice,
+    audience: server.id,
+    capability: {
+      can: 'access/identify',
+      with: 'did:email:alice@mail.com',
+    },
+  })
+
+  const receipt = await identify.execute(connection)
+  assert.containSubset(receipt, {
+    out: {
+      error: {
+        message:
+          'The server cannot process the request because the payload format is not supported. Please check the content-type header and try again with a supported media type.',
+        status: 415,
+        headers: {
+          accept: 'application/workflow+car',
+        },
+      },
+    },
+  })
 })

@@ -26,19 +26,11 @@ class Server {
   /**
    * @param {API.Server<Service>} options
    */
-  constructor({
-    id,
-    service,
-    encoder,
-    decoder,
-    principal = Verifier,
-    ...rest
-  }) {
+  constructor({ id, service, codec, principal = Verifier, ...rest }) {
     const { catch: fail, ...context } = rest
     this.context = { id, principal, ...context }
     this.service = service
-    this.encoder = encoder
-    this.decoder = decoder
+    this.codec = codec
     this.catch = fail || (() => {})
   }
   get id() {
@@ -46,28 +38,35 @@ class Server {
   }
 
   /**
-   * @template {API.Capability} C
-   * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
-   * @param {API.HTTPRequest<I>} request
-   * @returns {API.Await<API.HTTPResponse<API.InferServiceInvocations<I, Service>>>}
+   * @type {API.Channel<Service>['request']}
    */
   request(request) {
-    return handle(/** @type {API.ServerView<Service>} */ (this), request)
+    return handle(this, request)
   }
 }
 
 /**
  * @template {Record<string, any>} T
- * @template {API.Capability} C
- * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
+ * @template {API.Tuple<API.ServiceInvocation<API.Capability, T>>} I
  * @param {API.ServerView<T>} server
  * @param {API.HTTPRequest<I>} request
- * @returns {Promise<API.HTTPResponse<API.InferWorkflowReceipts<I, T>>>}
  */
 export const handle = async (server, request) => {
-  const workflow = await server.decoder.decode(request)
-  const result = await execute(workflow, server)
-  return server.encoder.encode(result)
+  const selection = server.codec.accept(request)
+  if (selection.error) {
+    const { status, headers = {}, message } = selection.error
+    return {
+      status,
+      headers,
+      body: new TextEncoder().encode(message),
+    }
+  } else {
+    const { encoder, decoder } = selection.ok
+    const workflow = await decoder.decode(request)
+    const result = await execute(workflow, server)
+    const response = await encoder.encode(result)
+    return response
+  }
 }
 
 /**

@@ -107,14 +107,12 @@ test('checks service id', async () => {
   const server = Server.create({
     id: w3,
     service: { identity: Access },
-    decoder: CAR,
-    encoder: CBOR,
+    codec: CAR.inbound,
   })
 
   const client = Client.connect({
     id: w3,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: server,
   })
 
@@ -137,19 +135,22 @@ test('checks service id', async () => {
       proofs: [proof],
     })
 
-    const result = await invocation.execute(client)
+    const receipt = await invocation.execute(client)
 
-    assert.deepNestedInclude(result, {
-      error: true,
-      name: 'InvalidAudience',
+    assert.containSubset(receipt, {
+      out: {
+        error: {
+          name: 'InvalidAudience',
+        },
+      },
     })
     assert.equal(
-      result?.message.includes(w3.did()),
+      receipt.out.error?.message.includes(w3.did()),
       true,
       'mentions expected audience'
     )
     assert.equal(
-      result?.message.includes(mallory.did()),
+      receipt.out.error?.message.includes(mallory.did()),
       true,
       'mentions actual audience'
     )
@@ -163,12 +164,14 @@ test('checks service id', async () => {
       proofs: [proof],
     })
 
-    const result = await invocation.execute(client)
+    const receipt = await invocation.execute(client)
 
-    assert.equal(result?.error, true)
+    assert.equal(receipt.out.error != null, true)
 
     assert.ok(
-      result?.message.includes(`can not be (self) issued by '${w3.did()}'`)
+      receipt.out.error?.message.includes(
+        `can not be (self) issued by '${w3.did()}'`
+      )
     )
   }
 })
@@ -177,14 +180,12 @@ test('checks for single capability invocation', async () => {
   const server = Server.create({
     id: w3,
     service: { identity: Access },
-    decoder: CAR,
-    encoder: CBOR,
+    codec: CAR.inbound,
   })
 
   const client = Client.connect({
     id: w3,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: server,
   })
 
@@ -210,16 +211,19 @@ test('checks for single capability invocation', async () => {
     with: 'mailto:bob@web.mail',
   })
 
-  const result = await invocation.execute(client)
+  const receipt = await invocation.execute(client)
 
-  assert.deepNestedInclude(result, {
-    error: true,
-    name: 'InvocationCapabilityError',
-    message: 'Invocation is required to have a single capability.',
-    capabilities: [
-      { can: 'identity/register', with: 'mailto:bob@web.mail' },
-      { can: 'identity/register', with: 'mailto:bob@web.mail' },
-    ],
+  assert.containSubset(receipt, {
+    out: {
+      error: {
+        name: 'InvocationCapabilityError',
+        message: 'Invocation is required to have a single capability.',
+        capabilities: [
+          { can: 'identity/register', with: 'mailto:bob@web.mail' },
+          { can: 'identity/register', with: 'mailto:bob@web.mail' },
+        ],
+      },
+    },
   })
 })
 
@@ -227,8 +231,7 @@ test('test access/claim provider', async () => {
   const server = Server.create({
     id: w3,
     service: { access: Access },
-    decoder: CAR,
-    encoder: CBOR,
+    codec: CAR.inbound,
   })
 
   /**
@@ -240,8 +243,7 @@ test('test access/claim provider', async () => {
    */
   const client = Client.connect({
     id: w3,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: server,
   })
 
@@ -251,8 +253,8 @@ test('test access/claim provider', async () => {
     with: alice.did(),
   })
 
-  const result = await claim.execute(client)
-  assert.deepEqual(result, [])
+  const receipt = await claim.execute(client)
+  assert.deepEqual(receipt.out, { ok: [] })
 })
 
 test('handle did:mailto audiences', async () => {

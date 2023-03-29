@@ -23,16 +23,20 @@ export interface EncodeOptions {
   readonly hasher?: UCAN.MultihashHasher
 }
 
+export interface RequestEncodeOptions extends EncodeOptions {
+  accept?: string
+}
+
 export interface Channel<T extends Record<string, any>> extends Phantom<T> {
   request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
     request: HTTPRequest<I>
-  ): Await<HTTPResponse<InferWorkflowReceipts<I, T>>>
+  ): Await<HTTPResponse<InferWorkflowReceipts<I, T> & Tuple<Receipt>>>
 }
 
 export interface RequestEncoder {
   encode<I extends Tuple<ServiceInvocation>>(
     invocations: I,
-    options?: EncodeOptions
+    options?: RequestEncodeOptions
   ): Await<HTTPRequest<I>>
 }
 
@@ -60,6 +64,7 @@ export interface HTTPRequest<T = unknown> extends Phantom<T> {
 }
 
 export interface HTTPResponse<T = unknown> extends Phantom<T> {
+  status?: number
   headers: Readonly<Record<string, string>>
   body: Uint8Array
 }
