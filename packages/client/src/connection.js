@@ -1,6 +1,5 @@
 import * as API from '@ucanto/interface'
-import { sha256 } from 'multiformats/hashes/sha2'
-import { Receipt, Signature } from '@ucanto/core'
+import { Receipt, Signature, sha256 } from '@ucanto/core'
 
 /**
  * Creates a connection to a service.

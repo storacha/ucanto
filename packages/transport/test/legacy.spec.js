@@ -1,17 +1,8 @@
 import { test, assert } from './test.js'
 import * as CAR from '../src/car.js'
-import * as CBOR from '../src/cbor.js'
 import * as Legacy from '../src/legacy.js'
-import {
-  delegate,
-  invoke,
-  Receipt,
-  Delegation,
-  UCAN,
-  parseLink,
-  isLink,
-} from '@ucanto/core'
-import { alice, bob, mallory, service } from './fixtures.js'
+import { invoke, Receipt, Delegation, CBOR } from '@ucanto/core'
+import { alice, bob } from './fixtures.js'
 
 test('Legacy decode / encode', async () => {
   const expiration = 1654298135
@@ -68,11 +59,10 @@ test('Legacy decode / encode', async () => {
   })
 
   const response = await encoder.encode([success, failure])
-  const results = await CBOR.decode(response)
+  const results = await CBOR.decode(response.body)
 
   assert.deepEqual(
     results,
-    // @ts-expect-error - This not according to the types but it is what
     // we want to return to old clients.
     [{ hello: 'message' }, { error: true, message: 'Boom' }],
     'roundtrips'

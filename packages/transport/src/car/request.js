@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import * as CAR from './codec.js'
+import { CAR } from '@ucanto/core'
 import { Delegation } from '@ucanto/core'
 
 export { CAR as codec }

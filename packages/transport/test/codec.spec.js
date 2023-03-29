@@ -1,9 +1,8 @@
 import { test, assert } from './test.js'
 import * as CAR from '../src/car.js'
 import * as Transport from '../src/lib.js'
-import { alice, bob, mallory, service } from './fixtures.js'
-import { invoke, API, delegate, parseLink, Receipt } from '@ucanto/core'
-import { CarReader } from '@ipld/car/reader'
+import { alice, bob } from './fixtures.js'
+import { invoke, delegate, parseLink, Receipt } from '@ucanto/core'
 
 test('unsupported inbound content-type', async () => {
   const accept = CAR.inbound.accept({
@@ -87,13 +86,6 @@ test('outbound encode', async () => {
     'content-type': 'application/car',
     accept: 'application/car',
   })
-  const reader = await CarReader.fromBytes(request.body)
-
-  assert.deepEqual(
-    await reader.getRoots(),
-    // @ts-expect-error - CAR refers to old CID
-    [cid]
-  )
 
   const expect = await delegate({
     issuer: alice,

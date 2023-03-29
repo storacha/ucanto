@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import * as Selector from './codec.js'
+import * as Codec from './codec.js'
 import * as CAR from './car.js'
 import { encode as encodeCBOR } from '@ucanto/core/cbor'
 
@@ -32,7 +32,7 @@ export const CBOR = {
   },
 }
 
-export const inbound = Selector.inbound({
+export const inbound = Codec.inbound({
   decoders: {
     'application/car': CAR.request,
   },

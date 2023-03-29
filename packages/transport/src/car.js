@@ -1,8 +1,8 @@
 import * as API from '@ucanto/interface'
-import * as CAR from './car/codec.js'
+import { CAR } from '@ucanto/core'
 import * as request from './car/request.js'
 import * as response from './car/response.js'
-import * as Selector from './codec.js'
+import * as Codec from './codec.js'
 
 export { CAR as codec, request, response }
 
@@ -27,7 +27,7 @@ export const encode = (invocations, options) =>
  */
 export const decode = request.decode
 
-export const inbound = Selector.inbound({
+export const inbound = Codec.inbound({
   decoders: {
     'application/car': request,
   },
@@ -36,7 +36,7 @@ export const inbound = Selector.inbound({
   },
 })
 
-export const outbound = Selector.outbound({
+export const outbound = Codec.outbound({
   encoders: {
     'application/car': request,
   },

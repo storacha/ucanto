@@ -1,7 +1,7 @@
 import * as Client from '@ucanto/client'
 import * as Server from '../src/lib.js'
 import * as CAR from '@ucanto/transport/car'
-import * as CBOR from '@ucanto/transport/cbor'
+import * as CBOR from '@ucanto/core/cbor'
 import * as Transport from '@ucanto/transport'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import * as Service from '../../client/test/service.js'
@@ -63,7 +63,7 @@ const store = storeAdd.or(storeRemove)
 
 test('encode delegated invocation', async () => {
   const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: 'world ' })],
+    roots: [await CBOR.write({ hello: 'world ' })],
   })
 
   const server = Server.create({
@@ -298,7 +298,7 @@ test('execution error', async () => {
 
 test('did:web server', async () => {
   const car = await CAR.codec.write({
-    roots: [await CBOR.codec.write({ hello: 'world ' })],
+    roots: [await CBOR.write({ hello: 'world ' })],
   })
 
   const server = Server.create({

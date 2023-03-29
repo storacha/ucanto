@@ -29,11 +29,8 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/car": "^5.1.0",
-    "@ipld/dag-cbor": "^9.0.0",
     "@ucanto/core": "workspace:^",
-    "@ucanto/interface": "workspace:^",
-    "multiformats": "^11.0.0"
+    "@ucanto/interface": "workspace:^"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
@@ -68,10 +65,6 @@
     "./car": {
       "types": "./dist/src/car.d.ts",
       "import": "./src/car.js"
-    },
-    "./cbor": {
-      "types": "./dist/src/cbor.d.ts",
-      "import": "./src/cbor.js"
     },
     "./http": {
       "types": "./dist/src/http.d.ts",

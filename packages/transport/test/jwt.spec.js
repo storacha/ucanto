@@ -2,9 +2,7 @@ import { test, assert } from './test.js'
 import * as JWT from '../src/jwt.js'
 import { delegate, invoke, Delegation, UCAN } from '@ucanto/core'
 import * as UTF8 from '../src/utf8.js'
-import { alice, bob, mallory, service } from './fixtures.js'
-import * as API from '@ucanto/interface'
-import { base64url } from 'multiformats/bases/base64'
+import { alice, bob, service } from './fixtures.js'
 
 const NOW = 1654298135
 
