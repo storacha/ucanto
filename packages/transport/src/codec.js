@@ -148,14 +148,20 @@ class Outbound {
         throw Object.assign(
           new RangeError(new TextDecoder().decode(response.body)),
           {
+            error: true,
             status: response.status,
             headers: response.headers,
           }
         )
     }
     if (!decoder) {
-      throw TypeError(
-        `Can not decode response with content-type '${contentType}' because no matching transport decoder is configured.`
+      throw Object.assign(
+        TypeError(
+          `Can not decode response with content-type '${contentType}' because no matching transport decoder is configured.`
+        ),
+        {
+          error: true,
+        }
       )
     }
 

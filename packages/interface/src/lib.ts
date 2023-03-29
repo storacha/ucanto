@@ -712,7 +712,7 @@ export interface Connection<T extends Record<string, any>>
 
 export interface ConnectionView<T extends Record<string, any>>
   extends Connection<T> {
-  id: Signer
+  id: Principal
   execute<
     C extends Capability,
     I extends Transport.Tuple<ServiceInvocation<C, T>>
