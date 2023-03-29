@@ -131,26 +131,59 @@ export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
 }
 
 /**
- * An interface for representing an IPLD DAG View that can be materialized into
- * on demand. It is a useful abstraction that can be used to defer encoding of
- * IPLD blocks.
+ * An interface for representing a materializable IPLD DAG View. It is a useful
+ * abstraction that can be used to defer actual IPLD encoding.
+ *
+ * Note that represented DAG could be partial implying that some of the blocks
+ * may not be included. This by design allowing a user to include whatever
+ * blocks they want to include.
  */
 export interface IPLDViewBuilder<T extends unknown = unknown> {
   /**
    * Encodes all the blocks and creates a new IPLDView instance over them. Can
-   * be passed an multihasher to parameterize hashing algorithm.
-   *
-   * Please note that some `IPLDView`s also implement `IPLDViewBuilder`
-   * interface and they will discard any options.
+   * be passed a multihasher to specify a preferred hashing algorithm. Note
+   * that there is no guarantee that preferred hasher will be used, it is
+   * only a hint of preference and not a requirement.
    */
   buildIPLDView(options?: Transport.EncodeOptions): Await<IPLDView<T>>
 }
 
+/**
+ * An interface for representing a materialized IPLD DAG View, which provides
+ * a generic traversal API. It is useful for encoding (potentially partial) IPLD
+ * DAGs into content archives (e.g. CARs).
+ */
 export interface IPLDView<T extends unknown = unknown>
   extends IPLDViewBuilder<T> {
-  buildIPLDView(): IPLDView<T>
+  /**
+   * The root block of the IPLD DAG this is the view of. This is the the block
+   * from which all other blocks are linked directly or transitively.
+   */
   root: Block<T>
+
+  /**
+   * Returns an iterable of all the IPLD blocks that are included in this view.
+   * It is RECOMMENDED that implementations return blocks in bottom up order
+   * (i.e. leaf blocks first, root block last).
+   *
+   * Iterator MUST include the root block otherwise it will lead to encoders
+   * into omitting it when encoding the view into a CAR archive.
+   *
+   * Note that we would like to rename this method to `blocks` but that would
+   * be a breaking change on the Delegate API so we defer it for now.
+   */
   iterateIPLDBlocks(): IterableIterator<Block>
+
+  /**
+   * `IPLDView` also implement `IPLDViewBuilder` API so that you could pass
+   * it anywhere builder is expected. Also note that `buildIPLDView` does not
+   * take any options, as the view is already materialized and user preferences
+   * will have no effect.
+   *
+   * Most implementations will just return `this` as they are already
+   * materialized views.
+   */
+  buildIPLDView(): IPLDView<T>
 }
 
 /**

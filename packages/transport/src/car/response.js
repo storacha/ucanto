@@ -25,7 +25,6 @@ export const encode = async (receipts, options) => {
     for (const block of reader.iterateIPLDBlocks()) {
       blocks.set(block.cid.toString(), block)
     }
-    // blocks.delete(reader.root.cid.toString())
   }
   const body = CAR.encode({ roots, blocks })
 

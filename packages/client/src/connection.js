@@ -46,6 +46,11 @@ class Connection {
 export const execute = async (workflow, connection) => {
   const request = await connection.codec.encode(workflow, connection)
   const response = await connection.channel.request(request)
+  // We may fail to decode the response if content type is not supported
+  // or if data was corrupted. We do not want to throw in such case however,
+  // because client will get an Error object as opposed to a receipt, to retain
+  // consistent client API with two kinds of errors we encode caught error as
+  // a receipts per workflow invocation.
   try {
     return await connection.codec.decode(response)
   } catch (error) {
@@ -56,12 +61,15 @@ export const execute = async (workflow, connection) => {
       const receipt = await Receipt.issue({
         ran: cid,
         result: { error: { ...cause, message } },
-        // @ts-expect-error
+        // @ts-expect-error - we can not really sign a receipt without having
+        // an access to a signer which client does not have. In the future
+        // we will change client API requiring a signer to be passed in but
+        // for now we just use a dummy signer.
         issuer: {
           did() {
             return connection.id.did()
           },
-          sign(payload) {
+          sign() {
             return Signature.createNonStandard('', new Uint8Array())
           },
         },
