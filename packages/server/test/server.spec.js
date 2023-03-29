@@ -376,3 +376,46 @@ test('unsupported content-type', async () => {
     },
   })
 })
+
+test('falsy errors are turned into {}', async () => {
+  const testNull = Server.capability({
+    can: 'test/null',
+    with: Server.Schema.did(),
+    nb: Schema.struct({}),
+  })
+
+  const server = Server.create({
+    service: {
+      test: {
+        null: Server.provide(
+          testNull,
+
+          async () => {
+            return null
+          }
+        ),
+      },
+    },
+    id: w3.withDID('did:web:web3.storage'),
+    codec: CAR.inbound,
+  })
+
+  const connection = Client.connect({
+    id: server.id,
+    codec: CAR.outbound,
+    channel: server,
+  })
+
+  const receipt = await Client.invoke({
+    issuer: alice,
+    audience: server.id,
+    capability: {
+      can: 'test/null',
+      with: alice.did(),
+    },
+  }).execute(connection)
+
+  assert.deepEqual(receipt.out, {
+    ok: {},
+  })
+})
