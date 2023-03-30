@@ -313,7 +313,7 @@ class RSASigner {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @returns {Promise<API.Signature<T, typeof signatureCode>>}
+   * @returns {Promise<API.SignatureView<T, typeof signatureCode>>}
    */
   async sign(payload) {
     const buffer = await webcrypto.subtle.sign(

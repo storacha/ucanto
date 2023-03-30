@@ -10,6 +10,7 @@ import type {
   InferWorkflowReceipts,
   InferInvocations,
   Receipt,
+  Invocation,
 } from './lib.js'
 
 /**
@@ -47,14 +48,16 @@ export interface RequestDecoder {
 }
 
 export interface ResponseEncoder {
-  encode<I extends Tuple<Receipt>>(
+  encode<I extends Tuple<Receipt<any, any>>>(
     result: I,
     options?: EncodeOptions
   ): Await<HTTPResponse<I>>
 }
 
 export interface ResponseDecoder {
-  decode<I extends Tuple<Receipt>>(response: HTTPResponse<I>): Await<I>
+  decode<I extends Tuple<Receipt<any, any>>>(
+    response: HTTPResponse<I>
+  ): Await<I>
 }
 
 export interface HTTPRequest<T = unknown> extends Phantom<T> {

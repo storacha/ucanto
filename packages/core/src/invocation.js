@@ -12,26 +12,29 @@ export const invoke = options => new IssuedInvocation(options)
 /**
  * @template {API.Capability} C
  * @param {object} dag
- * @param {API.UCANLink<[C]>} dag.root
- * @param {Map<string, API.Block>} dag.blocks
+ * @param {API.UCANBlock<[C]>} dag.root
+ * @param {Map<string, API.Block<unknown>>} [dag.blocks]
  * @returns {API.Invocation<C>}
  */
-export const view = ({ root, blocks }) => {
-  const { bytes, cid } = DAG.decodeFrom(root, blocks)
-  return new Invocation({ bytes, cid }, blocks)
-}
+export const create = ({ root, blocks }) => new Invocation(root, blocks)
 
 /**
  * @template {API.Invocation} Invocation
+ * @template [T=undefined]
  * @param {object} dag
  * @param {ReturnType<Invocation['link']>} dag.root
  * @param {Map<string, API.Block>} dag.blocks
- * @returns {Invocation|ReturnType<Invocation['link']>}
+ * @param {T} [fallback]
+ * @returns {Invocation|T}
  */
-export const embed = ({ root, blocks }) =>
-  blocks.has(root.toString())
-    ? /** @type {Invocation} */ (view({ root, blocks }))
-    : root
+export const view = ({ root, blocks }, fallback) => {
+  const block = DAG.get(root, blocks, null)
+  const view = block
+    ? /** @type {Invocation} */ (create({ root: block, blocks }))
+    : /** @type {T} */ (fallback)
+
+  return view
+}
 
 /**
  * @template {API.Capability} Capability

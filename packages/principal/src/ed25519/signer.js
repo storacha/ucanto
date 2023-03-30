@@ -186,7 +186,7 @@ class Ed25519Signer extends Uint8Array {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @returns {Promise<API.Signature<T, typeof Signature.EdDSA>>}
+   * @returns {Promise<API.SignatureView<T, typeof Signature.EdDSA>>}
    */
   async sign(payload) {
     const raw = await ED25519.sign(payload, this.secret)

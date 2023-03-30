@@ -3,6 +3,7 @@ import { create as createLink } from './link.js'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as MF from 'multiformats/interface'
 import * as CBOR from './cbor.js'
+import { identity } from 'multiformats/hashes/identity'
 
 /**
  * @param {unknown} value
@@ -30,21 +31,76 @@ export const iterate = function* (value) {
  */
 export const createStore = () => new Map()
 
+/** @type {API.MulticodecCode<typeof identity.code, typeof identity.name>} */
+const EMBED_CODE = identity.code
+
+/**
+ * Gets block corresponding to the given CID from the store. If store does not
+ * contain the block, `fallback` is returned. If `fallback` is not provided, it
+ * will throw an error.
+ *
+ * @template {T} U
+ * @template T
+ * @template [E=never]
+ * @param {API.Link<U>} cid
+ * @param {BlockStore<T>} store
+ * @param {E} [fallback]
+ * @returns {API.Block<U>|E}
+ */
+export const get = (cid, store, fallback) => {
+  // If CID uses identity hash, we can return the block data directly
+  if (cid.multihash.code === EMBED_CODE) {
+    return { cid, bytes: cid.multihash.digest }
+  }
+
+  const block = /** @type {API.Block<U>|undefined} */ (store.get(`${cid}`))
+  return block ? block : fallback === undefined ? notFound(cid) : fallback
+}
+
 /**
  * @template T
  * @template {T} U
  * @param {U} source
+ * @template {API.MulticodecCode} [C=API.MulticodecCode<typeof CBOR.code, typeof CBOR.name>]
+ * @param {object} options
+ * @param {MF.BlockEncoder<C, U>} [options.codec]
+ * @returns {API.Block<U, C, typeof EMBED_CODE> & { data: U }}
+ */
+export const embed = (source, { codec } = {}) => {
+  const encoder = /** @type {MF.BlockEncoder<C, U>}  */ (codec || CBOR)
+  const bytes = encoder.encode(source)
+  const digest = identity.digest(bytes)
+  return {
+    cid: createLink(encoder.code, digest),
+    bytes,
+    data: source,
+  }
+}
+
+/**
+ * @param {API.Link} link
+ * @returns {never}
+ */
+const notFound = link => {
+  throw new Error(`Block for the ${link} is not found`)
+}
+
+/**
+ * @template T
+ * @template {T} U
+ * @template {API.MulticodecCode} C
+ * @template {API.MulticodecCode} A
+ * @param {U} source
  * @param {BlockStore<T>} store
  * @param {object} options
- * @param {MF.BlockEncoder<number, U>} [options.codec]
- * @param {MF.MultihashHasher} [options.hasher]
- * @returns {Promise<API.Block<U> & { data: U }>}
+ * @param {MF.BlockEncoder<C, unknown>} [options.codec]
+ * @param {MF.MultihashHasher<A>} [options.hasher]
+ * @returns {Promise<API.Block<U, C, A> & { data: U }>}
  */
-export const encodeInto = async (
-  source,
-  store,
-  { codec = CBOR, hasher = sha256 } = {}
-) => {
+export const writeInto = async (source, store, options = {}) => {
+  const codec = /** @type {MF.BlockEncoder<C, U>} */ (options.codec || CBOR)
+  const hasher = /** @type {MF.MultihashHasher<A>} */ (options.hasher || sha256)
+
   const bytes = codec.encode(source)
   const digest = await hasher.digest(bytes)
   /** @type {API.Link<U, typeof codec.code, typeof hasher.code>} */
@@ -83,20 +139,4 @@ export const addEveryInto = (source, store) => {
   for (const block of source) {
     addInto(block, store)
   }
-}
-
-/**
- * @template T
- * @param {API.Link<T>} link
- * @param {BlockStore<T>} store
- * @returns {API.Block<T> & { data: T }}
- */
-export const decodeFrom = (link, store) => {
-  const block = store.get(`${link}`)
-  /* c8 ignore next 3 */
-  if (!block) {
-    throw new Error(`Block for the ${link} is not found`)
-  }
-  const data = /** @type {T} */ (CBOR.decode(block.bytes))
-  return { cid: link, bytes: block.bytes, data }
 }

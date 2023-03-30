@@ -5,6 +5,9 @@ import { base32 } from 'multiformats/bases/base32'
 import { create as createLink } from './link.js'
 import { sha256 } from 'multiformats/hashes/sha2'
 
+export const name = 'CAR'
+
+/** @type {API.MulticodecCode<0x0202, 'CAR'>} */
 export const code = 0x0202
 
 /**
