@@ -54,6 +54,8 @@ export const execute = async (workflow, connection) => {
   try {
     return await connection.codec.decode(response)
   } catch (error) {
+    // No third party code is run during decode and we know
+    // we only throw an Error
     const { message, ...cause } = /** @type {Error} */ (error)
     const receipts = []
     for await (const invocation of workflow) {
