@@ -84,7 +84,7 @@ test('receipt with proofs', async () => {
     ],
   })
 
-  const { cid: proofCid } = await await delegate({
+  const { cid: proofCid } = await delegate({
     issuer: w3,
     audience: bob,
     capabilities: [
