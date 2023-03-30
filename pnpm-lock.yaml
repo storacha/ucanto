@@ -69,8 +69,8 @@ importers:
         specifier: ^9.0.0
         version: 9.0.0
       '@ipld/dag-ucan':
-        specifier: ^3.2.0
-        version: 3.2.0
+        specifier: ^3.3.2
+        version: 3.3.2
       '@ucanto/interface':
         specifier: workspace:^
         version: link:../interface
@@ -109,8 +109,8 @@ importers:
   packages/interface:
     dependencies:
       '@ipld/dag-ucan':
-        specifier: ^3.2.0
-        version: 3.2.0
+        specifier: ^3.3.2
+        version: 3.3.2
       multiformats:
         specifier: ^11.0.0
         version: 11.0.1
@@ -122,8 +122,8 @@ importers:
   packages/principal:
     dependencies:
       '@ipld/dag-ucan':
-        specifier: ^3.2.0
-        version: 3.2.0
+        specifier: ^3.3.2
+        version: 3.3.2
       '@noble/ed25519':
         specifier: ^1.7.3
         version: 1.7.3
@@ -752,8 +752,8 @@ packages:
       multiformats: 11.0.1
     dev: false
 
-  /@ipld/dag-ucan@3.2.0:
-    resolution: {integrity: sha512-CTClaGx4F3iEMJgYaYVOVBEvtNXzPc77Mi6p3vBtylSzDWhbf1Gou9ij7PlblOqWKA1H7XI8fp6yweTb6iXNKQ==}
+  /@ipld/dag-ucan@3.3.2:
+    resolution: {integrity: sha512-EhuOrAfnudsVYIbzEIgi3itHAEo3WZNOt1VNPsYhxKBhOzDMeoTXh6/IHc7ZKBW1T2vDQHdgj4m1r64z6MssGA==}
     dependencies:
       '@ipld/dag-cbor': 9.0.0
       '@ipld/dag-json': 10.0.0

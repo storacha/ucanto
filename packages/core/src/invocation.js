@@ -19,6 +19,12 @@ export const invoke = options => new IssuedInvocation(options)
 export const create = ({ root, blocks }) => new Invocation(root, blocks)
 
 /**
+ * Takes a link of the `root` block and a map of blocks and constructs an
+ * `Invocation` from it. If `root` is not included in the provided blocks
+ * provided fallback is returned and if not provided than throws an error.
+ * If root points to wrong block (that is not an invocation) it will misbehave
+ * and likely throw some errors on field access.
+ *
  * @template {API.Invocation} Invocation
  * @template [T=undefined]
  * @param {object} dag

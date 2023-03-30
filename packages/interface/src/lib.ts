@@ -190,17 +190,6 @@ export interface IPLDView<T extends unknown = unknown> {
    * be a breaking change on the Delegate API so we defer it for now.
    */
   iterateIPLDBlocks(): IterableIterator<Block>
-
-  // /**
-  //  * `IPLDView` also implement `IPLDViewBuilder` API so that you could pass
-  //  * it anywhere builder is expected. Also note that `buildIPLDView` does not
-  //  * take any options, as the view is already materialized and user preferences
-  //  * will have no effect.
-  //  *
-  //  * Most implementations will just return `this` as they are already
-  //  * materialized views.
-  //  */
-  // buildIPLDView(): IPLDView<this>
 }
 
 /**
