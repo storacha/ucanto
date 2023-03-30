@@ -154,6 +154,9 @@ test('execute invocation', async () => {
     },
   })
 
+  // Note that types expect us to return receipt but here we
+  // just test that execute simply returns `connection.execute(this)[0]` which
+  // will not be a receipt due to our implementation above. 
   // @ts-expect-error
   assert.deepEqual(result, { hello: 'world' })
 })

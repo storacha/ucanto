@@ -21,7 +21,7 @@ export const view = ({ root, blocks }) => {
 /**
  * @template {{}} Ok
  * @template {{}} Error
- * @template {API.Invocation} Ran
+ * @template {API.Invocation} Ran - Invocation this is a receipt of.
  * @template {API.SigAlg} [SigAlg=API.SigAlg]
  * @implements {API.Receipt<Ok, Error, Ran, SigAlg>}
  */

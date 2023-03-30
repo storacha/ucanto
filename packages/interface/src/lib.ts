@@ -439,12 +439,18 @@ export interface Receipt<
 
 export interface Meta extends Record<string, unknown> {}
 
+/**
+ * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#7-effect
+ */
 export interface EffectsModel {
   fork: readonly Link<InstructionModel>[]
   join?: Link<InstructionModel>
 }
 
 export interface Effects extends EffectsModel {}
+/**
+ * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#511-instruction
+ */
 export interface InstructionModel<
   Op extends Ability = Ability,
   URI extends Resource = Resource,

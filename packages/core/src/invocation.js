@@ -10,6 +10,11 @@ import * as DAG from './dag.js'
 export const invoke = options => new IssuedInvocation(options)
 
 /**
+ * Takes a link of the `root` block and a map of blocks and constructs an
+ * `Invocation` from it. If `root` is not included in the provided blocks it
+ * throws an error. If root points to wrong block (that is not an invocation)
+ * it will misbehave and likely throw some errors on field access.
+ *
  * @template {API.Capability} C
  * @param {object} dag
  * @param {API.UCANLink<[C]>} dag.root

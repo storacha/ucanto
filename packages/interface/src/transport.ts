@@ -24,6 +24,9 @@ export interface EncodeOptions {
 }
 
 export interface RequestEncodeOptions extends EncodeOptions {
+  /**
+   * If provided will be set as an `accept` header of the request.
+   */
   accept?: string
 }
 

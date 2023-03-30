@@ -10,8 +10,8 @@ import * as CBOR from './cbor.js'
  * arbitrary structures that may contain `IPLDView`s in them. 
  * Note if you pass anything other than `IPLDView` it will not attempt
  * to find views nested inside them, instead it will just emit no blocks.
- * @param {unknown} value.
  *
+ * @param {unknown} value.
  * @returns {IterableIterator<API.Block>}
  */
 export const iterate = function* (value) {
