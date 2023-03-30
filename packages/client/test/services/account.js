@@ -69,7 +69,7 @@ const unlink = (model, member, group, proof) => {
     if (account === resolve(model, member)) {
       model.delete(member)
     }
-    return null
+    return {}
   } else {
     return new UnknownDIDError('Unknown DID', group)
   }
@@ -81,7 +81,7 @@ const unlink = (model, member, group, proof) => {
  * @param {API.DID} to
  * @param {API.Link} proof
  * @param {boolean} create
- * @returns {API.SyncResult<null, API.UnknownDIDError>}
+ * @returns {API.SyncResult<{}, API.UnknownDIDError>}
  */
 const associate = (accounts, from, to, proof, create) => {
   const fromAccount = resolve(accounts, from)
@@ -110,7 +110,7 @@ const associate = (accounts, from, to, proof, create) => {
     accounts.set(fromAccount, { account, proof })
   }
 
-  return null
+  return {}
 }
 
 /**

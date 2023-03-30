@@ -114,7 +114,7 @@ class AccessService {
    * with: API.DID
    * }} Identify
    * @param {API.Invocation<Identify>} ucan
-   * @returns {Promise<API.Result<null, API.UnknownDIDError>>}
+   * @returns {Promise<API.Result<{}, API.UnknownDIDError>>}
    */
   async identify(ucan) {
     const [capability] = ucan.capabilities
@@ -133,9 +133,6 @@ class AccessService {
         /** @type {any} */ (ucan).link
       )
     }
-    // } else {
-    //   return access
-    // }
   }
 }
 

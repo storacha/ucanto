@@ -43,13 +43,13 @@ test('execute capability', () =>
     })
 
     const r1 = await redeem.execute(connection)
-    if (!r1.error) {
-      r1.product.toLowerCase()
+    if (r1.out.ok) {
+      r1.out.ok.product.toLowerCase()
     }
 
     const r2 = await claim.execute(connection)
-    if (!r2.error) {
-      r2.service.toUpperCase()
+    if (r2.out.ok) {
+      r2.out.ok.service.toUpperCase()
     }
   })
 
@@ -88,9 +88,9 @@ test('use InferInvokedCapability', () =>
       },
     })
 
-    const result = await redeem.execute(connection)
-    if (!result.error) {
-      result.product.toLocaleLowerCase()
+    const receipt = await redeem.execute(connection)
+    if (receipt.out.ok) {
+      receipt.out.ok.product.toLocaleLowerCase()
     }
   })
 

@@ -2,7 +2,6 @@ import { test, assert } from './test.js'
 import * as HTTP from '../src/http.js'
 import * as UTF8 from '../src/utf8.js'
 
-import { CAR, JWT, CBOR } from '../src/lib.js'
 test('encode / decode', async () => {
   const channel = HTTP.open({
     url: new URL('about:blank'),

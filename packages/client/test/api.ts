@@ -133,16 +133,16 @@ export interface AccessProvider {
    * Associates a DID with another DID in the system. If there is no account
    * associated with a `to` DID will produce an error.
    */
-  link(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
+  link(member: DID, group: DID, proof: Link): Result<{}, UnknownDIDError>
 
-  unlink(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
+  unlink(member: DID, group: DID, proof: Link): Result<{}, UnknownDIDError>
 
   /**
    * Associates new child DID with an accound of the parent DID. If there is no
    * account associated with a parent it creates account with `parent` did first
    * and then associates child DID with it.
    */
-  register(member: DID, group: DID, proof: Link): Result<null, UnknownDIDError>
+  register(member: DID, group: DID, proof: Link): Result<{}, UnknownDIDError>
 
   /**
    * Resolves account DID associated with a given DID. Returns either account

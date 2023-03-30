@@ -30,12 +30,11 @@
   },
   "dependencies": {
     "@ucanto/interface": "workspace:^",
-    "multiformats": "^11.0.0"
+    "@ucanto/core": "workspace:^"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^10.0.1",
-    "@ucanto/core": "workspace:^",
     "@ucanto/principal": "workspace:^",
     "@ucanto/transport": "workspace:^",
     "@web-std/fetch": "^4.1.0",

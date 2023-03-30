@@ -7,8 +7,9 @@ import type { Phantom, Await } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import type {
   ServiceInvocation,
-  InferServiceInvocations,
+  InferWorkflowReceipts,
   InferInvocations,
+  Receipt,
 } from './lib.js'
 
 /**
@@ -22,16 +23,23 @@ export interface EncodeOptions {
   readonly hasher?: UCAN.MultihashHasher
 }
 
+export interface RequestEncodeOptions extends EncodeOptions {
+  /**
+   * If provided will be set as an `accept` header of the request.
+   */
+  accept?: string
+}
+
 export interface Channel<T extends Record<string, any>> extends Phantom<T> {
   request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
     request: HTTPRequest<I>
-  ): Await<HTTPResponse<InferServiceInvocations<I, T>>>
+  ): Await<HTTPResponse<InferWorkflowReceipts<I, T> & Tuple<Receipt>>>
 }
 
 export interface RequestEncoder {
   encode<I extends Tuple<ServiceInvocation>>(
     invocations: I,
-    options?: EncodeOptions
+    options?: RequestEncodeOptions
   ): Await<HTTPRequest<I>>
 }
 
@@ -42,11 +50,14 @@ export interface RequestDecoder {
 }
 
 export interface ResponseEncoder {
-  encode<I>(result: I, options?: EncodeOptions): Await<HTTPResponse<I>>
+  encode<I extends Tuple<Receipt>>(
+    result: I,
+    options?: EncodeOptions
+  ): Await<HTTPResponse<I>>
 }
 
 export interface ResponseDecoder {
-  decode<I>(response: HTTPResponse<I>): Await<I>
+  decode<I extends Tuple<Receipt>>(response: HTTPResponse<I>): Await<I>
 }
 
 export interface HTTPRequest<T = unknown> extends Phantom<T> {
@@ -56,6 +67,7 @@ export interface HTTPRequest<T = unknown> extends Phantom<T> {
 }
 
 export interface HTTPResponse<T = unknown> extends Phantom<T> {
+  status?: number
   headers: Readonly<Record<string, string>>
   body: Uint8Array
 }

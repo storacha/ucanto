@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import { the } from './util.js'
-import { isLink } from 'multiformats/link'
+import { isLink } from '@ucanto/core/link'
 
 /**
  * @implements {API.Failure}

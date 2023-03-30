@@ -1,6 +1,5 @@
 import * as API from '@ucanto/interface'
-import { create, createLegacy, isLink, parse } from '@ucanto/core/link'
-import { base32 } from 'multiformats/bases/base32'
+import { create, createLegacy, isLink, parse, base32 } from '@ucanto/core/link'
 import * as Schema from './schema.js'
 
 export { create, createLegacy, isLink, parse }

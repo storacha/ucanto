@@ -1,5 +1,6 @@
 import * as API from '@ucanto/interface'
-import { delegate } from './delegation.js'
+import { delegate, Delegation } from './delegation.js'
+import * as DAG from './dag.js'
 
 /**
  * @template {API.Capability} Capability
@@ -7,6 +8,35 @@ import { delegate } from './delegation.js'
  * @return {API.IssuedInvocationView<Capability>}
  */
 export const invoke = options => new IssuedInvocation(options)
+
+/**
+ * Takes a link of the `root` block and a map of blocks and constructs an
+ * `Invocation` from it. If `root` is not included in the provided blocks it
+ * throws an error. If root points to wrong block (that is not an invocation)
+ * it will misbehave and likely throw some errors on field access.
+ *
+ * @template {API.Capability} C
+ * @param {object} dag
+ * @param {API.UCANLink<[C]>} dag.root
+ * @param {Map<string, API.Block>} dag.blocks
+ * @returns {API.Invocation<C>}
+ */
+export const view = ({ root, blocks }) => {
+  const { bytes, cid } = DAG.decodeFrom(root, blocks)
+  return new Invocation({ bytes, cid }, blocks)
+}
+
+/**
+ * @template {API.Invocation} Invocation
+ * @param {object} dag
+ * @param {ReturnType<Invocation['link']>} dag.root
+ * @param {Map<string, API.Block>} dag.blocks
+ * @returns {Invocation|ReturnType<Invocation['link']>}
+ */
+export const embed = ({ root, blocks }) =>
+  blocks.has(root.toString())
+    ? /** @type {Invocation} */ (view({ root, blocks }))
+    : root
 
 /**
  * @template {API.Capability} Capability
@@ -52,10 +82,14 @@ class IssuedInvocation {
     return delegate(this)
   }
 
+  buildIPLDView() {
+    return delegate(this)
+  }
+
   /**
    * @template {API.InvocationService<Capability>} Service
    * @param {API.ConnectionView<Service>} connection
-   * @returns {Promise<API.InferServiceInvocationReturn<Capability, Service>>}
+   * @returns {Promise<API.InferServiceInvocationReceipt<Capability, Service>>}
    */
   async execute(connection) {
     /** @type {API.ServiceInvocation<Capability, Service>} */
@@ -67,3 +101,10 @@ class IssuedInvocation {
     return result
   }
 }
+
+/**
+ * @template {API.Capability} Capability
+ * @implements {API.Invocation<Capability>}
+ * @extends {Delegation<[Capability]>}
+ */
+export class Invocation extends Delegation {}
