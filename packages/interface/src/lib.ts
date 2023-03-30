@@ -385,21 +385,6 @@ export interface Invocation<C extends Capability = Capability>
   extends Delegation<[C]> {}
 
 /**
- * Represents a receipt of an invocation as per IPLD schema in
- * ucan/invocation@0.2 spec.
- *
- * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#82-receipt
- */
-export interface ReceiptModel<
-  Ok extends {} = {},
-  Error extends {} = {},
-  Ran extends Invocation = Invocation
-> {
-  ocm: OutcomeModel<Ok, Error, Ran>
-  sig: Signature
-}
-
-/**
  * Represents an outcome of the receipt as per IPLD schema of the
  * ucan/invocation@0.2 spec.
  *
@@ -416,6 +401,21 @@ export interface OutcomeModel<
   meta: Meta
   iss?: DID
   prf: UCANLink[]
+}
+
+/**
+ * Represents a receipt of an invocation as per IPLD schema in
+ * ucan/invocation@0.2 spec.
+ *
+ * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#82-receipt
+ */
+export interface ReceiptModel<
+  Ok extends {} = {},
+  Error extends {} = {},
+  Ran extends Invocation = Invocation
+> {
+  ocm: OutcomeModel<Ok, Error, Ran>
+  sig: Signature
 }
 
 /**
