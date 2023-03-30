@@ -53,7 +53,7 @@ export const decode = ({ headers, body }) => {
 
   const receipts = /** @type {API.Receipt[]} */ ([])
 
-  for (const root of /** @type {API.UCANBlock[]} */ (roots)) {
+  for (const root of /** @type {API.Block<API.ReceiptModel>[]} */ (roots)) {
     receipts.push(
       Receipt.view({
         root: root.cid,

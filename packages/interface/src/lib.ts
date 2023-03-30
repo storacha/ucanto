@@ -14,6 +14,7 @@ import {
   Phantom,
   Resource,
   Signature,
+  SignatureView,
   Principal,
   MulticodecCode,
   SigAlg,
@@ -21,9 +22,16 @@ import {
   SignatureJSON,
   JSONUnknown,
   IntoJSON,
+  Crypto,
   JSONObject,
 } from '@ipld/dag-ucan'
-import { Link, UnknownLink, Block as IPLDBlock, ToString } from 'multiformats'
+import {
+  Link,
+  UnknownLink,
+  Block as IPLDBlock,
+  ToString,
+  BlockEncoder,
+} from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
 import {
   CanIssue,
@@ -46,6 +54,7 @@ export type {
   Tuple,
   DID,
   Signature,
+  SignatureView,
   ByteView,
   Capabilities,
   Capability,
@@ -69,6 +78,7 @@ export type {
   ToString,
   UnknownLink,
   JSONUnknown,
+  Crypto,
 }
 export * as UCAN from '@ipld/dag-ucan'
 
@@ -130,6 +140,14 @@ export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
   proofs?: Proof[]
 }
 
+export interface BuildOptions<
+  T extends unknown = unknown,
+  C extends MulticodecCode = MulticodecCode,
+  A extends MulticodecCode = MulticodecCode
+> {
+  readonly hasher?: UCAN.MultihashHasher<A>
+  readonly encoder?: BlockEncoder<C, T>
+}
 /**
  * An interface for representing a materializable IPLD DAG View. It is a useful
  * abstraction that can be used to defer actual IPLD encoding.
@@ -138,14 +156,14 @@ export interface DelegationOptions<C extends Capabilities> extends UCANOptions {
  * may not be included. This by design allowing a user to include whatever
  * blocks they want to include.
  */
-export interface IPLDViewBuilder<T extends unknown = unknown> {
+export interface IPLDViewBuilder<View extends IPLDView = IPLDView> {
   /**
    * Encodes all the blocks and creates a new IPLDView instance over them. Can
    * be passed a multihasher to specify a preferred hashing algorithm. Note
    * that there is no guarantee that preferred hasher will be used, it is
    * only a hint of preference and not a requirement.
    */
-  buildIPLDView(options?: Transport.EncodeOptions): Await<IPLDView<T>>
+  buildIPLDView(options?: BuildOptions): Await<View>
 }
 
 /**
@@ -153,8 +171,7 @@ export interface IPLDViewBuilder<T extends unknown = unknown> {
  * a generic traversal API. It is useful for encoding (potentially partial) IPLD
  * DAGs into content archives (e.g. CARs).
  */
-export interface IPLDView<T extends unknown = unknown>
-  extends IPLDViewBuilder<T> {
+export interface IPLDView<T extends unknown = unknown> {
   /**
    * The root block of the IPLD DAG this is the view of. This is the the block
    * from which all other blocks are linked directly or transitively.
@@ -173,17 +190,6 @@ export interface IPLDView<T extends unknown = unknown>
    * be a breaking change on the Delegate API so we defer it for now.
    */
   iterateIPLDBlocks(): IterableIterator<Block>
-
-  /**
-   * `IPLDView` also implement `IPLDViewBuilder` API so that you could pass
-   * it anywhere builder is expected. Also note that `buildIPLDView` does not
-   * take any options, as the view is already materialized and user preferences
-   * will have no effect.
-   *
-   * Most implementations will just return `this` as they are already
-   * materialized views.
-   */
-  buildIPLDView(): IPLDView<T>
 }
 
 /**
@@ -191,7 +197,8 @@ export interface IPLDView<T extends unknown = unknown>
  * used as proof for an invocation or further delegations.
  */
 export interface Delegation<C extends Capabilities = Capabilities>
-  extends IPLDView<UCAN.UCAN<C>> {
+  extends IPLDView<UCAN.UCAN<C>>,
+    IPLDViewBuilder<Delegation<C>> {
   readonly root: UCANBlock<C>
   /**
    * Map of all the IPLD blocks that were included with this delegation DAG.
@@ -229,7 +236,7 @@ export interface Delegation<C extends Capabilities = Capabilities>
   proofs: Proof[]
   iterate(): IterableIterator<Delegation>
 
-  signature: Signature
+  signature: SignatureView
   version: UCAN.Version
 
   toJSON(): DelegationJSON<this>
@@ -377,6 +384,12 @@ export type LinkJSON<T extends UnknownLink = UnknownLink> = ToJSON<
 export interface Invocation<C extends Capability = Capability>
   extends Delegation<[C]> {}
 
+/**
+ * Represents an outcome of the receipt as per IPLD schema of the
+ * ucan/invocation@0.2 spec.
+ *
+ * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#81-outcome
+ */
 export interface OutcomeModel<
   Ok extends {} = {},
   Error extends {} = {},
@@ -390,67 +403,60 @@ export interface OutcomeModel<
   prf: UCANLink[]
 }
 
-export interface Outcome<
-  Ok extends {} = {},
-  Error extends {} = {},
-  Ran extends Invocation = Invocation
-> extends IPLDView<OutcomeModel<Ok, Error, Ran>> {
-  link(): Link<OutcomeModel<Ok, Error, Ran>>
-  ran: Ran | ReturnType<Ran['link']>
-  out: ReceiptResult<Ok, Error>
-  fx: Effects
-  meta: Meta
-  issuer?: Principal
-  proofs: Proof[]
-}
-
 /**
- * A receipt is an attestation of the Result and requested Effects by a task
- * invocation. It is issued and signed by the task executor or its delegate.
+ * Represents a receipt of an invocation as per IPLD schema in
+ * ucan/invocation@0.2 spec.
  *
- * @see https://github.com/ucan-wg/invocation#8-receipt
+ * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#82-receipt
  */
 export interface ReceiptModel<
   Ok extends {} = {},
   Error extends {} = {},
   Ran extends Invocation = Invocation
 > {
-  ocm: Link<OutcomeModel<Ok, Error, Ran>>
+  ocm: OutcomeModel<Ok, Error, Ran>
   sig: Signature
 }
 
+/**
+ * Represents a view of the invocation receipt. Unlike the {@link ReceiptModel},
+ * this interface provides a more ergonomic API and allows you to reference
+ * linked IPLD objects of they are included in the source DAG.
+ */
 export interface Receipt<
   Ok extends {} = {},
   Error extends {} = {},
   Ran extends Invocation = Invocation,
   Alg extends SigAlg = SigAlg
-> extends IPLDView<ReceiptModel<Ok, Error, Ran>> {
-  outcome: Outcome<Ok, Error, Ran>
-  ran: Ran | ReturnType<Ran['link']>
-  out: ReceiptResult<Ok, Error>
-  fx: Effects
-  meta: Meta
+> extends IPLDView<ReceiptModel<Ok, Error, Ran>>,
+    IPLDViewBuilder<Receipt<Ok, Error, Ran, Alg>> {
+  readonly ran: Ran | ReturnType<Ran['link']>
+  readonly out: ReceiptResult<Ok, Error>
+  readonly fx: Effects
+  readonly meta: Meta
 
-  issuer?: Principal
-  proofs: Proof[]
+  readonly issuer?: Principal
+  readonly proofs: Proof[]
 
-  signature: Signature<Link<OutcomeModel<Ok, Error, Ran>>, Alg>
+  readonly signature: SignatureView<OutcomeModel<Ok, Error, Ran>, Alg>
+
+  verifySignature(
+    signer: Crypto.Verifier
+  ): Await<ReceiptResult<{}, SignatureError>>
+
+  buildIPLDView(): Receipt<Ok, Error, Ran, Alg>
 }
+
+export interface SignatureError extends Error {}
 
 export interface Meta extends Record<string, unknown> {}
 
-/**
- * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#7-effect
- */
 export interface EffectsModel {
   fork: readonly Link<InstructionModel>[]
   join?: Link<InstructionModel>
 }
 
 export interface Effects extends EffectsModel {}
-/**
- * @see https://github.com/ucan-wg/invocation/blob/v0.2/README.md#511-instruction
- */
 export interface InstructionModel<
   Op extends Ability = Ability,
   URI extends Resource = Resource,
@@ -526,7 +532,7 @@ export interface InvocationOptions<C extends Capability = Capability>
 }
 
 export interface IssuedInvocation<C extends Capability = Capability>
-  extends IPLDViewBuilder<UCAN.UCAN<[C]>> {
+  extends IPLDViewBuilder<Invocation<C>> {
   readonly issuer: Principal
   readonly audience: Principal
   readonly capabilities: [C]

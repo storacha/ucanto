@@ -1,6 +1,7 @@
 import * as UCAN from '@ipld/dag-ucan'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
+import * as DAG from './dag.js'
 
 /**
  * @deprecated
@@ -412,6 +413,20 @@ export const importDAG = dag => {
  * @returns {API.Delegation<C>}
  */
 export const create = ({ root, blocks }) => new Delegation(root, blocks)
+
+/**
+ * @template {API.Capabilities} C
+ * @template [T=undefined]
+ * @param {object} dag
+ * @param {API.UCANLink<C>} dag.root
+ * @param {Map<string, API.Block>} dag.blocks
+ * @param {T} [fallback]
+ * @returns {API.Delegation<C>|T}
+ */
+export const view = ({ root, blocks }, fallback) => {
+  const block = DAG.get(root, blocks, null)
+  return block ? create({ root: block, blocks }) : /** @type {T} */ (fallback)
+}
 
 /**
  * @param {API.Delegation} delegation

@@ -32,7 +32,6 @@ test('basic receipt', async () => {
   await assertRoundtrip(receipt)
 
   assert.equal(receipt.buildIPLDView().buildIPLDView(), receipt)
-  assert.equal(receipt.outcome.buildIPLDView(), receipt.outcome)
 })
 
 test('receipt with ran as link', async () => {
@@ -269,11 +268,8 @@ const assertReceipt = async (receipt, expect) => {
 
   if (expect.verifier) {
     assert.deepEqual(
-      await expect.verifier.verify(
-        receipt.outcome.link().bytes,
-        receipt.signature
-      ),
-      true,
+      await receipt.verifySignature(expect.verifier),
+      { ok: {} },
       'signature is valid'
     )
   }
