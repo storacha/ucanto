@@ -152,7 +152,7 @@ const channel = HTTP.open({
           return Receipt.issue({
             ran: invocation.cid,
             issuer: w3,
-            result: result?.error ? { error: result } : { ok: result },
+            result,
           })
         }
         case 'store/remove': {
@@ -162,7 +162,7 @@ const channel = HTTP.open({
           return Receipt.issue({
             ran: invocation.cid,
             issuer: w3,
-            result: result?.error ? { error: result } : { ok: result },
+            result,
           })
         }
       }
@@ -219,7 +219,6 @@ test('execute', async () => {
 
   assert.deepEqual(e1.out, {
     error: {
-      error: true,
       name: 'UnknownDIDError',
       message: `DID ${alice.did()} has no account`,
       did: alice.did(),
@@ -264,7 +263,6 @@ test('execute with delegations', async () => {
 
   assert.deepEqual(e1.out, {
     error: {
-      error: true,
       name: 'UnknownDIDError',
       message: `DID ${bob.did()} has no account`,
       did: bob.did(),

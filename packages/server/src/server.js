@@ -7,7 +7,8 @@ export {
   Failure,
   MalformedCapability,
 } from '@ucanto/validator'
-import { Receipt } from '@ucanto/core'
+import { Receipt, ok, fail } from '@ucanto/core'
+export { ok, fail }
 
 /**
  * Creates a connection to a service.
@@ -126,17 +127,11 @@ export const invoke = async (invocation, server) => {
     })
   } else {
     try {
-      const value = await handler[method](invocation, server.context)
+      const result = await handler[method](invocation, server.context)
       return await Receipt.issue({
         issuer: server.id,
         ran: invocation,
-        // handler returns result in a different format from the receipt
-        // so we convert it here. We also need to handle the case where
-        // the handler `null` or `undefined` is returned which in receipt
-        // form at is unit type `{}`.
-        result: /** @type {API.ReceiptResult<{}>} */ (
-          value?.error ? { error: value } : { ok: value == null ? {} : value }
-        ),
+        result,
       })
     } catch (cause) {
       const error = new HandlerExecutionError(

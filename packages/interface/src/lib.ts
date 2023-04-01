@@ -563,7 +563,11 @@ export type InferInvocations<T> = T extends []
  * @typeParam O - type returned by the handler on success
  * @typeParam X - type returned by the handler on error
  */
-export interface ServiceMethod<I extends Capability, O, X extends {}> {
+export interface ServiceMethod<
+  I extends Capability,
+  O extends {},
+  X extends {}
+> {
   (input: Invocation<I>, context: InvocationContext): Await<
     Result<O, X | InvocationError>
   >

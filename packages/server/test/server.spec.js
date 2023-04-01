@@ -16,20 +16,20 @@ const storeAdd = Server.capability({
   }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
-      return new Server.Failure(
+      return Server.fail(
         `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
       delegated.nb.link &&
       `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
-      return new Server.Failure(
+      return Server.fail(
         `Link ${
           claimed.nb.link == null ? '' : `${claimed.nb.link} `
         }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
-      return true
+      return Server.ok({})
     }
   },
 })
@@ -41,20 +41,20 @@ const storeRemove = Server.capability({
   }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
-      return new Server.Failure(
+      return Server.fail(
         `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
       delegated.nb.link &&
       `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
-      return new Server.Failure(
+      return Server.fail(
         `Link ${
           claimed.nb.link == null ? '' : `${claimed.nb.link} `
         }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
-      return true
+      return Server.ok({})
     }
   },
 })
@@ -122,7 +122,6 @@ test('encode delegated invocation', async () => {
 
     assert.deepEqual(r1.out, {
       error: {
-        error: true,
         name: 'UnknownDIDError',
         did: alice.did(),
         message: `DID ${alice.did()} has no account`,
@@ -131,7 +130,6 @@ test('encode delegated invocation', async () => {
 
     assert.deepEqual(r2.out, {
       error: {
-        error: true,
         name: 'UnknownDIDError',
         did: alice.did(),
         message: `DID ${alice.did()} has no account`,
@@ -391,7 +389,7 @@ test('falsy errors are turned into {}', async () => {
           testNull,
 
           async () => {
-            return null
+            return { ok: {} }
           }
         ),
       },

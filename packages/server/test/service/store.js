@@ -14,20 +14,20 @@ const addCapability = Server.capability({
   }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
-      return new Server.Failure(
+      return Server.fail(
         `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
       delegated.nb.link &&
       `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
-      return new Server.Failure(
+      return Server.fail(
         `Link ${
           claimed.nb.link == null ? '' : `${claimed.nb.link} `
         }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
-      return true
+      return { ok: {} }
     }
   },
 })
@@ -40,20 +40,20 @@ const removeCapability = Server.capability({
   }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
-      return new Server.Failure(
+      return Server.fail(
         `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
       delegated.nb.link &&
       `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
-      return new Server.Failure(
+      return Server.fail(
         `Link ${
           claimed.nb.link == null ? '' : `${claimed.nb.link} `
         }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
-      return true
+      return Server.ok({})
     }
   },
 })
@@ -84,4 +84,6 @@ export const add = provide(addCapability, async ({ capability, context }) => {
   const links = state.get(groupID) || new Map()
   links.set(`${link}`, link)
   state.set(groupID, links)
+
+  return { ok: {} }
 })

@@ -62,18 +62,22 @@ class StorageService {
       /** @type {any} */ (ucan).cid
     )
     if (!result.error) {
-      if (result.status === 'in-s3') {
+      if (result.ok.status === 'in-s3') {
         return {
-          with: capability.with,
-          link: capability.nb.link,
-          status: the('done'),
+          ok: {
+            with: capability.with,
+            link: capability.nb.link,
+            status: the('done'),
+          },
         }
       } else {
         return {
-          with: capability.with,
-          link: capability.nb.link,
-          status: the('upload'),
-          url: 'http://localhost:9090/',
+          ok: {
+            with: capability.with,
+            link: capability.nb.link,
+            status: the('upload'),
+            url: 'http://localhost:9090/',
+          },
         }
       }
     } else {
@@ -93,10 +97,10 @@ class StorageService {
       capability.nb.link,
       /** @type {any} */ (ucan).link
     )
-    if (remove?.error) {
+    if (remove.error) {
       return remove
     } else {
-      return capability
+      return { ok: capability }
     }
   }
 }

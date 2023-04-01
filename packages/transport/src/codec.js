@@ -16,7 +16,7 @@ export const inbound = source => new Inbound(source)
 class Inbound {
   /**
    * @param {API.HTTPRequest} request
-   * @returns {API.ReceiptResult<API.InboundAcceptCodec, API.HTTPError>} transport
+   * @returns {API.Result<API.InboundAcceptCodec, API.HTTPError>} transport
    */
   accept({ headers }) {
     const contentType = headers['content-type'] || headers['Content-Type']

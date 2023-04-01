@@ -69,9 +69,9 @@ const unlink = (model, member, group, proof) => {
     if (account === resolve(model, member)) {
       model.delete(member)
     }
-    return {}
+    return { ok: {} }
   } else {
-    return new UnknownDIDError('Unknown DID', group)
+    return { error: new UnknownDIDError('Unknown DID', group) }
   }
 }
 
@@ -98,7 +98,7 @@ const associate = (accounts, from, to, proof, create) => {
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
-      return new UnknownDIDError('Unknown did', to)
+      return { error: new UnknownDIDError('Unknown did', to) }
     }
   } else if (toAccount) {
     accounts.set(from, { account: toAccount, proof })
@@ -110,7 +110,7 @@ const associate = (accounts, from, to, proof, create) => {
     accounts.set(fromAccount, { account, proof })
   }
 
-  return {}
+  return { ok: {} }
 }
 
 /**
@@ -147,9 +147,6 @@ export class UnknownDIDError extends RangeError {
     super(message)
     this.did = did
   }
-  get error() {
-    return /** @type {true} */ (true)
-  }
   get name() {
     return the('UnknownDIDError')
   }
@@ -159,7 +156,6 @@ export class UnknownDIDError extends RangeError {
       name: this.name,
       message: this.message,
       did: this.did,
-      error: true,
     }
   }
 }

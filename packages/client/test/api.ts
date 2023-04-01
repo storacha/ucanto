@@ -3,10 +3,7 @@ import * as API from '@ucanto/interface'
 
 import type { DID, Link, Await, Result as SyncResult } from '@ucanto/interface'
 export type { DID, Link, SyncResult }
-type Result<
-  T extends unknown = unknown,
-  X extends { error: true } = Error & { error: true }
-> = Await<API.Result<T, X>>
+type Result<T extends {} = {}, X extends {} = Error> = Await<API.Result<T, X>>
 
 export interface StorageProvider {
   /**
@@ -34,7 +31,7 @@ export interface StorageProvider {
     group: DID,
     link: Link,
     proof: Link
-  ): Result<null, UnknownDIDError | DoesNotHasError>
+  ): Result<{}, UnknownDIDError | DoesNotHasError>
 }
 
 export interface TokenStore {
@@ -42,12 +39,12 @@ export interface TokenStore {
    * Revokes set of UCANS. CID corresponds to the link been revoked and
    * proof is the CID of the revocation.
    */
-  revoke(token: Link, revocation: TokenEntry): Result<null, RevokeError>
+  revoke(token: Link, revocation: TokenEntry): Result<{}, RevokeError>
 
   /**
    * Adds bunch of proofs for later queries.
    */
-  insert(tokens: IterableIterator<TokenEntry>): Result<null, InsertError>
+  insert(tokens: IterableIterator<TokenEntry>): Result<{}, InsertError>
 
   /**
    * You give it named set of CIDs and it gives you back named set of
@@ -185,13 +182,9 @@ export interface DoesNotHasError extends RangeError {
 export interface UnknownDIDError extends RangeError {
   readonly name: 'UnknownDIDError'
   did: DID | null
-
-  error: true
 }
 
 export interface InvalidInvocation extends Error {
   readonly name: 'InvalidInvocation'
   link: Link
-
-  error: true
 }
