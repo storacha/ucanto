@@ -63,12 +63,14 @@ test('validate mailto', async () => {
   })
 
   assert.containSubset(result, {
-    match: {
-      value: {
-        can: 'debug/echo',
-        with: account.did(),
-        nb: {
-          message: 'hello world',
+    ok: {
+      match: {
+        value: {
+          can: 'debug/echo',
+          with: account.did(),
+          nb: {
+            message: 'hello world',
+          },
         },
       },
     },
@@ -146,12 +148,14 @@ test('delegated ucan/attest', async () => {
   })
 
   assert.containSubset(result, {
-    match: {
-      value: {
-        can: 'debug/echo',
-        with: account.did(),
-        nb: {
-          message: 'hello world',
+    ok: {
+      match: {
+        value: {
+          can: 'debug/echo',
+          with: account.did(),
+          nb: {
+            message: 'hello world',
+          },
         },
       },
     },
@@ -175,12 +179,13 @@ test('fail without proofs', async () => {
   })
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
+    },
   })
 
   assert.match(
-    result.toString(),
+    `${result.error}`,
     /Unable to resolve 'did:mailto:web.mail:alice'/
   )
 })
@@ -211,12 +216,13 @@ test('fail without session', async () => {
   })
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
+    },
   })
 
   assert.match(
-    result.toString(),
+    `${result.error}`,
     /Unable to resolve 'did:mailto:web.mail:alice'/
   )
 })
@@ -274,11 +280,12 @@ test('fail invalid ucan/attest proof', async () => {
   })
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
+    },
   })
 
-  assert.match(result.toString(), /has an invalid session/)
+  assert.match(`${result.error}`, /has an invalid session/)
 })
 
 test('resolve key', async () => {
@@ -294,17 +301,19 @@ test('resolve key', async () => {
   const result = await access(await inv.delegate(), {
     authority: w3,
     capability: echo,
-    resolveDIDKey: _ => alice.did(),
+    resolveDIDKey: _ => Schema.ok(alice.did()),
     principal: Verifier,
   })
 
   assert.containSubset(result, {
-    match: {
-      value: {
-        can: 'debug/echo',
-        with: account.did(),
-        nb: {
-          message: 'hello world',
+    ok: {
+      match: {
+        value: {
+          can: 'debug/echo',
+          with: account.did(),
+          nb: {
+            message: 'hello world',
+          },
         },
       },
     },
@@ -352,7 +361,7 @@ test('service can not delegate access to account', async () => {
     principal: Verifier,
   })
 
-  assert.equal(result.error, true)
+  assert.equal(!result.ok, true)
 })
 
 test('attest with an account did', async () => {
@@ -397,7 +406,7 @@ test('attest with an account did', async () => {
     principal: Verifier,
   })
 
-  assert.equal(result.error, true)
+  assert.equal(!result.ok, true)
 })
 
 test('service can not delegate account resource', async () => {
@@ -427,5 +436,5 @@ test('service can not delegate account resource', async () => {
     principal: Verifier,
   })
 
-  assert.equal(result.error, true)
+  assert.equal(!result.ok, true)
 })

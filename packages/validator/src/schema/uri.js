@@ -28,7 +28,7 @@ class URISchema extends Schema.API {
       if (protocol != null && url.protocol !== protocol) {
         return Schema.error(`Expected ${protocol} URI instead got ${url.href}`)
       } else {
-        return /** @type {API.URI<O['protocol']>} */ (url.href)
+        return { ok: /** @type {API.URI<O['protocol']>} */ (url.href) }
       }
     } catch (_) {
       return Schema.error(`Invalid URI`)

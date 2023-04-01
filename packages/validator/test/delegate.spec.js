@@ -1,4 +1,4 @@
-import { capability, DID, URI, Link, Schema } from '../src/lib.js'
+import { capability, DID, URI, Link, Schema, ok, fail } from '../src/lib.js'
 import { parseLink, delegate, UCAN } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
@@ -247,8 +247,7 @@ const nbchild = parent.derive({
       limit: Schema.integer(),
     }),
   }),
-  derives: (b, a) =>
-    b.with === a.with ? true : new Failure(`with don't match`),
+  derives: (b, a) => (b.with === a.with ? ok({}) : fail(`with don't match`)),
 })
 
 const child = parent.derive({
@@ -256,8 +255,7 @@ const child = parent.derive({
     can: 'test/child',
     with: Schema.DID.match({ method: 'key' }),
   }),
-  derives: (b, a) =>
-    b.with === a.with ? true : new Failure(`with don't match`),
+  derives: (b, a) => (b.with === a.with ? ok({}) : fail(`with don't match`)),
 })
 
 test('delegate derived capability', async () => {

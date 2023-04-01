@@ -396,7 +396,7 @@ export interface OutcomeModel<
   Ran extends Invocation = Invocation
 > {
   ran: ReturnType<Ran['link']>
-  out: ReceiptResult<Ok, Error>
+  out: Result<Ok, Error>
   fx: EffectsModel
   meta: Meta
   iss?: DID
@@ -431,7 +431,7 @@ export interface Receipt<
 > extends IPLDView<ReceiptModel<Ok, Error, Ran>>,
     IPLDViewBuilder<Receipt<Ok, Error, Ran, Alg>> {
   readonly ran: Ran | ReturnType<Ran['link']>
-  readonly out: ReceiptResult<Ok, Error>
+  readonly out: Result<Ok, Error>
   readonly fx: Effects
   readonly meta: Meta
 
@@ -440,9 +440,7 @@ export interface Receipt<
 
   readonly signature: SignatureView<OutcomeModel<Ok, Error, Ran>, Alg>
 
-  verifySignature(
-    signer: Crypto.Verifier
-  ): Await<ReceiptResult<{}, SignatureError>>
+  verifySignature(signer: Crypto.Verifier): Await<Result<{}, SignatureError>>
 
   buildIPLDView(): Receipt<Ok, Error, Ran, Alg>
 }
@@ -474,7 +472,7 @@ export interface InstructionModel<
  * @see https://github.com/ucan-wg/invocation/#6-result
  */
 
-export type ReceiptResult<T = unknown, X extends {} = {}> = Variant<{
+export type Result<T = unknown, X extends {} = {}> = Variant<{
   ok: T
   error: X
 }>
@@ -565,11 +563,7 @@ export type InferInvocations<T> = T extends []
  * @typeParam O - type returned by the handler on success
  * @typeParam X - type returned by the handler on error
  */
-export interface ServiceMethod<
-  I extends Capability,
-  O,
-  X extends { error: true }
-> {
+export interface ServiceMethod<I extends Capability, O, X extends {}> {
   (input: Invocation<I>, context: InvocationContext): Await<
     Result<O, X | InvocationError>
   >
@@ -705,14 +699,7 @@ export type ExecuteInvocation<
   ? Out
   : never
 
-export type Result<T extends unknown, X extends { error: true }> =
-  | (T extends null | undefined ? T : never)
-  | (T & { error?: never })
-  | X
-
-export interface Failure extends Error {
-  error: true
-}
+export interface Failure extends Error {}
 
 export interface HandlerNotFound extends RangeError {
   error: true
@@ -781,9 +768,7 @@ export interface InboundAcceptCodec {
 }
 
 export interface InboundCodec {
-  accept(
-    request: Transport.HTTPRequest
-  ): ReceiptResult<InboundAcceptCodec, HTTPError>
+  accept(request: Transport.HTTPRequest): Result<InboundAcceptCodec, HTTPError>
 }
 
 export interface HTTPError {

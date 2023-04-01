@@ -16,7 +16,6 @@ test('Failure', () => {
   assert.deepInclude(json, {
     name: 'Error',
     message: 'boom!',
-    error: true,
     stack: error.stack,
   })
 
@@ -39,7 +38,6 @@ test('InvalidAudience', async () => {
   const error = new PrincipalAlignmentError(bob, delegation)
 
   assert.deepEqual(error.toJSON(), {
-    error: true,
     name: 'InvalidAudience',
     audience: bob.did(),
     delegation: { audience: w3.did() },
@@ -90,7 +88,6 @@ test('Expired', async () => {
     JSON.stringify(error, null, 2),
     JSON.stringify(
       {
-        error: true,
         name: 'Expired',
         message: `Proof ${delegation.cid} has expired on ${new Date(
           expiration * 1000
@@ -128,7 +125,6 @@ test('NotValidBefore', async () => {
     JSON.stringify(error, null, 2),
     JSON.stringify(
       {
-        error: true,
         name: 'NotValidBefore',
         message: `Proof ${delegation.cid} is not valid before ${new Date(
           time * 1000

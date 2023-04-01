@@ -1,16 +1,12 @@
 import { Failure as Error, Result, Phantom } from '@ucanto/interface'
 
-export interface Reader<
-  O = unknown,
-  I = unknown,
-  X extends { error: true } = Error
-> {
+export interface Reader<O = unknown, I = unknown, X extends Error = Error> {
   read(input: I): Result<O, X>
 }
 
-export type { Error }
+export type { Error, Result }
 
-export type ReadResult<T, X extends { error: true } = Error> = Result<T, X>
+export type ReadResult<T, X extends Error = Error> = Result<T, X>
 
 export interface Schema<
   O extends unknown = unknown,
@@ -136,7 +132,7 @@ export type Float = number & Phantom<{ typeof: 'float' }>
 
 export type Infer<T extends Reader> = T extends Reader<infer T, any> ? T : never
 
-export type InferIntesection<U extends [Reader, ...Reader[]]> = {
+export type InferIntersection<U extends [Reader, ...Reader[]]> = {
   [K in keyof U]: (input: Infer<U[K]>) => void
 }[number] extends (input: infer T) => void
   ? T

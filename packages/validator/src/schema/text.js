@@ -29,7 +29,7 @@ class Match extends Schema.API {
         `Expected to match ${pattern} but got "${source}" instead`
       )
     } else {
-      return source
+      return { ok: source }
     }
   }
 }

@@ -3,11 +3,11 @@ import { test, assert } from './test.js'
 import * as API from '@ucanto/interface'
 
 {
-  /** @type {[string, string|{message:string}][]} */
+  /** @type {[string, {ok:string}|{error:{message:string}}][]} */
   const dataset = [
-    ['', { message: 'Invalid URI' }],
-    ['did:key:zAlice', 'did:key:zAlice'],
-    ['mailto:alice@mail.net', 'mailto:alice@mail.net'],
+    ['', { error: { message: 'Invalid URI' } }],
+    ['did:key:zAlice', { ok: 'did:key:zAlice' }],
+    ['mailto:alice@mail.net', { ok: 'mailto:alice@mail.net' }],
   ]
 
   for (const [input, expect] of dataset) {
@@ -30,22 +30,30 @@ test('URI.from', () => {
 })
 
 {
-  /** @type {[unknown, `${string}:`, {message:string}|string][]} */
+  /** @type {[unknown, `${string}:`, {ok:string}|{error:{message:string}}][]} */
   const dataset = [
-    [undefined, 'did:', { message: 'Expected URI but got undefined' }],
-    [null, 'did:', { message: 'Expected URI but got null' }],
-    ['', 'did:', { message: 'Invalid URI' }],
-    ['did:key:zAlice', 'did:', 'did:key:zAlice'],
+    [
+      undefined,
+      'did:',
+      { error: { message: 'Expected URI but got undefined' } },
+    ],
+    [null, 'did:', { error: { message: 'Expected URI but got null' } }],
+    ['', 'did:', { error: { message: 'Invalid URI' } }],
+    ['did:key:zAlice', 'did:', { ok: 'did:key:zAlice' }],
     [
       'did:key:zAlice',
       'mailto:',
-      { message: 'Expected mailto: URI instead got did:key:zAlice' },
+      { error: { message: 'Expected mailto: URI instead got did:key:zAlice' } },
     ],
-    ['mailto:alice@mail.net', 'mailto:', 'mailto:alice@mail.net'],
+    ['mailto:alice@mail.net', 'mailto:', { ok: 'mailto:alice@mail.net' }],
     [
       'mailto:alice@mail.net',
       'did:',
-      { message: 'Expected did: URI instead got mailto:alice@mail.net' },
+      {
+        error: {
+          message: 'Expected did: URI instead got mailto:alice@mail.net',
+        },
+      },
     ],
   ]
 
@@ -59,22 +67,26 @@ test('URI.from', () => {
 }
 
 {
-  /** @type {[unknown, `${string}:`, {message:string}|string|undefined][]} */
+  /** @type {[unknown, `${string}:`, {ok:string|undefined}|{error:{message:string}}][]} */
   const dataset = [
-    [undefined, 'did:', undefined],
-    [null, 'did:', { message: 'Expected URI but got null' }],
-    ['', 'did:', { message: 'Invalid URI' }],
-    ['did:key:zAlice', 'did:', 'did:key:zAlice'],
+    [undefined, 'did:', { ok: undefined }],
+    [null, 'did:', { error: { message: 'Expected URI but got null' } }],
+    ['', 'did:', { error: { message: 'Invalid URI' } }],
+    ['did:key:zAlice', 'did:', { ok: 'did:key:zAlice' }],
     [
       'did:key:zAlice',
       'mailto:',
-      { message: 'Expected mailto: URI instead got did:key:zAlice' },
+      { error: { message: 'Expected mailto: URI instead got did:key:zAlice' } },
     ],
-    ['mailto:alice@mail.net', 'mailto:', 'mailto:alice@mail.net'],
+    ['mailto:alice@mail.net', 'mailto:', { ok: 'mailto:alice@mail.net' }],
     [
       'mailto:alice@mail.net',
       'did:',
-      { message: 'Expected did: URI instead got mailto:alice@mail.net' },
+      {
+        error: {
+          message: 'Expected did: URI instead got mailto:alice@mail.net',
+        },
+      },
     ],
   ]
 
@@ -144,32 +156,50 @@ test('URI.from', () => {
 
   for (const [input, out1, out2, out3, out4, out5] of dataset) {
     test(`Link.read(${input})`, () => {
-      assert.containSubset(Link.read(input), out1 || input)
+      assert.containSubset(
+        Link.read(input),
+        out1 ? { error: out1 } : { ok: input }
+      )
     })
 
     test('Link.link()', () => {
       const schema = Link.link()
-      assert.containSubset(schema.read(input), out1 || input)
+      assert.containSubset(
+        schema.read(input),
+        out1 ? { error: out1 } : { ok: input }
+      )
     })
 
     test(`Link.match({ code: 0x70 }).read(${input})`, () => {
       const link = Link.match({ code: 0x70 })
-      assert.containSubset(link.read(input), out2 || input)
+      assert.containSubset(
+        link.read(input),
+        out2 ? { error: out2 } : { ok: input }
+      )
     })
 
     test(`Link.match({ algorithm: 0x12 }).read(${input})`, () => {
       const link = Link.match({ multihash: { code: 0x12 } })
-      assert.containSubset(link.read(input), out3 || input)
+      assert.containSubset(
+        link.read(input),
+        out3 ? { error: out3 } : { ok: input }
+      )
     })
 
     test(`Link.match({ version: 1 }).read(${input})`, () => {
       const link = Link.match({ version: 1 })
-      assert.containSubset(link.read(input), out4 || input)
+      assert.containSubset(
+        link.read(input),
+        out4 ? { error: out4 } : { ok: input }
+      )
     })
 
     test(`Link.optional().read(${input})`, () => {
       const link = Link.optional()
-      assert.containSubset(link.read(input), out5 || input)
+      assert.containSubset(
+        link.read(input),
+        out5 ? { error: out5 } : { ok: input }
+      )
     })
   }
 }
@@ -179,13 +209,22 @@ test('URI.from', () => {
   const dataset = [
     [
       undefined,
-      { message: 'Expected value of type string instead got undefined' },
+      {
+        error: {
+          message: 'Expected value of type string instead got undefined',
+        },
+      },
     ],
-    [null, { message: 'Expected value of type string instead got null' }],
-    ['hello', 'hello'],
+    [
+      null,
+      { error: { message: 'Expected value of type string instead got null' } },
+    ],
+    ['hello', { ok: 'hello' }],
     [
       new String('hello'),
-      { message: 'Expected value of type string instead got object' },
+      {
+        error: { message: 'Expected value of type string instead got object' },
+      },
     ],
   ]
 
@@ -203,24 +242,32 @@ test('URI.from', () => {
       { pattern: /hello .*/ },
       undefined,
       {
-        message: 'Expected value of type string instead got undefined',
+        error: {
+          message: 'Expected value of type string instead got undefined',
+        },
       },
     ],
     [
       { pattern: /hello .*/ },
       null,
-      { message: 'Expected value of type string instead got null' },
+      { error: { message: 'Expected value of type string instead got null' } },
     ],
     [
       { pattern: /hello .*/ },
       'hello',
-      { message: 'Expected to match /hello .*/ but got "hello" instead' },
+      {
+        error: {
+          message: 'Expected to match /hello .*/ but got "hello" instead',
+        },
+      },
     ],
-    [{ pattern: /hello .*/ }, 'hello world', 'hello world'],
+    [{ pattern: /hello .*/ }, 'hello world', { ok: 'hello world' }],
     [
       { pattern: /hello .*/ },
       new String('hello'),
-      { message: 'Expected value of type string instead got object' },
+      {
+        error: { message: 'Expected value of type string instead got object' },
+      },
     ],
   ]
 
@@ -234,34 +281,48 @@ test('URI.from', () => {
 {
   /** @type {[{pattern?:RegExp}, unknown, unknown][]} */
   const dataset = [
-    [{}, undefined, undefined],
-    [{}, null, { message: 'Expected value of type string instead got null' }],
-    [{}, 'hello', 'hello'],
+    [{}, undefined, { ok: undefined }],
+    [
+      {},
+      null,
+      { error: { message: 'Expected value of type string instead got null' } },
+    ],
+    [{}, 'hello', { ok: 'hello' }],
     [
       {},
       new String('hello'),
-      { message: 'Expected value of type string instead got object' },
+      {
+        error: { message: 'Expected value of type string instead got object' },
+      },
     ],
 
-    [{ pattern: /hello .*/ }, undefined, undefined],
+    [{ pattern: /hello .*/ }, undefined, { ok: undefined }],
     [
       { pattern: /hello .*/ },
       null,
       {
-        message: 'Expected value of type string instead got null',
+        error: {
+          message: 'Expected value of type string instead got null',
+        },
       },
     ],
     [
       { pattern: /hello .*/ },
       'hello',
-      { message: 'Expected to match /hello .*/ but got "hello" instead' },
+      {
+        error: {
+          message: 'Expected to match /hello .*/ but got "hello" instead',
+        },
+      },
     ],
-    [{ pattern: /hello .*/ }, 'hello world', 'hello world'],
+    [{ pattern: /hello .*/ }, 'hello world', { ok: 'hello world' }],
     [
       { pattern: /hello .*/ },
       new String('hello'),
       {
-        message: 'Expected value of type string instead got object',
+        error: {
+          message: 'Expected value of type string instead got object',
+        },
       },
     ],
   ]
@@ -281,17 +342,29 @@ test('URI.from', () => {
   const dataset = [
     [
       undefined,
-      { message: 'Expected value of type string instead got undefined' },
+      {
+        error: {
+          message: 'Expected value of type string instead got undefined',
+        },
+      },
     ],
-    [null, { message: 'Expected value of type string instead got null' }],
-    ['hello', { message: 'Expected a did: but got "hello" instead' }],
+    [
+      null,
+      { error: { message: 'Expected value of type string instead got null' } },
+    ],
+    [
+      'hello',
+      { error: { message: 'Expected a did: but got "hello" instead' } },
+    ],
     [
       new String('hello'),
       {
-        message: 'Expected value of type string instead got object',
+        error: {
+          message: 'Expected value of type string instead got object',
+        },
       },
     ],
-    ['did:echo:1', 'did:echo:1'],
+    ['did:echo:1', { ok: 'did:echo:1' }],
   ]
 
   for (const [input, out] of dataset) {
@@ -307,28 +380,38 @@ test('URI.from', () => {
     [
       { method: 'echo' },
       undefined,
-      { message: 'Expected value of type string instead got undefined' },
+      {
+        error: {
+          message: 'Expected value of type string instead got undefined',
+        },
+      },
     ],
     [
       { method: 'echo' },
       null,
-      { message: 'Expected value of type string instead got null' },
+      { error: { message: 'Expected value of type string instead got null' } },
     ],
     [
       { method: 'echo' },
       'hello',
-      { message: 'Expected a did:echo: but got "hello" instead' },
+      { error: { message: 'Expected a did:echo: but got "hello" instead' } },
     ],
-    [{ method: 'echo' }, 'did:echo:hello', 'did:echo:hello'],
+    [{ method: 'echo' }, 'did:echo:hello', { ok: 'did:echo:hello' }],
     [
       { method: 'foo' },
       'did:echo:hello',
-      { message: 'Expected a did:foo: but got "did:echo:hello" instead' },
+      {
+        error: {
+          message: 'Expected a did:foo: but got "did:echo:hello" instead',
+        },
+      },
     ],
     [
       { method: 'echo' },
       new String('hello'),
-      { message: 'Expected value of type string instead got object' },
+      {
+        error: { message: 'Expected value of type string instead got object' },
+      },
     ],
   ]
 
@@ -342,35 +425,51 @@ test('URI.from', () => {
 {
   /** @type {[{method?:string}, unknown, unknown][]} */
   const dataset = [
-    [{}, undefined, undefined],
-    [{}, null, { message: 'Expected value of type string instead got null' }],
-    [{}, 'did:echo:bar', 'did:echo:bar'],
+    [{}, undefined, { ok: undefined }],
+    [
+      {},
+      null,
+      { error: { message: 'Expected value of type string instead got null' } },
+    ],
+    [{}, 'did:echo:bar', { ok: 'did:echo:bar' }],
     [
       {},
       new String('hello'),
-      { message: 'Expected value of type string instead got object' },
+      {
+        error: { message: 'Expected value of type string instead got object' },
+      },
     ],
 
-    [{ method: 'echo' }, undefined, undefined],
+    [{ method: 'echo' }, undefined, { ok: undefined }],
     [
       { method: 'echo' },
       null,
-      { message: 'Expected value of type string instead got null' },
+      { error: { message: 'Expected value of type string instead got null' } },
     ],
     [
       { method: 'echo' },
       'did:hello:world',
-      { message: 'Expected a did:echo: but got "did:hello:world" instead' },
+      {
+        error: {
+          message: 'Expected a did:echo: but got "did:hello:world" instead',
+        },
+      },
     ],
     [
       { method: 'echo' },
       'hello world',
-      { message: 'Expected a did:echo: but got "hello world" instead' },
+      {
+        error: {
+          message: 'Expected a did:echo: but got "hello world" instead',
+        },
+      },
     ],
     [
       { method: 'echo' },
       new String('hello'),
-      { message: 'Expected value of type string instead got object' },
+      {
+        error: { message: 'Expected value of type string instead got object' },
+      },
     ],
   ]
 

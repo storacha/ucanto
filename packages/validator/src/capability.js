@@ -5,7 +5,6 @@ import {
   MalformedCapability,
   UnknownCapability,
   DelegationError as MatchError,
-  Failure,
 } from './error.js'
 import { invoke, delegate } from '@ucanto/core'
 import * as Schema from './schema.js'
@@ -18,7 +17,7 @@ import * as Schema from './schema.js'
  * can: A
  * with: API.Reader<R, API.Resource, API.Failure>
  * nb?: Schema.MapRepresentation<C, unknown>
- * derives?: (claim: {can:A, with: R, nb: C}, proof:{can:A, with:R, nb:C}) => API.Result<true, API.Failure>
+ * derives?: (claim: {can:A, with: R, nb: C}, proof:{can:A, with:R, nb:C}) => API.Result<{}, API.Failure>
  * }} Descriptor
  */
 
@@ -79,11 +78,12 @@ class View {
    */
   /* c8 ignore next 3 */
   match(source) {
-    return new UnknownCapability(source.capability)
+    return { error: new UnknownCapability(source.capability) }
   }
 
   /**
    * @param {API.Source[]} capabilities
+   * @returns {API.Select<M>}
    */
   select(capabilities) {
     return select(this, capabilities)
@@ -157,19 +157,22 @@ class Capability extends Unit {
 
     const resource = descriptor.with.read(options.with)
     if (resource.error) {
-      throw Object.assign(new Error(`Invalid 'with' - ${resource.message}`), {
-        cause: resource,
-      })
+      throw Object.assign(
+        new Error(`Invalid 'with' - ${resource.error.message}`),
+        {
+          cause: resource,
+        }
+      )
     }
 
     const nb = descriptor.nb.read(data)
     if (nb.error) {
-      throw Object.assign(new Error(`Invalid 'nb' - ${nb.message}`), {
+      throw Object.assign(new Error(`Invalid 'nb' - ${nb.error.message}`), {
         cause: nb,
       })
     }
 
-    return createCapability({ can, with: resource, nb })
+    return createCapability({ can, with: resource.ok, nb: nb.ok })
   }
 
   /**
@@ -195,20 +198,23 @@ class Capability extends Unit {
 
     const resource = descriptor.with.read(with_)
     if (resource.error) {
-      throw Object.assign(new Error(`Invalid 'with' - ${resource.message}`), {
-        cause: resource,
-      })
+      throw Object.assign(
+        new Error(`Invalid 'with' - ${resource.error.message}`),
+        {
+          cause: resource,
+        }
+      )
     }
 
     const nb = descriptor.nb.partial().read(input)
     if (nb.error) {
-      throw Object.assign(new Error(`Invalid 'nb' - ${nb.message}`), {
+      throw Object.assign(new Error(`Invalid 'nb' - ${nb.error.message}`), {
         cause: nb,
       })
     }
 
     return delegate({
-      capabilities: [createCapability({ can, with: resource, nb })],
+      capabilities: [createCapability({ can, with: resource.ok, nb: nb.ok })],
       ...options,
     })
   }
@@ -223,7 +229,9 @@ class Capability extends Unit {
    */
   match(source) {
     const result = parseCapability(this.descriptor, source)
-    return result.error ? result : new Match(source, result, this.descriptor)
+    return result.error
+      ? result
+      : { ok: new Match(source, result.ok, this.descriptor) }
   }
   toString() {
     return JSON.stringify({ can: this.descriptor.can })
@@ -281,7 +289,7 @@ class Or extends Unit {
     if (left.error) {
       const right = this.right.match(capability)
       if (right.error) {
-        return right.name === 'MalformedCapability'
+        return right.error.name === 'MalformedCapability'
           ? //
             right
           : //
@@ -323,11 +331,13 @@ class And extends View {
       if (result.error) {
         return result
       } else {
-        group.push(result)
+        group.push(result.ok)
       }
     }
 
-    return new AndMatch(/** @type {API.InferMembers<Selectors>} */ (group))
+    return {
+      ok: new AndMatch(/** @type {API.InferMembers<Selectors>} */ (group)),
+    }
   }
 
   /**
@@ -400,7 +410,7 @@ class Derive extends Unit {
     if (match.error) {
       return match
     } else {
-      return new DerivedMatch(match, this.from, this.derives)
+      return { ok: new DerivedMatch(match.ok, this.from, this.derives) }
     }
   }
   toString() {
@@ -459,26 +469,26 @@ class Match {
     const matches = []
     for (const capability of capabilities) {
       const result = resolveCapability(this.descriptor, this.value, capability)
-      if (!result.error) {
-        const claim = this.descriptor.derives(this.value, result)
+      if (result.ok) {
+        const claim = this.descriptor.derives(this.value, result.ok)
         if (claim.error) {
           errors.push(
             new MatchError(
-              [new EscalatedCapability(this.value, result, claim)],
+              [new EscalatedCapability(this.value, result.ok, claim.error)],
               this
             )
           )
         } else {
-          matches.push(new Match(capability, result, this.descriptor))
+          matches.push(new Match(capability, result.ok, this.descriptor))
         }
       } else {
-        switch (result.name) {
+        switch (result.error.name) {
           case 'UnknownCapability':
-            unknown.push(result.capability)
+            unknown.push(result.error.capability)
             break
           case 'MalformedCapability':
           default:
-            errors.push(new MatchError([result], this))
+            errors.push(new MatchError([result.error], this))
         }
       }
     }
@@ -558,7 +568,7 @@ class DerivedMatch {
       if (result.error) {
         errors.push(
           new MatchError(
-            [new EscalatedCapability(value, match.value, result)],
+            [new EscalatedCapability(value, match.value, result.error)],
             this
           )
         )
@@ -738,20 +748,20 @@ const parseCapability = (descriptor, source) => {
   const capability = /** @type {API.Capability<A, R, C>} */ (source.capability)
 
   if (descriptor.can !== capability.can) {
-    return new UnknownCapability(capability)
+    return { error: new UnknownCapability(capability) }
   }
 
   const uri = descriptor.with.read(capability.with)
   if (uri.error) {
-    return new MalformedCapability(capability, uri)
+    return { error: new MalformedCapability(capability, uri.error) }
   }
 
   const nb = descriptor.nb.read(capability.nb || {})
   if (nb.error) {
-    return new MalformedCapability(capability, nb)
+    return { error: new MalformedCapability(capability, nb.error) }
   }
 
-  return new CapabilityView(descriptor.can, uri, nb, delegation)
+  return { ok: new CapabilityView(descriptor.can, uri.ok, nb.ok, delegation) }
 }
 
 /**
@@ -774,7 +784,7 @@ const parseCapability = (descriptor, source) => {
 const resolveCapability = (descriptor, claimed, { capability, delegation }) => {
   const can = resolveAbility(capability.can, claimed.can, null)
   if (can == null) {
-    return new UnknownCapability(capability)
+    return { error: new UnknownCapability(capability) }
   }
 
   const resource = resolveResource(
@@ -784,7 +794,7 @@ const resolveCapability = (descriptor, claimed, { capability, delegation }) => {
   )
   const uri = descriptor.with.read(resource)
   if (uri.error) {
-    return new MalformedCapability(capability, uri)
+    return { error: new MalformedCapability(capability, uri.error) }
   }
 
   const nb = descriptor.nb.read({
@@ -793,10 +803,10 @@ const resolveCapability = (descriptor, claimed, { capability, delegation }) => {
   })
 
   if (nb.error) {
-    return new MalformedCapability(capability, nb)
+    return { error: new MalformedCapability(capability, nb.error) }
   }
 
-  return new CapabilityView(can, uri, nb, delegation)
+  return { ok: new CapabilityView(can, uri.ok, nb.ok, delegation) }
 }
 
 /**
@@ -823,6 +833,7 @@ class CapabilityView {
  * @template {API.Match} M
  * @param {API.Matcher<M>} matcher
  * @param {API.Source[]} capabilities
+ * @returns {API.Select<M>}
  */
 
 const select = (matcher, capabilities) => {
@@ -832,16 +843,16 @@ const select = (matcher, capabilities) => {
   for (const capability of capabilities) {
     const result = matcher.match(capability)
     if (result.error) {
-      switch (result.name) {
+      switch (result.error.name) {
         case 'UnknownCapability':
-          unknown.push(result.capability)
+          unknown.push(result.error.capability)
           break
         case 'MalformedCapability':
         default:
-          errors.push(new MatchError([result], result.capability))
+          errors.push(new MatchError([result.error], result.error.capability))
       }
     } else {
-      matches.push(result)
+      matches.push(result.ok)
     }
   }
 
@@ -892,12 +903,12 @@ const selectGroup = (self, capabilities) => {
 const defaultDerives = (claimed, delegated) => {
   if (delegated.with.endsWith('*')) {
     if (!claimed.with.startsWith(delegated.with.slice(0, -1))) {
-      return new Failure(
+      return Schema.error(
         `Resource ${claimed.with} does not match delegated ${delegated.with} `
       )
     }
   } else if (delegated.with !== claimed.with) {
-    return new Failure(
+    return Schema.error(
       `Resource ${claimed.with} is not contained by ${delegated.with}`
     )
   }
@@ -909,9 +920,9 @@ const defaultDerives = (claimed, delegated) => {
 
   for (const [name, value] of kv) {
     if (nb[name] != value) {
-      return new Failure(`${String(name)}: ${nb[name]} violates ${value}`)
+      return Schema.error(`${String(name)}: ${nb[name]} violates ${value}`)
     }
   }
 
-  return true
+  return { ok: true }
 }

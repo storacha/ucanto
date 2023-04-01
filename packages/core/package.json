@@ -91,6 +91,10 @@
     "./dag": {
       "types": "./dist/src/dag.d.ts",
       "import": "./src/dag.js"
+    },
+    "./result": {
+      "types": "./dist/src/result.d.ts",
+      "import": "./src/result.js"
     }
   },
   "c8": {
