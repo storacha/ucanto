@@ -634,13 +634,13 @@ export const scenarios = fixture => [
     schema: Schema.unknown().nullable(),
     expect: fixture.unknown.any || fixture.any,
   },
-  // {
-  //   schema: Schema.unknown().default('DEFAULT'),
-  //   expect:
-  //     (fixture.unknown.default && fixture.unknown.default('DEFAULT')) ||
-  //     fixture.unknown.any ||
-  //     fixture.any,
-  // },
+  {
+    schema: Schema.unknown().default('DEFAULT'),
+    expect:
+      (fixture.unknown.default && fixture.unknown.default('DEFAULT')) ||
+      fixture.unknown.any ||
+      fixture.any,
+  },
   {
     schema: Schema.string(),
     expect: fixture.string.any || fixture.any,
