@@ -54,6 +54,14 @@ export interface MatchSelector<M extends Match>
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
+/**
+ * Generic reader interface that can be used to read `O` value form the
+ * input `I` value. Reader may fail and error is denoted by `X` type.
+ *
+ * @template O - The output type of this reader
+ * @template I - The input type of this reader.
+ * @template X - The error type denotes failure reader may produce.
+ */
 export interface Reader<O = unknown, I = unknown, X extends {} = Failure> {
   read: (input: I) => Result<O, X>
 }

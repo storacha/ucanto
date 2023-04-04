@@ -1,6 +1,9 @@
 import * as API from '@ucanto/interface'
 
 /**
+ * Creates the success result containing given `value`. Throws if
+ * `null` or `undefined` passed to encourage use of units instead.
+ *
  * @template {{}|string|boolean|number} T
  * @param {T} value
  * @returns {{ok: T, value?:undefined}}
@@ -14,6 +17,10 @@ export const ok = value => {
 }
 
 /**
+ * Creates the failing result containing given `cause` of error.
+ * Throws if `cause` is `null` or `undefined` to encourage
+ * passing descriptive errors instead.
+ *
  * @template {{}|string|boolean|number} X
  * @param {X} cause
  * @returns {{ok?:undefined, error:X}}
@@ -29,6 +36,11 @@ export const error = cause => {
 }
 
 /**
+ * Creates the failing result containing an error with a given
+ * `message`. Unlike `error` function it creates a very generic
+ *  error with `message` & `stack` fields. The `error` function
+ * is recommended over `fail` for all but the most basic use cases.
+ *
  * @param {string} message
  * @returns {{error:API.Failure, ok?:undefined}}
  */
