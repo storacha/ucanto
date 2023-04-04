@@ -54,11 +54,15 @@ export interface MatchSelector<M extends Match>
 
 export interface DirectMatch<T> extends Match<T, DirectMatch<T>> {}
 
-export interface Reader<
-  O = unknown,
-  I = unknown,
-  X extends { error: true } = Failure
-> {
+/**
+ * Generic reader interface that can be used to read `O` value form the
+ * input `I` value. Reader may fail and error is denoted by `X` type.
+ *
+ * @template O - The output type of this reader
+ * @template I - The input type of this reader.
+ * @template X - The error type denotes failure reader may produce.
+ */
+export interface Reader<O = unknown, I = unknown, X extends {} = Failure> {
   read: (input: I) => Result<O, X>
 }
 
@@ -109,7 +113,7 @@ type InferDeriveProofs<T> = T extends [infer U, ...infer E]
   : never
 
 export interface Derives<T extends ParsedCapability, U = T> {
-  (claim: T, proof: U): Result<true, Failure>
+  (claim: T, proof: U): Result<{}, Failure>
 }
 
 export interface View<M extends Match> extends Matcher<M>, Selector<M> {
@@ -237,16 +241,18 @@ export interface CapabilityParser<M extends Match = Match> extends View<M> {
    *   can: "file/read",
    *   with: URI({ protocol: "file:" }),
    *   derives: (claimed, delegated) =>
-   *   claimed.with.pathname.startsWith(delegated.with.pathname) ||
-   *   new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`)
+   *   claimed.with.pathname.startsWith(delegated.with.pathname)
+   *    ? { ok: {} }
+   *    : { error: new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`) }
    * })
    *
    * const write = capability({
    *   can: "file/write",
    *   with: URI({ protocol: "file:" }),
    *   derives: (claimed, delegated) =>
-   *     claimed.with.pathname.startsWith(delegated.with.pathname) ||
-   *     new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`)
+   *     claimed.with.pathname.startsWith(delegated.with.pathname)
+   *     ? { ok: {} }
+   *     : { error: new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`) }
    * })
    *
    * const readwrite = read.and(write).derive({
@@ -254,16 +260,17 @@ export interface CapabilityParser<M extends Match = Match> extends View<M> {
    *     can: "file/read+write",
    *     with: URI({ protocol: "file:" }),
    *     derives: (claimed, delegated) =>
-   *       claimed.with.pathname.startsWith(delegated.with.pathname) ||
-   *       new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`)
+   *       claimed.with.pathname.startsWith(delegated.with.pathname)
+   *      ? { ok: {} }
+   *      : { error: new Failure(`'${claimed.with.href}' is not contained in '${delegated.with.href}'`) }
    *     }),
    *   derives: (claimed, [read, write]) => {
    *     if (!claimed.with.pathname.startsWith(read.with.pathname)) {
-   *       return new Failure(`'${claimed.with.href}' is not contained in '${read.with.href}'`)
+   *       return { error: new Failure(`'${claimed.with.href}' is not contained in '${read.with.href}'`) }
    *     } else if (!claimed.with.pathname.startsWith(write.with.pathname)) {
-   *       return new Failure(`'${claimed.with.href}' is not contained in '${write.with.href}'`)
+   *       return { error: new Failure(`'${claimed.with.href}' is not contained in '${write.with.href}'`) }
    *     } else {
-   *       return true
+   *       return { ok: {} }
    *     }
    *   }
    * })

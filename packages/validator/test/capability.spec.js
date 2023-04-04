@@ -1,4 +1,4 @@
-import { capability, URI, Link, Schema } from '../src/lib.js'
+import { capability, URI, Link, Schema, ok, fail } from '../src/lib.js'
 import { invoke, parseLink } from '@ucanto/core'
 import * as API from '@ucanto/interface'
 import { Failure } from '../src/error.js'
@@ -33,11 +33,9 @@ test('capability selects matches', () => {
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) => {
       if (claimed.with.startsWith(delegated.with)) {
-        return true
+        return ok({})
       } else {
-        return new Failure(
-          `'${claimed.with}' is not contained in '${delegated.with}'`
-        )
+        return fail(`'${claimed.with}' is not contained in '${delegated.with}'`)
       }
     },
   })
@@ -176,11 +174,9 @@ test('derived capability chain', () => {
     with: URI.match({ protocol: 'mailto:' }),
     derives: (claimed, delegated) => {
       if (claimed.with.startsWith(delegated.with)) {
-        return true
+        return ok({})
       } else {
-        return new Failure(
-          `'${claimed.with}' is not contained in '${delegated.with}'`
-        )
+        return fail(`'${claimed.with}' is not contained in '${delegated.with}'`)
       }
     },
   })
@@ -195,10 +191,9 @@ test('derived capability chain', () => {
         /** @type {"account/register"} */
         const c2 = delegated.can
 
-        return (
-          claimed.with === delegated.with ||
-          new Failure(`'${claimed.with}' != '${delegated.with}'`)
-        )
+        return claimed.with === delegated.with
+          ? ok({})
+          : fail(`'${claimed.with}' != '${delegated.with}'`)
       },
     }),
     derives: (claimed, delegated) => {
@@ -207,10 +202,9 @@ test('derived capability chain', () => {
       /** @type {"account/verify"} */
       const c2 = delegated.can
 
-      return (
-        claimed.with === delegated.with ||
-        new Failure(`'${claimed.with}' != '${delegated.with}'`)
-      )
+      return claimed.with === delegated.with
+        ? ok({})
+        : fail(`'${claimed.with}' != '${delegated.with}'`)
     },
   })
 
@@ -420,16 +414,18 @@ test('capability amplification', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const readwrite = read.and(write).derive({
@@ -437,22 +433,17 @@ test('capability amplification', () => {
       can: 'file/read+write',
       with: URI.match({ protocol: 'file:' }),
       derives: (claimed, delegated) =>
-        claimed.with.startsWith(delegated.with) ||
-        new Failure(
-          `'${claimed.with}' is not contained in '${delegated.with}'`
-        ),
+        claimed.with.startsWith(delegated.with)
+          ? ok({})
+          : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
     }),
     derives: (claimed, [read, write]) => {
       if (!claimed.with.startsWith(read.with)) {
-        return new Failure(
-          `'${claimed.with}' is not contained in '${read.with}'`
-        )
+        return fail(`'${claimed.with}' is not contained in '${read.with}'`)
       } else if (!claimed.with.startsWith(write.with)) {
-        return new Failure(
-          `'${claimed.with}' is not contained in '${write.with}'`
-        )
+        return fail(`'${claimed.with}' is not contained in '${write.with}'`)
       } else {
-        return true
+        return ok({})
       }
     },
   })
@@ -535,7 +526,6 @@ test('capability amplification', () => {
       unknown: [],
       errors: [
         {
-          error: true,
           name: 'InvalidClaim',
           context: {
             value: {
@@ -746,16 +736,18 @@ test('capability or combinator', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const readwrite = read.or(write)
@@ -802,20 +794,20 @@ test('parse with nb', () => {
     }),
     derives: (claimed, delegated) => {
       if (claimed.with !== delegated.with) {
-        return new Failure(
+        return fail(
           `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
         )
       } else if (
         delegated.nb.link &&
         `${delegated.nb.link}` !== `${claimed.nb.link}`
       ) {
-        return new Failure(
+        return fail(
           `Link ${
             claimed.nb.link == null ? '' : `${claimed.nb.link} `
           }violates imposed ${delegated.nb.link} constraint`
         )
       } else {
-        return true
+        return ok({})
       }
     },
   })
@@ -1029,16 +1021,18 @@ test('and prune', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const readwrite = read.and(write)
@@ -1096,16 +1090,18 @@ test('toString methods', () => {
     can: 'file/read',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   const write = capability({
     can: 'file/write',
     with: URI.match({ protocol: 'file:' }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(delegated.with) ||
-      new Failure(`'${claimed.with}' is not contained in '${delegated.with}'`),
+      claimed.with.startsWith(delegated.with)
+        ? ok({})
+        : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
   })
 
   assert.equal(read.toString(), '{"can":"file/read"}')
@@ -1119,7 +1115,7 @@ test('toString methods', () => {
       },
     })
     assert.equal(
-      match.toString(),
+      `${match.ok}`,
       `{"can":"file/read","with":"file:///home/alice"}`
     )
   }
@@ -1162,22 +1158,17 @@ test('toString methods', () => {
       can: 'file/read+write',
       with: URI.match({ protocol: 'file:' }),
       derives: (claimed, delegated) =>
-        claimed.with.startsWith(delegated.with) ||
-        new Failure(
-          `'${claimed.with}' is not contained in '${delegated.with}'`
-        ),
+        claimed.with.startsWith(delegated.with)
+          ? ok({})
+          : fail(`'${claimed.with}' is not contained in '${delegated.with}'`),
     }),
     derives: (claimed, [read, write]) => {
       if (!claimed.with.startsWith(read.with)) {
-        return new Failure(
-          `'${claimed.with}' is not contained in '${read.with}'`
-        )
+        return fail(`'${claimed.with}' is not contained in '${read.with}'`)
       } else if (!claimed.with.startsWith(write.with)) {
-        return new Failure(
-          `'${claimed.with}' is not contained in '${write.with}'`
-        )
+        return fail(`'${claimed.with}' is not contained in '${write.with}'`)
       } else {
-        return true
+        return ok({})
       }
     },
   })
@@ -1193,7 +1184,7 @@ test('toString methods', () => {
     })
 
     assert.equal(
-      match.toString(),
+      `${match.ok}`,
       `{"can":"file/read+write","with":"file:///home/alice"}`
     )
   }
@@ -1579,12 +1570,12 @@ test('and chain', () => {
     }),
     derives: (abc, [a, b, c]) => {
       return abc.with !== a.with
-        ? new Failure(`${abc.with} != ${a.with}`)
+        ? fail(`${abc.with} != ${a.with}`)
         : abc.with !== b.with
-        ? new Failure(`${abc.with} != ${b.with}`)
+        ? fail(`${abc.with} != ${b.with}`)
         : abc.with !== c.with
-        ? new Failure(`${abc.with} != ${c.with}`)
-        : true
+        ? fail(`${abc.with} != ${c.with}`)
+        : ok({})
     },
   })
 
@@ -1599,7 +1590,7 @@ test('and chain', () => {
   assert.containSubset(
     ABC.match(source({ can: 'test/c', with: 'file:///test' })),
     {
-      error: true,
+      error: {},
     }
   )
 
@@ -1648,7 +1639,7 @@ test('.and(...).match', () => {
   )
 
   if (m.error) {
-    return assert.fail(m.message)
+    return assert.fail(m.error.message)
   }
 
   assert.containSubset(AB.select([]), {
@@ -1662,7 +1653,7 @@ test('.and(...).match', () => {
     { can: 'test/ab', with: 'data:1', nb: { a: 'A', b: 'b' } },
   ])
 
-  assert.containSubset(m.select(src), {
+  assert.containSubset(m.ok.select(src), {
     unknown: [],
     errors: [
       {
@@ -1711,8 +1702,9 @@ test('A.or(B).match', () => {
 
   const ab = AB.match(source({ can: 'test/c', with: 'data:0' }))
   assert.containSubset(ab, {
-    error: true,
-    name: 'UnknownCapability',
+    error: {
+      name: 'UnknownCapability',
+    },
   })
 
   assert.containSubset(
@@ -1724,8 +1716,9 @@ test('A.or(B).match', () => {
       })
     ),
     {
-      error: true,
-      name: 'MalformedCapability',
+      error: {
+        name: 'MalformedCapability',
+      },
     }
   )
 })
@@ -1750,18 +1743,24 @@ test('and with diff nb', () => {
   const AB = A.and(B)
 
   assert.containSubset(AB.match(source({ can: 'test/me', with: 'data:1' })), {
-    error: true,
+    error: {
+      name: 'MalformedCapability',
+    },
   })
   assert.containSubset(
     AB.match(source({ can: 'test/me', with: 'data:1', nb: { a: 'a' } })),
     {
-      error: true,
+      error: {
+        name: 'MalformedCapability',
+      },
     }
   )
   assert.containSubset(
     AB.match(source({ can: 'test/me', with: 'data:1', nb: { b: 'b' } })),
     {
-      error: true,
+      error: {
+        name: 'MalformedCapability',
+      },
     }
   )
 
@@ -1772,11 +1771,13 @@ test('and with diff nb', () => {
       source({ can: 'test/me', with: 'data:1', nb: { a: 'a', b: 'b' } }, proof)
     ),
     {
-      proofs: [proof],
-      matches: [
-        { value: { can: 'test/me', with: 'data:1', nb: { a: 'a' } } },
-        { value: { can: 'test/me', with: 'data:1', nb: { b: 'b' } } },
-      ],
+      ok: {
+        proofs: [proof],
+        matches: [
+          { value: { can: 'test/me', with: 'data:1', nb: { a: 'a' } } },
+          { value: { can: 'test/me', with: 'data:1', nb: { b: 'b' } } },
+        ],
+      },
     }
   )
 })
@@ -1792,8 +1793,7 @@ test('derived capability DSL', () => {
       can: 'derive/a',
       with: Schema.URI,
     }),
-    derives: (b, a) =>
-      b.with === a.with ? true : new Failure(`with don't match`),
+    derives: (b, a) => (b.with === a.with ? ok({}) : fail(`with don't match`)),
   })
 
   assert.deepEqual(
@@ -1832,12 +1832,14 @@ test('capability match', () => {
 
   const m = a.match(source({ can: 'test/a', with: 'data:a' }, proof))
   assert.containSubset(m, {
-    can: 'test/a',
-    proofs: [proof],
+    ok: {
+      can: 'test/a',
+      proofs: [proof],
+    },
   })
 
   assert.equal(
-    m.toString(),
+    `${m.ok}`,
     JSON.stringify({
       can: 'test/a',
       with: 'data:a',
@@ -1846,7 +1848,7 @@ test('capability match', () => {
 
   const m2 = a.match(source({ can: 'test/a', with: 'data:a', nb: {} }, proof))
   assert.equal(
-    m2.toString(),
+    `${m2.ok}`,
     JSON.stringify({
       can: 'test/a',
       with: 'data:a',
@@ -1873,17 +1875,19 @@ test('capability match', () => {
   )
 
   assert.containSubset(m3, {
-    can: 'test/echo',
-    value: {
+    ok: {
       can: 'test/echo',
-      with: alice.did(),
-      nb: { message: 'data:hello' },
+      value: {
+        can: 'test/echo',
+        with: alice.did(),
+        nb: { message: 'data:hello' },
+      },
+      proofs: [proof],
     },
-    proofs: [proof],
   })
 
   assert.equal(
-    m3.toString(),
+    `${m3.ok}`,
     JSON.stringify({
       can: 'test/echo',
       with: alice.did(),
@@ -1903,8 +1907,7 @@ test('derived capability match & select', () => {
       can: 'derive/a',
       with: Schema.URI,
     }),
-    derives: (b, a) =>
-      b.with === a.with ? true : new Failure(`with don't match`),
+    derives: (b, a) => (b.with === a.with ? ok({}) : fail(`with don't match`)),
   })
 
   assert.equal(AA.can, 'derive/a')
@@ -1917,18 +1920,20 @@ test('derived capability match & select', () => {
   const m = AA.match(src)
 
   assert.containSubset(m, {
-    can: 'derive/a',
-    proofs: [proof],
-    value: { can: 'derive/a', with: 'data:a' },
-    source: [src],
+    ok: {
+      can: 'derive/a',
+      proofs: [proof],
+      value: { can: 'derive/a', with: 'data:a' },
+      source: [src],
+    },
   })
 
   if (m.error) {
-    return assert.fail(m.message)
+    return assert.fail(m.error.message)
   }
 
-  assert.notEqual(m.prune({ canIssue: () => false }), null)
-  assert.equal(m.prune({ canIssue: () => true }), null)
+  assert.notEqual(m.ok.prune({ canIssue: () => false }), null)
+  assert.equal(m.ok.prune({ canIssue: () => true }), null)
 })
 
 test('default derive', () => {
@@ -1941,11 +1946,11 @@ test('default derive', () => {
     source({ can: 'test/a', with: 'file:///home/bob/photo' })
   )
   if (home.error) {
-    return assert.fail(home.message)
+    return assert.fail(home.error.message)
   }
 
   assert.containSubset(
-    home.select(
+    home.ok.select(
       delegate([
         {
           can: 'test/a',
@@ -1970,7 +1975,7 @@ test('default derive', () => {
   )
 
   assert.containSubset(
-    home.select(
+    home.ok.select(
       delegate([
         {
           can: 'test/a',
@@ -1995,7 +2000,7 @@ test('default derive', () => {
   )
 
   assert.containSubset(
-    home.select(
+    home.ok.select(
       delegate([
         {
           can: 'test/a',
@@ -2038,11 +2043,11 @@ test('default derive with nb', () => {
   )
 
   if (pic.error) {
-    return assert.fail(pic.message)
+    return assert.fail(pic.error.message)
   }
 
   assert.containSubset(
-    pic.select(
+    pic.ok.select(
       delegate([
         {
           can: 'profile/set',

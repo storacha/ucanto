@@ -1,7 +1,16 @@
 import * as Voucher from './voucher.js'
 import { test, assert } from './test.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
-import { capability, URI, Link, DID, Failure, Schema } from '../src/lib.js'
+import {
+  capability,
+  URI,
+  Link,
+  DID,
+  Failure,
+  Schema,
+  ok,
+  fail,
+} from '../src/lib.js'
 import * as API from './types.js'
 
 test('execute capability', () =>
@@ -114,7 +123,7 @@ test('infers nb fields optional', () => {
       /** @type {API.URI<"data:">|undefined} */
       const _4 = proof.nb.msg
 
-      return true
+      return ok({})
     },
   })
 })
@@ -146,7 +155,7 @@ test('infers nb fields in derived capability', () => {
       /** @type {API.URI<"data:">|undefined} */
       const _4 = proof.nb.msg
 
-      return true
+      return ok({})
     },
   })
 })
@@ -194,7 +203,7 @@ test('infers nb fields in derived capability', () => {
       /** @type {API.URI<"data:">|undefined} */
       const _6 = b.nb.b
 
-      return true
+      return ok({})
     },
   })
 
@@ -240,7 +249,8 @@ test('can create derived capability with dict schema in nb', () => {
    * @param {{ with: string }} proof
    */
   const equalWith = (claim, proof) =>
-    claim.with === proof.with || new Failure(`claim.with is not proven`)
+    claim.with === proof.with ? ok({}) : fail(`claim.with is not proven`)
+
   const top = capability({
     can: '*',
     with: URI.match({ protocol: 'did:' }),

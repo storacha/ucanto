@@ -1,7 +1,6 @@
-import { test, assert } from './test.js'
+import { test, assert, matchError } from './test.js'
 import { access, claim, DID } from '../src/lib.js'
-import { capability, URI, Link, Schema } from '../src/lib.js'
-import { Failure } from '../src/error.js'
+import { capability, fail, URI, Link, Schema } from '../src/lib.js'
 import { ed25519, Verifier } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 import * as Core from '@ucanto/core'
@@ -20,13 +19,13 @@ const capabilities = {
       }),
       derives: (claim, proof) => {
         if (claim.with !== proof.with) {
-          return new Failure('with field does not match')
+          return fail('with field does not match')
         } else if (proof.nb.size != null) {
           if ((claim.nb.size || Infinity) > proof.nb.size) {
-            return new Failure('Escalates size constraint')
+            return fail('Escalates size constraint')
           }
         }
-        return true
+        return { ok: {} }
       },
     }),
     list: capability({
@@ -122,7 +121,7 @@ test('validates with patterns in chain', async () => {
     }
   )
 
-  assert.match(r1.toString(), /Encountered unknown capabilities/)
+  matchError(r1, /Encountered unknown capabilities/)
 
   const r2 = await access(
     await Client.delegate({
@@ -198,7 +197,7 @@ test('invalid proof chain', async () => {
     }
   )
 
-  assert.match(result.toString(), /Expected link to be a CID instead of \*/)
+  matchError(result, /Expected link to be a CID instead of \*/)
 })
 
 test('restrictions in chain are respected', async () => {
@@ -261,11 +260,7 @@ test('restrictions in chain are respected', async () => {
     }
   )
 
-  assert.match(
-    boom.toString(),
-    /Unauthorized/,
-    'should only allow dev/* capabilities'
-  )
+  matchError(boom, /Unauthorized/, 'should only allow dev/* capabilities')
 
   const ping = capabilities.dev.ping.invoke({
     issuer: jordan,
@@ -318,11 +313,7 @@ test('unknown caveats do not apply', async () => {
     principal: Verifier,
   })
 
-  assert.match(
-    boom.toString(),
-    /Constraint violation: message/,
-    'message caveat applies'
-  )
+  matchError(boom, /Constraint violation: message/, 'message caveat applies')
 
   const add = capabilities.store.add.invoke({
     issuer: bob,
@@ -371,7 +362,7 @@ test('with pattern requires delimiter', async () => {
     principal: Verifier,
   })
 
-  assert.match(result.toString(), /capability not found/)
+  matchError(result, /capability not found/)
 })
 
 test('can pattern requires delimiter', async () => {
@@ -402,8 +393,8 @@ test('can pattern requires delimiter', async () => {
     principal: Verifier,
   })
 
-  assert.match(
-    result.toString(),
+  matchError(
+    result,
     /capability not found/,
     'can without delimiter is not allowed'
   )
@@ -448,7 +439,7 @@ test('patterns do not escalate', async () => {
     principal: Verifier,
   })
 
-  assert.match(error.toString(), /Escalates size constraint/)
+  matchError(error, /Escalates size constraint/)
 
   const implicitEscalate = capabilities.store.add.invoke({
     issuer: mallory,
@@ -465,7 +456,7 @@ test('patterns do not escalate', async () => {
     principal: Verifier,
   })
 
-  assert.match(stillError.toString(), /Escalates size constraint/)
+  matchError(stillError, /Escalates size constraint/)
 
   const add = capabilities.store.add.invoke({
     issuer: mallory,
@@ -537,7 +528,7 @@ test('without nb', async () => {
     capability: capabilities.store.add,
     principal: Verifier,
   })
-  assert.match(addEscalateError.toString(), /Escalates size constraint/)
+  matchError(addEscalateError, /Escalates size constraint/)
 
   const list = capabilities.store.list.invoke({
     issuer: bob,

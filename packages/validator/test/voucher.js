@@ -1,5 +1,5 @@
-import { equalWith, canDelegateURI, canDelegateLink, fail } from './util.js'
-import { capability, URI, Text, Link, DID, Schema } from '../src/lib.js'
+import { equalWith, canDelegateURI, canDelegateLink, and } from './util.js'
+import { capability, URI, Text, Link, DID, Schema, ok } from '../src/lib.js'
 
 export const Voucher = capability({
   can: 'voucher/*',
@@ -17,11 +17,11 @@ export const Claim = Voucher.derive({
     }),
     derives: (child, parent) => {
       return (
-        fail(equalWith(child, parent)) ||
-        fail(canDelegateURI(child.nb.identity, parent.nb.identity)) ||
-        fail(canDelegateLink(child.nb.product, parent.nb.product)) ||
-        fail(canDelegateURI(child.nb.service, parent.nb.service)) ||
-        true
+        and(equalWith(child, parent)) ||
+        and(canDelegateURI(child.nb.identity, parent.nb.identity)) ||
+        and(canDelegateLink(child.nb.product, parent.nb.product)) ||
+        and(canDelegateURI(child.nb.service, parent.nb.service)) ||
+        ok({})
       )
     },
   }),

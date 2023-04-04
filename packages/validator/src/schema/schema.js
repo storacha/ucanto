@@ -1,7 +1,8 @@
 import * as Schema from './type.js'
-
+import { ok } from '@ucanto/core/result'
 export * from './type.js'
 
+export { ok }
 /**
  * @abstract
  * @template [T=unknown]
@@ -54,10 +55,10 @@ export class API {
    */
   from(value) {
     const result = this.read(/** @type {I} */ (value))
-    if (result?.error) {
-      throw result
+    if (result.error) {
+      throw result.error
     } else {
-      return result
+      return result.ok
     }
   }
 
@@ -128,7 +129,7 @@ export class API {
     // we also check that fallback is not undefined because that is the point
     // of having a fallback
     if (fallback === undefined) {
-      throw new Error(`Value of type undefined is not a vaild default`)
+      throw new Error(`Value of type undefined is not a valid default`)
     }
 
     const schema = new Default({
@@ -176,7 +177,7 @@ class Unknown extends API {
    * @param {I} input
    */
   read(input) {
-    return /** @type {Schema.ReadResult<unknown>}*/ (input)
+    return /** @type {Schema.ReadResult<unknown>}*/ ({ ok: input })
   }
   toString() {
     return 'unknown()'
@@ -202,12 +203,17 @@ class Nullable extends API {
    */
   readWith(input, reader) {
     const result = reader.read(input)
-    if (result?.error) {
+    if (result.error) {
       return input === null
-        ? null
-        : new UnionError({
-            causes: [result, typeError({ expect: 'null', actual: input })],
-          })
+        ? { ok: null }
+        : {
+            error: new UnionError({
+              causes: [
+                result.error,
+                typeError({ expect: 'null', actual: input }).error,
+              ],
+            }),
+          }
     } else {
       return result
     }
@@ -242,7 +248,7 @@ class Optional extends API {
    */
   readWith(input, reader) {
     const result = reader.read(input)
-    return result?.error && input === undefined ? undefined : result
+    return result.error && input === undefined ? { ok: undefined } : result
   }
   toString() {
     return `${this.settings}.optional()`
@@ -274,13 +280,17 @@ class Default extends API {
    */
   readWith(input, { reader, value }) {
     if (input === undefined) {
-      return /** @type {Schema.ReadResult<O>} */ (value)
+      return /** @type {Schema.ReadResult<O>} */ ({ ok: value })
     } else {
       const result = reader.read(input)
 
-      return /** @type {Schema.ReadResult<O>} */ (
-        result === undefined ? value : result
-      )
+      return result.error
+        ? result
+        : result.ok !== undefined
+        ? // We just checked that result.ok is not undefined but still needs
+          // reassurance
+          /** @type {Schema.ReadResult<O>} */ (result)
+        : { ok: value }
     }
   }
   toString() {
@@ -321,13 +331,13 @@ class ArrayOf extends API {
     const results = []
     for (const [index, value] of input.entries()) {
       const result = schema.read(value)
-      if (result?.error) {
-        return memberError({ at: index, cause: result })
+      if (result.error) {
+        return memberError({ at: index, cause: result.error })
       } else {
-        results.push(result)
+        results.push(result.ok)
       }
     }
-    return results
+    return { ok: results }
   }
   get element() {
     return this.settings
@@ -363,22 +373,20 @@ class Tuple extends API {
       return typeError({ expect: 'array', actual: input })
     }
     if (input.length !== this.shape.length) {
-      return new SchemaError(
-        `Array must contain exactly ${this.shape.length} elements`
-      )
+      return error(`Array must contain exactly ${this.shape.length} elements`)
     }
 
     const results = []
     for (const [index, reader] of shape.entries()) {
       const result = reader.read(input[index])
-      if (result?.error) {
-        return memberError({ at: index, cause: result })
+      if (result.error) {
+        return memberError({ at: index, cause: result.error })
       } else {
-        results[index] = result
+        results[index] = result.ok
       }
     }
 
-    return /** @type {Schema.InferTuple<U>} */ (results)
+    return { ok: /** @type {Schema.InferTuple<U>} */ (results) }
   }
 
   /** @type {U} */
@@ -426,22 +434,22 @@ class Dictionary extends API {
 
     for (const [k, v] of Object.entries(input)) {
       const keyResult = key.read(k)
-      if (keyResult?.error) {
-        return memberError({ at: k, cause: keyResult })
+      if (keyResult.error) {
+        return memberError({ at: k, cause: keyResult.error })
       }
 
       const valueResult = value.read(v)
-      if (valueResult?.error) {
-        return memberError({ at: k, cause: valueResult })
+      if (valueResult.error) {
+        return memberError({ at: k, cause: valueResult.error })
       }
 
       // skip undefined because they mess up CBOR and are generally useless.
-      if (valueResult !== undefined) {
-        dict[keyResult] = valueResult
+      if (valueResult.ok !== undefined) {
+        dict[keyResult.ok] = valueResult.ok
       }
     }
 
-    return dict
+    return { ok: dict }
   }
   get key() {
     return this.settings.key
@@ -471,8 +479,11 @@ class Dictionary extends API {
  * @param {Schema.Reader<K, string>} [shape.key]
  * @returns {Schema.DictionarySchema<V, K, I>}
  */
-export const dictionary = ({ value, key = string() }) =>
-  new Dictionary({ value, key })
+export const dictionary = ({ value, key }) =>
+  new Dictionary({
+    value,
+    key: key || /** @type {Schema.Reader<K, string>} */ (string()),
+  })
 
 /**
  * @template {[unknown, ...unknown[]]} T
@@ -488,7 +499,7 @@ class Enum extends API {
    */
   readWith(input, { variants, type }) {
     if (variants.has(input)) {
-      return /** @type {Schema.ReadResult<T[number]>} */ (input)
+      return /** @type {Schema.ReadResult<T[number]>} */ ({ ok: input })
     } else {
       return typeError({ expect: type, actual: input })
     }
@@ -528,13 +539,13 @@ class Union extends API {
     const causes = []
     for (const reader of variants) {
       const result = reader.read(input)
-      if (result?.error) {
-        causes.push(result)
+      if (result.error) {
+        causes.push(result.error)
       } else {
-        return result
+        return /** @type {Schema.ReadResult<Schema.InferUnion<U>>} */ (result)
       }
     }
-    return new UnionError({ causes })
+    return { error: new UnionError({ causes }) }
   }
 
   get variants() {
@@ -567,27 +578,29 @@ export const or = (left, right) => union([left, right])
  * @template {Schema.Reader<unknown, I>} T
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
- * @extends {API<Schema.InferIntesection<U>, I, U>}
- * @implements {Schema.Schema<Schema.InferIntesection<U>, I>}
+ * @extends {API<Schema.InferIntersection<U>, I, U>}
+ * @implements {Schema.Schema<Schema.InferIntersection<U>, I>}
  */
 class Intersection extends API {
   /**
    * @param {I} input
    * @param {U} schemas
-   * @returns {Schema.ReadResult<Schema.InferIntesection<U>>}
+   * @returns {Schema.ReadResult<Schema.InferIntersection<U>>}
    */
   readWith(input, schemas) {
     const causes = []
     for (const schema of schemas) {
       const result = schema.read(input)
-      if (result?.error) {
-        causes.push(result)
+      if (result.error) {
+        causes.push(result.error)
       }
     }
 
     return causes.length > 0
-      ? new IntersectionError({ causes })
-      : /** @type {Schema.ReadResult<Schema.InferIntesection<U>>} */ (input)
+      ? { error: new IntersectionError({ causes }) }
+      : /** @type {Schema.ReadResult<Schema.InferIntersection<U>>} */ ({
+          ok: input,
+        })
   }
   toString() {
     return `intersection([${this.settings
@@ -601,7 +614,7 @@ class Intersection extends API {
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
  * @param {U} variants
- * @returns {Schema.Schema<Schema.InferIntesection<U>, I>}
+ * @returns {Schema.Schema<Schema.InferIntersection<U>, I>}
  */
 export const intersection = variants => new Intersection(variants)
 
@@ -626,7 +639,7 @@ class Boolean extends API {
     switch (input) {
       case true:
       case false:
-        return /** @type {boolean} */ (input)
+        return { ok: /** @type {boolean} */ (input) }
       default:
         return typeError({
           expect: 'boolean',
@@ -688,7 +701,7 @@ class AnyNumber extends UnknownNumber {
    */
   readWith(input) {
     return typeof input === 'number'
-      ? input
+      ? { ok: input }
       : typeError({ expect: 'number', actual: input })
   }
   toString() {
@@ -715,7 +728,7 @@ class RefinedNumber extends UnknownNumber {
    */
   readWith(input, { base, schema }) {
     const result = base.read(input)
-    return result?.error ? result : schema.read(result)
+    return result.error ? result : schema.read(result.ok)
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
@@ -734,7 +747,7 @@ class LessThan extends API {
    */
   readWith(input, number) {
     if (input < number) {
-      return input
+      return { ok: input }
     } else {
       return error(`Expected ${input} < ${number}`)
     }
@@ -763,7 +776,7 @@ class GreaterThan extends API {
    */
   readWith(input, number) {
     if (input > number) {
-      return input
+      return { ok: input }
     } else {
       return error(`Expected ${input} > ${number}`)
     }
@@ -787,7 +800,7 @@ const Integer = {
    */
   read(input) {
     return Number.isInteger(input)
-      ? /** @type {Schema.Integer} */ (input)
+      ? { ok: /** @type {Schema.Integer} */ (input) }
       : typeError({
           expect: 'integer',
           actual: input,
@@ -808,7 +821,7 @@ const Float = {
    */
   read(number) {
     return Number.isFinite(number)
-      ? /** @type {Schema.Float} */ (number)
+      ? { ok: /** @type {Schema.Float} */ (number) }
       : typeError({
           expect: 'Float',
           actual: number,
@@ -877,9 +890,9 @@ class RefinedString extends UnknownString {
    */
   readWith(input, { base, schema }) {
     const result = base.read(input)
-    return result?.error
+    return result.error
       ? result
-      : /** @type {Schema.ReadResult<T & O>} */ (schema.read(result))
+      : /** @type {Schema.ReadResult<T & O>} */ (schema.read(result.ok))
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
@@ -898,7 +911,7 @@ class AnyString extends UnknownString {
    */
   readWith(input) {
     return typeof input === 'string'
-      ? input
+      ? { ok: input }
       : typeError({ expect: 'string', actual: input })
   }
 }
@@ -919,9 +932,13 @@ class StartsWith extends API {
    * @param {Prefix} prefix
    */
   readWith(input, prefix) {
-    return input.startsWith(prefix)
-      ? /** @type {Schema.ReadResult<Body & `${Prefix}${string}`>} */ (input)
+    const result = input.startsWith(prefix)
+      ? /** @type {Schema.ReadResult<Body & `${Prefix}${Body}`>} */ ({
+          ok: input,
+        })
       : error(`Expect string to start with "${prefix}" instead got "${input}"`)
+
+    return result
   }
   get prefix() {
     return this.settings
@@ -951,7 +968,9 @@ class EndsWith extends API {
    */
   readWith(input, suffix) {
     return input.endsWith(suffix)
-      ? /** @type {Schema.ReadResult<Body & `${string}${Suffix}`>} */ (input)
+      ? /** @type {Schema.ReadResult<Body & `${Body}${Suffix}`>} */ ({
+          ok: input,
+        })
       : error(`Expect string to end with "${suffix}" instead got "${input}"`)
   }
   get suffix() {
@@ -984,7 +1003,7 @@ class Refine extends API {
    */
   readWith(input, { base, schema }) {
     const result = base.read(input)
-    return result?.error ? result : schema.read(result)
+    return result.error ? result : schema.read(result.ok)
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
@@ -1015,8 +1034,8 @@ class Literal extends API {
    */
   readWith(input, expect) {
     return input !== /** @type {unknown} */ (expect)
-      ? new LiteralError({ expect, actual: input })
-      : expect
+      ? { error: new LiteralError({ expect, actual: input }) }
+      : { ok: expect }
   }
   get value() {
     return /** @type {Exclude<T, undefined>} */ (this.settings)
@@ -1070,16 +1089,16 @@ class Struct extends API {
 
     for (const [at, reader] of entries) {
       const result = reader.read(source[at])
-      if (result?.error) {
-        return memberError({ at, cause: result })
+      if (result.error) {
+        return memberError({ at, cause: result.error })
       }
       // skip undefined because they mess up CBOR and are generally useless.
-      else if (result !== undefined) {
-        struct[at] = /** @type {Schema.Infer<U[typeof at]>} */ (result)
+      else if (result.ok !== undefined) {
+        struct[at] = /** @type {Schema.Infer<U[typeof at]>} */ (result.ok)
       }
     }
 
-    return struct
+    return { ok: struct }
   }
 
   /**
@@ -1162,9 +1181,9 @@ export const struct = fields => {
 
 /**
  * @param {string} message
- * @returns {Schema.Error}
+ * @returns {{error: Schema.Error}}
  */
-export const error = message => new SchemaError(message)
+export const error = message => ({ error: new SchemaError(message) })
 
 class SchemaError extends Error {
   get name() {
@@ -1211,9 +1230,9 @@ class TypeError extends SchemaError {
  * @param {object} data
  * @param {string} data.expect
  * @param {unknown} data.actual
- * @returns {Schema.Error}
+ * @returns {{ error: Schema.Error }}
  */
-export const typeError = data => new TypeError(data)
+export const typeError = data => ({ error: new TypeError(data) })
 
 /**
  *
@@ -1306,12 +1325,12 @@ class FieldError extends SchemaError {
  * @param {object} options
  * @param {string|number} options.at
  * @param {Schema.Error} options.cause
- * @returns {Schema.Error}
+ * @returns {{error: Schema.Error}}
  */
 export const memberError = ({ at, cause }) =>
   typeof at === 'string'
-    ? new FieldError({ at, cause })
-    : new ElementError({ at, cause })
+    ? { error: new FieldError({ at, cause }) }
+    : { error: new ElementError({ at, cause }) }
 
 class UnionError extends SchemaError {
   /**

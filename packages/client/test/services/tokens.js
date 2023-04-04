@@ -5,7 +5,7 @@ import { the, unreachable } from './util.js'
  * @param {Map<string, API.Found|API.RevokedError|API.ExpiredError>} store
  * @returns {API.TokenStore}
  */
-export const create = (store) => new TokenService(store)
+export const create = store => new TokenService(store)
 
 /**
  * @implements {API.TokenStore}
@@ -41,7 +41,7 @@ class TokenService {
           return unreachable`Record has unexpected state ${record}`
       }
     }
-    return null
+    return { ok: {} }
   }
   /**
    * @template {Record<string, API.Link>} Query
@@ -80,7 +80,7 @@ class TokenService {
         return unreachable`record has unknown state ${record}`
     }
 
-    return null
+    return { ok: {} }
   }
 
   async gc() {

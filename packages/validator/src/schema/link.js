@@ -68,8 +68,9 @@ class LinkSchema extends Schema.API {
           )
         }
 
-        // @ts-expect-error - can't infer version, code etc.
-        return cid
+        return {
+          ok: /** @type {API.Link<unknown, any, any, any>} */ (cid),
+        }
       }
     }
   }

@@ -1,6 +1,6 @@
 import * as Schema from '../src/schema.js'
 import { base36 } from 'multiformats/bases/base36'
-import { test, assert } from './test.js'
+import { test, assert, matchError } from './test.js'
 
 const fixtures = {
   pb: Schema.Link.parse('QmTgnQBKj7eTV7ohraBCmh1DLwerUd2X9Rxzgf3gyMJbC8'),
@@ -26,19 +26,16 @@ const digests = new Set(links.map(link => link.multihash.digest))
 
 for (const link of links) {
   test(`${link} ➡ Schema.link()`, () => {
-    assert.deepEqual(Schema.link().read(link), link, `${link}`)
+    assert.deepEqual(Schema.link().read(link), { ok: link }, `${link}`)
   })
 
   for (const version of versions) {
     test(`${link} ➡ Schema.link({ version: ${version}})`, () => {
       const schema = Schema.link({ version })
       if (link.version === version) {
-        assert.deepEqual(schema.read(link), link)
+        assert.deepEqual(schema.read(link), { ok: link })
       } else {
-        assert.match(
-          schema.read(link).toString(),
-          /Expected link to be CID version/
-        )
+        matchError(schema.read(link), /Expected link to be CID version/)
       }
     })
   }
@@ -47,12 +44,9 @@ for (const link of links) {
     test(`${link} ➡ Schema.link({ code: ${code}})`, () => {
       const schema = Schema.link({ code })
       if (link.code === code) {
-        assert.deepEqual(schema.read(link), link)
+        assert.deepEqual(schema.read(link), { ok: link })
       } else {
-        assert.match(
-          schema.read(link).toString(),
-          /Expected link to be CID with .* codec/
-        )
+        matchError(schema.read(link), /Expected link to be CID with .* codec/)
       }
     })
   }
@@ -61,10 +55,10 @@ for (const link of links) {
     test(`${link} ➡ Schema.link({ multihash: {code: ${code}} })`, () => {
       const schema = Schema.link({ multihash: { code } })
       if (link.multihash.code === code) {
-        assert.deepEqual(schema.read(link), link)
+        assert.deepEqual(schema.read(link), { ok: link })
       } else {
-        assert.match(
-          schema.read(link).toString(),
+        matchError(
+          schema.read(link),
           /Expected link to be CID with .* hashing algorithm/
         )
       }
@@ -77,12 +71,9 @@ for (const link of links) {
         multihash: { digest: new Uint8Array(digest) },
       })
       if (link.multihash.digest === digest) {
-        assert.deepEqual(schema.read(link), link)
+        assert.deepEqual(schema.read(link), { ok: link })
       } else {
-        assert.match(
-          schema.read(link).toString(),
-          /Expected link with .* hash digest/
-        )
+        matchError(schema.read(link), /Expected link with .* hash digest/)
       }
     })
   }

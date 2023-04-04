@@ -1,4 +1,4 @@
-import { test, assert } from './test.js'
+import { test, assert, matchError } from './test.js'
 import * as Schema from '../src/schema.js'
 import fixtures from './schema/fixtures.js'
 
@@ -9,10 +9,10 @@ for (const { input, schema, expect, inputLabel, skip, only } of fixtures()) {
     const result = schema.read(input)
 
     if (expect.error) {
-      assert.match(String(result), expect.error)
+      matchError(result, expect.error)
     } else {
       assert.deepEqual(
-        result,
+        result.ok,
         // if expected value is set to undefined use input
         expect.value === undefined ? input : expect.value
       )
@@ -46,13 +46,13 @@ test('string startsWith & endsWith', () => {
     'string().refine(startsWith("hello")).refine(startsWith("hi"))'
   )
 
-  assert.deepInclude(impossible.read('hello world'), {
-    error: true,
+  assert.deepInclude(impossible.read('hello world').error, {
+    name: 'SchemaError',
     message: `Expect string to start with "hi" instead got "hello world"`,
   })
 
-  assert.deepInclude(impossible.read('hello world'), {
-    error: true,
+  assert.deepInclude(impossible.read('hello world').error, {
+    name: 'SchemaError',
     message: `Expect string to start with "hi" instead got "hello world"`,
   })
 
@@ -60,7 +60,7 @@ test('string startsWith & endsWith', () => {
   /** @type {Schema.StringSchema<`hello${string}` & `hello ${string}`>} */
   const typeofHello = hello
 
-  assert.equal(hello.read('hello world'), 'hello world')
+  assert.deepEqual(hello.read('hello world'), { ok: 'hello world' })
 })
 
 test('string startsWith', () => {
@@ -71,9 +71,8 @@ test('string startsWith', () => {
   /** @type {Schema.StringSchema<`hello${string}`>} */
   const hello = Schema.string().startsWith('hello')
 
-  assert.equal(hello.read('hello world!'), 'hello world!')
-  assert.deepInclude(hello.read('hi world'), {
-    error: true,
+  assert.deepEqual(hello.read('hello world!'), { ok: 'hello world!' })
+  assert.deepInclude(hello.read('hi world').error, {
     name: 'SchemaError',
     message: `Expect string to start with "hello" instead got "hi world"`,
   })
@@ -87,10 +86,9 @@ test('string endsWith', () => {
   /** @type {Schema.StringSchema<`${string} world`>} */
   const greet = Schema.string().endsWith(' world')
 
-  assert.equal(greet.read('hello world'), 'hello world')
-  assert.equal(greet.read('hi world'), 'hi world')
-  assert.deepInclude(greet.read('hello world!'), {
-    error: true,
+  assert.deepEqual(greet.read('hello world'), { ok: 'hello world' })
+  assert.deepEqual(greet.read('hi world'), { ok: 'hi world' })
+  assert.deepInclude(greet.read('hello world!').error, {
     name: 'SchemaError',
     message: `Expect string to end with " world" instead got "hello world!"`,
   })
@@ -115,25 +113,24 @@ test('string startsWith/endsWith', () => {
     `string().refine(endsWith("!")).refine(startsWith("hello"))`
   )
 
-  assert.equal(hello1.read('hello world!'), 'hello world!')
-  assert.equal(hello2.read('hello world!'), 'hello world!')
-  assert.deepInclude(hello1.read('hello world'), {
-    error: true,
+  assert.deepEqual(hello1.read('hello world!'), { ok: 'hello world!' })
+  assert.deepEqual(hello2.read('hello world!'), { ok: 'hello world!' })
+  assert.deepInclude(hello1.read('hello world').error, {
     name: 'SchemaError',
     message: `Expect string to end with "!" instead got "hello world"`,
   })
-  assert.deepInclude(hello2.read('hello world'), {
-    error: true,
+
+  assert.deepInclude(hello2.read('hello world').error, {
     name: 'SchemaError',
     message: `Expect string to end with "!" instead got "hello world"`,
   })
-  assert.deepInclude(hello1.read('hi world!'), {
-    error: true,
+
+  assert.deepInclude(hello1.read('hi world!').error, {
     name: 'SchemaError',
     message: `Expect string to start with "hello" instead got "hi world!"`,
   })
-  assert.deepInclude(hello2.read('hi world!'), {
-    error: true,
+
+  assert.deepInclude(hello2.read('hi world!').error, {
     name: 'SchemaError',
     message: `Expect string to start with "hello" instead got "hi world!"`,
   })
@@ -144,13 +141,13 @@ test('string startsWith & endsWith', () => {
   /** @type {Schema.StringSchema<`hello${string}` & `hi${string}`>} */
   const typeofImpossible = impossible
 
-  assert.deepInclude(impossible.read('hello world'), {
-    error: true,
+  assert.deepInclude(impossible.read('hello world').error, {
+    name: 'SchemaError',
     message: `Expect string to start with "hi" instead got "hello world"`,
   })
 
-  assert.deepInclude(impossible.read('hello world'), {
-    error: true,
+  assert.deepInclude(impossible.read('hello world').error, {
+    name: 'SchemaError',
     message: `Expect string to start with "hi" instead got "hello world"`,
   })
 
@@ -158,7 +155,7 @@ test('string startsWith & endsWith', () => {
   /** @type {Schema.StringSchema<`hello${string}` & `hello ${string}`>} */
   const typeofHello = hello
 
-  assert.equal(hello.read('hello world'), 'hello world')
+  assert.deepEqual(hello.read('hello world'), { ok: 'hello world' })
 })
 
 test('string().refine', () => {
@@ -169,13 +166,13 @@ test('string().refine', () => {
   /** @type {Schema.StringSchema<`hello${string}` & `hi${string}`>} */
   const typeofImpossible = impossible
 
-  assert.deepInclude(impossible.read('hello world'), {
-    error: true,
+  assert.deepInclude(impossible.read('hello world').error, {
+    name: 'SchemaError',
     message: `Expect string to start with "hi" instead got "hello world"`,
   })
 
-  assert.deepInclude(impossible.read('hello world'), {
-    error: true,
+  assert.deepInclude(impossible.read('hello world').error, {
+    name: 'SchemaError',
     message: `Expect string to start with "hi" instead got "hello world"`,
   })
 
@@ -186,7 +183,7 @@ test('string().refine', () => {
   /** @type {Schema.StringSchema<`hello${string}` & `hello ${string}`>} */
   const typeofHello = hello
 
-  assert.equal(hello.read('hello world'), 'hello world')
+  assert.deepEqual(hello.read('hello world'), { ok: 'hello world' })
 
   const greet = hello.refine({
     /**
@@ -195,7 +192,7 @@ test('string().refine', () => {
      */
     read(hello) {
       if (hello.length === 11) {
-        return /** @type {In & {length: 11}} */ (hello)
+        return Schema.ok(/** @type {In & {length: 11}} */ (hello))
       } else {
         return Schema.error(`Expected string with 11 chars`)
       }
@@ -205,16 +202,16 @@ test('string().refine', () => {
   const typeofGreet = greet
 
   assert.equal(
-    greet.read('hello world'),
+    greet.read('hello world').ok,
     /** @type {unknown} */ ('hello world')
   )
   assert.equal(
-    greet.read('hello Julia'),
+    greet.read('hello Julia').ok,
     /** @type {unknown} */ ('hello Julia')
   )
 
-  assert.deepInclude(greet.read('hello Jack'), {
-    error: true,
+  assert.deepInclude(greet.read('hello Jack').error, {
+    name: 'SchemaError',
     message: 'Expected string with 11 chars',
   })
 })
@@ -241,11 +238,12 @@ test('literal("foo").default("bar") throws', () => {
 
 test('default on literal has default', () => {
   const schema = Schema.literal('foo').default()
-  assert.equal(schema.read(undefined), 'foo')
+
+  assert.deepEqual(schema.read(undefined), Schema.ok('foo'))
 })
 
 test('literal has value field', () => {
-  assert.equal(Schema.literal('foo').value, 'foo')
+  assert.deepEqual(Schema.literal('foo').value, 'foo')
 })
 
 test('.default().optional() is noop', () => {
@@ -285,9 +283,9 @@ test('struct', () => {
     x: 1,
     y: 2,
   })
-  assert.equal(p1.error, true)
+  assert.equal(!p1.ok, true)
 
-  assert.match(String(p1), /field "type".*expect.*"Point".*got undefined/is)
+  matchError(p1, /field "type".*expect.*"Point".*got undefined/is)
 
   const p2 = Point.read({
     type: 'Point',
@@ -295,9 +293,11 @@ test('struct', () => {
     y: 1,
   })
   assert.deepEqual(p2, {
-    type: 'Point',
-    x: Schema.integer().from(1),
-    y: Schema.integer().from(1),
+    ok: {
+      type: 'Point',
+      x: Schema.integer().from(1),
+      y: Schema.integer().from(1),
+    },
   })
 
   const p3 = Point.read({
@@ -306,11 +306,11 @@ test('struct', () => {
     y: 1.1,
   })
 
-  assert.equal(p3.error, true)
-  assert.match(String(p3), /field "y".*expect.*integer.*got 1.1/is)
+  assert.equal(!p3.ok, true)
+  matchError(p3, /field "y".*expect.*integer.*got 1.1/is)
 
-  assert.match(
-    String(Point.read(['h', 'e', 'l', null, 'l', 'o'])),
+  matchError(
+    Point.read(['h', 'e', 'l', null, 'l', 'o']),
     /Expected value of type object instead got array/
   )
 })
@@ -321,10 +321,10 @@ test('struct with defaults', () => {
     y: Schema.number().default(0),
   })
 
-  assert.deepEqual(Point.read({}), { x: 0, y: 0 })
-  assert.deepEqual(Point.read({ x: 2 }), { x: 2, y: 0 })
-  assert.deepEqual(Point.read({ x: 2, y: 7 }), { x: 2, y: 7 })
-  assert.deepEqual(Point.read({ y: 7 }), { x: 0, y: 7 })
+  assert.deepEqual(Point.read({}), { ok: { x: 0, y: 0 } })
+  assert.deepEqual(Point.read({ x: 2 }), { ok: { x: 2, y: 0 } })
+  assert.deepEqual(Point.read({ x: 2, y: 7 }), { ok: { x: 2, y: 7 } })
+  assert.deepEqual(Point.read({ y: 7 }), { ok: { x: 0, y: 7 } })
 })
 
 test('struct with literals', () => {
@@ -334,11 +334,10 @@ test('struct with literals', () => {
     y: Schema.number(),
   })
 
-  assert.deepEqual(Point.read({ x: 0, y: 0, z: 0 }), { x: 0, y: 0, z: 0 })
-  assert.match(
-    String(Point.read({ x: 1, y: 1, z: 1 })),
-    /"z".*expect.* 0 .* got 1/is
-  )
+  assert.deepEqual(Point.read({ x: 0, y: 0, z: 0 }), {
+    ok: { x: 0, y: 0, z: 0 },
+  })
+  matchError(Point.read({ x: 1, y: 1, z: 1 }), /"z".*expect.* 0 .* got 1/is)
 })
 
 test('bad struct def', () => {
@@ -357,18 +356,20 @@ test('struct with null literal', () => {
   const schema = Schema.struct({ a: null, b: true, c: Schema.string() })
 
   assert.deepEqual(schema.read({ a: null, b: true, c: 'hi' }), {
-    a: null,
-    b: true,
-    c: 'hi',
+    ok: {
+      a: null,
+      b: true,
+      c: 'hi',
+    },
   })
 
-  assert.match(
-    String(schema.read({ a: null, b: false, c: '' })),
+  matchError(
+    schema.read({ a: null, b: false, c: '' }),
     /"b".*expect.* true .* got false/is
   )
 
-  assert.match(
-    String(schema.read({ b: true, c: '' })),
+  matchError(
+    schema.read({ b: true, c: '' }),
     /"a".*expect.* null .* got undefined/is
   )
 })
@@ -376,76 +377,73 @@ test('struct with null literal', () => {
 test('lessThan', () => {
   const schema = Schema.number().lessThan(100)
 
-  assert.deepEqual(schema.read(10), 10)
-  assert.match(String(schema.read(127)), /127 < 100/)
-  assert.match(String(schema.read(Infinity)), /Infinity < 100/)
-  assert.match(String(schema.read(NaN)), /NaN < 100/)
+  assert.deepEqual(schema.read(10), { ok: 10 })
+  matchError(schema.read(127), /127 < 100/)
+  matchError(schema.read(Infinity), /Infinity < 100/)
+  matchError(schema.read(NaN), /NaN < 100/)
 })
 
 test('greaterThan', () => {
   const schema = Schema.number().greaterThan(100)
 
-  assert.deepEqual(schema.read(127), 127)
-  assert.match(String(schema.read(12)), /12 > 100/)
-  assert.equal(schema.read(Infinity), Infinity)
-  assert.match(String(schema.read(NaN)), /NaN > 100/)
+  assert.deepEqual(schema.read(127), { ok: 127 })
+  matchError(schema.read(12), /12 > 100/)
+  assert.deepEqual(schema.read(Infinity), { ok: Infinity })
+  matchError(schema.read(NaN), /NaN > 100/)
 })
 
 test('number().greaterThan().lessThan()', () => {
   const schema = Schema.number().greaterThan(3).lessThan(117)
 
-  assert.equal(schema.read(4), 4)
-  assert.equal(schema.read(116), 116)
-  assert.match(String(schema.read(117)), /117 < 117/)
-  assert.match(String(schema.read(3)), /3 > 3/)
-  assert.match(String(schema.read(127)), /127 < 117/)
-  assert.match(String(schema.read(0)), /0 > 3/)
-  assert.match(String(schema.read(Infinity)), /Infinity < 117/)
-  assert.match(String(schema.read(NaN)), /NaN > 3/)
+  assert.deepEqual(schema.read(4), { ok: 4 })
+  assert.deepEqual(schema.read(116), { ok: 116 })
+  matchError(schema.read(117), /117 < 117/)
+  matchError(schema.read(3), /3 > 3/)
+  matchError(schema.read(127), /127 < 117/)
+  matchError(schema.read(0), /0 > 3/)
+  matchError(schema.read(Infinity), /Infinity < 117/)
+  matchError(schema.read(NaN), /NaN > 3/)
 })
 
 test('enum', () => {
   const schema = Schema.enum(['Red', 'Green', 'Blue'])
   assert.equal(schema.toString(), 'Red|Green|Blue')
-  assert.equal(schema.read('Red'), 'Red')
-  assert.equal(schema.read('Blue'), 'Blue')
-  assert.equal(schema.read('Green'), 'Green')
+  assert.deepEqual(schema.read('Red'), { ok: 'Red' })
+  assert.deepEqual(schema.read('Blue'), { ok: 'Blue' })
+  assert.deepEqual(schema.read('Green'), { ok: 'Green' })
 
-  assert.match(
-    String(schema.read('red')),
-    /expect.* Red\|Green\|Blue .* got "red"/is
-  )
-  assert.match(String(schema.read(5)), /expect.* Red\|Green\|Blue .* got 5/is)
+  matchError(schema.read('red'), /expect.* Red\|Green\|Blue .* got "red"/is)
+  matchError(schema.read(5), /expect.* Red\|Green\|Blue .* got 5/is)
 })
 
 test('tuple', () => {
   const schema = Schema.tuple([Schema.string(), Schema.integer()])
-  assert.match(
-    String(schema.read([, undefined])),
+  matchError(
+    schema.read([, undefined]),
     /invalid element at 0.*expect.*string.*got undefined/is
   )
-  assert.match(
-    String(schema.read([0, 'hello'])),
+  matchError(
+    schema.read([0, 'hello']),
     /invalid element at 0.*expect.*string.*got 0/is
   )
-  assert.match(
-    String(schema.read(['0', '1'])),
+  matchError(
+    schema.read(['0', '1']),
     /invalid element at 1.*expect.*number.*got "1"/is
   )
-  assert.match(
-    String(schema.read(['0', Infinity])),
+  matchError(
+    schema.read(['0', Infinity]),
     /invalid element at 1.*expect.*integer.*got Infinity/is
   )
-  assert.match(
-    String(schema.read(['0', NaN])),
+  matchError(
+    schema.read(['0', NaN]),
     /invalid element at 1.*expect.*integer.*got NaN/is
   )
-  assert.match(
-    String(schema.read(['0', 0.2])),
+  matchError(
+    schema.read(['0', 0.2]),
     /invalid element at 1.*expect.*integer.*got 0.2/is
   )
 
-  assert.deepEqual(schema.read(['x', 0]), ['x', 0])
+  assert.deepEqual(schema.read(['x', 0]), { ok: ['x', 0] })
 })
 
 test('extend API', () => {
@@ -463,7 +461,7 @@ test('extend API', () => {
       readWith(source, method) {
         const string = String(source)
         if (string.startsWith(`did:${method}:`)) {
-          return /** @type {`did:${M}:${string}`} */ (method)
+          return { ok: /** @type {`did:${M}:${string}`} */ (method) }
         } else {
           return Schema.error(
             `Expected did:${method} URI instead got ${string}`
@@ -474,26 +472,26 @@ test('extend API', () => {
 
     const schema = new DIDString('key')
     assert.equal(schema.toString(), 'new DIDString()')
-    assert.match(
-      String(
+    matchError(
+      schema.read(
         // @ts-expect-error
-        schema.read(54)
+        54
       ),
       /Expected did:key URI/
     )
 
-    assert.match(
-      String(schema.read('did:echo:foo')),
+    matchError(
+      schema.read('did:echo:foo'),
       /Expected did:key URI instead got did:echo:foo/
     )
 
     const didKey = Schema.string().refine(new DIDString('key'))
-    assert.match(String(didKey.read(54)), /Expect.* string instead got 54/is)
+    matchError(didKey.read(54), /Expect.* string instead got 54/is)
   }
 })
 
 test('errors', () => {
-  const error = Schema.error('boom!')
+  const { error } = Schema.error('boom!')
   const json = JSON.parse(JSON.stringify(error))
   assert.deepInclude(json, {
     name: 'SchemaError',
@@ -515,7 +513,7 @@ test('refine', () => {
      */
     read(array) {
       return array.length > 0
-        ? array
+        ? Schema.ok(array)
         : Schema.error('Array expected to have elements')
     }
   }
@@ -523,9 +521,9 @@ test('refine', () => {
   const schema = Schema.array(Schema.string()).refine(new NonEmpty())
 
   assert.equal(schema.toString(), 'array(string()).refine(new NonEmpty())')
-  assert.match(String(schema.read([])), /Array expected to have elements/)
-  assert.deepEqual(schema.read(['hello', 'world']), ['hello', 'world'])
-  assert.match(String(schema.read(null)), /expect.* array .*got null/is)
+  matchError(schema.read([]), /Array expected to have elements/)
+  assert.deepEqual(schema.read(['hello', 'world']), { ok: ['hello', 'world'] })
+  matchError(schema.read(null), /expect.* array .*got null/is)
 })
 
 test('brand', () => {
@@ -533,14 +531,14 @@ test('brand', () => {
     .refine({
       read(n) {
         return n >= 0 && n <= 9
-          ? n
+          ? Schema.ok(n)
           : Schema.error(`Expected digit but got ${n}`)
       },
     })
     .brand('digit')
 
-  assert.match(String(digit.read(10)), /Expected digit but got 10/)
-  assert.match(String(digit.read(2.7)), /Expected value of type integer/)
+  matchError(digit.read(10), /Expected digit but got 10/)
+  matchError(digit.read(2.7), /Expected value of type integer/)
   assert.equal(digit.from(2), 2)
 
   /** @param {Schema.Infer<typeof digit>} n */
@@ -571,16 +569,16 @@ test('optional.default removes undefined from type', () => {
   /** @type {Schema.Schema<string>} */
   const castOk = schema2
 
-  assert.equal(schema1.read(undefined), undefined)
-  assert.equal(schema2.read(undefined), '')
+  assert.deepEqual(schema1.read(undefined), { ok: undefined })
+  assert.deepEqual(schema2.read(undefined), { ok: '' })
 })
 
 test('.default("one").default("two")', () => {
   const schema = Schema.string().default('one').default('two')
 
   assert.equal(schema.value, 'two')
-  assert.deepEqual(schema.read(undefined), 'two')
-  assert.deepEqual(schema.read('three'), 'three')
+  assert.deepEqual(schema.read(undefined), { ok: 'two' })
+  assert.deepEqual(schema.read('three'), { ok: 'three' })
 })
 
 test('default throws on invalid default', () => {
@@ -597,7 +595,7 @@ test('default throws on invalid default', () => {
 test('unknown with default', () => {
   assert.throws(
     () => Schema.unknown().default(undefined),
-    /undefined is not a vaild default/
+    /undefined is not a valid default/
   )
 })
 
@@ -605,11 +603,11 @@ test('default swaps undefined even if decodes to undefined', () => {
   /** @type {Schema.Schema} */
   const schema = Schema.unknown().refine({
     read(value) {
-      return value === null ? undefined : value
+      return { ok: value === null ? undefined : value }
     },
   })
 
-  assert.equal(schema.default('X').read(null), 'X')
+  assert.deepEqual(schema.default('X').read(null), { ok: 'X' })
 })
 
 test('record defaults', () => {
@@ -622,10 +620,7 @@ test('record defaults', () => {
     z: Schema.integer(),
   })
 
-  assert.match(
-    String(Point.read(undefined)),
-    /expect.* object .* got undefined/is
-  )
+  matchError(Point.read(undefined), /expect.* object .* got undefined/is)
   assert.deepEqual(Point.create(), {
     x: 1,
   })
@@ -634,17 +629,23 @@ test('record defaults', () => {
   })
 
   assert.deepEqual(Point.read({}), {
-    x: 1,
+    ok: {
+      x: 1,
+    },
   })
 
   assert.deepEqual(Point.read({ y: 2 }), {
-    x: 1,
-    y: 2,
+    ok: {
+      x: 1,
+      y: 2,
+    },
   })
 
   assert.deepEqual(Point.read({ x: 2, y: 2 }), {
-    x: 2,
-    y: 2,
+    ok: {
+      x: 2,
+      y: 2,
+    },
   })
 
   const Line = Schema.struct({

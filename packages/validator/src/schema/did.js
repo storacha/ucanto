@@ -15,7 +15,7 @@ class DIDSchema extends Schema.API {
     if (!source.startsWith(prefix)) {
       return Schema.error(`Expected a ${prefix} but got "${source}" instead`)
     } else {
-      return /** @type {API.DID<Method>} */ (source)
+      return { ok: /** @type {API.DID<Method>} */ (source) }
     }
   }
 }

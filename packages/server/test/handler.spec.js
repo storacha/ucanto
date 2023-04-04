@@ -26,7 +26,9 @@ const context = {
   /**
    * @param {API.UCANLink} link
    */
-  resolve: link => new UnavailableProof(link),
+  resolve: link => ({
+    error: new UnavailableProof(link),
+  }),
 }
 
 test('invocation', async () => {
@@ -43,12 +45,13 @@ test('invocation', async () => {
   const result = await Access.link(invocation, context)
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
-    message: `Claim {"can":"identity/link"} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim {"can":"identity/link"} is not authorized
   - Capability {"can":"identity/link","with":"mailto:alice@web.mail"} is not authorized because:
     - Capability can not be (self) issued by '${alice.did()}'
     - Delegated capability not found`,
+    },
   })
 })
 
@@ -72,10 +75,11 @@ test('delegated invocation fail', async () => {
   })
 
   const result = await Access.link(invocation, context)
-  assert.deepNestedInclude(result, {
-    error: true,
-    name: 'UnknownIDError',
-    id: 'mailto:alice@web.mail',
+  assert.containSubset(result, {
+    error: {
+      name: 'UnknownIDError',
+      id: 'mailto:alice@web.mail',
+    },
   })
 })
 
@@ -99,7 +103,7 @@ test('delegated invocation fail', async () => {
   })
 
   const result = await Access.register(invocation, context)
-  assert.deepEqual(result, null)
+  assert.deepEqual(result, { ok: {} })
 })
 
 test('checks service id', async () => {
@@ -236,7 +240,7 @@ test('test access/claim provider', async () => {
   /**
    * @type {Client.ConnectionView<{
    *  access: {
-   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], never>
+   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], {}>
    *  }
    * }>}
    */
@@ -273,7 +277,9 @@ test('handle did:mailto audiences', async () => {
     capability: AccessRequest,
     handler: async input => {
       return {
-        allow: input.capability.nb.need,
+        ok: {
+          allow: input.capability.nb.need,
+        },
       }
     },
   })
@@ -322,9 +328,13 @@ test('handle did:mailto audiences', async () => {
     principal: Verifier,
   })
 
-  assert.equal(badAudience.error, true)
+  assert.containSubset(badAudience, {
+    error: {
+      name: 'InvalidAudience',
+    },
+  })
   assert.match(
-    badAudience.toString(),
+    `${badAudience.error}`,
     /InvalidAudience.*Expected .*did:mailto:.*got.*did:web:/
   )
 })

@@ -1,7 +1,14 @@
 import { test, assert } from './test.js'
-import { access, claim, Schema } from '../src/lib.js'
-import { capability, URI, Link } from '../src/lib.js'
-import { Failure } from '../src/error.js'
+import {
+  access,
+  claim,
+  Schema,
+  capability,
+  URI,
+  Link,
+  ok,
+  fail,
+} from '../src/lib.js'
 import { Verifier } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 
@@ -18,20 +25,20 @@ const storeAdd = capability({
   }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
-      return new Failure(
+      return fail(
         `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
       )
     } else if (
       delegated.nb.link &&
       `${delegated.nb.link}` !== `${claimed.nb.link}`
     ) {
-      return new Failure(
+      return fail(
         `Link ${
           claimed.nb.link == null ? '' : `${claimed.nb.link} `
         }violates imposed ${delegated.nb.link} constraint`
       )
     } else {
-      return true
+      return ok({})
     }
   },
 })
@@ -53,14 +60,16 @@ test('authorize self-issued invocation', async () => {
   })
 
   assert.containSubset(result, {
-    capability: {
-      can: 'store/add',
-      with: alice.did(),
-      nb: {},
+    ok: {
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+        nb: {},
+      },
+      issuer: Principal.from(alice.did()),
+      audience: Principal.parse(bob.did()),
+      proofs: [],
     },
-    issuer: Principal.from(alice.did()),
-    audience: Principal.parse(bob.did()),
-    proofs: [],
   })
 })
 
@@ -85,20 +94,22 @@ test('unauthorized / expired invocation', async () => {
   })
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Proof ${invocation.cid} has expired on ${new Date(expiration * 1000)}`,
+    },
   })
 
   assert.deepEqual(
     JSON.stringify(result),
     JSON.stringify({
-      error: true,
-      name: 'Unauthorized',
-      message: `Claim ${storeAdd} is not authorized
+      error: {
+        name: 'Unauthorized',
+        message: `Claim ${storeAdd} is not authorized
   - Proof ${invocation.cid} has expired on ${new Date(expiration * 1000)}`,
-      stack: result.error ? result.stack : undefined,
+        stack: result.error ? result.error.stack : undefined,
+      },
     })
   )
 })
@@ -122,10 +133,11 @@ test('unauthorized / not valid before invocation', async () => {
   })
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Proof ${invocation.cid} is not valid before ${new Date(notBefore * 1000)}`,
+    },
   })
 })
 
@@ -148,10 +160,11 @@ test('unauthorized / invalid signature', async () => {
   })
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Proof ${invocation.cid} does not has a valid signature from ${alice.did()}`,
+    },
   })
 })
 
@@ -176,12 +189,13 @@ test('unauthorized / unknown capability', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
-    error: true,
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - No matching delegated capability found
   - Encountered unknown capabilities
     - {"can":"store/write","with":"${alice.did()}"}`,
+    },
   })
 })
 
@@ -209,25 +223,27 @@ test('authorize / delegated invocation', async () => {
   })
 
   assert.containSubset(result, {
-    capability: {
-      can: 'store/add',
-      with: alice.did(),
-      nb: {},
-    },
-    issuer: Principal.parse(bob.did()),
-    audience: Principal.parse(w3.did()),
-    proofs: [
-      {
-        capability: {
-          can: 'store/add',
-          with: alice.did(),
-          nb: {},
-        },
-        issuer: Principal.parse(alice.did()),
-        audience: Principal.parse(bob.did()),
-        proofs: [],
+    ok: {
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+        nb: {},
       },
-    ],
+      issuer: Principal.parse(bob.did()),
+      audience: Principal.parse(w3.did()),
+      proofs: [
+        {
+          capability: {
+            can: 'store/add',
+            with: alice.did(),
+            nb: {},
+          },
+          issuer: Principal.parse(alice.did()),
+          audience: Principal.parse(bob.did()),
+          proofs: [],
+        },
+      ],
+    },
   })
 })
 
@@ -260,36 +276,38 @@ test('authorize / delegation chain', async () => {
   })
 
   assert.containSubset(result, {
-    capability: {
-      can: 'store/add',
-      with: alice.did(),
-      nb: {},
-    },
-    issuer: Principal.parse(mallory.did()),
-    audience: Principal.parse(w3.did()),
-    proofs: [
-      {
-        capability: {
-          can: 'store/add',
-          with: alice.did(),
-          nb: {},
-        },
-        issuer: Principal.parse(bob.did()),
-        audience: Principal.parse(mallory.did()),
-        proofs: [
-          {
-            capability: {
-              can: 'store/add',
-              with: alice.did(),
-              nb: {},
-            },
-            issuer: Principal.parse(alice.did()),
-            audience: Principal.parse(bob.did()),
-            proofs: [],
-          },
-        ],
+    ok: {
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+        nb: {},
       },
-    ],
+      issuer: Principal.parse(mallory.did()),
+      audience: Principal.parse(w3.did()),
+      proofs: [
+        {
+          capability: {
+            can: 'store/add',
+            with: alice.did(),
+            nb: {},
+          },
+          issuer: Principal.parse(bob.did()),
+          audience: Principal.parse(mallory.did()),
+          proofs: [
+            {
+              capability: {
+                can: 'store/add',
+                with: alice.did(),
+                nb: {},
+              },
+              issuer: Principal.parse(alice.did()),
+              audience: Principal.parse(bob.did()),
+              proofs: [],
+            },
+          ],
+        },
+      ],
+    },
   })
 })
 
@@ -309,13 +327,15 @@ test('invalid claim / no proofs', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${bob.did()}","nb":${JSON.stringify({
-      link,
-    })}} is not authorized because:
+        link,
+      })}} is not authorized because:
     - Capability can not be (self) issued by '${alice.did()}'
     - Delegated capability not found`,
+    },
   })
 })
 
@@ -346,14 +366,16 @@ test('invalid claim / expired', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      { link }
-    )}} is not authorized because:
+        { link }
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Capability can not be derived from prf:${delegation.cid} because:
       - Proof ${delegation.cid} has expired on ${new Date(expiration * 1000)}`,
+    },
   })
 })
 
@@ -384,15 +406,17 @@ test('invalid claim / not valid before', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      { link }
-    )}} is not authorized because:
+        { link }
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Capability can not be derived from prf:${proof.cid} because:
       - Proof ${proof.cid} is not valid before ${new Date(notBefore * 1000)}`,
+    },
   })
 })
 
@@ -423,15 +447,17 @@ test('invalid claim / invalid signature', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      { link }
-    )}} is not authorized because:
+        { link }
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Capability can not be derived from prf:${proof.cid} because:
       - Proof ${proof.cid} does not has a valid signature from ${alice.did()}`,
+    },
   })
 })
 
@@ -463,15 +489,17 @@ test('invalid claim / unknown capability', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      { link }
-    )}} is not authorized because:
+        { link }
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Delegated capability not found
     - Encountered unknown capabilities
       - {"can":"store/pin","with":"${alice.did()}"}`,
+    },
   })
 })
 
@@ -509,17 +537,19 @@ test('invalid claim / malformed capability', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+        nb
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Can not derive {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} from delegated capabilities:
+        nb
+      )}} from delegated capabilities:
       - Encountered malformed 'store/add' capability: {"can":"store/add","with":"${badDID}"}
         - Expected did: URI instead got ${badDID}`,
+    },
   })
 })
 
@@ -546,17 +576,19 @@ test('invalid claim / unavailable proof', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+        nb
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Capability can not be derived from prf:${delegation.cid} because:
       - Linked proof '${
         delegation.cid
       }' is not included and could not be resolved`,
+    },
   })
 })
 
@@ -586,18 +618,20 @@ test('invalid claim / failed to resolve', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+        nb
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Capability can not be derived from prf:${delegation.cid} because:
       - Linked proof '${
         delegation.cid
       }' is not included and could not be resolved
         - Proof resolution failed with: Boom!`,
+    },
   })
 })
 
@@ -624,15 +658,17 @@ test('invalid claim / invalid audience', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+        nb
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${mallory.did()}'
     - Capability can not be derived from prf:${delegation.cid} because:
       - Delegation audience is '${bob.did()}' instead of '${mallory.did()}'`,
+    },
   })
 })
 
@@ -659,17 +695,19 @@ test('invalid claim / invalid claim', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+        nb
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Can not derive {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} from delegated capabilities:
+        nb
+      )}} from delegated capabilities:
       - Constraint violation: Expected 'with: "${mallory.did()}"' instead got '${alice.did()}'`,
+    },
   })
 })
 
@@ -707,8 +745,9 @@ test('invalid claim / invalid sub delegation', async () => {
   )}}`
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Capability ${capability} is not authorized because:
     - Capability can not be (self) issued by '${mallory.did()}'
     - Capability ${capability} is not authorized because:
@@ -716,6 +755,7 @@ test('invalid claim / invalid sub delegation', async () => {
       - Capability ${capability} is not authorized because:
         - Capability can not be (self) issued by '${alice.did()}'
         - Delegated capability not found`,
+    },
   })
 })
 
@@ -742,36 +782,38 @@ test('authorize / resolve external proof', async () => {
     principal: Verifier,
     resolve: async link => {
       if (link.toString() === delegation.cid.toString()) {
-        return delegation
+        return { ok: delegation }
       } else {
-        return new UnavailableProof(link)
+        return { error: new UnavailableProof(link) }
       }
     },
     capability: storeAdd,
   })
 
   if (result.error) {
-    assert.fail(result.stack)
+    assert.fail(result.error.stack)
   }
 
   assert.containSubset(result, {
-    capability: {
-      can: 'store/add',
-      with: alice.did(),
-      nb: {},
-    },
-    proofs: [
-      {
-        delegation,
-        issuer: Principal.parse(alice.did()),
-        audience: Principal.parse(bob.did()),
-        capability: {
-          can: 'store/add',
-          with: alice.did(),
-        },
-        proofs: [],
+    ok: {
+      capability: {
+        can: 'store/add',
+        with: alice.did(),
+        nb: {},
       },
-    ],
+      proofs: [
+        {
+          delegation,
+          issuer: Principal.parse(alice.did()),
+          audience: Principal.parse(bob.did()),
+          capability: {
+            can: 'store/add',
+            with: alice.did(),
+          },
+          proofs: [],
+        },
+      ],
+    },
   })
 })
 
@@ -798,15 +840,17 @@ test('invalid claim / principal alignment', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${alice.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+        nb
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${mallory.did()}'
     - Capability can not be derived from prf:${proof.cid} because:
       - Delegation audience is '${bob.did()}' instead of '${mallory.did()}'`,
+    },
   })
 })
 
@@ -835,15 +879,16 @@ test('invalid claim / invalid delegation chain', async () => {
   })
 
   assert.containSubset(result, {
-    error: true,
-    name: 'Unauthorized',
-    message: `Claim ${storeAdd} is not authorized
+    error: {
+      name: 'Unauthorized',
+      message: `Claim ${storeAdd} is not authorized
   - Capability {"can":"store/add","with":"${space.did()}","nb":${JSON.stringify(
-      nb
-    )}} is not authorized because:
+        nb
+      )}} is not authorized because:
     - Capability can not be (self) issued by '${bob.did()}'
     - Capability can not be derived from prf:${proof.cid} because:
       - Delegation audience is '${w3.did()}' instead of '${bob.did()}'`,
+    },
   })
 })
 
@@ -860,10 +905,12 @@ test('claim without a proof', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Linked proof '${delegation.cid}' is not included and could not be resolved`,
+    },
   })
 })
 
@@ -883,12 +930,14 @@ test('mismatched signature', async () => {
   })
 
   assert.containSubset(result, {
-    name: 'Unauthorized',
+    error: {
+      name: 'Unauthorized',
 
-    message: `Claim ${storeAdd} is not authorized
+      message: `Claim ${storeAdd} is not authorized
   - Proof ${
     delegation.cid
   } issued by ${current.did()} does not has a valid signature from ${current.toDIDKey()}
     ℹ️ Probably issuer signed with a different key, which got rotated, invalidating delegations that were issued with prior keys`,
+    },
   })
 })

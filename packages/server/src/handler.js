@@ -10,10 +10,11 @@ import { access, Schema, Failure } from '@ucanto/validator'
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @template {{}} U
+ * @template {{}} O
+ * @template {{}} X
  * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} capability
- * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<U>} handler
- * @returns {API.ServiceMethod<API.Capability<A, R, C>, Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>>}
+ * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<API.Result<O, X>>} handler
+ * @returns {API.ServiceMethod<API.Capability<A, R, C>, O, X>}
  */
 
 export const provide = (capability, handler) =>
@@ -30,12 +31,13 @@ export const provide = (capability, handler) =>
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @template {{}} U
+ * @template {{}} O
+ * @template {{}} X
  * @param {object} input
  * @param {API.Reader<API.DID>} [input.audience]
  * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} input.capability
- * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<U>} input.handler
- * @returns {API.ServiceMethod<API.Capability<A, R, C>, Exclude<U, {error:true}>, Exclude<U, Exclude<U, {error:true}>>>}
+ * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<API.Result<O, X>>} input.handler
+ * @returns {API.ServiceMethod<API.Capability<A, R, C>, O, X>}
  */
 
 export const provideAdvanced =
@@ -51,7 +53,7 @@ export const provideAdvanced =
     const audienceSchema = audience || Schema.literal(options.id.did())
     const result = audienceSchema.read(invocation.audience.did())
     if (result.error) {
-      return new InvalidAudience({ cause: result })
+      return { error: new InvalidAudience({ cause: result.error }) }
     }
 
     const authorization = await access(invocation, {
@@ -62,13 +64,11 @@ export const provideAdvanced =
     if (authorization.error) {
       return authorization
     } else {
-      return /** @type {API.Result<Exclude<U, {error:true}>, {error:true} & Exclude<U, Exclude<U, {error:true}>>|API.InvocationError>} */ (
-        handler({
-          capability: authorization.capability,
-          invocation,
-          context: options,
-        })
-      )
+      return handler({
+        capability: authorization.ok.capability,
+        invocation,
+        context: options,
+      })
     }
   }
 
@@ -88,14 +88,5 @@ class InvalidAudience extends Failure {
   }
   describe() {
     return this.cause.message
-  }
-  toJSON() {
-    const { error, name, message, stack } = this
-    return {
-      error,
-      name,
-      message,
-      stack,
-    }
   }
 }

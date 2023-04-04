@@ -184,7 +184,7 @@ class ReceptBuilder {
    * @param {object} options
    * @param {API.Signer<API.DID, SigAlg>} options.issuer
    * @param {Ran|ReturnType<Ran['link']>} options.ran
-   * @param {API.ReceiptResult<Ok, Error>} options.result
+   * @param {API.Result<Ok, Error>} options.result
    * @param {API.EffectsModel} [options.fx]
    * @param {API.Proof[]} [options.proofs]
    * @param {Record<string, unknown>} [options.meta]
@@ -252,7 +252,7 @@ const NOFX = Object.freeze({ fork: Object.freeze([]) })
  * @param {object} options
  * @param {API.Signer<API.DID, SigAlg>} options.issuer
  * @param {Ran|ReturnType<Ran['link']>} options.ran
- * @param {API.ReceiptResult<Ok, Error>} options.result
+ * @param {API.Result<Ok, Error>} options.result
  * @param {API.EffectsModel} [options.fx]
  * @param {API.Proof[]} [options.proofs]
  * @param {Record<string, unknown>} [options.meta]

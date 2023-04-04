@@ -6,7 +6,7 @@ import { the } from './util.js'
  * @param {Partial<Model> & { accounts: API.AccessProvider }} config
  * @returns {API.StorageProvider}
  */
-export const create = (config) => new StoreProvider(config)
+export const create = config => new StoreProvider(config)
 
 /**
  * @typedef {{
@@ -43,9 +43,11 @@ export const add = async ({ accounts, groups, cars }, group, link, proof) => {
     const links = groups.get(group) || new Map()
     links.set(`${link}`, link)
     groups.set(group, links)
-    return { status: cars.get(`${link}`) ? the('in-s3') : the('not-in-s3') }
+    return {
+      ok: { status: cars.get(`${link}`) ? the('in-s3') : the('not-in-s3') },
+    }
   } else {
-    return new UnknownDIDError(`DID ${group} has no account`, group)
+    return { error: new UnknownDIDError(`DID ${group} has no account`, group) }
   }
 }
 
@@ -60,10 +62,10 @@ export const remove = async ({ accounts, groups }, group, link, proof) => {
   if (account) {
     const links = groups.get(group)
     return links && links.get(`${link}`)
-      ? null
-      : new DoesNotHasError(group, link)
+      ? { ok: {} }
+      : { error: new DoesNotHasError(group, link) }
   } else {
-    return new UnknownDIDError(`DID ${group} has no account`, group)
+    return { error: new UnknownDIDError(`DID ${group} has no account`, group) }
   }
 }
 

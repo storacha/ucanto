@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import { isDelegation, UCAN } from '@ucanto/core'
+import { isDelegation, UCAN, ok, fail } from '@ucanto/core'
 import { capability } from './capability.js'
 import * as Schema from './schema.js'
 import {
@@ -16,28 +16,31 @@ import {
   li,
 } from './error.js'
 
+export { capability } from './capability.js'
+export * from './schema.js'
+
 export {
+  Schema,
   Failure,
+  fail,
+  ok,
   UnavailableProof,
   MalformedCapability,
   DIDKeyResolutionError as DIDResolutionError,
 }
 
-export { capability } from './capability.js'
-export * from './schema.js'
-export { Schema }
-
 /**
  * @param {UCAN.Link} proof
+ * @returns {{error:API.UnavailableProof}}
  */
-const unavailable = proof => new UnavailableProof(proof)
+const unavailable = proof => ({ error: new UnavailableProof(proof) })
 
 /**
  *
  * @param {UCAN.DID} did
- * @returns {API.DIDKeyResolutionError}
+ * @returns {{error:API.DIDKeyResolutionError}}
  */
-const failDIDKeyResolution = did => new DIDKeyResolutionError(did)
+const failDIDKeyResolution = did => ({ error: new DIDKeyResolutionError(did) })
 
 /**
  * @param {Required<API.ClaimOptions>} config
@@ -94,9 +97,9 @@ const resolveProofs = async (proofs, config) => {
           try {
             const result = await config.resolve(proof)
             if (result.error) {
-              errors.push(result)
+              errors.push(result.error)
             } else {
-              delegations.push(result)
+              delegations.push(result.ok)
             }
           } catch (error) {
             errors.push(
@@ -162,7 +165,7 @@ const resolveSources = async ({ delegation }, config) => {
     // signature) save a corresponding proof error.
     const validation = await validate(proof, proofs, config)
     if (validation.error) {
-      errors.push(new ProofError(proof.cid, validation))
+      errors.push(new ProofError(proof.cid, validation.error))
     } else {
       // otherwise create source objects for it's capabilities, so we could
       // track which proof in which capability the are from.
@@ -248,19 +251,18 @@ export const claim = async (
   for (const proof of delegations) {
     // Validate each proof if valid add ech capability to the list of sources.
     // otherwise collect the error.
-    const delegation = await validate(proof, delegations, config)
-    if (!delegation.error) {
-      for (const [index, capability] of delegation.capabilities.entries()) {
+    const validation = await validate(proof, delegations, config)
+    if (validation.ok) {
+      for (const capability of validation.ok.capabilities.values()) {
         sources.push(
           /** @type {API.Source} */ ({
             capability,
-            delegation,
-            index,
+            delegation: validation.ok,
           })
         )
       }
     } else {
-      invalidProofs.push(delegation)
+      invalidProofs.push(validation.error)
     }
   }
   // look for the matching capability
@@ -271,24 +273,26 @@ export const claim = async (
   for (const matched of selection.matches) {
     const selector = matched.prune(config)
     if (selector == null) {
-      return new Authorization(matched, [])
+      return { ok: new Authorization(matched, []) }
     } else {
       const result = await authorize(selector, config)
       if (result.error) {
-        failedProofs.push(result)
+        failedProofs.push(result.error)
       } else {
-        return new Authorization(matched, [result])
+        return { ok: new Authorization(matched, [result.ok]) }
       }
     }
   }
 
-  return new Unauthorized({
-    capability,
-    delegationErrors,
-    unknownCapabilities,
-    invalidProofs,
-    failedProofs,
-  })
+  return {
+    error: new Unauthorized({
+      capability,
+      delegationErrors,
+      unknownCapabilities,
+      invalidProofs,
+      failedProofs,
+    }),
+  }
 }
 
 /**
@@ -338,26 +342,28 @@ export const authorize = async (match, config) => {
     if (selector == null) {
       // @ts-expect-error - it may not be a parsed capability but rather a
       // group of capabilities but we can deal with that in the future.
-      return new Authorization(matched, [])
+      return { ok: new Authorization(matched, []) }
     } else {
       const result = await authorize(selector, config)
       if (result.error) {
-        failedProofs.push(result)
+        failedProofs.push(result.error)
       } else {
         // @ts-expect-error - it may not be a parsed capability but rather a
         // group of capabilities but we can deal with that in the future.
-        return new Authorization(matched, [result])
+        return { ok: new Authorization(matched, [result.ok]) }
       }
     }
   }
 
-  return new InvalidClaim({
-    match,
-    delegationErrors,
-    unknownCapabilities,
-    invalidProofs,
-    failedProofs,
-  })
+  return {
+    error: new InvalidClaim({
+      match,
+      delegationErrors,
+      unknownCapabilities,
+      invalidProofs,
+      failedProofs,
+    }),
+  }
 }
 
 class ProofError extends Failure {
@@ -476,10 +482,6 @@ class Unauthorized extends Failure {
         : []),
     ].join('\n')
   }
-  toJSON() {
-    const { error, name, message, stack } = this
-    return { error, name, message, stack }
-  }
 }
 
 /**
@@ -494,15 +496,19 @@ class Unauthorized extends Failure {
  */
 const validate = async (delegation, proofs, config) => {
   if (UCAN.isExpired(delegation.data)) {
-    return new Expired(
-      /** @type {API.Delegation & {expiration: number}} */ (delegation)
-    )
+    return {
+      error: new Expired(
+        /** @type {API.Delegation & {expiration: number}} */ (delegation)
+      ),
+    }
   }
 
   if (UCAN.isTooEarly(delegation.data)) {
-    return new NotValidBefore(
-      /** @type {API.Delegation & {notBefore: number}} */ (delegation)
-    )
+    return {
+      error: new NotValidBefore(
+        /** @type {API.Delegation & {notBefore: number}} */ (delegation)
+      ),
+    }
   }
 
   return await verifyAuthorization(delegation, proofs, config)
@@ -536,10 +542,12 @@ const verifyAuthorization = async (delegation, proofs, config) => {
     // attempt to resolve embedded authorization session from the authority.
     const session = await verifySession(delegation, proofs, config)
     // If we have valid session we consider authorization valid
-    if (!session.error) {
-      return delegation
-    } else if (session.failedProofs.length > 0) {
-      return new SessionEscalation({ delegation, cause: session })
+    if (session.ok) {
+      return { ok: delegation }
+    } else if (session.error.failedProofs.length > 0) {
+      return {
+        error: new SessionEscalation({ delegation, cause: session.error }),
+      }
     }
     // Otherwise we try to resolve did:key from the DID instead
     // and use that to verify the signature
@@ -550,7 +558,7 @@ const verifyAuthorization = async (delegation, proofs, config) => {
       } else {
         return verifySignature(
           delegation,
-          config.principal.parse(verifier).withDID(issuer)
+          config.principal.parse(verifier.ok).withDID(issuer)
         )
       }
     }
@@ -565,7 +573,9 @@ const verifyAuthorization = async (delegation, proofs, config) => {
  */
 const verifySignature = async (delegation, verifier) => {
   const valid = await UCAN.verifySignature(delegation.data, verifier)
-  return valid ? delegation : new InvalidSignature(delegation, verifier)
+  return valid
+    ? { ok: delegation }
+    : { error: new InvalidSignature(delegation, verifier) }
 }
 
 /**

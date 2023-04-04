@@ -1,28 +1,9 @@
 import * as API from '@ucanto/interface'
 import { the } from './util.js'
 import { isLink } from '@ucanto/core/link'
+import { fail, Failure } from '@ucanto/core/result'
 
-/**
- * @implements {API.Failure}
- */
-export class Failure extends Error {
-  /** @type {true} */
-  get error() {
-    return true
-  }
-  /* c8 ignore next 3 */
-  describe() {
-    return this.name
-  }
-  get message() {
-    return this.describe()
-  }
-
-  toJSON() {
-    const { error, name, message, stack } = this
-    return { error, name, message, stack }
-  }
-}
+export { Failure, fail }
 
 export class EscalatedCapability extends Failure {
   /**
@@ -200,9 +181,8 @@ export class PrincipalAlignmentError extends Failure {
     return `Delegation audience is '${this.delegation.audience.did()}' instead of '${this.audience.did()}'`
   }
   toJSON() {
-    const { error, name, audience, message, stack } = this
+    const { name, audience, message, stack } = this
     return {
-      error,
       name,
       audience: audience.did(),
       delegation: { audience: this.delegation.audience.did() },
@@ -269,9 +249,8 @@ export class Expired extends Failure {
     return this.delegation.expiration
   }
   toJSON() {
-    const { error, name, expiredAt, message, stack } = this
+    const { name, expiredAt, message, stack } = this
     return {
-      error,
       name,
       message,
       expiredAt,
@@ -298,9 +277,8 @@ export class NotValidBefore extends Failure {
     return this.delegation.notBefore
   }
   toJSON() {
-    const { error, name, validAt, message, stack } = this
+    const { name, validAt, message, stack } = this
     return {
-      error,
       name,
       message,
       validAt,

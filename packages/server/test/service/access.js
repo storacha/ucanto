@@ -1,6 +1,6 @@
 import * as Server from '../../src/server.js'
 import { provide } from '../../src/handler.js'
-import { DID } from '@ucanto/validator'
+import { DID, Schema } from '@ucanto/validator'
 import * as API from './api.js'
 import { service as w3 } from '../fixtures.js'
 export const id = w3
@@ -9,29 +9,31 @@ const registerCapability = Server.capability({
   can: 'identity/register',
   with: Server.URI.match({ protocol: 'mailto:' }),
   derives: (claimed, delegated) =>
-    claimed.with === delegated.with ||
-    new Server.Failure(
-      `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
-    ),
+    claimed.with === delegated.with
+      ? Server.ok({})
+      : Server.fail(
+          `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
+        ),
 })
 
 const linkCapability = Server.capability({
   can: 'identity/link',
   with: Server.URI,
   derives: (claimed, delegated) =>
-    claimed.with === delegated.with ||
-    new Server.Failure(
-      `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
-    ),
+    claimed.with === delegated.with
+      ? Server.ok({})
+      : Server.fail(
+          `Expected 'with: "${delegated.with}"' instead got '${claimed.with}'`
+        ),
 })
 
 const identifyCapability = Server.capability({
   can: 'identity/identify',
   with: Server.URI,
   derives: (claimed, delegated) =>
-    claimed.with === delegated.with ||
-    delegated.with === 'ucan:*' ||
-    new Server.Failure(`Can not derive ${claimed.with} from ${claimed.with}`),
+    claimed.with === delegated.with || delegated.with === 'ucan:*'
+      ? Server.ok({})
+      : Server.fail(`Can not derive ${claimed.with} from ${claimed.with}`),
 })
 
 export const claimCapability = Server.capability({
@@ -76,14 +78,16 @@ export const identify = provide(
   async function identify({ capability }) {
     const did = /** @type {API.DID} */ (capability.with)
     const account = resolve(state, did)
-    return account == null ? new UnknownIDError(did) : account
+    return account == null
+      ? { error: new UnknownIDError(did) }
+      : { ok: account }
   }
 )
 
 export const claim = provide(
   claimCapability,
   async function claim({ capability }) {
-    return []
+    return { ok: [] }
   }
 )
 
@@ -93,7 +97,7 @@ export const claim = provide(
  * @param {API.DID|API.URI<"mailto:">} to
  * @param {API.Link} proof
  * @param {boolean} create
- * @returns {API.SyncResult<null, API.UnknownIDError>}
+ * @returns {API.SyncResult<{}, API.UnknownIDError>}
  */
 const associate = (accounts, from, to, proof, create) => {
   const fromAccount = resolve(accounts, from)
@@ -110,7 +114,7 @@ const associate = (accounts, from, to, proof, create) => {
       accounts.set(to, { account, proof })
       accounts.set(from, { account, proof })
     } else {
-      return new UnknownIDError('Unknown did', to)
+      return { error: new UnknownIDError('Unknown did', to) }
     }
   } else if (toAccount) {
     accounts.set(from, { account: toAccount, proof })
@@ -122,7 +126,7 @@ const associate = (accounts, from, to, proof, create) => {
     accounts.set(fromAccount, { account, proof })
   }
 
-  return null
+  return { ok: {} }
 }
 
 /**
