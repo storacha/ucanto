@@ -1180,6 +1180,66 @@ export const struct = fields => {
 }
 
 /**
+ * @template {{[key:string]: Schema.Reader}} U
+ * @template [I=unknown]
+ * @extends {API<Schema.InferVariant<U>, I, U>}
+ * @implements {Schema.VariantSchema<U, I>}
+ */
+class Variant extends API {
+  /**
+   * @param {I} input
+   * @param {U} variants
+   * @returns {Schema.ReadResult<Schema.InferVariant<U>>}
+   */
+  readWith(input, variants) {
+    if (typeof input != 'object' || input === null || Array.isArray(input)) {
+      return typeError({
+        expect: 'object',
+        actual: input,
+      })
+    }
+
+    const keys = /** @type {Array<keyof input & keyof variants & string>} */ (
+      Object.keys(input)
+    )
+
+    const [key] = keys.length === 1 ? keys : []
+    const reader = key ? variants[key] : undefined
+
+    if (reader) {
+      const result = reader.read(input[key])
+      return result.error
+        ? memberError({ at: key, cause: result.error })
+        : { ok: /** @type {Schema.InferVariant<U>} */ ({ [key]: result.ok }) }
+    } else if (variants._) {
+      const result = variants._.read(input)
+      return result.error
+        ? result
+        : { ok: /** @type {Schema.InferVariant<U>} */ ({ _: result.ok }) }
+    } else if (key) {
+      return error(
+        `Expected an object with one of the these keys: ${Object.keys(variants)
+          .sort()
+          .join(', ')} instead got object with key ${key}`
+      )
+    } else {
+      return error(
+        'Expected an object with a single key instead got object with keys ' +
+          keys.sort().join(', ')
+      )
+    }
+  }
+}
+
+/**
+ * @template {{[key:string]: Schema.Reader}} U
+ * @template [I=unknown]
+ * @param {U} variants
+ * @returns {Schema.VariantSchema<U, I>}
+ */
+export const variant = variants => new Variant(variants)
+
+/**
  * @param {string} message
  * @returns {{error: Schema.Error}}
  */

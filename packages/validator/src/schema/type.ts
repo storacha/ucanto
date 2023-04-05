@@ -1,4 +1,4 @@
-import { Failure as Error, Result, Phantom } from '@ucanto/interface'
+import { Failure as Error, Result, Variant, Phantom } from '@ucanto/interface'
 
 export interface Reader<O = unknown, I = unknown, X extends Error = Error> {
   read(input: I): Result<O, X>
@@ -102,6 +102,23 @@ export interface StructSchema<
 
   partial(): MapRepresentation<Partial<InferStruct<U>>, I> & StructSchema
 }
+
+export interface VariantSchema<
+  U extends { [key: string]: Reader } = {},
+  I extends unknown = unknown
+> extends Schema<InferVariant<U>, I> {
+  // match(input: I): Variant<InferVariant<U>>
+}
+
+export interface Rest extends Record<'...', Record<any, never>> {}
+
+const test = (input: Rest) => {}
+
+export type InferVariant<U extends { [key: string]: Reader }> = {
+  [Key in keyof U]: { [K in Exclude<keyof U, Key>]?: never } & {
+    [K in Key]: U[Key] extends Reader<infer T> ? T : never
+  }
+}[keyof U]
 
 export type InferOptionalStructShape<U extends { [key: string]: Reader }> = {
   [K in keyof U]: InferOptionalReader<U[K]>
