@@ -107,12 +107,12 @@ export interface VariantSchema<
   U extends { [key: string]: Reader } = {},
   I extends unknown = unknown
 > extends Schema<InferVariant<U>, I> {
-  // match(input: I): Variant<InferVariant<U>>
+  match<E = never>(input: I, fallback?: E): InferVariantMatch<U> | [null, E]
 }
 
-export interface Rest extends Record<'...', Record<any, never>> {}
-
-const test = (input: Rest) => {}
+export type InferVariantMatch<U extends { [key: string]: Reader }> = {
+  [K in keyof U]: U[K] extends Reader<infer T> ? [K, T] : never
+}[keyof U]
 
 export type InferVariant<U extends { [key: string]: Reader }> = {
   [Key in keyof U]: { [K in Exclude<keyof U, Key>]?: never } & {

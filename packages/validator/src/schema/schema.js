@@ -1229,6 +1229,27 @@ class Variant extends API {
       )
     }
   }
+
+  /**
+   * @template [E=never]
+   * @param {I} input
+   * @param {E} [fallback]
+   * @returns {Schema.InferVariantMatch<U>|[null, E]}
+   */
+  match(input, fallback) {
+    const result = this.read(input)
+    if (result.error) {
+      if (fallback !== undefined) {
+        return [null, fallback]
+      } else {
+        throw result.error
+      }
+    } else {
+      const [key] = Object.keys(result.ok)
+      const value = result.ok[key]
+      return /** @type {any} */ ([key, value])
+    }
+  }
 }
 
 /**

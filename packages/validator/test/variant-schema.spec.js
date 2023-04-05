@@ -120,3 +120,39 @@ test('variant with default', () => {
     },
   })
 })
+
+test('variant match', () => {
+  const Shapes = Schema.variant({
+    circe: Schema.struct({ radius: Schema.number() }),
+    rectangle: Schema.struct({
+      width: Schema.number(),
+      height: Schema.number(),
+    }),
+
+    _: Schema.dictionary({
+      value: Schema.unknown(),
+    }),
+  })
+
+  assert.deepEqual(Shapes.match({ circe: { radius: 1 } }), [
+    'circe',
+    { radius: 1 },
+  ])
+
+  assert.deepEqual(Shapes.match({ square: { width: 5 } }), [
+    '_',
+    { square: { width: 5 } },
+  ])
+
+  assert.throws(
+    () => Shapes.match([]),
+    /Expected value of type object instead got array/
+  )
+
+  assert.deepEqual(Shapes.match([], { whatever: 1 }), [
+    null,
+    {
+      whatever: 1,
+    },
+  ])
+})
