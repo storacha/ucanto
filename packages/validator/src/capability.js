@@ -6,8 +6,7 @@ import {
   UnknownCapability,
   DelegationError as MatchError,
 } from './error.js'
-import { invoke, delegate } from '@ucanto/core'
-import * as Schema from './schema.js'
+import { invoke, delegate, Schema } from '@ucanto/core'
 
 /**
  * @template {API.Ability} A

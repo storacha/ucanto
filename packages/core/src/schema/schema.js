@@ -1,5 +1,5 @@
 import * as Schema from './type.js'
-import { ok } from '@ucanto/core/result'
+import { ok } from '../result.js'
 export * from './type.js'
 
 export { ok }

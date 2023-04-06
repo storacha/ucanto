@@ -98,7 +98,7 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
-  "include": ["src", "test"],
+  "include": ["src", "test", "../core/src/schema.js", "../core/test/schema", "../core/test/link-schema.spec.js", "../core/test/map-schema.spec.js", "../core/test/schema.spec.js", "../core/test/variant-schema.spec.js", "../core/test/extra-schema.spec.js"],
   "references": [
     { "path": "../interface" },
     { "path": "../client" },

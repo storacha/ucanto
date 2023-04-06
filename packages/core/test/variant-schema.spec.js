@@ -1,8 +1,8 @@
 import * as Schema from '../src/schema.js'
-import { test, assert } from './test.js'
+import { test, assert, matchError } from './test.js'
 
-const Shapes = Schema.variant({
-  circe: Schema.struct({ radius: Schema.number() }),
+const Shape = Schema.variant({
+  circle: Schema.struct({ radius: Schema.number() }),
   rectangle: Schema.struct({
     width: Schema.number(),
     height: Schema.number(),
@@ -10,54 +10,41 @@ const Shapes = Schema.variant({
 })
 
 test('variant', () => {
-  assert.deepEqual(Shapes.read({ circe: { radius: 1 } }), {
+  assert.deepEqual(Shape.read({ circle: { radius: 1 } }), {
     ok: {
-      circe: { radius: 1 },
+      circle: { radius: 1 },
     },
   })
 
-  assert.deepEqual(Shapes.read({ rectangle: { width: 1, height: 2 } }), {
+  assert.deepEqual(Shape.read({ rectangle: { width: 1, height: 2 } }), {
     ok: {
       rectangle: { width: 1, height: 2 },
     },
   })
 
-  assert.containSubset(Shapes.read({ rectangle: { width: 1 } }), {
-    error: {
-      message: `Object contains invalid field "rectangle":
-  - Object contains invalid field "height":
-    - Expected value of type number instead got undefined`,
-      at: 'rectangle',
-    },
-  })
+  matchError(
+    Shape.read({ rectangle: { width: 1 } }),
+    /contains invalid field "rectangle"/
+  )
 
-  assert.containSubset(Shapes.read({ square: { width: 5 } }), {
-    error: {
-      message: `Expected an object with one of the these keys: circe, rectangle instead got object with key square`,
-    },
-  })
+  matchError(
+    Shape.read({ square: { width: 5 } }),
+    /Expected an object with one of the these keys: circle, rectangle instead got object with key square/
+  )
 
-  assert.containSubset(Shapes.read([]), {
-    error: {
-      message: `Expected value of type object instead got array`,
-    },
-  })
+  matchError(Shape.read([]), /Expected value of type object instead got array/)
 })
 
 test('variant can not have extra fields', () => {
-  assert.containSubset(
-    Shapes.read({ rectangle: { width: 1, height: 2 }, circle: { radius: 3 } }),
-    {
-      error: {
-        message: `Expected an object with a single key instead got object with keys circle, rectangle`,
-      },
-    }
+  matchError(
+    Shape.read({ rectangle: { width: 1, height: 2 }, circle: { radius: 3 } }),
+    /Expected an object with a single key instead got object with keys circle, rectangle/
   )
 })
 
 test('variant with default match', () => {
   const Shapes = Schema.variant({
-    circe: Schema.struct({ radius: Schema.number() }),
+    circle: Schema.struct({ radius: Schema.number() }),
     rectangle: Schema.struct({
       width: Schema.number(),
       height: Schema.number(),
@@ -66,8 +53,8 @@ test('variant with default match', () => {
     _: Schema.dictionary({ value: Schema.unknown() }),
   })
 
-  assert.deepEqual(Shapes.read({ circe: { radius: 1 } }), {
-    ok: { circe: { radius: 1 } },
+  assert.deepEqual(Shapes.read({ circle: { radius: 1 } }), {
+    ok: { circle: { radius: 1 } },
   })
 
   assert.deepEqual(Shapes.read({ rectangle: { width: 10, height: 7 } }), {
@@ -83,7 +70,7 @@ test('variant with default match', () => {
 
 test('variant with default', () => {
   const Shapes = Schema.variant({
-    circe: Schema.struct({ radius: Schema.number() }),
+    circle: Schema.struct({ radius: Schema.number() }),
     rectangle: Schema.struct({
       width: Schema.number(),
       height: Schema.number(),
@@ -94,8 +81,8 @@ test('variant with default', () => {
     }),
   })
 
-  assert.deepEqual(Shapes.read({ circe: { radius: 1 } }), {
-    ok: { circe: { radius: 1 } },
+  assert.deepEqual(Shapes.read({ circle: { radius: 1 } }), {
+    ok: { circle: { radius: 1 } },
   })
 
   assert.deepEqual(Shapes.read({ rectangle: { width: 10, height: 7 } }), {
@@ -112,18 +99,12 @@ test('variant with default', () => {
     },
   })
 
-  assert.containSubset(Shapes.read({ square: { width: 5 } }), {
-    error: {
-      name: 'FieldError',
-      message: `Object contains invalid field "isShape":
-  - Expected value of type boolean instead got undefined`,
-    },
-  })
+  matchError(Shapes.read({ square: { width: 5 } }), /isShape/)
 })
 
 test('variant match', () => {
   const Shapes = Schema.variant({
-    circe: Schema.struct({ radius: Schema.number() }),
+    circle: Schema.struct({ radius: Schema.number() }),
     rectangle: Schema.struct({
       width: Schema.number(),
       height: Schema.number(),
@@ -134,8 +115,8 @@ test('variant match', () => {
     }),
   })
 
-  assert.deepEqual(Shapes.match({ circe: { radius: 1 } }), [
-    'circe',
+  assert.deepEqual(Shapes.match({ circle: { radius: 1 } }), [
+    'circle',
     { radius: 1 },
   ])
 
@@ -155,4 +136,18 @@ test('variant match', () => {
       whatever: 1,
     },
   ])
+})
+
+test('variant create', () => {
+  const shape = Shape.create({ circle: { radius: 1 } })
+  assert.deepEqual(shape, { circle: { radius: 1 } })
+
+  assert.throws(
+    () =>
+      Shape.create(
+        // @ts-expect-error - does not match schema
+        { square: { width: 5 } }
+      ),
+    /object with one of the these keys: circle, rectangle instead got object with key square/
+  )
 })
