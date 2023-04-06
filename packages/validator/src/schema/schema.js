@@ -1234,7 +1234,6 @@ class Variant extends API {
    * @template [E=never]
    * @param {I} input
    * @param {E} [fallback]
-   * @returns {Schema.InferVariantMatch<U>|[null, E]}
    */
   match(input, fallback) {
     const result = this.read(input)
@@ -1249,6 +1248,13 @@ class Variant extends API {
       const value = result.ok[key]
       return /** @type {any} */ ([key, value])
     }
+  }
+
+  /**
+   * @param {Schema.InferVariant<U>} source
+   */
+  create(source) {
+    return this.from(source)
   }
 }
 
