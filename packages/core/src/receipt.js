@@ -11,15 +11,20 @@ import { sha256 } from 'multiformats/hashes/sha2'
  * @template {{}} Ok
  * @template {{}} Error
  * @template {API.Invocation} Ran
+ * @template [E=never]
  * @param {object} input
  * @param {API.Link<API.ReceiptModel<Ok, Error, Ran>>} input.root
  * @param {Map<string, API.Block>} input.blocks
+ * @param {E} [fallback]
  */
-export const view = ({ root, blocks }) => {
-  const { bytes, cid } = DAG.get(root, blocks)
-  const data = CBOR.decode(bytes)
+export const view = ({ root, blocks }, fallback) => {
+  const block = DAG.get(root, blocks)
+  if (block == null) {
+    return fallback || DAG.notFound(root)
+  }
+  const data = CBOR.decode(block.bytes)
 
-  return new Receipt({ root: { bytes, cid, data }, store: blocks })
+  return new Receipt({ root: { ...block, data }, store: blocks })
 }
 
 /**

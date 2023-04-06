@@ -10,7 +10,11 @@ import type {
   InferWorkflowReceipts,
   InferInvocations,
   Receipt,
+  Workflow,
+  AgentMessageModel,
+  ByteView,
   Invocation,
+  AgentMessage,
 } from './lib.js'
 
 /**
@@ -32,47 +36,40 @@ export interface RequestEncodeOptions extends EncodeOptions {
 }
 
 export interface Channel<T extends Record<string, any>> extends Phantom<T> {
-  request<I extends Tuple<ServiceInvocation<UCAN.Capability, T>>>(
+  request<I extends AgentMessage, O extends AgentMessage>(
     request: HTTPRequest<I>
-  ): Await<HTTPResponse<InferWorkflowReceipts<I, T> & Tuple<Receipt>>>
+  ): Await<HTTPResponse<O>>
 }
 
 export interface RequestEncoder {
-  encode<I extends Tuple<ServiceInvocation>>(
-    invocations: I,
+  encode<T extends AgentMessage>(
+    message: T,
     options?: RequestEncodeOptions
-  ): Await<HTTPRequest<I>>
+  ): Await<HTTPRequest<T>>
 }
 
 export interface RequestDecoder {
-  decode<I extends Tuple<ServiceInvocation>>(
-    request: HTTPRequest<I>
-  ): Await<InferInvocations<I>>
+  decode<T extends AgentMessage>(request: HTTPRequest<T>): Await<T>
 }
 
 export interface ResponseEncoder {
-  encode<I extends Tuple<Receipt<any, any>>>(
-    result: I,
-    options?: EncodeOptions
-  ): Await<HTTPResponse<I>>
+  encode<T extends AgentMessage>(message: T, options?: EncodeOptions): Await<T>
 }
 
 export interface ResponseDecoder {
-  decode<I extends Tuple<Receipt<any, any>>>(
-    response: HTTPResponse<I>
-  ): Await<I>
+  decode<T extends AgentMessage>(response: HTTPResponse<T>): Await<T>
 }
 
-export interface HTTPRequest<T = unknown> extends Phantom<T> {
+export interface HTTPRequest<T extends AgentMessage = AgentMessage> {
   method?: string
   headers: Readonly<Record<string, string>>
-  body: Uint8Array
+  body: ByteView<T>
 }
 
-export interface HTTPResponse<T = unknown> extends Phantom<T> {
+export interface HTTPResponse<T extends AgentMessage = AgentMessage> {
   status?: number
   headers: Readonly<Record<string, string>>
-  body: Uint8Array
+  body: ByteView<T>
 }
 
 /**

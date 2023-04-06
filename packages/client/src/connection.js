@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import { Receipt, Signature, sha256 } from '@ucanto/core'
+import { Signature, Message, Receipt, sha256 } from '@ucanto/core'
 
 /**
  * Creates a connection to a service.
@@ -29,8 +29,9 @@ class Connection {
    * @template {API.Capability} C
    * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
    * @param {I} invocations
+   * @returns {Promise<API.InferWorkflowReceipts<I, T>>}
    */
-  execute(...invocations) {
+  async execute(...invocations) {
     return execute(invocations, this)
   }
 }
@@ -40,11 +41,12 @@ class Connection {
  * @template {Record<string, any>} T
  * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
  * @param {API.Connection<T>} connection
- * @param {I} workflow
+ * @param {I} invocations
  * @returns {Promise<API.InferWorkflowReceipts<I, T>>}
  */
-export const execute = async (workflow, connection) => {
-  const request = await connection.codec.encode(workflow, connection)
+export const execute = async (invocations, connection) => {
+  const input = await Message.build({ invocations })
+  const request = await connection.codec.encode(input, connection)
   const response = await connection.channel.request(request)
   // We may fail to decode the response if content type is not supported
   // or if data was corrupted. We do not want to throw in such case however,
@@ -52,16 +54,17 @@ export const execute = async (workflow, connection) => {
   // consistent client API with two kinds of errors we encode caught error as
   // a receipts per workflow invocation.
   try {
-    return await connection.codec.decode(response)
+    const output = await connection.codec.decode(response)
+    const receipts = input.invocations.map(link => output.get(link))
+    return /** @type {API.InferWorkflowReceipts<I, T>} */ (receipts)
   } catch (error) {
     // No third party code is run during decode and we know
     // we only throw an Error
     const { message, ...cause } = /** @type {Error} */ (error)
     const receipts = []
-    for await (const invocation of workflow) {
-      const { cid } = await invocation.delegate()
+    for await (const ran of input.invocations) {
       const receipt = await Receipt.issue({
-        ran: cid,
+        ran,
         result: { error: { ...cause, message } },
         // @ts-expect-error - we can not really sign a receipt without having
         // an access to a signer which client does not have. In the future
@@ -80,6 +83,6 @@ export const execute = async (workflow, connection) => {
       receipts.push(receipt)
     }
 
-    return /** @type {any} */ (receipts)
+    return /** @type {API.InferWorkflowReceipts<I, T>} */ (receipts)
   }
 }

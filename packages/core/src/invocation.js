@@ -1,6 +1,7 @@
 import * as API from '@ucanto/interface'
 import { delegate, Delegation } from './delegation.js'
 import * as DAG from './dag.js'
+import { createWorkflow } from './workflow.js'
 
 /**
  * @template {API.Capability} Capability
@@ -25,21 +26,25 @@ export const create = ({ root, blocks }) => new Invocation(root, blocks)
  * If root points to wrong block (that is not an invocation) it will misbehave
  * and likely throw some errors on field access.
  *
+ * @template {API.Capability} C
  * @template {API.Invocation} Invocation
- * @template [T=undefined]
+ * @template [T=never]
  * @param {object} dag
- * @param {ReturnType<Invocation['link']>} dag.root
+ * @param {API.UCANLink<[C]>} dag.root
  * @param {Map<string, API.Block>} dag.blocks
  * @param {T} [fallback]
- * @returns {Invocation|T}
+ * @returns {API.Invocation<C>|T}
  */
 export const view = ({ root, blocks }, fallback) => {
-  const block = DAG.get(root, blocks, null)
-  const view = block
-    ? /** @type {Invocation} */ (create({ root: block, blocks }))
-    : /** @type {T} */ (fallback)
-
-  return view
+  if (fallback) {
+    const block = DAG.get(root, blocks, null)
+    return block
+      ? /** @type {API.Invocation<C>} */ (create({ root: block, blocks }))
+      : /** @type {T} */ (fallback)
+  } else {
+    const block = DAG.get(root, blocks)
+    return /** @type {API.Invocation<C>} */ (create({ root: block, blocks }))
+  }
 }
 
 /**

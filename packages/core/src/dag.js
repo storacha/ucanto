@@ -5,6 +5,8 @@ import * as MF from 'multiformats/interface'
 import * as CBOR from './cbor.js'
 import { identity } from 'multiformats/hashes/identity'
 
+export { CBOR, sha256, identity }
+
 /**
  * Function takes arbitrary value and if it happens to be an `IPLDView`
  * it will iterate over it's blocks. It is just a convenience for traversing
@@ -27,8 +29,8 @@ export const iterate = function* (value) {
 }
 
 /**
- * @template T
- * @typedef {Map<API.ToString<API.Link>, API.Block<T>>} BlockStore
+ * @template [T=unknown]
+ * @typedef {Map<API.ToString<API.Link>, API.Block<T, number, number, 0|1>>} BlockStore
  */
 
 /**
@@ -45,10 +47,11 @@ const EMBED_CODE = identity.code
  * contain the block, `fallback` is returned. If `fallback` is not provided, it
  * will throw an error.
  *
+ * @template {0|1} V
  * @template {T} U
  * @template T
  * @template [E=never]
- * @param {API.Link<U>} cid
+ * @param {API.Link<U, number, number, 0|1>} cid
  * @param {BlockStore<T>} store
  * @param {E} [fallback]
  * @returns {API.Block<U>|E}
@@ -87,7 +90,7 @@ export const embed = (source, { codec } = {}) => {
  * @param {API.Link} link
  * @returns {never}
  */
-const notFound = link => {
+export const notFound = link => {
   throw new Error(`Block for the ${link} is not found`)
 }
 
@@ -145,4 +148,46 @@ export const addEveryInto = (source, store) => {
   for (const block of source) {
     addInto(block, store)
   }
+}
+
+/**
+ * @template {API.Variant<Record<string, unknown>>} T
+ * @param {T} variant
+ * @returns {{ [K in keyof T]: [K, T[K]]}[keyof T]}
+ */
+export const match = variant => {
+  const [tag, ...keys] = Object.keys(variant)
+  if (keys.length === 0) {
+    return /** @type {[any, any]} */ ([tag, variant[tag]])
+  }
+  throw new Error('Variant must have at least one key')
+}
+
+/**
+ * @template {API.Variant<Record<string, unknown>>} T
+ * @template {keyof T} Tag
+ * @template [U=never]
+ * @param {Tag} tag
+ * @param {T} variant
+ * @param {U} [fallback]
+ * @returns {T[Tag]|U}
+ */
+export const when = (tag, variant, fallback) => {
+  const keys = Object.keys(variant)
+  if (keys.length === 1 && keys[0] === tag) {
+    return /** @type {T[Tag]} */ (variant[tag])
+  } else {
+    return fallback === undefined ? noMatch(tag.toString(), keys) : fallback
+  }
+}
+
+/**
+ * @param {string} tag
+ * @param {string[]} keys
+ * @returns {never}
+ */
+const noMatch = (tag, keys) => {
+  throw new TypeError(
+    `Expected variant labeled "${tag}" instead got object with keys ${keys}`
+  )
 }

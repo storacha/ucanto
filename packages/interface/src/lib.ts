@@ -477,6 +477,8 @@ export type Result<T = unknown, X extends {} = {}> = Variant<{
   error: X
 }>
 
+export interface Unit {}
+
 /**
  * Utility type for defining a [keyed union] type as in IPLD Schema. In practice
  * this just works around typescript limitation that requires discriminant field
@@ -665,6 +667,70 @@ export type InferWorkflowReceipts<
   ? [InferServiceInvocationReceipt<C, T>, ...InferWorkflowReceipts<Rest, T>]
   : never
 
+/**
+ * Describes messages send across ucanto agents.
+ */
+export type AgentMessageModel<T> = Variant<{
+  'ucanto/message@0.6.0': AgentMessageData<T>
+}>
+
+/**
+ * Describes ucanto@0.6 message format send between (client/server) agents.
+ *
+ * @template T - Phantom type capturing types of the payload for the inference.
+ */
+export interface AgentMessageData<T> extends Phantom<T> {
+  /**
+   * Set of (invocation) delegation links to be executed by the agent.
+   */
+  execute?: Tuple<Link<UCAN.UCAN<[Capability]>>>
+
+  /**
+   * Map of receipts keyed by the (invocation) delegation.
+   */
+  report?: Record<ToString<UCANLink>, Link<ReceiptModel>>
+}
+
+export interface AgentMessageBuilder<T>
+  extends IPLDViewBuilder<AgentMessage<T>> {}
+
+export interface AgentMessage<T = unknown>
+  extends IPLDView<AgentMessageModel<T>> {
+  invocations: Tuple<Link<UCAN.UCAN<[Capability]>>> | []
+  get(link: Link): Receipt
+}
+
+/**
+ * Describes an IPLD schema for workflows that preceded UCAN invocation
+ * specifications.
+ */
+export interface WorkflowModel {
+  /**
+   * Links to the (invocation) delegations to be executed concurrently.
+   */
+  run: Link<UCAN.UCAN<[Capability]>>[]
+}
+
+export interface Workflow<
+  I extends Tuple<ServiceInvocation> = Tuple<ServiceInvocation>
+> extends Phantom<I> {
+  run: I
+}
+
+export interface ReportModel<T = unknown> extends Phantom<T> {
+  receipts: Record<ToString<Link<InstructionModel>>, Link<ReceiptModel>>
+}
+
+export interface ReportBuilder<T>
+  extends IPLDViewBuilder<IPLDView<ReportModel<T>>> {
+  set(link: Link<InstructionModel>, receipt: Receipt): void
+  entries(): IterableIterator<[ToString<Link<InstructionModel>>, Receipt]>
+}
+
+export interface Report<T> extends Phantom<T> {
+  get<E = never>(link: Link<InstructionModel>, fallback: E): Receipt | E
+}
+
 export interface IssuedInvocationView<C extends Capability = Capability>
   extends IssuedInvocation<C> {
   delegate(): Await<Invocation<C>>
@@ -835,6 +901,9 @@ export interface ServerView<T extends Record<string, any>>
     Transport.Channel<T> {
   context: InvocationContext
   catch: (err: HandlerExecutionError) => void
+  run<C extends Capability>(
+    invocation: ServiceInvocation<C, T>
+  ): Await<InferServiceInvocationReceipt<C, T>>
 }
 
 /**
