@@ -44,6 +44,19 @@ class Server {
   request(request) {
     return handle(this, request)
   }
+
+  /**
+   * @template {API.Capability} C
+   * @param {API.InferInvocation<API.ServiceInvocation<C, Service>>} invocation
+   * @returns {Promise<API.InferServiceInvocationReceipt<C, Service>>}
+   */
+  async run(invocation) {
+    const receipt =
+      /** @type {API.InferServiceInvocationReceipt<C, Service>} */ (
+        await invoke(invocation, this)
+      )
+    return receipt
+  }
 }
 
 /**

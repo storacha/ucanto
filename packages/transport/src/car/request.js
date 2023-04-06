@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
-import { CAR } from '@ucanto/core'
-import { Delegation } from '@ucanto/core'
+import { CAR, CBOR, DAG, Invocation, Message, Message } from '@ucanto/core'
+import * as Schema from '../schema.js'
 
 export { CAR as codec }
 
@@ -11,25 +11,29 @@ const HEADERS = Object.freeze({
 })
 
 /**
- * Encodes invocation batch into an HTTPRequest.
+ * Encodes workflow into an HTTPRequest.
  *
- * @template {API.Tuple<API.IssuedInvocation>} I
- * @param {I} invocations
+ * @template {API.AgentMessage} Message
+ * @param {Message} message
  * @param {API.EncodeOptions & { headers?: Record<string, string> }} [options]
- * @returns {Promise<API.HTTPRequest<I>>}
+ * @returns {Promise<API.HTTPRequest<Message>>}
  */
-export const encode = async (invocations, options) => {
-  const roots = []
+export const encode = async (message, options) => {
   const blocks = new Map()
-  for (const invocation of invocations) {
-    const delegation = await invocation.delegate()
-    roots.push(delegation.root)
-    for (const block of delegation.export()) {
-      blocks.set(block.cid.toString(), block)
-    }
-    blocks.delete(delegation.root.cid.toString())
+  for (const block of message.iterateIPLDBlocks()) {
+    blocks.set(`${block.cid}`, block)
   }
-  const body = CAR.encode({ roots, blocks })
+
+  /**
+   * Cast to Uint8Array to remove phantom type set by the
+   * CAR encoder which is too specific.
+   *
+   * @type {Uint8Array}
+   */
+  const body = CAR.encode({
+    roots: [message.root],
+    blocks,
+  })
 
   return {
     headers: options?.headers || HEADERS,
@@ -38,11 +42,11 @@ export const encode = async (invocations, options) => {
 }
 
 /**
- * Decodes HTTPRequest to an invocation batch.
+ * Decodes Workflow from HTTPRequest.
  *
- * @template {API.Tuple<API.IssuedInvocation>} Invocations
- * @param {API.HTTPRequest<Invocations>} request
- * @returns {Promise<API.InferInvocations<Invocations>>}
+ * @template {API.AgentMessage} Message
+ * @param {API.HTTPRequest<Message>} request
+ * @returns {Promise<Message>}
  */
 export const decode = async ({ headers, body }) => {
   const contentType = headers['content-type'] || headers['Content-Type']
@@ -52,18 +56,38 @@ export const decode = async ({ headers, body }) => {
     )
   }
 
-  const { roots, blocks } = CAR.decode(body)
+  const { roots, blocks } = CAR.decode(/** @type {Uint8Array} */ (body))
+  Message.view({ root: roots[0], store: blocks })
 
-  const invocations = []
+  // CARs can contain v0 blocks but we don't have to thread that type through.
+  const store = /** @type {Map<string, API.Block>} */ (blocks)
+  const run = []
 
-  for (const root of /** @type {API.UCANBlock[]} */ (roots)) {
-    invocations.push(
-      Delegation.create({
-        root,
-        blocks: /** @type {Map<string, API.Block>} */ (blocks),
-      })
-    )
+  for (const { cid } of roots) {
+    const block = DAG.get(cid, store)
+    const data = CBOR.decode(block.bytes)
+
+    const [branch, value] = Schema.Inbound.match(data)
+    switch (branch) {
+      case 'ucanto/workflow@0.1.0': {
+        for (const root of value.run) {
+          const invocation = Invocation.view({
+            root,
+            blocks: store,
+          })
+          run.push(invocation)
+        }
+        break
+      }
+      default: {
+        const invocation = Invocation.create({
+          root: { ...block, data: value },
+          blocks: store,
+        })
+        run.push(invocation)
+      }
+    }
   }
 
-  return /** @type {API.InferInvocations<Invocations>} */ (invocations)
+  return { run: /** @type {API.InferInvocations<Invocations>} */ (run) }
 }

@@ -126,7 +126,7 @@ class Outbound {
 
   /**
    * @template {API.Tuple<API.ServiceInvocation>} I
-   * @param {I} workflow
+   * @param {API.Workflow<I>} workflow
    */
   encode(workflow) {
     return this.encoder.encode(workflow, {

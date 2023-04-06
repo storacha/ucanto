@@ -11,16 +11,15 @@ export const name = 'CAR'
 export const code = 0x0202
 
 /**
- * @typedef {API.Block<unknown, number, number, 0|1>} Block
  * @typedef {{
- * roots: Block[]
- * blocks: Map<string, Block>
+ * roots: API.IPLDBlock[]
+ * blocks: Map<string, API.IPLDBlock>
  * }} Model
  */
 
 class Writer {
   /**
-   * @param {Block[]} blocks
+   * @param {API.IPLDBlock[]} blocks
    * @param {number} byteLength
    */
   constructor(blocks = [], byteLength = 0) {
@@ -29,7 +28,7 @@ class Writer {
     this.byteLength = byteLength
   }
   /**
-   * @param {Block[]} blocks
+   * @param {API.IPLDBlock[]} blocks
    */
   write(...blocks) {
     for (const block of blocks) {
@@ -37,7 +36,7 @@ class Writer {
       if (!this.written.has(id)) {
         this.blocks.push(block)
         this.byteLength += CarBufferWriter.blockLength(
-          /** @type {CarBufferWriter.Block} */ (block)
+          /** @type {any} */ (block)
         )
         this.written.add(id)
       }
@@ -45,7 +44,7 @@ class Writer {
     return this
   }
   /**
-   * @param {Block[]} rootBlocks
+   * @param {API.IPLDBlock[]} rootBlocks
    */
   flush(...rootBlocks) {
     const roots = []
@@ -99,11 +98,12 @@ export const encode = ({ roots = [], blocks }) => {
  */
 export const decode = bytes => {
   const reader = CarBufferReader.fromBytes(bytes)
+  /** @type {API.IPLDBlock[]} */
   const roots = []
   const blocks = new Map()
 
   for (const root of reader.getRoots()) {
-    const block = reader.get(root)
+    const block = /** @type {API.IPLDBlock} */ (reader.get(root))
     if (block) {
       roots.push(block)
     }
