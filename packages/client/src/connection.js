@@ -29,7 +29,7 @@ class Connection {
    * @template {API.Capability} C
    * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
    * @param {I} invocations
-   * @returns {Promise<API.InferWorkflowReceipts<I, T>>}
+   * @returns {Promise<API.InferReceipts<I, T>>}
    */
   async execute(...invocations) {
     return execute(invocations, this)
@@ -42,7 +42,7 @@ class Connection {
  * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
  * @param {API.Connection<T>} connection
  * @param {I} invocations
- * @returns {Promise<API.InferWorkflowReceipts<I, T>>}
+ * @returns {Promise<API.InferReceipts<I, T>>}
  */
 export const execute = async (invocations, connection) => {
   const input = await Message.build({ invocations })
@@ -55,14 +55,14 @@ export const execute = async (invocations, connection) => {
   // a receipts per workflow invocation.
   try {
     const output = await connection.codec.decode(response)
-    const receipts = input.invocations.map(link => output.get(link))
-    return /** @type {API.InferWorkflowReceipts<I, T>} */ (receipts)
+    const receipts = input.invocationLinks.map(link => output.get(link))
+    return /** @type {API.InferReceipts<I, T>} */ (receipts)
   } catch (error) {
     // No third party code is run during decode and we know
     // we only throw an Error
     const { message, ...cause } = /** @type {Error} */ (error)
     const receipts = []
-    for await (const ran of input.invocations) {
+    for await (const ran of input.invocationLinks) {
       const receipt = await Receipt.issue({
         ran,
         result: { error: { ...cause, message } },
@@ -83,6 +83,6 @@ export const execute = async (invocations, connection) => {
       receipts.push(receipt)
     }
 
-    return /** @type {API.InferWorkflowReceipts<I, T>} */ (receipts)
+    return /** @type {API.InferReceipts<I, T>} */ (receipts)
   }
 }

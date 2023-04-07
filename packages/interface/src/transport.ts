@@ -6,12 +6,11 @@ import type {
 import type { Phantom, Await } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import type {
+  Capability,
   ServiceInvocation,
-  InferWorkflowReceipts,
+  InferReceipts,
   InferInvocations,
   Receipt,
-  Workflow,
-  AgentMessageModel,
   ByteView,
   Invocation,
   AgentMessage,
@@ -35,10 +34,16 @@ export interface RequestEncodeOptions extends EncodeOptions {
   accept?: string
 }
 
-export interface Channel<T extends Record<string, any>> extends Phantom<T> {
-  request<I extends AgentMessage, O extends AgentMessage>(
-    request: HTTPRequest<I>
-  ): Await<HTTPResponse<O>>
+export interface Channel<S extends Record<string, any>> extends Phantom<S> {
+  request<I extends Tuple<ServiceInvocation<Capability, S>>>(
+    request: HTTPRequest<
+      AgentMessage<{ In: InferInvocations<I>; Out: Tuple<Receipt> }>
+    >
+  ): Await<
+    HTTPResponse<
+      AgentMessage<{ Out: InferReceipts<I, S>; In: Tuple<Invocation> }>
+    >
+  >
 }
 
 export interface RequestEncoder {
@@ -53,7 +58,10 @@ export interface RequestDecoder {
 }
 
 export interface ResponseEncoder {
-  encode<T extends AgentMessage>(message: T, options?: EncodeOptions): Await<T>
+  encode<T extends AgentMessage>(
+    message: T,
+    options?: EncodeOptions
+  ): Await<HTTPResponse<T>>
 }
 
 export interface ResponseDecoder {

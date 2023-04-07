@@ -1,4 +1,5 @@
 import * as Client from '@ucanto/client'
+import { invoke, Schema } from '@ucanto/core'
 import * as Server from '../src/lib.js'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/core/cbor'
@@ -6,7 +7,6 @@ import * as Transport from '@ucanto/transport'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import * as Service from '../../client/test/service.js'
 import { test, assert } from './test.js'
-import { Schema } from '@ucanto/validator'
 
 const storeAdd = Server.capability({
   can: 'store/add',
@@ -33,6 +33,7 @@ const storeAdd = Server.capability({
     }
   },
 })
+
 const storeRemove = Server.capability({
   can: 'store/remove',
   with: Server.URI.match({ protocol: 'did:' }),
@@ -415,5 +416,55 @@ test('falsy errors are turned into {}', async () => {
 
   assert.deepEqual(receipt.out, {
     ok: {},
+  })
+})
+
+test('run invocation without encode / decode', async () => {
+  const server = Server.create({
+    service: Service.create(),
+    codec: CAR.inbound,
+    id: w3,
+  })
+
+  const identify = invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'access/identify',
+      with: 'did:email:alice@mail.com',
+    },
+  })
+
+  const register = await server.run(identify)
+  assert.deepEqual(register.out, {
+    ok: {},
+  })
+
+  const car = await CAR.codec.write({
+    roots: [await CBOR.write({ hello: 'world ' })],
+  })
+
+  const add = Client.invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+      nb: {
+        link: car.cid,
+      },
+    },
+    proofs: [],
+  })
+
+  const receipt = await server.run(add)
+
+  assert.deepEqual(receipt.out, {
+    ok: {
+      link: car.cid,
+      status: 'upload',
+      url: 'http://localhost:9090/',
+      with: alice.did(),
+    },
   })
 })

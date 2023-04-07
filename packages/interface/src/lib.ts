@@ -213,7 +213,7 @@ export interface Delegation<C extends Capabilities = Capabilities>
    * view / selection over the CAR which may contain bunch of other blocks.
    * @deprecated
    */
-  readonly blocks: Map<string, Block>
+  readonly blocks: Map<string, Block<unknown, any, any, any>>
 
   readonly cid: UCANLink<C>
   readonly bytes: ByteView<UCAN.UCAN<C>>
@@ -550,12 +550,14 @@ export type ServiceInvocation<
 export type InferInvocation<T extends ServiceInvocation> =
   T extends ServiceInvocation<infer C> ? Invocation<C> : never
 
-export type InferInvocations<T> = T extends []
-  ? []
-  : T extends [ServiceInvocation<infer C>, ...infer Rest]
-  ? [Invocation<C>, ...InferInvocations<Rest>]
-  : T extends Array<IssuedInvocation<infer U>>
-  ? Invocation<U>[]
+export type InferInvocations<T extends Tuple> = T extends [
+  ServiceInvocation<infer C>,
+  infer Next,
+  ...infer Rest
+]
+  ? [Invocation<C>, ...InferInvocations<[Next, ...Rest]>]
+  : T extends [ServiceInvocation<infer C>]
+  ? [Invocation<C>]
   : never
 
 /**
@@ -658,13 +660,13 @@ export type InferServiceInvocations<
   ? [InferServiceInvocationReturn<C, T>, ...InferServiceInvocations<Rest, T>]
   : never
 
-export type InferWorkflowReceipts<
+export type InferReceipts<
   I extends unknown[],
   T extends Record<string, any>
 > = I extends []
   ? []
   : I extends [ServiceInvocation<infer C, T>, ...infer Rest]
-  ? [InferServiceInvocationReceipt<C, T>, ...InferWorkflowReceipts<Rest, T>]
+  ? [InferServiceInvocationReceipt<C, T>, ...InferReceipts<Rest, T>]
   : never
 
 /**
@@ -696,7 +698,9 @@ export interface AgentMessageBuilder<T>
 
 export interface AgentMessage<T = unknown>
   extends IPLDView<AgentMessageModel<T>> {
-  invocations: Tuple<Link<UCAN.UCAN<[Capability]>>> | []
+  invocationLinks: Tuple<Link<UCAN.UCAN<[Capability]>>> | []
+  receipts: Map<ToString<UCANLink>, Receipt>
+  invocations: Invocation[]
   get(link: Link): Receipt
 }
 
@@ -718,7 +722,10 @@ export interface Workflow<
 }
 
 export interface ReportModel<T = unknown> extends Phantom<T> {
-  receipts: Record<ToString<Link<InstructionModel>>, Link<ReceiptModel>>
+  receipts: Record<
+    ToString<Link<ReceiptModel['ocm']['ran']>>,
+    Link<ReceiptModel>
+  >
 }
 
 export interface ReportBuilder<T>
@@ -820,7 +827,7 @@ export interface ConnectionView<T extends Record<string, any>>
     I extends Transport.Tuple<ServiceInvocation<C, T>>
   >(
     ...invocations: I
-  ): Await<InferWorkflowReceipts<I, T>>
+  ): Await<InferReceipts<I, T>>
 }
 
 export interface InboundAcceptCodec {

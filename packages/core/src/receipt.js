@@ -43,7 +43,7 @@ class Receipt {
   /**
    * @param {object} input
    * @param {Required<API.Block<API.ReceiptModel<Ok, Error, Ran>>>} input.root
-   * @param {Map<string, API.Block>} input.store
+   * @param {DAG.BlockStore} input.store
    * @param {API.Meta} [input.meta]
    * @param {Ran|ReturnType<Ran['link']>} [input.ran]
    * @param {API.EffectsModel} [input.fx]
@@ -67,12 +67,14 @@ class Receipt {
   get ran() {
     const ran = this._ran
     if (!ran) {
-      const ran = Invocation.view(
-        {
-          root: this.root.data.ocm.ran,
-          blocks: this.store,
-        },
-        this.root.data.ocm.ran
+      const ran = /** @type {Ran} */ (
+        Invocation.view(
+          {
+            root: this.root.data.ocm.ran,
+            blocks: this.store,
+          },
+          this.root.data.ocm.ran
+        )
       )
       this._ran = ran
       return ran

@@ -5,6 +5,8 @@ import { base32 } from 'multiformats/bases/base32'
 import { create as createLink } from './link.js'
 import { sha256 } from 'multiformats/hashes/sha2'
 
+// @see https://www.iana.org/assignments/media-types/application/vnd.ipld.car
+export const contentType = 'application/vnd.ipld.car'
 export const name = 'CAR'
 
 /** @type {API.MulticodecCode<0x0202, 'CAR'>} */

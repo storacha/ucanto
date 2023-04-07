@@ -1,29 +1,37 @@
 import * as API from '@ucanto/interface'
-import { CAR, CBOR, DAG, Delegation, Invocation, parseLink } from '@ucanto/core'
-import { Receipt, Report } from '@ucanto/core'
+import { CAR, Message } from '@ucanto/core'
 export { CAR as codec }
-import * as Schema from '../schema.js'
+
+export const contentType = CAR.contentType
 
 const HEADERS = Object.freeze({
-  'content-type': 'application/car',
+  'content-type': contentType,
 })
 
 /**
- * Encodes {@link API.AgentMessage} into an HTTPRequest.
+ * Encodes `AgentMessage` into an `HTTPRequest`.
  *
- * @template {API.Tuple<API.Receipt>} I
- * @param {API.ReportBuilder<I>} report
+ * @template {API.AgentMessage} Message
+ * @param {Message} message
  * @param {API.EncodeOptions} [options]
- * @returns {Promise<API.HTTPResponse<API.ReportModel<I>>>}
+ * @returns {API.HTTPResponse<Message>}
  */
-export const encode = async (report, options) => {
+export const encode = (message, options) => {
   const blocks = new Map()
-  const view = await report.buildIPLDView(options)
-  for (const block of view.iterateIPLDBlocks()) {
-    blocks.set(block.cid.toString(), block)
+  for (const block of message.iterateIPLDBlocks()) {
+    blocks.set(`${block.cid}`, block)
   }
 
-  const body = CAR.encode({ roots: [view.root], blocks })
+  /**
+   * Cast to Uint8Array to remove phantom type set by the
+   * CAR encoder which is too specific.
+   *
+   * @type {Uint8Array}
+   */
+  const body = CAR.encode({
+    roots: [message.root],
+    blocks,
+  })
 
   return {
     headers: HEADERS,
@@ -32,36 +40,14 @@ export const encode = async (report, options) => {
 }
 
 /**
- * Decodes HTTPRequest to an invocation batch.
+ * Decodes `AgentMessage` from the received `HTTPResponse`.
  *
- * @template {API.Tuple<API.Receipt>} I
- * @param {API.HTTPRequest<API.ReportModel<I>>} request
- * @returns {Promise<API.Report<I>>}
+ * @template {API.AgentMessage} Message
+ * @param {API.HTTPResponse<Message>} response
+ * @returns {Promise<Message>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers['content-type'] || headers['Content-Type']
-  if (contentType !== 'application/car') {
-    throw TypeError(
-      `Only 'content-type: application/car' is supported, instead got '${contentType}'`
-    )
-  }
-
-  const report = Report.builder()
-  const { roots, blocks } = CAR.decode(body)
-  if (roots.length > 0)
-    for (const root of roots) {
-      const block = DAG.get(root.cid, blocks)
-      const data = DAG.CBOR.decode(block.bytes)
-      const [branch, model] = Schema.Outbound.match(data)
-
-      switch (branch) {
-        case 'ucanto/report@0.1.0': {
-          for (const [key, link] of Object.entries(model.receipts)) {
-            report.set(parseLink(key), Receipt.view({ root: link, blocks }))
-          }
-        }
-      }
-    }
-
-  return report.buildIPLDView()
+  const { roots, blocks } = CAR.decode(/** @type {Uint8Array} */ (body))
+  const message = Message.match({ root: roots[0].cid, store: blocks })
+  return /** @type {Message} */ (message)
 }

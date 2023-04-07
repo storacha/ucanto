@@ -1,7 +1,6 @@
 import * as API from '@ucanto/interface'
 import { delegate, Delegation } from './delegation.js'
 import * as DAG from './dag.js'
-import { createWorkflow } from './workflow.js'
 
 /**
  * @template {API.Capability} Capability
@@ -14,7 +13,7 @@ export const invoke = options => new IssuedInvocation(options)
  * @template {API.Capability} C
  * @param {object} dag
  * @param {API.UCANBlock<[C]>} dag.root
- * @param {Map<string, API.Block<unknown>>} [dag.blocks]
+ * @param {DAG.BlockStore} [dag.blocks]
  * @returns {API.Invocation<C>}
  */
 export const create = ({ root, blocks }) => new Invocation(root, blocks)
@@ -31,7 +30,7 @@ export const create = ({ root, blocks }) => new Invocation(root, blocks)
  * @template [T=never]
  * @param {object} dag
  * @param {API.UCANLink<[C]>} dag.root
- * @param {Map<string, API.Block>} dag.blocks
+ * @param {DAG.BlockStore} dag.blocks
  * @param {T} [fallback]
  * @returns {API.Invocation<C>|T}
  */

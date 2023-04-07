@@ -30,7 +30,7 @@ export const iterate = function* (value) {
 
 /**
  * @template [T=unknown]
- * @typedef {Map<API.ToString<API.Link>, API.Block<T, number, number, 0|1>>} BlockStore
+ * @typedef {Map<API.ToString<API.Link>, API.Block<T, number, number, 0>|API.Block<T, number, number, 1>>} BlockStore
  */
 
 /**
@@ -50,11 +50,13 @@ const EMBED_CODE = identity.code
  * @template {0|1} V
  * @template {T} U
  * @template T
+ * @template {API.MulticodecCode} Format
+ * @template {API.MulticodecCode} Alg
  * @template [E=never]
- * @param {API.Link<U, number, number, 0|1>} cid
+ * @param {API.Link<U, Format, Alg, V>} cid
  * @param {BlockStore<T>} store
  * @param {E} [fallback]
- * @returns {API.Block<U>|E}
+ * @returns {API.Block<U, Format, Alg, V>|E}
  */
 export const get = (cid, store, fallback) => {
   // If CID uses identity hash, we can return the block data directly
@@ -62,7 +64,9 @@ export const get = (cid, store, fallback) => {
     return { cid, bytes: cid.multihash.digest }
   }
 
-  const block = /** @type {API.Block<U>|undefined} */ (store.get(`${cid}`))
+  const block = /** @type {API.Block<U, Format, Alg, V>|undefined} */ (
+    store.get(`${cid}`)
+  )
   return block ? block : fallback === undefined ? notFound(cid) : fallback
 }
 
@@ -87,7 +91,7 @@ export const embed = (source, { codec } = {}) => {
 }
 
 /**
- * @param {API.Link} link
+ * @param {API.Link<*, *, *, *>} link
  * @returns {never}
  */
 export const notFound = link => {
@@ -148,46 +152,4 @@ export const addEveryInto = (source, store) => {
   for (const block of source) {
     addInto(block, store)
   }
-}
-
-/**
- * @template {API.Variant<Record<string, unknown>>} T
- * @param {T} variant
- * @returns {{ [K in keyof T]: [K, T[K]]}[keyof T]}
- */
-export const match = variant => {
-  const [tag, ...keys] = Object.keys(variant)
-  if (keys.length === 0) {
-    return /** @type {[any, any]} */ ([tag, variant[tag]])
-  }
-  throw new Error('Variant must have at least one key')
-}
-
-/**
- * @template {API.Variant<Record<string, unknown>>} T
- * @template {keyof T} Tag
- * @template [U=never]
- * @param {Tag} tag
- * @param {T} variant
- * @param {U} [fallback]
- * @returns {T[Tag]|U}
- */
-export const when = (tag, variant, fallback) => {
-  const keys = Object.keys(variant)
-  if (keys.length === 1 && keys[0] === tag) {
-    return /** @type {T[Tag]} */ (variant[tag])
-  } else {
-    return fallback === undefined ? noMatch(tag.toString(), keys) : fallback
-  }
-}
-
-/**
- * @param {string} tag
- * @param {string[]} keys
- * @returns {never}
- */
-const noMatch = (tag, keys) => {
-  throw new TypeError(
-    `Expected variant labeled "${tag}" instead got object with keys ${keys}`
-  )
 }
