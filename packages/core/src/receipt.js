@@ -14,13 +14,13 @@ import { sha256 } from 'multiformats/hashes/sha2'
  * @template [E=never]
  * @param {object} input
  * @param {API.Link<API.ReceiptModel<Ok, Error, Ran>>} input.root
- * @param {Map<string, API.Block>} input.blocks
+ * @param {DAG.BlockStore} input.blocks
  * @param {E} [fallback]
  */
 export const view = ({ root, blocks }, fallback) => {
-  const block = DAG.get(root, blocks)
+  const block = DAG.get(root, blocks, null)
   if (block == null) {
-    return fallback || DAG.notFound(root)
+    return fallback !== undefined ? fallback : DAG.notFound(root)
   }
   const data = CBOR.decode(block.bytes)
 

@@ -48,6 +48,6 @@ export const encode = (message, options) => {
  */
 export const decode = async ({ headers, body }) => {
   const { roots, blocks } = CAR.decode(/** @type {Uint8Array} */ (body))
-  const message = Message.match({ root: roots[0].cid, store: blocks })
+  const message = Message.view({ root: roots[0].cid, store: blocks })
   return /** @type {Message} */ (message)
 }

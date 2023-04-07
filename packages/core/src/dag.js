@@ -35,9 +35,14 @@ export const iterate = function* (value) {
 
 /**
  * @template [T=unknown]
+ * @param {API.Block<T>[]} blocks
  * @returns {BlockStore<T>}
  */
-export const createStore = () => new Map()
+export const createStore = (blocks = []) => {
+  const store = new Map()
+  addEveryInto(blocks, store)
+  return store
+}
 
 /** @type {API.MulticodecCode<typeof identity.code, typeof identity.name>} */
 const EMBED_CODE = identity.code

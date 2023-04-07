@@ -701,7 +701,7 @@ export interface AgentMessage<T = unknown>
   invocationLinks: Tuple<Link<UCAN.UCAN<[Capability]>>> | []
   receipts: Map<ToString<UCANLink>, Receipt>
   invocations: Invocation[]
-  get(link: Link): Receipt
+  get<E = never>(link: Link, fallback?: E): Receipt | E
 }
 
 /**

@@ -236,6 +236,37 @@ test('receipt with fx.join', async () => {
   await assertRoundtrip(receipt)
 })
 
+test('receipt view fallback', async () => {
+  const invocation = await invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'test/echo',
+      with: alice.did(),
+    },
+  }).delegate()
+
+  const receipt = await Receipt.issue({
+    issuer: w3,
+    result: { ok: { hello: 'message' } },
+    ran: invocation,
+    meta: { test: 'metadata' },
+    fx: {
+      fork: [],
+    },
+  })
+
+  assert.throws(
+    () => Receipt.view({ root: receipt.root.cid, blocks: new Map() }),
+    /not found/
+  )
+
+  assert.deepEqual(
+    Receipt.view({ root: receipt.root.cid, blocks: new Map() }, null),
+    null,
+    'returns fallback'
+  )
+})
 /**
  * @template {API.Receipt} Receipt
  * @param {Receipt} receipt

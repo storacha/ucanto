@@ -36,6 +36,17 @@ export const error = cause => {
 }
 
 /**
+ * Crash the program with a given `message`. This function is
+ * intended to be used in places where it is impossible to
+ * recover from an error. It is similar to `panic` function in
+ * Rust.
+ *
+ * @param {string} message
+ */
+export const panic = message => {
+  throw new Failure(message)
+}
+/**
  * Creates the failing result containing an error with a given
  * `message`. Unlike `error` function it creates a very generic
  *  error with `message` & `stack` fields. The `error` function

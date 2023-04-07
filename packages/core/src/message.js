@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import * as DAG from './dag.js'
-import { Invocation } from './lib.js'
+import { Invocation, panic } from './lib.js'
 import * as Receipt from './receipt.js'
 import * as Schema from './schema.js'
 
@@ -30,23 +30,18 @@ export const build = ({ invocations, receipts }) =>
   new MessageBuilder({ invocations, receipts }).buildIPLDView()
 
 /**
- * @template {{ In: API.Invocation[]; Out: API.Receipt[] }} T
- * @param {object} source
- * @param {Required<API.Block<API.AgentMessageModel<T>>>} source.root
- * @param {Map<string, API.Block>} source.store
- */
-export const view = ({ root, store }) => new Message({ root, store })
-
-/**
  * @template [E=never]
  * @param {object} source
  * @param {API.Link} source.root
- * @param {Map<string, API.Block>} source.store
+ * @param {DAG.BlockStore} source.store
  * @param {E} [fallback]
  * @returns {API.AgentMessage|E}
  */
-export const match = ({ root, store }, fallback) => {
-  const block = DAG.get(root, store)
+export const view = ({ root, store }, fallback) => {
+  const block = DAG.get(root, store, null)
+  if (block === null) {
+    return fallback !== undefined ? fallback : DAG.notFound(root)
+  }
   const data = DAG.CBOR.decode(block.bytes)
   const [branch, value] = MessageSchema.match(data, fallback)
   switch (branch) {
@@ -172,7 +167,7 @@ class Message {
   /**
    * @param {object} source
    * @param {Required<API.Block<API.AgentMessageModel<T>>>} source.root
-   * @param {Map<string, API.Block>} source.store
+   * @param {DAG.BlockStore} source.store
    * @param {object} build
    * @param {API.Invocation[]} [build.invocations]
    * @param {Map<string, API.Receipt>} [build.receipts]
@@ -183,16 +178,33 @@ class Message {
     this._invocations = invocations
     this._receipts = receipts
   }
-  iterateIPLDBlocks() {
-    return this.store.values()
+  *iterateIPLDBlocks() {
+    for (const invocation of this.invocations) {
+      yield* invocation.iterateIPLDBlocks()
+    }
+
+    for (const receipt of this.receipts.values()) {
+      yield* receipt.iterateIPLDBlocks()
+    }
+
+    yield this.root
   }
   /**
+   * @template [E=never]
    * @param {API.Link} link
+   * @param {E} [fallback]
+   * @returns {API.Receipt|E}
    */
-  get(link) {
+  get(link, fallback) {
     const receipts = this.root.data['ucanto/message@0.6.0'].report || {}
     const receipt = receipts[`${link}`]
-    return Receipt.view({ root: receipt, blocks: this.store })
+    if (receipt) {
+      return Receipt.view({ root: receipt, blocks: this.store })
+    } else {
+      return fallback !== undefined
+        ? fallback
+        : panic(`Message does not include receipt for ${link}`)
+    }
   }
 
   get invocationLinks() {
