@@ -1,7 +1,6 @@
 import { pass, fail, display } from './util.js'
 import * as Schema from '../../src/schema.js'
-
-const { string, unknown } = Schema
+import { string, unknown } from '../../src/schema.js'
 
 /**
  * @typedef {import('./util.js').Expect} Expect
