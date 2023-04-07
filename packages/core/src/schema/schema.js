@@ -1180,7 +1180,7 @@ export const struct = fields => {
 }
 
 /**
- * @template {{[key:string]: Schema.Reader}} U
+ * @template {Schema.VariantChoices} U
  * @template [I=unknown]
  * @extends {API<Schema.InferVariant<U>, I, U>}
  * @implements {Schema.VariantSchema<U, I>}
@@ -1251,18 +1251,70 @@ class Variant extends API {
   }
 
   /**
-   * @param {Schema.InferVariant<U>} source
+   * @template {Schema.InferVariant<U>} O
+   * @param {O} source
+   * @returns {O}
    */
   create(source) {
-    return this.from(source)
+    return /** @type {O} */ (this.from(source))
   }
 }
 
 /**
- * @template {{[key:string]: Schema.Reader}} U
- * @template [I=unknown]
- * @param {U} variants
- * @returns {Schema.VariantSchema<U, I>}
+ * Defines a schema for the `Variant` type. It takes an object where
+ * keys denote branches of the variant and values are schemas for the values of
+ * those branches. The schema will only match objects with a single key and
+ * value that matches the schema for that key. If the object has more than one
+ * key or the key does not match any of the keys in the schema then the schema
+ * will fail.
+ *
+ * The `_` branch is a special case. If such branch is present then it will be
+ * used as a fallback for any object that does not match any of the variant
+ * branches. The `_` branch will be used even if the object has more than one
+ * key. Unlike other branches the `_` branch will receive the entire object as
+ * input and not just the value of the key. Usually the `_` branch can be set
+ * to `Schema.unknown` or `Schema.dictionary` to facilitate exhaustive matching.
+ *
+ * @example
+ * ```ts
+ * const Shape = Variant({
+ *    circle: Schema.struct({ radius: Schema.integer() }),
+ *    rectangle: Schema.struct({ width: Schema.integer(), height: Schema.integer() })
+ * })
+ *
+ * const demo = (input:unknown) => {
+ *   const [kind, value] = Schema.match(input)
+ *   switch (kind) {
+ *     case "circle":
+ *       return `Circle with radius ${shape.radius}`
+ *     case "rectangle":
+ *       return `Rectangle with width ${shape.width} and height ${shape.height}`
+ *    }
+ * }
+ *
+ * const ExhaustiveShape = Variant({
+ *   circle: Schema.struct({ radius: Schema.integer() }),
+ *   rectangle: Schema.struct({ width: Schema.integer(), height: Schema.integer() }),
+ *  _: Schema.dictionary({ value: Schema.unknown() })
+ * })
+ *
+ * const exhastiveDemo = (input:unknown) => {
+ *   const [kind, value] = Schema.match(input)
+ *   switch (kind) {
+ *     case "circle":
+ *       return `Circle with radius ${shape.radius}`
+ *     case "rectangle":
+ *       return `Rectangle with width ${shape.width} and height ${shape.height}`
+ *     case: "_":
+ *       return `Unknown shape ${JSON.stringify(value)}`
+ *    }
+ * }
+ * ```
+ *
+ * @template {Schema.VariantChoices} Choices
+ * @template [In=unknown]
+ * @param {Choices} variants
+ * @returns {Schema.VariantSchema<Choices, In>}
  */
 export const variant = variants => new Variant(variants)
 
