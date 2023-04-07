@@ -148,9 +148,9 @@ export interface VariantSchema<
    * if the input does not match any of the branches.
    */
   match<Else = never>(
-    input: In,
+    input: unknown,
     fallback?: Else
-  ): Else extends never ? never : [null, Else]
+  ): InferVariantMatch<Choices> | (Else extends never ? never : [null, Else])
 
   /**
    * Convenience function to create a new variant value. Unlike the `.from` it
@@ -178,6 +178,17 @@ export type InferVariant<Choices extends VariantChoices> = {
   } & {
     [Key in Case]: Choices[Case] extends Reader<infer T> ? T : never
   }
+}[keyof Choices]
+
+/**
+ * Utility type for inferring the result of calling `match` on the {@link VariantSchema}.
+ * It derives a tuple of the branch name and the value of the branch allowing
+ * use of `switch` statement for type narrowing.
+ */
+export type InferVariantMatch<Choices extends VariantChoices> = {
+  [Branch in keyof Choices]: Choices[Branch] extends Reader<infer Value>
+    ? [Branch, Value]
+    : never
 }[keyof Choices]
 
 export type InferOptionalStructShape<U extends { [key: string]: Reader }> = {
