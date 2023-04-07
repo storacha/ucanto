@@ -1,4 +1,4 @@
-import { Failure as Error, Result, Phantom } from '@ucanto/interface'
+import { Failure as Error, Result, Variant, Phantom } from '@ucanto/interface'
 
 export interface Reader<O = unknown, I = unknown, X extends Error = Error> {
   read(input: I): Result<O, X>
@@ -102,6 +102,94 @@ export interface StructSchema<
 
   partial(): MapRepresentation<Partial<InferStruct<U>>, I> & StructSchema
 }
+
+/**
+ * Schema for the {@link Variant} types, which is a special kind of union type
+ * where every choice is a struct with a single field denoting the choice.
+ *
+ * The `_` branch is a special case which can be used to represent all other
+ * choices that are not explicitly defined. Unlike other branches, the `_`
+ * schema is passed the entire input instead of just the value of the field.
+ *
+ * @template Choices - Mapping of branch names to corresponding schemas.
+ * @template In - Input type for which schema can be read.
+ *
+ * @example
+ * ```ts
+ * const Shape = Variant({
+ *    circle: Schema.struct({ radius: Schema.integer() }),
+ *    rectangle: Schema.struct({ width: Schema.integer(), height: Schema.integer() })
+ * })
+ * ```
+ */
+export interface VariantSchema<
+  Choices extends VariantChoices = {},
+  In extends unknown = unknown
+> extends Schema<InferVariant<Choices>, In> {
+  /**
+   * Function can be used to match the input against the variant schema to
+   * return the matched branch name and corresponding value. It provides
+   * convenience over standard `.read` / `.from` methods by allowing user
+   * to switch over the branch name as opposed to having to do nested `if else`
+   * blocks.
+   *
+   * @example
+   * ```ts
+   * const [kind, shape] = Shape.match(input)
+   * switch (kind) {
+   *   case "circle": return `Circle with radius ${shape.radius}`
+   *   case "rectangle": return `Rectangle with width ${shape.width} and height ${shape.height}`
+   * }
+   * ```
+   *
+   * @param input - Input to match against the variant schema.
+   * @param fallback - Fall back value to return if the input does not match
+   * any of the branches. If not provided, the function will throw an error
+   * if the input does not match any of the branches.
+   */
+  match<Else = never>(
+    input: unknown,
+    fallback?: Else
+  ): InferVariantMatch<Choices> | (Else extends never ? never : [null, Else])
+
+  /**
+   * Convenience function to create a new variant value. Unlike the `.from` it
+   * has input typed so that type checker can help you to ensure that you are
+   * providing all the required fields. If invalid input is provided, the
+   * function will throw an error.
+   */
+  create<Choice extends InferVariant<Choices>>(input: Choice): Choice
+}
+
+/**
+ * Type describing the choices for the variant. It is a map of branch names to
+ * their respective schemas.
+ */
+export interface VariantChoices {
+  [branch: string]: Reader
+}
+
+/**
+ * Utility type for inferring the {@link Variant} from {@link VariantChoices}.
+ */
+export type InferVariant<Choices extends VariantChoices> = {
+  [Case in keyof Choices]: {
+    [Key in Exclude<keyof Choices, Case>]?: never
+  } & {
+    [Key in Case]: Choices[Case] extends Reader<infer T> ? T : never
+  }
+}[keyof Choices]
+
+/**
+ * Utility type for inferring the result of calling `match` on the {@link VariantSchema}.
+ * It derives a tuple of the branch name and the value of the branch allowing
+ * use of `switch` statement for type narrowing.
+ */
+export type InferVariantMatch<Choices extends VariantChoices> = {
+  [Branch in keyof Choices]: Choices[Branch] extends Reader<infer Value>
+    ? [Branch, Value]
+    : never
+}[keyof Choices]
 
 export type InferOptionalStructShape<U extends { [key: string]: Reader }> = {
   [K in keyof U]: InferOptionalReader<U[K]>

@@ -1,7 +1,7 @@
 import * as API from '@ucanto/interface'
 import { isDelegation, UCAN, ok, fail } from '@ucanto/core'
 import { capability } from './capability.js'
-import * as Schema from './schema.js'
+import * as Schema from '@ucanto/core/schema'
 import {
   UnavailableProof,
   PrincipalAlignmentError,
@@ -17,7 +17,7 @@ import {
 } from './error.js'
 
 export { capability } from './capability.js'
-export * from './schema.js'
+export * from '@ucanto/core/schema'
 
 export {
   Schema,
