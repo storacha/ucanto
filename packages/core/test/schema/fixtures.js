@@ -1,6 +1,5 @@
 import { pass, fail, display } from './util.js'
 import * as Schema from '../../src/schema.js'
-
 import { string, unknown } from '../../src/schema.js'
 
 /**
