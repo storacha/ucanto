@@ -35,15 +35,12 @@ export const create = ({ root, blocks }) => new Invocation(root, blocks)
  * @returns {API.Invocation<C>|T}
  */
 export const view = ({ root, blocks }, fallback) => {
-  if (fallback) {
-    const block = DAG.get(root, blocks, null)
-    return block
-      ? /** @type {API.Invocation<C>} */ (create({ root: block, blocks }))
-      : /** @type {T} */ (fallback)
-  } else {
-    const block = DAG.get(root, blocks)
-    return /** @type {API.Invocation<C>} */ (create({ root: block, blocks }))
+  const block = DAG.get(root, blocks, null)
+  if (block == null) {
+    return fallback !== undefined ? fallback : DAG.notFound(root)
   }
+
+  return /** @type {API.Invocation<C>} */ (create({ root: block, blocks }))
 }
 
 /**
