@@ -704,23 +704,6 @@ export interface AgentMessage<T = unknown>
   get<E = never>(link: Link, fallback?: E): Receipt | E
 }
 
-/**
- * Describes an IPLD schema for workflows that preceded UCAN invocation
- * specifications.
- */
-export interface WorkflowModel {
-  /**
-   * Links to the (invocation) delegations to be executed concurrently.
-   */
-  run: Link<UCAN.UCAN<[Capability]>>[]
-}
-
-export interface Workflow<
-  I extends Tuple<ServiceInvocation> = Tuple<ServiceInvocation>
-> extends Phantom<I> {
-  run: I
-}
-
 export interface ReportModel<T = unknown> extends Phantom<T> {
   receipts: Record<
     ToString<Link<ReceiptModel['ocm']['ran']>>,
