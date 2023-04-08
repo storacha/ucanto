@@ -633,7 +633,7 @@ export type InferServiceInvocationReturn<
     >
   : never
 
-export type InferServiceInvocationReceipt<
+export type InferReceipt<
   C extends Capability,
   S extends Record<string, any>
 > = ResolveServiceMethod<S, C['can']> extends ServiceMethod<
@@ -666,7 +666,7 @@ export type InferReceipts<
 > = I extends []
   ? []
   : I extends [ServiceInvocation<infer C, T>, ...infer Rest]
-  ? [InferServiceInvocationReceipt<C, T>, ...InferReceipts<Rest, T>]
+  ? [InferReceipt<C, T>, ...InferReceipts<Rest, T>]
   : never
 
 /**
@@ -726,7 +726,7 @@ export interface IssuedInvocationView<C extends Capability = Capability>
   delegate(): Await<Invocation<C>>
   execute<T extends InvocationService<C>>(
     service: ConnectionView<T>
-  ): Await<InferServiceInvocationReceipt<C, T>>
+  ): Await<InferReceipt<C, T>>
 }
 
 export type ServiceInvocations<T> = IssuedInvocation<any> &
@@ -893,7 +893,7 @@ export interface ServerView<T extends Record<string, any>>
   catch: (err: HandlerExecutionError) => void
   run<C extends Capability>(
     invocation: ServiceInvocation<C, T>
-  ): Await<InferServiceInvocationReceipt<C, T>>
+  ): Await<InferReceipt<C, T>>
 }
 
 /**

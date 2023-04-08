@@ -50,10 +50,10 @@ class Server {
   /**
    * @template {API.Capability} C
    * @param {API.ServiceInvocation<C, S>} invocation
-   * @returns {Promise<API.InferServiceInvocationReceipt<C, S>>}
+   * @returns {Promise<API.InferReceipt<C, S>>}
    */
   async run(invocation) {
-    const receipt = /** @type {API.InferServiceInvocationReceipt<C, S>} */ (
+    const receipt = /** @type {API.InferReceipt<C, S>} */ (
       await invoke(await invocation.buildIPLDView(), this)
     )
     return receipt

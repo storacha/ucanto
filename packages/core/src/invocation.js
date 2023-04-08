@@ -94,7 +94,7 @@ class IssuedInvocation {
   /**
    * @template {API.InvocationService<Capability>} Service
    * @param {API.ConnectionView<Service>} connection
-   * @returns {Promise<API.InferServiceInvocationReceipt<Capability, Service>>}
+   * @returns {Promise<API.InferReceipt<Capability, Service>>}
    */
   async execute(connection) {
     /** @type {API.ServiceInvocation<Capability, Service>} */
