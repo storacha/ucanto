@@ -47,7 +47,7 @@ const Add = capability({
 const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 ```
 
-> Please note that the library guarantees that both `claimed` and `delegated` capabilties will have `{can: "file/link", with: string nb: { link?: CID }}`
+> Please note that the library guarantees that both `claimed` and `delegated` capabilities will have `{can: "file/link", with: string nb: { link?: CID }}`
 > type inferred from the definition.
 >
 > We will explore more complicated cases later where a capability may be derived from a different capability or even a set.
@@ -184,7 +184,7 @@ import * as CAR from "@ucanto/transport/car"
 import * as CBOR from "@ucanto/transport/cbor"
 
 const connection = Client.connect({
-  encoder: CAR, // encode as CAR because server decods from car
+  encoder: CAR, // encode as CAR because server decodes from car
   decoder: CBOR, // decode as CBOR because server encodes as CBOR
   channel: server(), // simply pass the server
 })
@@ -205,7 +205,7 @@ const connection = Client.connect({
 })
 ```
 
-> Note: That in the seconnd example you need to provide a type annotations, so that client can infer what capabilities can be invoked and what the return types it will correspond to.
+> Note: That in the second example you need to provide a type annotations, so that client can infer what capabilities can be invoked and what the return types it will correspond to.
 
 ### Batching & Proof chains
 
