@@ -66,13 +66,17 @@
       "types": "./dist/src/car.d.ts",
       "import": "./src/car.js"
     },
+    "./codec": {
+      "types": "./dist/src/codec.d.ts",
+      "import": "./src/codec.js"
+    },
     "./http": {
       "types": "./dist/src/http.d.ts",
       "import": "./src/http.js"
     },
-    "./jwt": {
-      "types": "./dist/src/jwt.d.ts",
-      "import": "./src/jwt.js"
+    "./legacy": {
+      "types": "./dist/src/legacy.d.ts",
+      "import": "./src/legacy.js"
     }
   },
   "c8": {
