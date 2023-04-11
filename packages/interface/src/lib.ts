@@ -676,11 +676,11 @@ export type InferReceipts<
  * Describes messages send across ucanto agents.
  */
 export type AgentMessageModel<T> = Variant<{
-  'ucanto/message@0.6.0': AgentMessageData<T>
+  'ucanto/message@7.0.0': AgentMessageData<T>
 }>
 
 /**
- * Describes ucanto@0.6 message format send between (client/server) agents.
+ * Describes ucanto@7.0 message format send between (client/server) agents.
  *
  * @template T - Phantom type capturing types of the payload for the inference.
  */
