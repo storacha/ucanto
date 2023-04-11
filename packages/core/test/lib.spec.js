@@ -144,7 +144,7 @@ test('create delegation with attached proof', async () => {
   const root = await UCAN.write(data)
   const delegation = Delegation.create({
     root,
-    blocks: new Map([[proof.cid.toString(), proof.root]]),
+    blocks: new Map([[`${proof.cid}`, proof.root]]),
   })
 
   assert.deepNestedInclude(delegation, {
@@ -219,7 +219,7 @@ test('create delegation chain', async () => {
     const { cid, bytes } = await UCAN.write(data)
     delegation = Delegation.create({
       root: { cid, bytes },
-      blocks: new Map([[proof.cid.toString(), proof.root]]),
+      blocks: new Map([[`${proof.cid}`, proof.root]]),
     })
   }
 
@@ -241,7 +241,7 @@ test('create delegation chain', async () => {
   {
     const invocation = Delegation.create({
       root,
-      blocks: new Map([[delegation.cid.toString(), delegation.root]]),
+      blocks: new Map([[`${delegation.cid}`, delegation.root]]),
     })
 
     assert.equal(invocation.issuer.did(), mallory.did())
@@ -281,7 +281,7 @@ test('create delegation chain', async () => {
     const invocation = Delegation.create({
       root,
       blocks: new Map([
-        [delegation.cid.toString(), delegation.root],
+        [`${delegation.cid}`, delegation.root],
         [proof.cid.toString(), proof.root],
       ]),
     })

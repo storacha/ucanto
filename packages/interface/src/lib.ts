@@ -213,7 +213,7 @@ export interface Delegation<C extends Capabilities = Capabilities>
    * view / selection over the CAR which may contain bunch of other blocks.
    * @deprecated
    */
-  readonly blocks: Map<string, Block>
+  readonly blocks: Map<string, Block<unknown, any, any, any>>
 
   readonly cid: UCANLink<C>
   readonly bytes: ByteView<UCAN.UCAN<C>>
@@ -478,6 +478,11 @@ export type Result<T = unknown, X extends {} = {}> = Variant<{
 }>
 
 /**
+ * @see {@link https://en.wikipedia.org/wiki/Unit_type|Unit type - Wikipedia}
+ */
+export interface Unit {}
+
+/**
  * Utility type for defining a [keyed union] type as in IPLD Schema. In practice
  * this just works around typescript limitation that requires discriminant field
  * on all variants.
@@ -548,12 +553,14 @@ export type ServiceInvocation<
 export type InferInvocation<T extends ServiceInvocation> =
   T extends ServiceInvocation<infer C> ? Invocation<C> : never
 
-export type InferInvocations<T> = T extends []
-  ? []
-  : T extends [ServiceInvocation<infer C>, ...infer Rest]
-  ? [Invocation<C>, ...InferInvocations<Rest>]
-  : T extends Array<IssuedInvocation<infer U>>
-  ? Invocation<U>[]
+export type InferInvocations<T extends Tuple> = T extends [
+  ServiceInvocation<infer C>,
+  infer Next,
+  ...infer Rest
+]
+  ? [Invocation<C>, ...InferInvocations<[Next, ...Rest]>]
+  : T extends [ServiceInvocation<infer C>]
+  ? [Invocation<C>]
   : never
 
 /**
@@ -629,7 +636,7 @@ export type InferServiceInvocationReturn<
     >
   : never
 
-export type InferServiceInvocationReceipt<
+export type InferReceipt<
   C extends Capability,
   S extends Record<string, any>
 > = ResolveServiceMethod<S, C['can']> extends ServiceMethod<
@@ -656,21 +663,73 @@ export type InferServiceInvocations<
   ? [InferServiceInvocationReturn<C, T>, ...InferServiceInvocations<Rest, T>]
   : never
 
-export type InferWorkflowReceipts<
+export type InferReceipts<
   I extends unknown[],
   T extends Record<string, any>
 > = I extends []
   ? []
   : I extends [ServiceInvocation<infer C, T>, ...infer Rest]
-  ? [InferServiceInvocationReceipt<C, T>, ...InferWorkflowReceipts<Rest, T>]
+  ? [InferReceipt<C, T>, ...InferReceipts<Rest, T>]
   : never
+
+/**
+ * Describes messages send across ucanto agents.
+ */
+export type AgentMessageModel<T> = Variant<{
+  'ucanto/message@0.6.0': AgentMessageData<T>
+}>
+
+/**
+ * Describes ucanto@0.6 message format send between (client/server) agents.
+ *
+ * @template T - Phantom type capturing types of the payload for the inference.
+ */
+export interface AgentMessageData<T> extends Phantom<T> {
+  /**
+   * Set of (invocation) delegation links to be executed by the agent.
+   */
+  execute?: Tuple<Link<UCAN.UCAN<[Capability]>>>
+
+  /**
+   * Map of receipts keyed by the (invocation) delegation.
+   */
+  report?: Record<ToString<UCANLink>, Link<ReceiptModel>>
+}
+
+export interface AgentMessageBuilder<T>
+  extends IPLDViewBuilder<AgentMessage<T>> {}
+
+export interface AgentMessage<T = unknown>
+  extends IPLDView<AgentMessageModel<T>> {
+  invocationLinks: Tuple<Link<UCAN.UCAN<[Capability]>>> | []
+  receipts: Map<ToString<UCANLink>, Receipt>
+  invocations: Invocation[]
+  get<E = never>(link: Link, fallback?: E): Receipt | E
+}
+
+export interface ReportModel<T = unknown> extends Phantom<T> {
+  receipts: Record<
+    ToString<Link<ReceiptModel['ocm']['ran']>>,
+    Link<ReceiptModel>
+  >
+}
+
+export interface ReportBuilder<T>
+  extends IPLDViewBuilder<IPLDView<ReportModel<T>>> {
+  set(link: Link<InstructionModel>, receipt: Receipt): void
+  entries(): IterableIterator<[ToString<Link<InstructionModel>>, Receipt]>
+}
+
+export interface Report<T> extends Phantom<T> {
+  get<E = never>(link: Link<InstructionModel>, fallback: E): Receipt | E
+}
 
 export interface IssuedInvocationView<C extends Capability = Capability>
   extends IssuedInvocation<C> {
   delegate(): Await<Invocation<C>>
   execute<T extends InvocationService<C>>(
     service: ConnectionView<T>
-  ): Await<InferServiceInvocationReceipt<C, T>>
+  ): Await<InferReceipt<C, T>>
 }
 
 export type ServiceInvocations<T> = IssuedInvocation<any> &
@@ -754,7 +813,7 @@ export interface ConnectionView<T extends Record<string, any>>
     I extends Transport.Tuple<ServiceInvocation<C, T>>
   >(
     ...invocations: I
-  ): Await<InferWorkflowReceipts<I, T>>
+  ): Await<InferReceipts<I, T>>
 }
 
 export interface InboundAcceptCodec {
@@ -835,6 +894,9 @@ export interface ServerView<T extends Record<string, any>>
     Transport.Channel<T> {
   context: InvocationContext
   catch: (err: HandlerExecutionError) => void
+  run<C extends Capability>(
+    invocation: ServiceInvocation<C, T>
+  ): Await<InferReceipt<C, T>>
 }
 
 /**

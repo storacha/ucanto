@@ -11,15 +11,15 @@ import * as API from '@ucanto/interface'
  * statusText?: string
  * url?: string
  * }} FetchResponse
- * @typedef {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} Fetcher
+ * @typedef {(url:string, init:API.HTTPRequest) => API.Await<FetchResponse>} Fetcher
  */
 /**
- * @template T
+ * @template S
  * @param {object} options
  * @param {URL} options.url
- * @param {(url:string, init:API.HTTPRequest<API.Tuple<API.ServiceInvocation>>) => API.Await<FetchResponse>} [options.fetch]
+ * @param {(url:string, init:API.HTTPRequest) => API.Await<FetchResponse>} [options.fetch]
  * @param {string} [options.method]
- * @returns {API.Channel<T>}
+ * @returns {API.Channel<S>}
  */
 export const open = ({ url, method = 'POST', fetch }) => {
   /* c8 ignore next 9 */
@@ -34,6 +34,11 @@ export const open = ({ url, method = 'POST', fetch }) => {
   }
   return new Channel({ url, method, fetch })
 }
+
+/**
+ * @template {Record<string, any>} S
+ * @implements {API.Channel<S>}
+ */
 class Channel {
   /**
    * @param {object} options
@@ -47,8 +52,9 @@ class Channel {
     this.url = url
   }
   /**
-   * @param {API.HTTPRequest} request
-   * @returns {Promise<API.HTTPResponse>}
+   * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
+   * @param {API.HTTPRequest<API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>>} request
+   * @returns {Promise<API.HTTPResponse<API.AgentMessage<{ Out: API.InferReceipts<I, S>, In: API.Tuple<API.Invocation> }>>>}
    */
   async request({ headers, body }) {
     const response = await this.fetch(this.url.href, {

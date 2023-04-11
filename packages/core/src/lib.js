@@ -1,6 +1,7 @@
 export * as API from '@ucanto/interface'
 export * as Delegation from './delegation.js'
 export * as Invocation from './invocation.js'
+export * as Message from './message.js'
 export * as Receipt from './receipt.js'
 export * as DAG from './dag.js'
 export * as CBOR from './cbor.js'

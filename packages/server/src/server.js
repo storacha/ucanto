@@ -7,7 +7,7 @@ export {
   Failure,
   MalformedCapability,
 } from '@ucanto/validator'
-import { Receipt, ok, fail } from '@ucanto/core'
+import { Receipt, ok, fail, Message, Failure } from '@ucanto/core'
 export { ok, fail }
 
 /**
@@ -20,12 +20,12 @@ export { ok, fail }
 export const create = options => new Server(options)
 
 /**
- * @template {Record<string, any>} Service
- * @implements {API.ServerView<Service>}
+ * @template {Record<string, any>} S
+ * @implements {API.ServerView<S>}
  */
 class Server {
   /**
-   * @param {API.Server<Service>} options
+   * @param {API.Server<S>} options
    */
   constructor({ id, service, codec, principal = Verifier, ...rest }) {
     const { catch: fail, ...context } = rest
@@ -39,18 +39,32 @@ class Server {
   }
 
   /**
-   * @type {API.Channel<Service>['request']}
+   * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
+   * @param {API.HTTPRequest<API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>>} request
+   * @returns {Promise<API.HTTPResponse<API.AgentMessage<{ Out: API.InferReceipts<I, S>, In: API.Tuple<API.Invocation> }>>>}
    */
   request(request) {
     return handle(this, request)
   }
+
+  /**
+   * @template {API.Capability} C
+   * @param {API.ServiceInvocation<C, S>} invocation
+   * @returns {Promise<API.InferReceipt<C, S>>}
+   */
+  async run(invocation) {
+    const receipt = /** @type {API.InferReceipt<C, S>} */ (
+      await invoke(await invocation.buildIPLDView(), this)
+    )
+    return receipt
+  }
 }
 
 /**
- * @template {Record<string, any>} T
- * @template {API.Tuple<API.ServiceInvocation<API.Capability, T>>} I
- * @param {API.ServerView<T>} server
- * @param {API.HTTPRequest<I>} request
+ * @template {Record<string, any>} S
+ * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
+ * @param {API.ServerView<S>} server
+ * @param {API.HTTPRequest<API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>>} request
  */
 export const handle = async (server, request) => {
   const selection = server.codec.accept(request)
@@ -63,39 +77,34 @@ export const handle = async (server, request) => {
     }
   } else {
     const { encoder, decoder } = selection.ok
-    const workflow = await decoder.decode(request)
-    const result = await execute(workflow, server)
+    const message = await decoder.decode(request)
+    const result = await execute(message, server)
     const response = await encoder.encode(result)
     return response
   }
 }
 
 /**
- * @template {Record<string, any>} Service
- * @template {API.Capability} C
- * @template {API.Tuple<API.ServiceInvocation<C, Service>>} I
- * @param {API.InferInvocations<I>} workflow
- * @param {API.ServerView<Service>} server
- * @returns {Promise<API.InferWorkflowReceipts<I, Service> & API.Tuple<API.Receipt>>}
+ * @template {Record<string, any>} S
+ * @template {API.Tuple} I
+ * @param {API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>} input
+ * @param {API.ServerView<S>} server
+ * @returns {Promise<API.AgentMessage<{ Out: API.InferReceipts<I, S>, In: API.Tuple<API.Invocation> }>>}
  */
-export const execute = async (workflow, server) => {
-  const input =
-    /** @type {API.InferInvocation<API.ServiceInvocation<C, Service>>[]} */ (
-      workflow
-    )
+export const execute = async (input, server) => {
+  const promises = input.invocations.map($ => invoke($, server))
 
-  const promises = input.map(invocation => invoke(invocation, server))
-  const results = await Promise.all(promises)
-
-  return /** @type {API.InferWorkflowReceipts<I, Service> & API.Tuple<API.Receipt>} */ (
-    results
+  const receipts = /** @type {API.InferReceipts<I, S>} */ (
+    await Promise.all(promises)
   )
+
+  return Message.build({ receipts })
 }
 
 /**
  * @template {Record<string, any>} Service
  * @template {API.Capability} C
- * @param {API.InferInvocation<API.ServiceInvocation<C, Service>>} invocation
+ * @param {API.Invocation<C>} invocation
  * @param {API.ServerView<Service>} server
  * @returns {Promise<API.Receipt>}
  */
@@ -134,6 +143,7 @@ export const invoke = async (invocation, server) => {
         result,
       })
     } catch (cause) {
+      /** @type {API.HandlerExecutionError} */
       const error = new HandlerExecutionError(
         capability,
         /** @type {Error} */ (cause)
@@ -184,9 +194,9 @@ export class HandlerNotFound extends RangeError {
   }
 }
 
-class HandlerExecutionError extends Error {
+class HandlerExecutionError extends Failure {
   /**
-   * @param {API.ParsedCapability} capability
+   * @param {API.Capability} capability
    * @param {Error} cause
    */
   constructor(capability, cause) {

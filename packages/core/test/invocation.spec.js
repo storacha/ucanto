@@ -160,3 +160,25 @@ test('execute invocation', async () => {
   // @ts-expect-error
   assert.deepEqual(result, { hello: 'world' })
 })
+
+test('receipt view fallback', async () => {
+  const invocation = await invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'test/echo',
+      with: alice.did(),
+    },
+  }).delegate()
+
+  assert.throws(
+    () => Invocation.view({ root: invocation.cid, blocks: new Map() }),
+    /not found/
+  )
+
+  assert.deepEqual(
+    Invocation.view({ root: invocation.cid, blocks: new Map() }, null),
+    null,
+    'returns fallback'
+  )
+})

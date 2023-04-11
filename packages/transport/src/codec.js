@@ -125,18 +125,18 @@ class Outbound {
   }
 
   /**
-   * @template {API.Tuple<API.ServiceInvocation>} I
-   * @param {I} workflow
+   * @template {API.AgentMessage} Message
+   * @param {Message} message
    */
-  encode(workflow) {
-    return this.encoder.encode(workflow, {
+  encode(message) {
+    return this.encoder.encode(message, {
       accept: this.acceptType,
     })
   }
   /**
-   * @template {API.Tuple<API.Receipt>} I
-   * @param {API.HTTPResponse<I>} response
-   * @returns {API.Await<I>}
+   * @template {API.AgentMessage} Message
+   * @param {API.HTTPResponse<Message>} response
+   * @returns {API.Await<Message>}
    */
   decode(response) {
     const { headers } = response
@@ -148,7 +148,6 @@ class Outbound {
         throw Object.assign(
           new RangeError(new TextDecoder().decode(response.body)),
           {
-            error: true,
             status: response.status,
             headers: response.headers,
           }

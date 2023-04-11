@@ -3,7 +3,7 @@ import * as Client from '../src/lib.js'
 import * as HTTP from '@ucanto/transport/http'
 import { CAR, Codec } from '@ucanto/transport'
 import * as Service from './service.js'
-import { Receipt, CBOR } from '@ucanto/core'
+import { Receipt, Message, CBOR } from '@ucanto/core'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import fetch from '@web-std/fetch'
 
@@ -30,18 +30,19 @@ test('encode invocation', async () => {
     proofs: [],
   })
 
-  const payload = await connection.codec.encode([add])
+  const message = await Message.build({ invocations: [add] })
+  const payload = await connection.codec.encode(message)
 
   assert.deepEqual(payload.headers, {
-    'content-type': 'application/car',
-    accept: 'application/car',
+    'content-type': 'application/vnd.ipld.car',
+    accept: 'application/vnd.ipld.car',
   })
   assert.ok(payload.body instanceof Uint8Array)
 
-  const request = await CAR.decode(payload)
+  const request = await CAR.request.decode(payload)
 
-  const [invocation] = request
-  assert.equal(request.length, 1)
+  const [invocation] = request.invocations
+  assert.equal(request.invocations.length, 1)
   assert.equal(invocation.issuer.did(), alice.did())
   assert.equal(invocation.audience.did(), w3.did())
   assert.deepEqual(invocation.proofs, [])
@@ -98,11 +99,12 @@ test('encode delegated invocation', async () => {
     },
   })
 
-  const payload = await connection.codec.encode([add, remove])
-  const request = await CAR.decode(payload)
+  const message = await Message.build({ invocations: [add, remove] })
+  const payload = await connection.codec.encode(message)
+  const request = await CAR.request.decode(payload)
   {
-    const [add, remove] = request
-    assert.equal(request.length, 2)
+    const [add, remove] = request.invocations
+    assert.equal(request.invocations.length, 2)
 
     assert.equal(add.issuer.did(), bob.did())
     assert.equal(add.audience.did(), w3.did())
@@ -125,13 +127,16 @@ test('encode delegated invocation', async () => {
     assert.equal(remove.issuer.did(), alice.did())
     assert.equal(remove.audience.did(), w3.did())
     assert.deepEqual(remove.proofs, [])
-    assert.deepEqual(remove.capabilities, [
-      {
-        can: 'store/remove',
-        with: alice.did(),
-        link: car.cid,
-      },
-    ])
+    assert.deepEqual(
+      [
+        Object({
+          can: 'store/remove',
+          with: alice.did(),
+          link: car.cid,
+        }),
+      ],
+      remove.capabilities
+    )
   }
 })
 
@@ -140,8 +145,7 @@ const service = Service.create()
 const channel = HTTP.open({
   url: new URL('about:blank'),
   fetch: async (url, input) => {
-    /** @type {Client.Tuple<Client.Invocation>} */
-    const invocations = await CAR.request.decode(input)
+    const { invocations } = await CAR.request.decode(input)
     const promises = invocations.map(async invocation => {
       const [capability] = invocation.capabilities
       switch (capability.can) {
@@ -172,7 +176,9 @@ const channel = HTTP.open({
       await Promise.all(promises)
     )
 
-    const { headers, body } = await CAR.response.encode(receipts)
+    const message = await Message.build({ receipts })
+
+    const { headers, body } = await CAR.response.encode(message)
 
     return {
       ok: true,
@@ -317,7 +323,7 @@ test('decode error', async () => {
     error: {
       error: true,
       message:
-        "Can not decode response with content-type 'application/car' because no matching transport decoder is configured.",
+        "Can not decode response with content-type 'application/vnd.ipld.car' because no matching transport decoder is configured.",
     },
   })
 })

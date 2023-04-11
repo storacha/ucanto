@@ -1,5 +1,5 @@
 import * as Schema from './type.js'
-import { ok } from '../result.js'
+import { ok, Failure } from '../result.js'
 export * from './type.js'
 
 export { ok }
@@ -1324,25 +1324,13 @@ export const variant = variants => new Variant(variants)
  */
 export const error = message => ({ error: new SchemaError(message) })
 
-class SchemaError extends Error {
+class SchemaError extends Failure {
   get name() {
     return 'SchemaError'
-  }
-  /** @type {true} */
-  get error() {
-    return true
   }
   /* c8 ignore next 3 */
   describe() {
     return this.name
-  }
-  get message() {
-    return this.describe()
-  }
-
-  toJSON() {
-    const { error, name, message, stack } = this
-    return { error, name, message, stack }
   }
 }
 

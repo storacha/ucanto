@@ -5,6 +5,8 @@ import * as MF from 'multiformats/interface'
 import * as CBOR from './cbor.js'
 import { identity } from 'multiformats/hashes/identity'
 
+export { CBOR, sha256, identity }
+
 /**
  * Function takes arbitrary value and if it happens to be an `IPLDView`
  * it will iterate over it's blocks. It is just a convenience for traversing
@@ -27,15 +29,20 @@ export const iterate = function* (value) {
 }
 
 /**
- * @template T
- * @typedef {Map<API.ToString<API.Link>, API.Block<T>>} BlockStore
+ * @template [T=unknown]
+ * @typedef {Map<API.ToString<API.Link>, API.Block<T, number, number, 0>|API.Block<T, number, number, 1>>} BlockStore
  */
 
 /**
  * @template [T=unknown]
+ * @param {API.Block<T>[]} blocks
  * @returns {BlockStore<T>}
  */
-export const createStore = () => new Map()
+export const createStore = (blocks = []) => {
+  const store = new Map()
+  addEveryInto(blocks, store)
+  return store
+}
 
 /** @type {API.MulticodecCode<typeof identity.code, typeof identity.name>} */
 const EMBED_CODE = identity.code
@@ -45,13 +52,16 @@ const EMBED_CODE = identity.code
  * contain the block, `fallback` is returned. If `fallback` is not provided, it
  * will throw an error.
  *
+ * @template {0|1} V
  * @template {T} U
  * @template T
+ * @template {API.MulticodecCode} Format
+ * @template {API.MulticodecCode} Alg
  * @template [E=never]
- * @param {API.Link<U>} cid
+ * @param {API.Link<U, Format, Alg, V>} cid
  * @param {BlockStore<T>} store
  * @param {E} [fallback]
- * @returns {API.Block<U>|E}
+ * @returns {API.Block<U, Format, Alg, V>|E}
  */
 export const get = (cid, store, fallback) => {
   // If CID uses identity hash, we can return the block data directly
@@ -59,7 +69,9 @@ export const get = (cid, store, fallback) => {
     return { cid, bytes: cid.multihash.digest }
   }
 
-  const block = /** @type {API.Block<U>|undefined} */ (store.get(`${cid}`))
+  const block = /** @type {API.Block<U, Format, Alg, V>|undefined} */ (
+    store.get(`${cid}`)
+  )
   return block ? block : fallback === undefined ? notFound(cid) : fallback
 }
 
@@ -84,10 +96,10 @@ export const embed = (source, { codec } = {}) => {
 }
 
 /**
- * @param {API.Link} link
+ * @param {API.Link<*, *, *, *>} link
  * @returns {never}
  */
-const notFound = link => {
+export const notFound = link => {
   throw new Error(`Block for the ${link} is not found`)
 }
 

@@ -2,11 +2,11 @@ import { test, assert } from './test.js'
 import * as CAR from '../src/car.js'
 import * as Transport from '../src/lib.js'
 import { alice, bob } from './fixtures.js'
-import { invoke, delegate, parseLink, Receipt } from '@ucanto/core'
+import { invoke, delegate, parseLink, Receipt, Message } from '@ucanto/core'
 
 test('unsupported inbound content-type', async () => {
   const accept = CAR.inbound.accept({
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/car' },
     body: new Uint8Array(),
   })
 
@@ -15,7 +15,7 @@ test('unsupported inbound content-type', async () => {
       status: 415,
       message: `The server cannot process the request because the payload format is not supported. Please check the content-type header and try again with a supported media type.`,
       headers: {
-        accept: `application/car`,
+        accept: 'application/vnd.ipld.car',
       },
     },
   })
@@ -23,7 +23,10 @@ test('unsupported inbound content-type', async () => {
 
 test('unsupported inbound accept type', async () => {
   const accept = CAR.inbound.accept({
-    headers: { 'content-type': 'application/car', accept: 'application/cbor' },
+    headers: {
+      'content-type': 'application/vnd.ipld.car',
+      accept: 'application/car',
+    },
     body: new Uint8Array(),
   })
 
@@ -32,7 +35,7 @@ test('unsupported inbound accept type', async () => {
       status: 406,
       message: `The requested resource cannot be served in the requested content type. Please specify a supported content type using the Accept header.`,
       headers: {
-        accept: `application/car`,
+        accept: `application/vnd.ipld.car`,
       },
     },
   })
@@ -64,64 +67,52 @@ test(`requires encoders / decoders`, async () => {
 })
 
 test('outbound encode', async () => {
-  const cid = parseLink(
-    'bafyreiaxnmoptsqiehdff2blpptvdbenxcz6xgrbojw5em36xovn2xea4y'
-  )
   const expiration = 1654298135
-
-  const request = await CAR.outbound.encode([
-    invoke({
-      issuer: alice,
-      audience: bob,
-      capability: {
-        can: 'store/add',
-        with: alice.did(),
-      },
-      expiration,
-      proofs: [],
-    }),
-  ])
-
-  assert.deepEqual(request.headers, {
-    'content-type': 'application/car',
-    accept: 'application/car',
+  const message = await Message.build({
+    invocations: [
+      invoke({
+        issuer: alice,
+        audience: bob,
+        capability: {
+          can: 'store/add',
+          with: alice.did(),
+        },
+        expiration,
+        proofs: [],
+      }),
+    ],
   })
 
-  const expect = await delegate({
-    issuer: alice,
-    audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
-    expiration,
-    proofs: [],
+  const request = await CAR.outbound.encode(message)
+
+  assert.deepEqual(request.headers, {
+    'content-type': 'application/vnd.ipld.car',
+    accept: 'application/vnd.ipld.car',
   })
 
   assert.deepEqual(
-    [expect],
-    await CAR.inbound.accept(request).ok?.decoder.decode(request),
+    message.root,
+    (await CAR.inbound.accept(request).ok?.decoder.decode(request))?.root,
     'roundtrips'
   )
 })
 
 test('outbound decode', async () => {
-  const { success, failure } = await buildPayload()
+  const { success, failure } = await setup()
+  const message = await Message.build({ receipts: [success, failure] })
 
-  const response = await CAR.response.encode([success, failure])
-  const receipts = await CAR.outbound.decode(response)
+  const response = await CAR.response.encode(message)
+  const replica = await CAR.outbound.decode(response)
 
   assert.deepEqual(
-    receipts.map($ => $.root),
-    [success.root, failure.root]
+    [...replica.receipts.keys()],
+    [success.ran.link().toString(), failure.ran.link().toString()]
   )
 })
 
 test('inbound supports Content-Type header', async () => {
   const accept = await CAR.inbound.accept({
-    headers: { 'Content-Type': 'application/car' },
+    headers: { 'Content-Type': 'application/vnd.ipld.car' },
     body: new Uint8Array(),
   })
 
@@ -129,15 +120,16 @@ test('inbound supports Content-Type header', async () => {
 })
 
 test('outbound supports Content-Type header', async () => {
-  const { success } = await buildPayload()
-  const { body } = await CAR.response.encode([success])
+  const { success } = await setup()
+  const message = await Message.build({ receipts: [success] })
+  const { body } = await CAR.response.encode(message)
 
-  const receipts = await CAR.outbound.decode({
-    headers: { 'Content-Type': 'application/car' },
+  const replica = await CAR.outbound.decode({
+    headers: { 'Content-Type': 'application/vnd.ipld.car' },
     body,
   })
 
-  assert.deepEqual(receipts[0].root, success.root)
+  assert.deepEqual(replica.get(success.ran.link()).root, success.root)
 })
 
 test('inbound encode preference', async () => {
@@ -162,9 +154,10 @@ test('inbound encode preference', async () => {
 })
 
 test('unsupported response content-type', async () => {
-  const { success } = await buildPayload()
+  const { success } = await setup()
+  const message = await Message.build({ receipts: [success] })
 
-  const response = await CAR.response.encode([success])
+  const response = await CAR.response.encode(message)
 
   const badContentType = await wait(() =>
     CAR.outbound.decode({
@@ -202,9 +195,9 @@ test('format media type', async () => {
   )
 })
 
-const buildPayload = async () => {
+const setup = async () => {
   const expiration = 1654298135
-  const ran = await delegate({
+  const hi = await delegate({
     issuer: alice,
     audience: bob,
     capabilities: [
@@ -217,19 +210,32 @@ const buildPayload = async () => {
     proofs: [],
   })
 
+  const boom = await delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'debug/error',
+        with: alice.did(),
+      },
+    ],
+    expiration,
+    proofs: [],
+  })
+
   const success = await Receipt.issue({
-    ran: ran.cid,
+    ran: hi.cid,
     issuer: bob,
     result: { ok: { hello: 'message' } },
   })
 
   const failure = await Receipt.issue({
-    ran: ran.cid,
+    ran: boom.cid,
     issuer: bob,
     result: { error: { message: 'Boom' } },
   })
 
-  return { ran, success, failure }
+  return { hi, boom, success, failure }
 }
 
 /**

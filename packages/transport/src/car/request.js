@@ -1,35 +1,40 @@
 import * as API from '@ucanto/interface'
-import { CAR } from '@ucanto/core'
-import { Delegation } from '@ucanto/core'
+import { CAR, Message } from '@ucanto/core'
 
 export { CAR as codec }
 
+export const contentType = CAR.contentType
+
 const HEADERS = Object.freeze({
-  'content-type': 'application/car',
+  'content-type': contentType,
   // We will signal that we want to receive a CAR file in the response
-  accept: 'application/car',
+  accept: contentType,
 })
 
 /**
- * Encodes invocation batch into an HTTPRequest.
+ * Encodes `AgentMessage` into an `HTTPRequest`.
  *
- * @template {API.Tuple<API.IssuedInvocation>} I
- * @param {I} invocations
+ * @template {API.AgentMessage} Message
+ * @param {Message} message
  * @param {API.EncodeOptions & { headers?: Record<string, string> }} [options]
- * @returns {Promise<API.HTTPRequest<I>>}
+ * @returns {API.HTTPRequest<Message>}
  */
-export const encode = async (invocations, options) => {
-  const roots = []
+export const encode = (message, options) => {
   const blocks = new Map()
-  for (const invocation of invocations) {
-    const delegation = await invocation.delegate()
-    roots.push(delegation.root)
-    for (const block of delegation.export()) {
-      blocks.set(block.cid.toString(), block)
-    }
-    blocks.delete(delegation.root.cid.toString())
+  for (const block of message.iterateIPLDBlocks()) {
+    blocks.set(`${block.cid}`, block)
   }
-  const body = CAR.encode({ roots, blocks })
+
+  /**
+   * Cast to Uint8Array to remove phantom type set by the
+   * CAR encoder which is too specific.
+   *
+   * @type {Uint8Array}
+   */
+  const body = CAR.encode({
+    roots: [message.root],
+    blocks,
+  })
 
   return {
     headers: options?.headers || HEADERS,
@@ -38,32 +43,14 @@ export const encode = async (invocations, options) => {
 }
 
 /**
- * Decodes HTTPRequest to an invocation batch.
+ * Decodes `AgentMessage` from the received `HTTPRequest`.
  *
- * @template {API.Tuple<API.IssuedInvocation>} Invocations
- * @param {API.HTTPRequest<Invocations>} request
- * @returns {Promise<API.InferInvocations<Invocations>>}
+ * @template {API.AgentMessage} Message
+ * @param {API.HTTPRequest<Message>} request
+ * @returns {Promise<Message>}
  */
 export const decode = async ({ headers, body }) => {
-  const contentType = headers['content-type'] || headers['Content-Type']
-  if (contentType !== 'application/car') {
-    throw TypeError(
-      `Only 'content-type: application/car' is supported, instead got '${contentType}'`
-    )
-  }
-
-  const { roots, blocks } = CAR.decode(body)
-
-  const invocations = []
-
-  for (const root of /** @type {API.UCANBlock[]} */ (roots)) {
-    invocations.push(
-      Delegation.create({
-        root,
-        blocks: /** @type {Map<string, API.Block>} */ (blocks),
-      })
-    )
-  }
-
-  return /** @type {API.InferInvocations<Invocations>} */ (invocations)
+  const { roots, blocks } = CAR.decode(/** @type {Uint8Array} */ (body))
+  const message = Message.view({ root: roots[0].cid, store: blocks })
+  return /** @type {Message} */ (message)
 }

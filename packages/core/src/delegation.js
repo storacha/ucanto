@@ -156,7 +156,7 @@ const matchAbility = (provided, claimed) => {
 export class Delegation {
   /**
    * @param {API.UCANBlock<C>} root
-   * @param {Map<string, API.Block>} [blocks]
+   * @param {DAG.BlockStore} [blocks]
    */
   constructor(root, blocks = new Map()) {
     this.root = root
@@ -364,14 +364,14 @@ export const delegate = async (
 /**
  * @template {API.Capabilities} C
  * @param {API.UCANBlock<C>} root
- * @param {Map<string, API.Block>} blocks
+ * @param {DAG.BlockStore} blocks
  * @returns {IterableIterator<API.Block>}
  */
 
 export const exportDAG = function* (root, blocks) {
   for (const link of decode(root).proofs) {
     // Check if block is included in this delegation
-    const root = /** @type {UCAN.Block} */ (blocks.get(link.toString()))
+    const root = /** @type {UCAN.Block} */ (blocks.get(`${link}`))
     if (root) {
       yield* exportDAG(root, blocks)
     }
@@ -409,7 +409,7 @@ export const importDAG = dag => {
  * @template {API.Capabilities} C
  * @param {object} dag
  * @param {API.UCANBlock<C>} dag.root
- * @param {Map<string, API.Block<unknown>>} [dag.blocks]
+ * @param {DAG.BlockStore} [dag.blocks]
  * @returns {API.Delegation<C>}
  */
 export const create = ({ root, blocks }) => new Delegation(root, blocks)
@@ -419,7 +419,7 @@ export const create = ({ root, blocks }) => new Delegation(root, blocks)
  * @template [T=undefined]
  * @param {object} dag
  * @param {API.UCANLink<C>} dag.root
- * @param {Map<string, API.Block>} dag.blocks
+ * @param {DAG.BlockStore} dag.blocks
  * @param {T} [fallback]
  * @returns {API.Delegation<C>|T}
  */

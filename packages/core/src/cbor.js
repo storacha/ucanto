@@ -4,6 +4,9 @@ export { code, name, decode } from '@ipld/dag-cbor'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { create as createLink, isLink } from 'multiformats/link'
 
+// @see https://www.iana.org/assignments/media-types/application/vnd.ipld.dag-cbor
+export const contentType = 'application/vnd.ipld.dag-cbor'
+
 /**
  * @param {unknown} data
  * @param {Set<unknown>} seen

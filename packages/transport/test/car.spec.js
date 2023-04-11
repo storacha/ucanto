@@ -1,119 +1,48 @@
 import { test, assert } from './test.js'
 import * as CAR from '../src/car.js'
-import {
-  delegate,
-  invoke,
-  Receipt,
-  Delegation,
-  UCAN,
-  parseLink,
-} from '@ucanto/core'
+import { delegate, invoke, Receipt, Message, UCAN } from '@ucanto/core'
 import { alice, bob, service } from './fixtures.js'
-import { collect } from './util.js'
+import * as API from '@ucanto/interface'
 
 test('encode / decode', async () => {
-  const cid = parseLink(
-    'bafyreiaxnmoptsqiehdff2blpptvdbenxcz6xgrbojw5em36xovn2xea4y'
-  )
-  const expiration = 1654298135
+  const { message, delegation, outgoing, incoming } = await setup()
 
-  const request = await CAR.encode([
-    invoke({
-      issuer: alice,
-      audience: bob,
-      capability: {
-        can: 'store/add',
-        with: alice.did(),
-      },
-      expiration,
-      proofs: [],
-    }),
-  ])
-
-  assert.deepEqual(request.headers, {
-    'content-type': 'application/car',
+  assert.deepEqual(outgoing.headers, {
+    'content-type': 'application/vnd.ipld.car',
+    accept: 'application/vnd.ipld.car',
   })
 
-  const expect = await Delegation.delegate({
-    issuer: alice,
-    audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
+  assertDecode(incoming, {
+    root: message.root,
+    data: {
+      'ucanto/message@0.6.0': {
+        execute: [delegation.cid],
       },
-    ],
-    expiration,
-    proofs: [],
+    },
   })
-
-  assert.deepEqual([expect], await CAR.decode(request), 'roundtrips')
-})
-
-test('decode requires application/car content type', async () => {
-  const { body } = await CAR.encode([
-    invoke({
-      issuer: alice,
-      audience: bob,
-      capability: {
-        can: 'store/add',
-        with: alice.did(),
-      },
-      proofs: [],
-    }),
-  ])
-
-  try {
-    await CAR.decode({
-      body,
-      headers: {
-        'content-type': 'application/octet-stream',
-      },
-    })
-    assert.fail('expected to fail')
-  } catch (error) {
-    assert.match(String(error), /content-type: application\/car/)
-  }
 })
 
 test('accepts Content-Type as well', async () => {
-  const expiration = UCAN.now() + 90
-  const request = await CAR.encode([
-    invoke({
-      issuer: alice,
-      audience: bob,
-      capability: {
-        can: 'store/add',
-        with: alice.did(),
+  const { message, delegation, outgoing } = await setup()
+
+  assertDecode(
+    await CAR.request.decode({
+      ...outgoing,
+      headers: {
+        'Content-Type': 'application/car',
       },
-      proofs: [],
-      expiration,
     }),
-  ])
-
-  const [invocation] = await CAR.decode({
-    ...request,
-    headers: {
-      'Content-Type': 'application/car',
-    },
-  })
-
-  const delegation = await delegate({
-    issuer: alice,
-    audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
+    {
+      root: message.root,
+      data: {
+        'ucanto/message@0.6.0': {
+          execute: [delegation.cid],
+        },
       },
-    ],
-    proofs: [],
-    expiration,
-  })
+    }
+  )
 
-  assert.deepEqual({ ...request }, { ...(await CAR.encode([delegation])) })
-
-  assert.deepEqual(invocation.bytes, delegation.bytes)
+  assert.deepEqual(message.invocations[0].bytes, delegation.bytes)
 })
 
 test('delegated proofs', async () => {
@@ -128,39 +57,12 @@ test('delegated proofs', async () => {
     ],
   })
 
-  const expiration = UCAN.now() + 90
+  const { invocation, incoming } = await setup({ proofs: [proof] })
 
-  const outgoing = await CAR.encode([
-    invoke({
-      issuer: bob,
-      audience: service,
-      capability: {
-        can: 'store/add',
-        with: alice.did(),
-      },
-      proofs: [proof],
-      expiration,
-    }),
-  ])
+  const { invocations } = incoming
+  assert.deepEqual(invocations, [await invocation.delegate()])
 
-  const incoming = await CAR.decode(outgoing)
-
-  assert.deepEqual(incoming, [
-    await delegate({
-      issuer: bob,
-      audience: service,
-      capabilities: [
-        {
-          can: 'store/add',
-          with: alice.did(),
-        },
-      ],
-      expiration,
-      proofs: [proof],
-    }),
-  ])
-
-  assert.deepEqual(incoming[0].proofs, [proof])
+  assert.deepEqual(invocations[0].proofs, [proof])
 })
 
 test('omit proof', async () => {
@@ -175,24 +77,10 @@ test('omit proof', async () => {
     ],
   })
 
-  const expiration = UCAN.now() + 90
+  const { incoming } = await setup({ proofs: [proof.cid] })
 
-  const outgoing = await CAR.encode([
-    invoke({
-      issuer: bob,
-      audience: service,
-      capability: {
-        can: 'store/add',
-        with: alice.did(),
-      },
-      proofs: [proof.cid],
-      expiration,
-    }),
-  ])
-
-  const incoming = await CAR.decode(outgoing)
-
-  assert.deepEqual(incoming, [
+  const { invocations } = incoming
+  assert.deepEqual(invocations, [
     await delegate({
       issuer: bob,
       audience: service,
@@ -207,47 +95,25 @@ test('omit proof', async () => {
     }),
   ])
 
-  assert.deepEqual(incoming[0].proofs, [proof.cid])
+  assert.deepEqual(invocations[0].proofs, [proof.cid])
 })
 
 test('CAR.request encode / decode', async () => {
-  const cid = parseLink(
-    'bafyreiaxnmoptsqiehdff2blpptvdbenxcz6xgrbojw5em36xovn2xea4y'
-  )
-  const expiration = 1654298135
+  const { outgoing, incoming, message, delegation } = await setup()
 
-  const request = await CAR.request.encode([
-    invoke({
-      issuer: alice,
-      audience: bob,
-      capability: {
-        can: 'store/add',
-        with: alice.did(),
-      },
-      expiration,
-      proofs: [],
-    }),
-  ])
-
-  assert.deepEqual(request.headers, {
-    'content-type': 'application/car',
-    accept: 'application/car',
+  assert.deepEqual(outgoing.headers, {
+    'content-type': 'application/vnd.ipld.car',
+    accept: 'application/vnd.ipld.car',
   })
 
-  const expect = await Delegation.delegate({
-    issuer: alice,
-    audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
+  assertDecode(incoming, {
+    root: message.root,
+    data: {
+      'ucanto/message@0.6.0': {
+        execute: [delegation.cid],
       },
-    ],
-    expiration,
-    proofs: [],
+    },
   })
-
-  assert.deepEqual([expect], await CAR.request.decode(request), 'roundtrips')
 })
 
 test('CAR.response encode/decode', async () => {
@@ -269,24 +135,59 @@ test('CAR.response encode/decode', async () => {
     meta: { test: 'run' },
   })
 
-  const message = await CAR.response.encode([receipt])
-  assert.deepEqual(message.headers, {
-    'content-type': 'application/car',
+  const message = await Message.build({ receipts: [receipt] })
+  const request = CAR.response.encode(message)
+  assert.deepEqual(request.headers, {
+    'content-type': 'application/vnd.ipld.car',
   })
 
-  const [received, ...other] = await CAR.response.decode(message)
-  assert.equal(other.length, 0)
+  const replica = await CAR.response.decode(request)
+  const [received, ...receipts] = replica.receipts.values()
+
+  assert.equal(receipts.length, 0)
   assert.deepEqual(received.issuer, receipt.issuer)
   assert.deepEqual(received.meta, receipt.meta)
   assert.deepEqual(received.ran, receipt.ran)
   assert.deepEqual(received.proofs, receipt.proofs)
   assert.deepEqual(received.fx, receipt.fx)
-  assert.deepEqual(received.signature, receipt.signature)
-
-  assert.throws(() => {
-    CAR.response.decode({
-      headers: {},
-      body: message.body,
-    })
-  })
+  assert.deepEqual(
+    received.signature,
+    /** @type {object} */ (receipt.signature)
+  )
 })
+
+const expiration = UCAN.now() + 90
+
+/**
+ * @param {object} source
+ * @param {API.Proof[]} [source.proofs]
+ */
+const setup = async ({ proofs = [] } = {}) => {
+  const invocation = invoke({
+    issuer: bob,
+    audience: service,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+    },
+    expiration,
+    proofs,
+  })
+  const delegation = await invocation.delegate()
+  const message = await Message.build({ invocations: [invocation] })
+  const outgoing = await CAR.request.encode(message)
+  const incoming = await CAR.request.decode(outgoing)
+
+  return { invocation, delegation, message, outgoing, incoming }
+}
+
+/**
+ * @param {API.AgentMessage} actual
+ * @param {object} expect
+ * @param {API.Block} expect.root
+ * @param {API.AgentMessageModel<*>} expect.data
+ */
+const assertDecode = (actual, expect) => {
+  assert.deepEqual(actual.root, expect.root, 'roundtrips')
+  assert.deepEqual(actual.root.data, expect.data)
+}

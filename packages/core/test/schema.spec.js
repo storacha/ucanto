@@ -496,7 +496,6 @@ test('errors', () => {
   assert.deepInclude(json, {
     name: 'SchemaError',
     message: 'boom!',
-    error: true,
     stack: error.stack,
   })
 

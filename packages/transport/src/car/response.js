@@ -1,32 +1,37 @@
 import * as API from '@ucanto/interface'
-import { CAR } from '@ucanto/core'
-import { Receipt } from '@ucanto/core'
-
+import { CAR, Message } from '@ucanto/core'
 export { CAR as codec }
 
+export const contentType = CAR.contentType
+
 const HEADERS = Object.freeze({
-  'content-type': 'application/car',
+  'content-type': contentType,
 })
 
 /**
- * Encodes invocation batch into an HTTPRequest.
+ * Encodes `AgentMessage` into an `HTTPRequest`.
  *
- * @template {API.Tuple<API.Receipt>} I
- * @param {I} receipts
+ * @template {API.AgentMessage} Message
+ * @param {Message} message
  * @param {API.EncodeOptions} [options]
- * @returns {Promise<API.HTTPResponse<I>>}
+ * @returns {API.HTTPResponse<Message>}
  */
-export const encode = async (receipts, options) => {
-  const roots = []
+export const encode = (message, options) => {
   const blocks = new Map()
-  for (const receipt of receipts) {
-    const reader = await receipt.buildIPLDView()
-    roots.push(reader.root)
-    for (const block of reader.iterateIPLDBlocks()) {
-      blocks.set(block.cid.toString(), block)
-    }
+  for (const block of message.iterateIPLDBlocks()) {
+    blocks.set(`${block.cid}`, block)
   }
-  const body = CAR.encode({ roots, blocks })
+
+  /**
+   * Cast to Uint8Array to remove phantom type set by the
+   * CAR encoder which is too specific.
+   *
+   * @type {Uint8Array}
+   */
+  const body = CAR.encode({
+    roots: [message.root],
+    blocks,
+  })
 
   return {
     headers: HEADERS,
@@ -35,32 +40,14 @@ export const encode = async (receipts, options) => {
 }
 
 /**
- * Decodes HTTPRequest to an invocation batch.
+ * Decodes `AgentMessage` from the received `HTTPResponse`.
  *
- * @template {API.Tuple<API.Receipt>} I
- * @param {API.HTTPRequest<I>} request
- * @returns {I}
+ * @template {API.AgentMessage} Message
+ * @param {API.HTTPResponse<Message>} response
+ * @returns {Promise<Message>}
  */
-export const decode = ({ headers, body }) => {
-  const contentType = headers['content-type'] || headers['Content-Type']
-  if (contentType !== 'application/car') {
-    throw TypeError(
-      `Only 'content-type: application/car' is supported, instead got '${contentType}'`
-    )
-  }
-
-  const { roots, blocks } = CAR.decode(body)
-
-  const receipts = /** @type {API.Receipt[]} */ ([])
-
-  for (const root of /** @type {API.Block<API.ReceiptModel>[]} */ (roots)) {
-    receipts.push(
-      Receipt.view({
-        root: root.cid,
-        blocks: /** @type {Map<string, API.Block>} */ (blocks),
-      })
-    )
-  }
-
-  return /** @type {I} */ (receipts)
+export const decode = async ({ headers, body }) => {
+  const { roots, blocks } = CAR.decode(/** @type {Uint8Array} */ (body))
+  const message = Message.view({ root: roots[0].cid, store: blocks })
+  return /** @type {Message} */ (message)
 }
