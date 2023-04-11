@@ -69,6 +69,75 @@
 * release 4.4.0 ([e47dbfc](https://github.com/web3-storage/ucanto/commit/e47dbfc04b8caa2e3024c960c556251fc5fd9df7))
 * release 5.0.0 ([1f809a9](https://github.com/web3-storage/ucanto/commit/1f809a9d41494756e155ffb951864a8b26673642))
 
+## [0.7.0](https://github.com/web3-storage/ucanto/compare/interface-v0.7.0...interface-v0.7.0) (2023-04-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* versioned wire transport ([#274](https://github.com/web3-storage/ucanto/issues/274))
+* update ucanto to invocation spec compatible result type ([#272](https://github.com/web3-storage/ucanto/issues/272))
+* implement invocation receipts ([#266](https://github.com/web3-storage/ucanto/issues/266))
+* remove canIssue hook default from the server ([#251](https://github.com/web3-storage/ucanto/issues/251))
+* cause release ([#235](https://github.com/web3-storage/ucanto/issues/235))
+* update session API ([#227](https://github.com/web3-storage/ucanto/issues/227))
+* Use schema stuff in the capabilities instead of custom parsing ([#220](https://github.com/web3-storage/ucanto/issues/220))
+* did prinicipal ([#149](https://github.com/web3-storage/ucanto/issues/149))
+* upgrades to multiformats@10 ([#117](https://github.com/web3-storage/ucanto/issues/117))
+* switch decoder API to zod like schema API ([#108](https://github.com/web3-storage/ucanto/issues/108))
+* upgrade to ucan 0.9 ([#95](https://github.com/web3-storage/ucanto/issues/95))
+* update dag-ucan, types and names ([#90](https://github.com/web3-storage/ucanto/issues/90))
+
+### Features
+
+* align implementation with receipt 0.2 spec ([#271](https://github.com/web3-storage/ucanto/issues/271)) ([aeea7e3](https://github.com/web3-storage/ucanto/commit/aeea7e3c7494143dce535792b0d53520e559c45a))
+* allow api inferring capabilities ([#259](https://github.com/web3-storage/ucanto/issues/259)) ([cd8cef8](https://github.com/web3-storage/ucanto/commit/cd8cef85dba4a612d9ff05abfa2b8dcfbc378499))
+* cause release ([#235](https://github.com/web3-storage/ucanto/issues/235)) ([168ac01](https://github.com/web3-storage/ucanto/commit/168ac018b51e93998190d3196aec93fe44f082e5))
+* configurable audience handlers ([#257](https://github.com/web3-storage/ucanto/issues/257)) ([f8d001c](https://github.com/web3-storage/ucanto/commit/f8d001cf721b0e96757fa372993f2fe6b6e8d520))
+* delegation.toJSON ([#186](https://github.com/web3-storage/ucanto/issues/186)) ([f8ffa74](https://github.com/web3-storage/ucanto/commit/f8ffa74bcbb1376b54633003a7c2609f70135c70))
+* did prinicipal ([#149](https://github.com/web3-storage/ucanto/issues/149)) ([4c11092](https://github.com/web3-storage/ucanto/commit/4c11092e420292af697bd5bec126112f9b961612))
+* embedded key resolution ([#168](https://github.com/web3-storage/ucanto/issues/168)) ([5e650f3](https://github.com/web3-storage/ucanto/commit/5e650f376db79c690e4771695d1ff4e6deece40e))
+* Impelment InferInvokedCapability per [#99](https://github.com/web3-storage/ucanto/issues/99) ([#100](https://github.com/web3-storage/ucanto/issues/100)) ([fc5a2ac](https://github.com/web3-storage/ucanto/commit/fc5a2ace33f2a3599a654d8edd1641d111032074))
+* implement .delegate on capabilities ([#110](https://github.com/web3-storage/ucanto/issues/110)) ([fd0bb9d](https://github.com/web3-storage/ucanto/commit/fd0bb9da58836c05d6ee9f60cd6b1cb6b747e3b1))
+* implement invocation receipts ([#266](https://github.com/web3-storage/ucanto/issues/266)) ([5341416](https://github.com/web3-storage/ucanto/commit/5341416a5f1ba5048c41476bb6c6059556e8e27b))
+* implement rsa signer / verifier ([#102](https://github.com/web3-storage/ucanto/issues/102)) ([8ed7777](https://github.com/web3-storage/ucanto/commit/8ed77770142259be03c3d6a8108365db1ab796b2))
+* implement sync car decode ([#253](https://github.com/web3-storage/ucanto/issues/253)) ([40acaac](https://github.com/web3-storage/ucanto/commit/40acaac52870a68a358370bb1b3a5f4f081943d7))
+* remove canIssue hook default from the server ([#251](https://github.com/web3-storage/ucanto/issues/251)) ([6e48019](https://github.com/web3-storage/ucanto/commit/6e48019b905787b64b194bc0de0b1cd2c2cc3edc))
+* rip out special handling of my: and as: capabilities ([#109](https://github.com/web3-storage/ucanto/issues/109)) ([3ec8e64](https://github.com/web3-storage/ucanto/commit/3ec8e6434a096221bf72193e074810cc18dd5cd8))
+* support execution of materialized invocations ([#199](https://github.com/web3-storage/ucanto/issues/199)) ([275bc24](https://github.com/web3-storage/ucanto/commit/275bc2439d81d0822c03ac62ba56f63d965d2622))
+* switch decoder API to zod like schema API ([#108](https://github.com/web3-storage/ucanto/issues/108)) ([e2e03ff](https://github.com/web3-storage/ucanto/commit/e2e03ffeb35f00627335dbfd3e128e2cf9dcfdee))
+* update dag-ucan, types and names ([#90](https://github.com/web3-storage/ucanto/issues/90)) ([cd792c9](https://github.com/web3-storage/ucanto/commit/cd792c934fbd358d6ccfa5d02f205b14b5f2e14e))
+* update multiformats ([#197](https://github.com/web3-storage/ucanto/issues/197)) ([b92a6c6](https://github.com/web3-storage/ucanto/commit/b92a6c6f5c066890a25e62205ff9848b1fb8dde1))
+* update session API ([#227](https://github.com/web3-storage/ucanto/issues/227)) ([9bbb2f7](https://github.com/web3-storage/ucanto/commit/9bbb2f796fd57ebe1ecd2112de1927b23a1577bd))
+* update to latest dag-ucan ([#165](https://github.com/web3-storage/ucanto/issues/165)) ([20e50de](https://github.com/web3-storage/ucanto/commit/20e50de5e311781ee8dc10e32de4eb12e8df2080))
+* update ucanto to invocation spec compatible result type ([#272](https://github.com/web3-storage/ucanto/issues/272)) ([b124ed8](https://github.com/web3-storage/ucanto/commit/b124ed8299a94e5a6b5abcb7cd075dd46ac4139d))
+* upgrade to ucan 0.9 ([#95](https://github.com/web3-storage/ucanto/issues/95)) ([b752b39](https://github.com/web3-storage/ucanto/commit/b752b398950120d6121badcdbb639f4dc9ce8794))
+* upgrades to multiformats@10 ([#117](https://github.com/web3-storage/ucanto/issues/117)) ([61dc4ca](https://github.com/web3-storage/ucanto/commit/61dc4cafece3365bbf60f709265ea71180f226d7))
+* Use schema stuff in the capabilities instead of custom parsing ([#220](https://github.com/web3-storage/ucanto/issues/220)) ([8a578ae](https://github.com/web3-storage/ucanto/commit/8a578ae403f7270fc741f8aef07f1d3621fb29f9))
+* versioned wire transport ([#274](https://github.com/web3-storage/ucanto/issues/274)) ([25abb67](https://github.com/web3-storage/ucanto/commit/25abb679a05b1f4010cdb949c71537ca2611d9c7))
+
+
+### Bug Fixes
+
+* .provide inference regression ([#242](https://github.com/web3-storage/ucanto/issues/242)) ([ab155b7](https://github.com/web3-storage/ucanto/commit/ab155b71024878b7f31cddd6031c45a0e8a2fff1))
+* optional field validation ([#124](https://github.com/web3-storage/ucanto/issues/124)) ([87b70d2](https://github.com/web3-storage/ucanto/commit/87b70d2d56c07f8257717fa5ef584a21eb0417c8))
+* toJSON behavior on the ucan.data ([#185](https://github.com/web3-storage/ucanto/issues/185)) ([d1ee6b6](https://github.com/web3-storage/ucanto/commit/d1ee6b6a0044d53359f0e20f631e3b86e4b94ab3))
+* trigger releases ([a0d9291](https://github.com/web3-storage/ucanto/commit/a0d9291f9e20456e115fa6c7890cafe937fa511e))
+
+
+### Miscellaneous Chores
+
+* release 0.7.0 ([b3a441d](https://github.com/web3-storage/ucanto/commit/b3a441d4f3d85ab5ae3e2a0331dfacbdd038be23))
+* release 4.0.2 ([e9e35df](https://github.com/web3-storage/ucanto/commit/e9e35dffeeb7e5b5e19627f791b66bbdd35d2d11))
+* release 4.2.2 ([b92c345](https://github.com/web3-storage/ucanto/commit/b92c3455e0c34f2fc566d00422c19d11c03626f5))
+* release 4.2.2 ([fdb5326](https://github.com/web3-storage/ucanto/commit/fdb53260ae2f54cdb8fd9973be5386b36c3af4d0))
+* release 4.2.3 ([5dc8158](https://github.com/web3-storage/ucanto/commit/5dc8158341cd668304c94a4b83e1d9b9affae410))
+* release 4.3.0 ([b53bf3d](https://github.com/web3-storage/ucanto/commit/b53bf3d9fb582006598aa02ae4c534dfcc68c189))
+* release 4.3.1 ([5c76285](https://github.com/web3-storage/ucanto/commit/5c762859c53de307486a8cf5f7c517b24a66d0f4))
+* release 4.3.3 ([12ea70b](https://github.com/web3-storage/ucanto/commit/12ea70bbb06d43f7b98017e229f1e1af0dc2fa50))
+* release 4.3.4 ([baad652](https://github.com/web3-storage/ucanto/commit/baad652ff7d9760d58bbada161b293e653e6d20e))
+* release 4.4.0 ([e47dbfc](https://github.com/web3-storage/ucanto/commit/e47dbfc04b8caa2e3024c960c556251fc5fd9df7))
+* release 5.0.0 ([1f809a9](https://github.com/web3-storage/ucanto/commit/1f809a9d41494756e155ffb951864a8b26673642))
+
 ## [0.7.0](https://github.com/web3-storage/ucanto/compare/interface-v6.2.0...interface-v0.7.0) (2023-04-11)
 
 
