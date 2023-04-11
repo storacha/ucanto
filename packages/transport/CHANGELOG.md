@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.0](https://github.com/web3-storage/ucanto/compare/transport-v0.7.0...transport-v7.0.0) (2023-04-11)
+
+
+### Miscellaneous Chores
+
+* release 7.0.0 ([84e5c48](https://github.com/web3-storage/ucanto/commit/84e5c48141abd9555acc3adc910b00caff36ac44))
+
 ## [0.7.0](https://github.com/web3-storage/ucanto/compare/transport-v0.7.0...transport-v0.7.0) (2023-04-11)
 
 

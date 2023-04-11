@@ -1,9 +1,9 @@
 {
-  "packages/client": "0.7.0",
-  "packages/core": "0.7.0",
-  "packages/interface": "0.7.0",
-  "packages/principal": "0.7.0",
-  "packages/server": "0.7.0",
-  "packages/transport": "0.7.0",
-  "packages/validator": "0.7.0"
+  "packages/client": "7.0.0",
+  "packages/core": "7.0.0",
+  "packages/interface": "7.0.0",
+  "packages/principal": "7.0.0",
+  "packages/server": "7.0.0",
+  "packages/transport": "7.0.0",
+  "packages/validator": "7.0.0"
 }
