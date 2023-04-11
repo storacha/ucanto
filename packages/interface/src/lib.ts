@@ -477,6 +477,9 @@ export type Result<T = unknown, X extends {} = {}> = Variant<{
   error: X
 }>
 
+/**
+ * @see {@link https://en.wikipedia.org/wiki/Unit_type|Unit type - Wikipedia}
+ */
 export interface Unit {}
 
 /**
