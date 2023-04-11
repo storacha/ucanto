@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.1](https://github.com/web3-storage/ucanto/compare/transport-v7.0.0...transport-v7.0.1) (2023-04-11)
+
+
+### Bug Fixes
+
+* type exports ([#280](https://github.com/web3-storage/ucanto/issues/280)) ([38c1745](https://github.com/web3-storage/ucanto/commit/38c1745ed7b8da9d0106ec0fea00b9b8e8225bc7))
+
 ## [7.0.0](https://github.com/web3-storage/ucanto/compare/transport-v0.7.0...transport-v7.0.0) (2023-04-11)
 
 
