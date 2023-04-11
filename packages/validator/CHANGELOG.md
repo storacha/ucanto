@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.0](https://github.com/web3-storage/ucanto/compare/validator-v6.1.0...validator-v0.7.0) (2023-04-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate schema to core ([#273](https://github.com/web3-storage/ucanto/issues/273))
+* update ucanto to invocation spec compatible result type ([#272](https://github.com/web3-storage/ucanto/issues/272))
+* implement invocation receipts ([#266](https://github.com/web3-storage/ucanto/issues/266))
+
+### Features
+
+* implement invocation receipts ([#266](https://github.com/web3-storage/ucanto/issues/266)) ([5341416](https://github.com/web3-storage/ucanto/commit/5341416a5f1ba5048c41476bb6c6059556e8e27b))
+* migrate schema to core ([#273](https://github.com/web3-storage/ucanto/issues/273)) ([ce95504](https://github.com/web3-storage/ucanto/commit/ce95504a0e7cf7caf49418016dbb924b4cbc2e82))
+* update ucanto to invocation spec compatible result type ([#272](https://github.com/web3-storage/ucanto/issues/272)) ([b124ed8](https://github.com/web3-storage/ucanto/commit/b124ed8299a94e5a6b5abcb7cd075dd46ac4139d))
+
+
+### Miscellaneous Chores
+
+* release 0.7.0 ([b3a441d](https://github.com/web3-storage/ucanto/commit/b3a441d4f3d85ab5ae3e2a0331dfacbdd038be23))
+
 ## [6.1.0](https://github.com/web3-storage/ucanto/compare/validator-v6.0.0...validator-v6.1.0) (2023-03-13)
 
 
