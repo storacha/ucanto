@@ -15,7 +15,7 @@ test('encode / decode', async () => {
   assertDecode(incoming, {
     root: message.root,
     data: {
-      'ucanto/message@0.6.0': {
+      'ucanto/message@7.0.0': {
         execute: [delegation.cid],
       },
     },
@@ -35,7 +35,7 @@ test('accepts Content-Type as well', async () => {
     {
       root: message.root,
       data: {
-        'ucanto/message@0.6.0': {
+        'ucanto/message@7.0.0': {
           execute: [delegation.cid],
         },
       },
@@ -109,7 +109,7 @@ test('CAR.request encode / decode', async () => {
   assertDecode(incoming, {
     root: message.root,
     data: {
-      'ucanto/message@0.6.0': {
+      'ucanto/message@7.0.0': {
         execute: [delegation.cid],
       },
     },

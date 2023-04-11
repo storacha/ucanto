@@ -5,7 +5,7 @@ import * as Receipt from './receipt.js'
 import * as Schema from './schema.js'
 
 export const MessageSchema = Schema.variant({
-  'ucanto/message@0.6.0': Schema.struct({
+  'ucanto/message@7.0.0': Schema.struct({
     execute: Schema.link().array().optional(),
     delegate: Schema.dictionary({
       key: Schema.string(),
@@ -45,7 +45,7 @@ export const view = ({ root, store }, fallback) => {
   const data = DAG.CBOR.decode(block.bytes)
   const [branch, value] = MessageSchema.match(data, fallback)
   switch (branch) {
-    case 'ucanto/message@0.6.0':
+    case 'ucanto/message@7.0.0':
       return new Message({ root: { ...block, data }, store })
     default:
       return value
@@ -89,7 +89,7 @@ class MessageBuilder {
     const root = await DAG.writeInto(
       /** @type {API.AgentMessageModel<{ In: API.InferInvocations<I>, Out: R }>} */
       ({
-        'ucanto/message@0.6.0': {
+        'ucanto/message@7.0.0': {
           ...executeField,
           ...receiptsField,
         },
@@ -196,7 +196,7 @@ class Message {
    * @returns {API.Receipt|E}
    */
   get(link, fallback) {
-    const receipts = this.root.data['ucanto/message@0.6.0'].report || {}
+    const receipts = this.root.data['ucanto/message@7.0.0'].report || {}
     const receipt = receipts[`${link}`]
     if (receipt) {
       return Receipt.view({ root: receipt, blocks: this.store })
@@ -208,7 +208,7 @@ class Message {
   }
 
   get invocationLinks() {
-    return this.root.data['ucanto/message@0.6.0'].execute || []
+    return this.root.data['ucanto/message@7.0.0'].execute || []
   }
 
   get invocations() {
@@ -226,7 +226,7 @@ class Message {
     let receipts = this._receipts
     if (!receipts) {
       receipts = new Map()
-      const report = this.root.data['ucanto/message@0.6.0'].report || {}
+      const report = this.root.data['ucanto/message@7.0.0'].report || {}
       for (const [key, link] of Object.entries(report)) {
         const receipt = Receipt.view({ root: link, blocks: this.store })
         receipts.set(`${receipt.ran.link()}`, receipt)

@@ -35,7 +35,7 @@ test('build message with an invocation', async () => {
   })
 
   assert.deepEqual(message.root.data, {
-    'ucanto/message@0.6.0': {
+    'ucanto/message@7.0.0': {
       execute: [echo.delegation.cid],
     },
   })
@@ -134,7 +134,7 @@ test('empty receipts are omitted', async () => {
   assert.deepEqual(
     message.root.data,
     {
-      'ucanto/message@0.6.0': {
+      'ucanto/message@7.0.0': {
         execute: [hi.delegation.cid],
       },
     },
@@ -153,7 +153,7 @@ test('message with receipts', async () => {
   assert.deepEqual(
     message.root.data,
     {
-      'ucanto/message@0.6.0': {
+      'ucanto/message@7.0.0': {
         report: {
           [`${hi.delegation.cid}`]: hi.receipt.root.cid,
         },
@@ -172,7 +172,7 @@ test('handles duplicate receipts', async () => {
   assert.deepEqual(
     message.root.data,
     {
-      'ucanto/message@0.6.0': {
+      'ucanto/message@7.0.0': {
         report: {
           [`${hi.delegation.cid}`]: hi.receipt.root.cid,
         },
@@ -195,7 +195,7 @@ test('empty invocations are omitted', async () => {
   assert.deepEqual(
     message.root.data,
     {
-      'ucanto/message@0.6.0': {
+      'ucanto/message@7.0.0': {
         report: {
           [`${hi.delegation.cid}`]: hi.receipt.root.cid,
         },
@@ -223,7 +223,7 @@ test('message with invocations & receipts', async () => {
   assert.deepEqual(
     message.root.data,
     {
-      'ucanto/message@0.6.0': {
+      'ucanto/message@7.0.0': {
         execute: [hi.delegation.cid],
         report: {
           [`${hi.delegation.cid}`]: hi.receipt.root.cid,
