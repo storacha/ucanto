@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.1](https://github.com/web3-storage/ucanto/compare/core-v7.0.0...core-v7.0.1) (2023-04-11)
+
+
+### Bug Fixes
+
+* message tag to 7.0.0 ([#282](https://github.com/web3-storage/ucanto/issues/282)) ([6ef3dcc](https://github.com/web3-storage/ucanto/commit/6ef3dcc1d45b65a7d932fd542c96721b0feea4c8))
+
 ## [7.0.0](https://github.com/web3-storage/ucanto/compare/core-v0.7.0...core-v7.0.0) (2023-04-11)
 
 
