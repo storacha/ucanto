@@ -1,4 +1,7 @@
 export * from './connection.js'
+
 export * from '@ucanto/interface'
-export * from '@ucanto/core'
-export { API, Receipt, Signature, DID, Delegation, Failure, Invocation } from '@ucanto/core'
+import { Delegation, invoke, Schema, DAG, ok, error } from '@ucanto/core'
+
+export const delegate = Delegation.delegate
+export { invoke, ok, error, Schema, DAG }
