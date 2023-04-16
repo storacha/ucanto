@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.1](https://github.com/web3-storage/ucanto/compare/client-v7.0.0...client-v7.0.1) (2023-04-16)
+
+
+### Bug Fixes
+
+* client imports ([#284](https://github.com/web3-storage/ucanto/issues/284)) ([9294392](https://github.com/web3-storage/ucanto/commit/92943927a401514be2c93bd02cc3592beedfea47))
+
 ## [7.0.0](https://github.com/web3-storage/ucanto/compare/client-v0.7.0...client-v7.0.0) (2023-04-11)
 
 
