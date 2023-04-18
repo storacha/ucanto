@@ -6,7 +6,7 @@ import * as API from '@ucanto/interface'
  *
  * @template {{}|string|boolean|number} T
  * @param {T} value
- * @returns {{ok: T, value?:undefined}}
+ * @returns {{ok: T, error?:undefined}}
  */
 export const ok = value => {
   if (value == null) {
