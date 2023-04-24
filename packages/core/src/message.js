@@ -81,6 +81,8 @@ class MessageBuilder {
       store
     )
 
+    const { inlineCids } = await writeInlineLinks(this.invocations || [], store)
+
     const { receipts, ...receiptsField } = await writeReceipts(
       this.receipts || [],
       store
@@ -98,7 +100,7 @@ class MessageBuilder {
       options
     )
 
-    return new Message({ root, store }, { receipts, invocations })
+    return new Message({ root, store }, { receipts, invocations, inlineCids })
   }
 }
 
@@ -120,6 +122,27 @@ const writeInvocations = async (run, store) => {
   }
 
   return { invocations, ...(execute.length > 0 ? { execute } : {}) }
+}
+
+/**
+ *
+ * @param {API.IssuedInvocation[]} run
+ * @param {Map<string, API.Block>} store
+ */
+const writeInlineLinks = async (run, store) => {
+  const inlineCids = []
+  for (const invocation of run) {
+    if (!invocation.inlineLinks) {
+      continue
+    }
+
+    for (const inlineLink of invocation.inlineLinks) {
+      store.set(`${inlineLink.cid}`, inlineLink)
+      inlineCids.push(`${inlineLink.cid}`)
+    }
+  }
+
+  return { inlineCids }
 }
 
 /**
@@ -170,17 +193,23 @@ class Message {
    * @param {DAG.BlockStore} source.store
    * @param {object} build
    * @param {API.Invocation[]} [build.invocations]
+   * @param {string[]} [build.inlineCids]
    * @param {Map<string, API.Receipt>} [build.receipts]
    */
-  constructor({ root, store }, { invocations, receipts } = {}) {
+  constructor({ root, store }, { invocations, receipts, inlineCids } = {}) {
     this.root = root
     this.store = store
     this._invocations = invocations
+    this._inlineCids = inlineCids
     this._receipts = receipts
   }
   *iterateIPLDBlocks() {
     for (const invocation of this.invocations) {
       yield* invocation.iterateIPLDBlocks()
+    }
+
+    for (const inlineLink of this.inlineLinks) {
+      yield inlineLink
     }
 
     for (const receipt of this.receipts.values()) {
@@ -234,5 +263,17 @@ class Message {
     }
 
     return receipts
+  }
+
+  get inlineLinks() {
+    if (!this._inlineCids) {
+      return []
+    }
+
+    /** @type {API.Transport.Block[]} */
+    // @ts-expect-error Map undefined is not detected by TS
+    const inlineBlocks = this._inlineCids.map(cid => this.store.get(cid)).filter(Boolean)
+
+    return inlineBlocks
   }
 }

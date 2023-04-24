@@ -62,6 +62,7 @@ class IssuedInvocation {
     notBefore,
     nonce,
     facts = [],
+    inlineLinks = [],
   }) {
     /** @readonly */
     this.issuer = issuer
@@ -69,6 +70,8 @@ class IssuedInvocation {
     this.audience = audience
     /** @readonly */
     this.proofs = proofs
+    /** @readonly */
+    this.inlineLinks = inlineLinks
 
     /**
      * @readonly
