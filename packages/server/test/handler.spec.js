@@ -338,3 +338,34 @@ test('handle did:mailto audiences', async () => {
     /InvalidAudience.*Expected .*did:mailto:.*got.*did:web:/
   )
 })
+
+test('union result', () => {
+  const add = Server.capability({
+    can: 'store/add',
+
+    with: Server.URI.match({ protocol: 'did:' }),
+    nb: Schema.struct({
+      key: Schema.string(),
+    }),
+  })
+
+  /**
+   * @type {API.ServiceMethod<API.InferInvokedCapability<typeof add>, ({status: 'done'}|{status:'pending', progress: number}), {}>}
+   */
+  const provider = Provider.provide(add, async ({ capability }) => {
+    if (capability.nb.key === 'done') {
+      return {
+        ok: {
+          status: /** @type {const} */ ('done'),
+        },
+      }
+    } else {
+      return {
+        ok: {
+          status: /** @type {const} */ ('pending'),
+          progress: 5,
+        },
+      }
+    }
+  })
+})
