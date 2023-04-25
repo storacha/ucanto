@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.2](https://github.com/web3-storage/ucanto/compare/server-v7.0.1...server-v7.0.2) (2023-04-25)
+
+
+### Bug Fixes
+
+* error inference of provide ([#291](https://github.com/web3-storage/ucanto/issues/291)) ([5ed3651](https://github.com/web3-storage/ucanto/commit/5ed3651212aa03ecde18154f7bb4c31e52bc60d3))
+
 ## [7.0.1](https://github.com/web3-storage/ucanto/compare/server-v7.0.0...server-v7.0.1) (2023-04-25)
 
 
