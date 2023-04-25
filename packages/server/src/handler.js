@@ -10,11 +10,10 @@ import { access, Schema, Failure } from '@ucanto/validator'
  * @template {API.Ability} A
  * @template {API.URI} R
  * @template {API.Caveats} C
- * @template {{}} O
- * @template {{}} X
+ * @template {API.Result<{}, {}>} Result
  * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} capability
- * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<API.Result<O, X>>} handler
- * @returns {API.ServiceMethod<API.Capability<A, R, C>, O, X>}
+ * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<Result>} handler
+ * @returns {API.ServiceMethod<API.Capability<A, R, C>, Result['ok'] & {}, Result['error'] & {}>}
  */
 
 export const provide = (capability, handler) =>
