@@ -240,7 +240,7 @@ test('test access/claim provider', async () => {
   /**
    * @type {Client.ConnectionView<{
    *  access: {
-   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], {}>
+   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], API.Failure>
    *  }
    * }>}
    */
@@ -350,19 +350,19 @@ test('union result', () => {
   })
 
   /**
-   * @type {API.ServiceMethod<API.InferInvokedCapability<typeof add>, ({status: 'done'}|{status:'pending', progress: number}), {}>}
+   * @type {API.ServiceMethod<API.InferInvokedCapability<typeof add>, ({status: 'done'}|{status:'pending', progress: number}), API.Failure>}
    */
   const provider = Provider.provide(add, async ({ capability }) => {
     if (capability.nb.key === 'done') {
       return {
         ok: {
-          status: /** @type {const} */ ('done'),
+          status: 'done',
         },
       }
     } else {
       return {
         ok: {
-          status: /** @type {const} */ ('pending'),
+          status: 'pending',
           progress: 5,
         },
       }
