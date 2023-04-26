@@ -241,6 +241,8 @@ export interface Delegation<C extends Capabilities = Capabilities>
 
   toJSON(): DelegationJSON<this>
   delegate(): Await<Delegation<C>>
+
+  attach(block: Block): void
 }
 
 /**
@@ -532,9 +534,6 @@ export interface InvocationOptions<C extends Capability = Capability>
 
   /** The {@link Capability} that is being invoked. */
   capability: C
-
-  /** The {@link Link}s to include in invocation encoded bytes*/
-  inlineLinks?: IPLDBlock[]
 }
 
 export interface IssuedInvocation<C extends Capability = Capability>
@@ -544,7 +543,6 @@ export interface IssuedInvocation<C extends Capability = Capability>
   readonly capabilities: [C]
 
   readonly proofs: Proof[]
-  readonly inlineLinks?: IPLDBlock[]
 
   delegate(): Await<Delegation<[C]>>
 }
@@ -708,7 +706,6 @@ export interface AgentMessage<T = unknown>
   invocationLinks: Tuple<Link<UCAN.UCAN<[Capability]>>> | []
   receipts: Map<ToString<UCANLink>, Receipt>
   invocations: Invocation[]
-  inlineLinks: IPLDBlock[]
   get<E = never>(link: Link, fallback?: E): Receipt | E
 }
 

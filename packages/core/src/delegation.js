@@ -161,6 +161,8 @@ export class Delegation {
   constructor(root, blocks = new Map()) {
     this.root = root
     this.blocks = blocks
+    /** @type {DAG.BlockStore} */
+    this.attachedBlocks = new Map()
 
     Object.defineProperties(this, {
       blocks: {
@@ -192,12 +194,20 @@ export class Delegation {
     Object.defineProperties(this, { data: { value: data, enumerable: false } })
     return data
   }
+  /**
+   * Attach a block to the invocation encoded bytes.
+   *
+   * @param {API.Block} block
+   */
+  attach(block) {
+    this.attachedBlocks.set(`${block.cid}`, block)
+  }
   export() {
     return exportDAG(this.root, this.blocks)
   }
 
   iterateIPLDBlocks() {
-    return exportDAG(this.root, this.blocks)
+    return exportBlocks(this.root, this.blocks, this.attachedBlocks)
   }
 
   /**
@@ -359,6 +369,23 @@ export const delegate = async (
   Object.defineProperties(delegation, { proofs: { value: proofs } })
 
   return delegation
+}
+
+/**
+ * @template {API.Capabilities} C
+ * @param {API.UCANBlock<C>} root
+ * @param {DAG.BlockStore} blocks
+ * @param {DAG.BlockStore} attachedBlocks
+ * @returns {IterableIterator<API.Block>}
+ */
+
+export const exportBlocks = function* (root, blocks, attachedBlocks) {
+  for (const block of attachedBlocks.values()) {
+    // @ts-expect-error can get blocks with v0 and v1
+    yield block
+  }
+
+  yield* exportDAG(root, blocks)
 }
 
 /**
