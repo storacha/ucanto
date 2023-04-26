@@ -161,7 +161,7 @@ export class Delegation {
   constructor(root, blocks = new Map()) {
     this.root = root
     this.blocks = blocks
-    /** @type {DAG.BlockStore} */
+    /** @type {API.BlockStore<unknown>} */
     this.attachedBlocks = new Map()
 
     Object.defineProperties(this, {
@@ -195,7 +195,10 @@ export class Delegation {
     return data
   }
   /**
-   * Attach a block to the invocation encoded bytes.
+   * Attach a block to the delegation DAG so it would be included in the
+   * block iterator.
+   * ⚠️ You should only attach blocks that are referenced from the `capabilities`
+   * or `facts`, if that is not the case you probably should reconsider.
    *
    * @param {API.Block} block
    */
@@ -339,7 +342,7 @@ const decode = ({ bytes }) => {
  */
 
 export const delegate = async (
-  { issuer, audience, proofs = [], ...input },
+  { issuer, audience, proofs = [], attachedBlocks = new Map, ...input },
   options
 ) => {
   const links = []
@@ -367,6 +370,10 @@ export const delegate = async (
   /** @type {API.Delegation<C>} */
   const delegation = new Delegation({ cid, bytes }, blocks)
   Object.defineProperties(delegation, { proofs: { value: proofs } })
+
+  for (const block of attachedBlocks.values()) {
+    delegation.attach(block)
+  }
 
   return delegation
 }

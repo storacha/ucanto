@@ -36,7 +36,7 @@ export const iterate = function* (value) {
 /**
  * @template [T=unknown]
  * @param {API.Block<T>[]} blocks
- * @returns {BlockStore<T>}
+ * @returns {API.BlockStore<T>}
  */
 export const createStore = (blocks = []) => {
   const store = new Map()

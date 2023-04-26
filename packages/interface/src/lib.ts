@@ -82,6 +82,8 @@ export type {
 }
 export * as UCAN from '@ipld/dag-ucan'
 
+export type BlockStore <T> = Map<ToString<Link>, Block<T, number, number, 1>>
+
 /**
  * Proof can either be a link to a delegated UCAN or a materialized {@link Delegation}
  * view.
@@ -106,6 +108,7 @@ export interface UCANOptions {
 
   facts?: Fact[]
   proofs?: Proof[]
+  attachedBlocks?: BlockStore<unknown>
 }
 
 /**
@@ -545,6 +548,7 @@ export interface IssuedInvocation<C extends Capability = Capability>
   readonly proofs: Proof[]
 
   delegate(): Await<Delegation<[C]>>
+  attach(block: Block): void
 }
 
 export type ServiceInvocation<

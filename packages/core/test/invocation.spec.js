@@ -44,12 +44,12 @@ test('encode invocation with attached block', async () => {
     proofs: [],
   })
 
-  const delegation = await add.delegate()
   const block = await getBlock({ test: 'inlineBlock' })
-  delegation.attach(block)
+  add.attach(block)
 
   const delegationBlocks = []
-  for (const b of delegation.iterateIPLDBlocks()) {
+  const view = await add.buildIPLDView()
+  for (const b of view.iterateIPLDBlocks()) {
     delegationBlocks.push(b)
   }
 

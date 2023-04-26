@@ -81,6 +81,21 @@ class IssuedInvocation {
     this.notBefore = notBefore
     this.nonce = nonce
     this.facts = facts
+
+    /** @type {API.BlockStore<unknown>} */
+    this.attachedBlocks = new Map()
+  }
+
+  /**
+   * Attach a block to the invocation DAG so it would be included in the
+   * block iterator.
+   * ⚠️ You should only attach blocks that are referenced from the `capabilities`
+   * or `facts`, if that is not the case you probably should reconsider.
+   *
+   * @param {API.Block} block
+   */
+  attach(block) {
+    this.attachedBlocks.set(`${block.cid}`, block)
   }
 
   delegate() {
