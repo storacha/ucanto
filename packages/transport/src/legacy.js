@@ -3,13 +3,16 @@ import * as CAR from './car.js'
 import * as response from './legacy/response.js'
 import * as request from './legacy/request.js'
 
+export const { contentType } = request
+export { request, response }
+
 /**
  * This is an inbound codec designed to support legacy clients and encode
  * responses in a legacy (CBOR) format.
  */
 export const inbound = Codec.inbound({
   decoders: {
-    [request.contentType]: request,
+    [contentType]: request,
     [CAR.contentType]: CAR.request,
   },
   encoders: {
