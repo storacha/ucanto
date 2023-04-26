@@ -169,8 +169,6 @@ export class HandlerNotFound extends RangeError {
    */
   constructor(capability) {
     super()
-    /** @type {true} */
-    this.error = true
     this.capability = capability
   }
   /** @type {'HandlerNotFound'} */
@@ -183,7 +181,6 @@ export class HandlerNotFound extends RangeError {
   toJSON() {
     return {
       name: this.name,
-      error: this.error,
       capability: {
         can: this.capability.can,
         with: this.capability.with,
@@ -203,8 +200,6 @@ class HandlerExecutionError extends Failure {
     super()
     this.capability = capability
     this.cause = cause
-    /** @type { true } */
-    this.error = true
   }
 
   /** @type {'HandlerExecutionError'} */
@@ -217,7 +212,6 @@ class HandlerExecutionError extends Failure {
   toJSON() {
     return {
       name: this.name,
-      error: this.error,
       capability: {
         can: this.capability.can,
         with: this.capability.with,
@@ -241,7 +235,6 @@ class InvocationCapabilityError extends Error {
   constructor(caps) {
     super()
     /** @type {true} */
-    this.error = true
     this.caps = caps
   }
   get name() {
@@ -253,7 +246,6 @@ class InvocationCapabilityError extends Error {
   toJSON() {
     return {
       name: this.name,
-      error: this.error,
       message: this.message,
       capabilities: this.caps,
     }

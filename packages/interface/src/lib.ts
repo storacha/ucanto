@@ -765,7 +765,6 @@ export type ExecuteInvocation<
 export interface Failure extends Error {}
 
 export interface HandlerNotFound extends RangeError {
-  error: true
   capability: Capability
   name: 'HandlerNotFound'
 }
