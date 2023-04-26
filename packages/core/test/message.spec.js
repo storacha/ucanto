@@ -213,49 +213,6 @@ test('empty invocations are omitted', async () => {
   )
 })
 
-// test('message with invocations & inline links', async () => {
-//   const link = await Block.encode({
-//     value: { test: 'inlineLinks ' },
-//     codec,
-//     hasher,
-//   })
-
-//   const hi = await build({
-//     run: {
-//       can: 'test/hi',
-//       nb: {
-//         link: link.cid,
-//       },
-//     },
-//     inlineLinks: [link],
-//   })
-//   const message = await Message.build({
-//     receipts: [hi.receipt],
-//     invocations: [hi.invocation],
-//   })
-
-//   assert.deepEqual(
-//     message.root.data,
-//     {
-//       'ucanto/message@7.0.0': {
-//         execute: [hi.delegation.cid],
-//         report: {
-//           [`${hi.delegation.cid}`]: hi.receipt.root.cid,
-//         },
-//       },
-//     },
-//     'contains invocations'
-//   )
-
-//   const cids = new Set(
-//     [...message.iterateIPLDBlocks()].map($ => $.cid.toString())
-//   )
-
-//   assert.deepEqual(cids.has(hi.delegation.cid.toString()), true)
-//   assert.deepEqual(cids.has(link.cid.toString()), true, 'contains inline links')
-//   assert.deepEqual(cids.has(message.root.cid.toString()), true)
-// })
-
 test('message with invocations & receipts', async () => {
   const hi = await build({ run: { can: 'test/hi' } })
   const message = await Message.build({
