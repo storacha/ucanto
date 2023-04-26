@@ -205,7 +205,6 @@ test('unknown handler', async () => {
   assert.containSubset(error, {
     out: {
       error: {
-        error: true,
         name: 'HandlerNotFound',
         message: `service does not implement {can: "access/register"} handler`,
         capability: {
@@ -230,7 +229,6 @@ test('unknown handler', async () => {
   assert.containSubset(error2, {
     out: {
       error: {
-        error: true,
         name: 'HandlerNotFound',
         message: `service does not implement {can: "test/boom"} handler`,
         capability: {
@@ -279,7 +277,6 @@ test('execution error', async () => {
     issuer: w3.verifier,
     out: {
       error: {
-        error: true,
         name: 'HandlerExecutionError',
         message: `service handler {can: "test/boom"} error: Boom`,
         capability: {
