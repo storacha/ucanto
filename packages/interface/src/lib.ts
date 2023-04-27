@@ -83,6 +83,7 @@ export type {
 export * as UCAN from '@ipld/dag-ucan'
 
 export type BlockStore <T> = Map<ToString<Link>, Block<T, number, number, 1>>
+export type AttachedLinkSet = Set<ToString<Link>>
 
 /**
  * Proof can either be a link to a delegated UCAN or a materialized {@link Delegation}

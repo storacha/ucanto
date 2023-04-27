@@ -161,8 +161,9 @@ export class Delegation {
   constructor(root, blocks = new Map()) {
     this.root = root
     this.blocks = blocks
-    /** @type {API.BlockStore<unknown>} */
-    this.attachedBlocks = new Map()
+
+    /** @type {API.AttachedLinkSet} */
+    this.attachedLinks = new Set()
 
     Object.defineProperties(this, {
       blocks: {
@@ -203,14 +204,15 @@ export class Delegation {
    * @param {API.Block} block
    */
   attach(block) {
-    this.attachedBlocks.set(`${block.cid}`, block)
+    this.attachedLinks.add(`${block.cid}`)
+    this.blocks.set(`${block.cid}`, block)
   }
   export() {
-    return exportDAG(this.root, this.blocks)
+    return exportDAG(this.root, this.blocks, this.attachedLinks)
   }
 
   iterateIPLDBlocks() {
-    return exportBlocks(this.root, this.blocks, this.attachedBlocks)
+    return exportDAG(this.root, this.blocks, this.attachedLinks)
   }
 
   /**
@@ -382,17 +384,31 @@ export const delegate = async (
  * @template {API.Capabilities} C
  * @param {API.UCANBlock<C>} root
  * @param {DAG.BlockStore} blocks
- * @param {DAG.BlockStore} attachedBlocks
+ * @param {API.AttachedLinkSet} attachedLinks
  * @returns {IterableIterator<API.Block>}
  */
 
-export const exportBlocks = function* (root, blocks, attachedBlocks) {
-  for (const block of attachedBlocks.values()) {
+export const exportDAG = function* (root, blocks, attachedLinks) {
+  for (const link of decode(root).proofs) {
+    // Check if block is included in this delegation
+    const root = /** @type {UCAN.Block} */ (blocks.get(`${link}`))
+    if (root) {
+      yield* exportSubDAG(root, blocks)
+    }
+  }
+
+  for (const link of attachedLinks.values()) {
+    const block = blocks.get(link)
+
+    /* c8 ignore next 3 */
+    if (!block) {
+      throw new Error(`Attached block with link ${link} is not in BlockStore`)
+    }
     // @ts-expect-error can get blocks with v0 and v1
     yield block
   }
 
-  yield* exportDAG(root, blocks)
+  yield root
 }
 
 /**
@@ -401,13 +417,12 @@ export const exportBlocks = function* (root, blocks, attachedBlocks) {
  * @param {DAG.BlockStore} blocks
  * @returns {IterableIterator<API.Block>}
  */
-
-export const exportDAG = function* (root, blocks) {
+const exportSubDAG = function* (root, blocks) {
   for (const link of decode(root).proofs) {
     // Check if block is included in this delegation
     const root = /** @type {UCAN.Block} */ (blocks.get(`${link}`))
     if (root) {
-      yield* exportDAG(root, blocks)
+      yield* exportSubDAG(root, blocks)
     }
   }
 
