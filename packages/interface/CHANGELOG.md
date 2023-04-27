@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.1.0](https://github.com/web3-storage/ucanto/compare/interface-v7.0.1...interface-v7.1.0) (2023-04-27)
+
+
+### Features
+
+* support attach inline blocks in invocation and delegation ([#288](https://github.com/web3-storage/ucanto/issues/288)) ([c9d6f3e](https://github.com/web3-storage/ucanto/commit/c9d6f3eb0bddf84b64b9c40df75257e7a10c674c))
+
 ## [7.0.1](https://github.com/web3-storage/ucanto/compare/interface-v7.0.0...interface-v7.0.1) (2023-04-11)
 
 

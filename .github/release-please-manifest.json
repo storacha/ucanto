@@ -1,7 +1,7 @@
 {
   "packages/client": "7.0.1",
-  "packages/core": "7.0.1",
-  "packages/interface": "7.0.1",
+  "packages/core": "7.1.0",
+  "packages/interface": "7.1.0",
   "packages/principal": "7.0.0",
   "packages/server": "7.0.2",
   "packages/transport": "7.0.3",
