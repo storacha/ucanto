@@ -91,6 +91,7 @@ class IssuedInvocation {
    * block iterator.
    * ⚠️ You should only attach blocks that are referenced from the `capabilities`
    * or `facts`, if that is not the case you probably should reconsider.
+   * ⚠️ Once a delegation is de-serialized the attached blocks will not be re-attached.
    *
    * @param {API.Block} block
    */
