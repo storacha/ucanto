@@ -1,5 +1,6 @@
 import { invoke, UCAN, Invocation } from '../src/lib.js'
 import { alice, service as w3 } from './fixtures.js'
+import { getBlock } from './utils.js'
 import { assert, test } from './test.js'
 
 test('encode invocation', async () => {
@@ -31,6 +32,30 @@ test('encode invocation', async () => {
   assert.deepEqual(delegation.audience.did(), w3.did())
 })
 
+test('encode invocation with attached block', async () => {
+  const add = invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+      link: 'bafy...stuff',
+    },
+    proofs: [],
+  })
+
+  const block = await getBlock({ test: 'inlineBlock' })
+  add.attach(block)
+
+  const delegationBlocks = []
+  const view = await add.buildIPLDView()
+  for (const b of view.iterateIPLDBlocks()) {
+    delegationBlocks.push(b)
+  }
+
+  assert.ok(delegationBlocks.find(b => b.cid.equals(block.cid)))
+})
+
 test('expired invocation', async () => {
   const expiration = UCAN.now() - 5
   const invocation = invoke({
@@ -40,7 +65,6 @@ test('expired invocation', async () => {
       can: 'store/add',
       with: alice.did(),
     },
-
     expiration,
   })
 
