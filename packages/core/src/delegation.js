@@ -216,6 +216,9 @@ export class Delegation {
     return exportDAG(this.root, this.blocks, this.attachedLinks)
   }
 
+  /**
+   * @returns {API.Await<API.Result<Uint8Array, Error>>}
+   */
   archive() {
     return archive(this)
   }
@@ -317,6 +320,7 @@ export class Delegation {
  * buffer and returns it.
  *
  * @param {API.Delegation} delegation}
+ * @returns {Promise<API.Result<Uint8Array, Error>>}
  */
 export const archive = async delegation => {
   try {
@@ -416,7 +420,7 @@ const decode = ({ bytes }) => {
  */
 
 export const delegate = async (
-  { issuer, audience, proofs = [], attachedBlocks = new Map, ...input },
+  { issuer, audience, proofs = [], attachedBlocks = new Map(), ...input },
   options
 ) => {
   const links = []
