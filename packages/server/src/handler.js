@@ -11,10 +11,11 @@ import { access, Schema, Failure } from '@ucanto/validator'
  * @template {API.URI} R
  * @template {API.Caveats} C
  * @template {{}} O
- * @template {{}} X
+ * @template {API.Failure} X
+ * @template {API.Result<O, X>} Result
  * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} capability
- * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<API.Result<O, X>>} handler
- * @returns {API.ServiceMethod<API.Capability<A, R, C>, O, X>}
+ * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<Result>} handler
+ * @returns {API.ServiceMethod<API.Capability<A, R, C>, O & Result['ok'], X & Result['error']>}
  */
 
 export const provide = (capability, handler) =>
@@ -32,12 +33,13 @@ export const provide = (capability, handler) =>
  * @template {API.URI} R
  * @template {API.Caveats} C
  * @template {{}} O
- * @template {{}} X
+ * @template {API.Failure} X
+ * @template {API.Result<O, X>} Result
  * @param {object} input
  * @param {API.Reader<API.DID>} [input.audience]
  * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} input.capability
- * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<API.Result<O, X>>} input.handler
- * @returns {API.ServiceMethod<API.Capability<A, R, C>, O, X>}
+ * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<Result>} input.handler
+ * @returns {API.ServiceMethod<API.Capability<A, R, C>, O & Result['ok'], X & Result['error']>}
  */
 
 export const provideAdvanced =

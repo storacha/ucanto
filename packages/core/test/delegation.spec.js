@@ -2,6 +2,8 @@ import { assert, test } from './test.js'
 import { CAR, CBOR, delegate, Delegation, parseLink, UCAN } from '../src/lib.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { base64 } from 'multiformats/bases/base64'
+import { getBlock } from './utils.js'
+
 const utf8 = new TextEncoder()
 
 const link = parseLink(
@@ -423,4 +425,27 @@ test('archive delegation chain', async () => {
 
   assert.deepEqual(extract.ok, ucan)
   assert.deepEqual(extract.ok.proofs[0], proof)
+})
+
+test('delegation.attach', async () => {
+  const ucan = await Delegation.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
+  })
+
+  const block = await getBlock({ test: 'inlineBlock' })
+  ucan.attach(block)
+
+  const delegationBlocks = []
+  for (const b of ucan.iterateIPLDBlocks()) {
+    delegationBlocks.push(b)
+  }
+
+  assert.ok(delegationBlocks.find(b => b.cid.equals(block.cid)))
 })

@@ -240,7 +240,7 @@ test('test access/claim provider', async () => {
   /**
    * @type {Client.ConnectionView<{
    *  access: {
-   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], {}>
+   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], API.Failure>
    *  }
    * }>}
    */
@@ -337,4 +337,35 @@ test('handle did:mailto audiences', async () => {
     `${badAudience.error}`,
     /InvalidAudience.*Expected .*did:mailto:.*got.*did:web:/
   )
+})
+
+test('union result', () => {
+  const add = Server.capability({
+    can: 'store/add',
+
+    with: Server.URI.match({ protocol: 'did:' }),
+    nb: Schema.struct({
+      key: Schema.string(),
+    }),
+  })
+
+  /**
+   * @type {API.ServiceMethod<API.InferInvokedCapability<typeof add>, ({status: 'done'}|{status:'pending', progress: number}), API.Failure>}
+   */
+  const provider = Provider.provide(add, async ({ capability }) => {
+    if (capability.nb.key === 'done') {
+      return {
+        ok: {
+          status: 'done',
+        },
+      }
+    } else {
+      return {
+        ok: {
+          status: 'pending',
+          progress: 5,
+        },
+      }
+    }
+  })
 })
