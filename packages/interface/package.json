@@ -24,10 +24,10 @@
   },
   "dependencies": {
     "@ipld/dag-ucan": "^3.3.2",
-    "multiformats": "^11.0.0"
+    "multiformats": "^11.0.2"
   },
   "devDependencies": {
-    "typescript": "^4.9.5"
+    "typescript": "^5.0.4"
   },
   "exports": {
     ".": {

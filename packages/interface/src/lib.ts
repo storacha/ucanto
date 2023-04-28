@@ -580,7 +580,7 @@ export type InferInvocations<T extends Tuple> = T extends [
 export interface ServiceMethod<
   I extends Capability,
   O extends {},
-  X extends {}
+  X extends Failure
 > {
   (input: Invocation<I>, context: InvocationContext): Await<
     Result<O, X | InvocationError>
@@ -772,7 +772,6 @@ export type ExecuteInvocation<
 export interface Failure extends Error {}
 
 export interface HandlerNotFound extends RangeError {
-  error: true
   capability: Capability
   name: 'HandlerNotFound'
 }
