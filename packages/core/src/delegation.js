@@ -370,7 +370,7 @@ export const extract = async archive => {
     if (root == null) {
       return Schema.error('CAR archive does not contain a root block')
     }
-    const { bytes } = DAG.get(root.cid, blocks)
+    const { bytes } = root
     const variant = CBOR.decode(bytes)
     const [, link] = ArchiveSchema.match(variant)
     return ok(view({ root: link, blocks }))
