@@ -290,7 +290,34 @@ test('.buildIPLDView() return same value', async () => {
   assert.equal(ucan.buildIPLDView(), ucan)
 })
 
-test('delegation.attach', async () => {
+test('delegation.attach block in capabiliy', async () => {
+  const block = await getBlock({ test: 'inlineBlock' })
+  const ucan = await Delegation.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+        nb: {
+          inlineBlock: block.cid.link()
+        }
+      },
+    ],
+  })
+
+  ucan.attach(block)
+
+  const delegationBlocks = []
+  for (const b of ucan.iterateIPLDBlocks()) {
+    delegationBlocks.push(b)
+  }
+
+  assert.ok(delegationBlocks.find(b => b.cid.equals(block.cid)))
+})
+
+test('delegation.attach block in facts', async () => {
+  const block = await getBlock({ test: 'inlineBlock' })
   const ucan = await Delegation.delegate({
     issuer: alice,
     audience: bob,
@@ -300,9 +327,9 @@ test('delegation.attach', async () => {
         with: alice.did(),
       },
     ],
+    facts: [{ [`${block.cid.link()}`]: block.cid.link()} ]
   })
 
-  const block = await getBlock({ test: 'inlineBlock' })
   ucan.attach(block)
 
   const delegationBlocks = []
@@ -311,4 +338,20 @@ test('delegation.attach', async () => {
   }
 
   assert.ok(delegationBlocks.find(b => b.cid.equals(block.cid)))
+})
+
+test('delegation.attach fails to attach block with not attached link', async () => {
+  const ucan = await Delegation.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did()
+      },
+    ],
+  })
+
+  const block = await getBlock({ test: 'inlineBlock' })
+  assert.throws(() => ucan.attach(block))
 })
