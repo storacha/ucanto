@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.1.1](https://github.com/web3-storage/ucanto/compare/core-v7.1.0...core-v7.1.1) (2023-05-02)
+
+
+### Bug Fixes
+
+* capture attachments links from capabilities and facts ([#298](https://github.com/web3-storage/ucanto/issues/298)) ([b2157fb](https://github.com/web3-storage/ucanto/commit/b2157fbf202654c4812387618bfcdb2442ecb027))
+
 ## [7.1.0](https://github.com/web3-storage/ucanto/compare/core-v7.0.1...core-v7.1.0) (2023-04-27)
 
 
