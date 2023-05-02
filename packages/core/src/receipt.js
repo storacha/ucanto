@@ -61,6 +61,9 @@ class Receipt {
     this._issuer = issuer
   }
 
+  link() {
+    return this.root.cid
+  }
   /**
    * @returns {Ran|ReturnType<Ran['link']>}
    */

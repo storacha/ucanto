@@ -60,6 +60,7 @@ export interface Schema<
 
   is(value: unknown): value is O
   from(value: I): O
+
   link<
     Code extends MulticodecCode,
     Alg extends MulticodecCode,
@@ -73,6 +74,14 @@ export interface Schema<
   codec: BlockCodec<number, unknown>
   hasher: MultihashHasher<number>
 
+  toIPLDBuilder(input: I): Result<IPLDViewBuilder<IPLDView<O>>, Error>
+
+  toIPLDView(source: {
+    link: Link
+    store: BlockStore
+  }): ReturnType<this['createIPLDView']>
+
+  createIPLDView(source: IPLDViewSource): Result<IPLDView<O>, Error>
 }
 
 export interface LinkSchema<
@@ -86,6 +95,19 @@ export interface LinkSchema<
     source: string,
     base?: MultibaseDecoder<Prefix>
   ): Link<O, Code, Alg, V>
+}
+
+export interface IPLDViewSource {
+  root: Block
+  store: BlockStore
+}
+
+export interface CreateView<T, V> {
+  create(source: {
+    root: Required<Block>
+    store: BlockStore
+    schema: Schema<T>
+  }): IPLDView<T> & V
 }
 
 export interface DefaultSchema<
@@ -163,6 +185,10 @@ export interface StructSchema<
   ): StructSchema<U & E, I>
 
   partial(): MapRepresentation<Partial<InferStruct<U>>, I> & StructSchema
+
+  createIPLDView(
+    source: IPLDViewSource
+  ): Result<IPLDView<InferStruct<U>> & InferStruct<U>, Error>
 }
 
 /**

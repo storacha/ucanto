@@ -273,6 +273,8 @@ test('receipt view fallback', async () => {
  * @param {Partial<Receipt> & { verifier?: API.Verifier }} expect
  */
 const assertReceipt = async (receipt, expect) => {
+  assert.equal(receipt.link(), receipt.root.cid, 'root cid is correct')
+
   if (expect.out) {
     assert.deepEqual(receipt.out, expect.out, 'out is correct')
   }

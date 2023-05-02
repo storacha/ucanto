@@ -192,6 +192,8 @@ export interface IPLDView<T extends unknown = unknown> {
    */
   root: Block<T>
 
+  link(): Link<T>
+
   /**
    * Returns an iterable of all the IPLD blocks that are included in this view.
    * It is RECOMMENDED that implementations return blocks in bottom up order

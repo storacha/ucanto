@@ -174,6 +174,60 @@ export class API {
       schema: this,
     })
   }
+
+  /**
+   * @param {I} input
+   * @returns {Schema.Result<Schema.IPLDViewBuilder<Schema.IPLDView<T>>, Schema.Error>}
+   */
+  toIPLDBuilder(input) {
+    const result = this.read(input)
+    if (result.error) {
+      return result
+    } else {
+      const data = result.ok
+      const builder = new IPLDViewBuilder({
+        data,
+        schema: this,
+      })
+      return { ok: builder }
+    }
+  }
+
+  /**
+   * @param {object} source
+   * @param {Schema.Link} source.link
+   * @param {Schema.BlockStore} source.store
+   * @returns {ReturnType<this['createIPLDView']>}
+   */
+  toIPLDView({ link, store }) {
+    const block = store.get(`${link}`)
+    if (!block) {
+      return /** @type {*} */ ({ error: new Error(`Missing block ${link}`) })
+    } else {
+      return /** @type {*} */ (this.createIPLDView({ root: block, store }))
+    }
+  }
+
+  /**
+   * @param {object} source
+   * @param {Schema.Block<unknown>} source.root
+   * @param {Schema.BlockStore} source.store
+   * @returns {Schema.Result<Schema.IPLDView<T>, Schema.Error>}
+   */
+  createIPLDView({ root, store }) {
+    const input = /** @type {I} */ (this.codec.decode(root.bytes))
+    const result = this.read(input)
+    if (result.error) {
+      return result
+    } else {
+      const view = new IPLDView({
+        root: { ...root, data: result.ok },
+        store,
+        schema: this,
+      })
+      return { ok: view }
+    }
+  }
 }
 
 /**
@@ -222,6 +276,88 @@ class Unknown extends API {
  * @returns {Schema.Schema<unknown, I>}
  */
 export const unknown = () => new Unknown()
+
+/**
+ * @template {unknown} T
+ * @implements {Schema.IPLDViewBuilder<Schema.IPLDView<T>>}
+ */
+class IPLDViewBuilder {
+  /**
+   * @param {object} input
+   * @param {T} input.data
+   * @param {Schema.Schema<T>} input.schema
+   */
+  constructor({ data, schema }) {
+    this.data = data
+    this.schema = schema
+  }
+
+  /**
+   * @param {Schema.BuildOptions} [options]
+   * @returns {Promise<Schema.IPLDView<T>>}
+   */
+  async buildIPLDView({
+    encoder = this.schema.codec,
+    hasher = this.schema.hasher,
+  } = {}) {
+    const { data } = this
+    const bytes = encoder.encode(data)
+    const digest = await hasher.digest(bytes)
+    /** @type {Schema.Link<T>} */
+    const cid = createLink(encoder.code, digest)
+    return new IPLDView({ root: { bytes, data, cid }, schema: this.schema })
+  }
+}
+
+/**
+ * @template {unknown} T
+ * @implements {Schema.IPLDView<T>}
+ * @implements {Schema.IPLDViewBuilder<Schema.IPLDView<T>>}
+ */
+class IPLDView {
+  /**
+   * @param {object} input
+   * @param {Required<Schema.Block>} input.root
+   * @param {Schema.Schema<T>} input.schema
+   * @param {Schema.BlockStore} [input.store]
+   */
+  constructor({ root, store = new Map(), schema }) {
+    this.root = root
+    this.store = store
+    this.schema = schema
+  }
+
+  /**
+   * @template T
+   * @param {object} input
+   * @param {Required<Schema.Block>} input.root
+   * @param {Schema.Schema<T>} input.schema
+   * @param {Schema.BlockStore} [input.store]
+   */
+  static create(input) {
+    return new this(input)
+  }
+
+  /**
+   * @returns {Schema.Link<T>}
+   */
+  link() {
+    return this.root.cid
+  }
+  /**
+   * @returns {IterableIterator<Schema.Block>}
+   */
+  *iterateIPLDBlocks() {
+    yield this.root
+  }
+
+  /**
+   * @returns {Schema.IPLDView<T>}
+   */
+  buildIPLDView() {
+    return this
+  }
+}
 
 /**
  * @template O
@@ -1175,6 +1311,67 @@ class Struct extends API {
    */
   extend(extension) {
     return new Struct({ shape: { ...this.shape, ...extension } })
+  }
+
+  /**
+   * @param {object} source
+   * @param {Schema.Block} source.root
+   * @param {Schema.BlockStore} source.store
+   * @returns {Schema.Result<Schema.InferStruct<U> & Schema.IPLDView<Schema.InferStruct<U>>, Schema.Error>}
+   */
+  createIPLDView(source) {
+    const data = this.codec.decode(source.root.bytes)
+
+    if (typeof data != 'object' || data === null || Array.isArray(data)) {
+      return typeError({
+        expect: 'object',
+        actual: data,
+      })
+    }
+
+    let View = this._View || (this._View = IPLDStructView.struct(this.shape))
+    const root = { ...source.root, data }
+
+    const view = View.create({ root, store: source.store, schema: this })
+    return { ok: view }
+  }
+}
+
+/**
+ * @template {{[key:string]: Schema.Reader}} U
+ * @extends {IPLDView<Schema.InferStruct<U>>}
+ */
+class IPLDStructView extends IPLDView {
+  /**
+   * @template {{[key:string]: Schema.Reader}} U
+   * @param {U} shape
+   * @returns {Schema.CreateView<Schema.InferStruct<U>, Schema.InferStruct<U>>}
+   */
+  static struct(shape) {
+    /** @extends {IPLDStructView<U>} */
+    class View extends this {
+      static shape = shape
+    }
+
+    for (const [key, schema] of Object.entries(shape)) {
+      Object.defineProperty(View.prototype, key, {
+        get() {
+          let result = this[`_${key}`]
+          if (!result) {
+            result = schema.read(this.root.data[key])
+            this[`_${key}`] = result
+          }
+
+          if (result.ok) {
+            return result.ok
+          } else {
+            throw memberError({ at: key, cause: result.error }).error
+          }
+        },
+      })
+    }
+
+    return /** @type {*} */ (View)
   }
 }
 
