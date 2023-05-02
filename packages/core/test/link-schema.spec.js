@@ -1,6 +1,7 @@
 import * as Schema from '../src/schema.js'
 import { base36 } from 'multiformats/bases/base36'
 import { test, assert, matchError } from './test.js'
+import { CBOR, sha256 } from '../src/dag.js'
 
 const fixtures = {
   pb: Schema.Link.parse('QmTgnQBKj7eTV7ohraBCmh1DLwerUd2X9Rxzgf3gyMJbC8'),
@@ -78,3 +79,57 @@ for (const link of links) {
     })
   }
 }
+
+test('struct().link()', () => {
+  const Point = Schema.struct({
+    x: Schema.integer(),
+    y: Schema.integer(),
+  })
+  const PointLink = Point.link()
+
+  assert.equal(PointLink.read(fixtures.pb).ok, fixtures.pb)
+
+  assert.throws(() => PointLink.link(), /link of link/)
+})
+
+test('struct().link({ codec })', () => {
+  const Point = Schema.struct({
+    x: Schema.integer(),
+    y: Schema.integer(),
+  })
+  const PointLink = Point.link({
+    codec: CBOR,
+  })
+
+  assert.match(PointLink.read(fixtures.pb).error?.message || '', /0x71 code/)
+  assert.equal(PointLink.read(fixtures.cbor).ok, fixtures.cbor)
+})
+
+test('struct().link({ hasher })', () => {
+  const Point = Schema.struct({
+    x: Schema.integer(),
+    y: Schema.integer(),
+  })
+  const PointLink = Point.link({
+    hasher: sha256,
+  })
+
+  assert.match(
+    PointLink.read(fixtures.sha512).error?.message || '',
+    /0x12 hashing/
+  )
+  assert.equal(PointLink.read(fixtures.cbor).ok, fixtures.cbor)
+})
+
+test('struct().link({ hasher })', () => {
+  const Point = Schema.struct({
+    x: Schema.integer(),
+    y: Schema.integer(),
+  })
+  const PointLink = Point.link({
+    version: 1,
+  })
+
+  assert.match(PointLink.read(fixtures.pb).error?.message || '', /version 1/)
+  assert.equal(PointLink.read(fixtures.cbor).ok, fixtures.cbor)
+})
