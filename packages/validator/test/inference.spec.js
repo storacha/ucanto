@@ -262,7 +262,7 @@ test('can create derived capability with dict schema in nb', () => {
       with: URI,
       nb: Schema.struct({
         delegations: Schema.dictionary({
-          value: Schema.Link.match(),
+          value: Schema.Link,
         }),
       }),
       derives: (claim, proof) => {
