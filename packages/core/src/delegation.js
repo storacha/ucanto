@@ -166,14 +166,46 @@ export class Delegation {
     this.root = root
     this.blocks = blocks
 
-    /** @type {API.AttachedLinkSet} */
-    this.attachedLinks = new Set()
-
     Object.defineProperties(this, {
       blocks: {
         enumerable: false,
       },
     })
+  }
+
+  /**
+   * @returns {API.AttachedLinkSet}
+   */
+  get attachedLinks() {
+    const _attachedLinks = new Set()
+    const ucanView = this.data
+
+    // Get links from capabilities nb
+    for (const capability of ucanView.capabilities) {
+      /** @type {Link[]} */
+      const links = getLinksFromObject(capability)
+
+      for (const link of links) {
+        _attachedLinks.add(`${link}`)
+      }
+    }
+
+    // Get links from facts values
+    for (const fact of ucanView.facts) {
+      if (Link.isLink(fact)) {
+        _attachedLinks.add(`${fact}`)
+      } else {
+        /** @type {Link[]} */
+        // @ts-expect-error isLink does not infer value type
+        const links = Object.values(fact).filter(e => Link.isLink(e))
+
+        for (const link of links) {
+          _attachedLinks.add(`${link}`)
+        }
+      }
+    }
+
+    return _attachedLinks
   }
 
   get version() {
@@ -202,14 +234,15 @@ export class Delegation {
   /**
    * Attach a block to the delegation DAG so it would be included in the
    * block iterator.
-   * ⚠️ You should only attach blocks that are referenced from the `capabilities`
-   * or `facts`, if that is not the case you probably should reconsider.
-   * ⚠️ Once a delegation is de-serialized the attached blocks will not be re-attached.
+   * ⚠️ You can only attach blocks that are referenced from the `capabilities`
+   * or `facts`.
    *
    * @param {API.Block} block
    */
   attach(block) {
-    this.attachedLinks.add(`${block.cid}`)
+    if (!this.attachedLinks.has(`${block.cid.link()}`)) {
+      throw new Error(`given block with ${block.cid} is not an attached link`)
+    }
     this.blocks.set(`${block.cid}`, block)
   }
   export() {
@@ -476,12 +509,10 @@ export const exportDAG = function* (root, blocks, attachedLinks) {
   for (const link of attachedLinks.values()) {
     const block = blocks.get(link)
 
-    /* c8 ignore next 3 */
-    if (!block) {
-      throw new Error(`Attached block with link ${link} is not in BlockStore`)
+    if (block) {
+      // @ts-expect-error can get blocks with v0 and v1
+      yield block
     }
-    // @ts-expect-error can get blocks with v0 and v1
-    yield block
   }
 
   yield root
@@ -575,6 +606,34 @@ const proofs = delegation => {
   // more than once.
   Object.defineProperty(delegation, 'proofs', { value: proofs })
   return proofs
+}
+
+/**
+ * @param {API.Capability<API.Ability, `${string}:${string}`, unknown>} obj
+ */
+function getLinksFromObject(obj) {
+  /** @type {Link[]} */
+  const links = []
+
+  /**
+   * @param {object} obj
+   */
+  function recurse(obj) {
+    for (const key in obj) {
+      // @ts-expect-error record type not inferred
+      const value = obj[key]
+      if (Link.isLink(value)) {
+        // @ts-expect-error isLink does not infer value type
+        links.push(value)
+      } else if (value && typeof value === 'object') {
+        recurse(value)
+      }
+    }
+  }
+
+  recurse(obj)
+
+  return links
 }
 
 export { Delegation as View }

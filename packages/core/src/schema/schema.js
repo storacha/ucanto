@@ -921,6 +921,28 @@ const anyString = new AnyString()
 export const string = () => anyString
 
 /**
+ * @template [I=unknown]
+ * @extends {API<Uint8Array, I, void>}
+ */
+class BytesSchema extends API {
+  /**
+   * @param {I} input
+   * @returns {Schema.ReadResult<Uint8Array>}
+   */
+  readWith(input) {
+    if (input instanceof Uint8Array) {
+      return { ok: input }
+    } else {
+      return typeError({ expect: 'Uint8Array', actual: input })
+    }
+  }
+}
+
+/** @type {Schema.Schema<Uint8Array, unknown>} */
+export const Bytes = new BytesSchema()
+export const bytes = () => Bytes
+
+/**
  * @template {string} Prefix
  * @template {string} Body
  * @extends {API<Body & `${Prefix}${Body}`, Body, Prefix>}
@@ -1380,7 +1402,13 @@ const displayTypeName = value => {
     case 'undefined':
       return String(value)
     case 'object':
-      return value === null ? 'null' : Array.isArray(value) ? 'array' : 'object'
+      return value === null
+        ? 'null'
+        : Array.isArray(value)
+        ? 'array'
+        : Symbol.toStringTag in /** @type {object} */ (value)
+        ? value[Symbol.toStringTag]
+        : 'object'
     default:
       return type
   }
