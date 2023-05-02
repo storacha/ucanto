@@ -87,16 +87,17 @@ class IssuedInvocation {
   }
 
   /**
-   * Attach a block to the invocation DAG so it would be included in the
-   * block iterator.
+   * Attach block from IPLD View to the invocation DAG so it would be included
+   * in the block iterator.
    * ⚠️ You should only attach blocks that are referenced from the `capabilities`
-   * or `facts`, if that is not the case you probably should reconsider.
-   * ⚠️ Once a delegation is de-serialized the attached blocks will not be re-attached.
+   * or `facts`.
    *
-   * @param {API.Block} block
+   * @param {API.IPLDView} view
    */
-  attach(block) {
-    this.attachedBlocks.set(`${block.cid}`, block)
+  attach(view) {
+    for (const block of view.iterateIPLDBlocks()) {
+      this.attachedBlocks.set(`${block.cid}`, block)
+    }
   }
 
   delegate() {

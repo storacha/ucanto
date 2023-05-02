@@ -47,7 +47,10 @@ test('encode invocation with attached block in capability nb', async () => {
     },
     proofs: [],
   })
-  add.attach(block)
+  add.attach({
+    iterateIPLDBlocks: () => [block].values(),
+    root: block
+  })
 
   /** @type {import('@ucanto/interface').BlockStore<unknown>} */
   const blockStore = new Map()
