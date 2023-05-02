@@ -327,7 +327,11 @@ test('delegation.attach block in facts', async () => {
         with: alice.did(),
       },
     ],
-    facts: [{ [`${block.cid.link()}`]: block.cid.link()} ]
+    facts: [
+      { [`${block.cid.link()}`]: block.cid.link() },
+      // @ts-expect-error Link has fact entry
+      block.cid.link()
+    ]
   })
 
   ucan.attach(block)

@@ -174,7 +174,7 @@ export class Delegation {
    */
   get attachedLinks() {
     const _attachedLinks = new Set()
-    const ucanView = decode(this.root)
+    const ucanView = this.data
 
     // Get links from capabilities nb
     for (const capability of ucanView.capabilities) {
@@ -189,13 +189,17 @@ export class Delegation {
 
     // Get links from facts values
     for (const fact of ucanView.facts) {
-      /** @type {Link[]} */
-      // @ts-expect-error isLink does not infer value type
-      const links = Object.values(fact)
+      if (Link.isLink(fact)) {
+        _attachedLinks.add(`${fact}`)
+      } else {
+        /** @type {Link[]} */
+        // @ts-expect-error isLink does not infer value type
+        const links = Object.values(fact)
         .filter(e => Link.isLink(e))
 
-      for (const link of links) {
-        _attachedLinks.add(`${link}`)
+        for (const link of links) {
+          _attachedLinks.add(`${link}`)
+        }
       }
     }
 
