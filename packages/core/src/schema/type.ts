@@ -207,7 +207,7 @@ export interface StringSchema<O extends string, I = unknown>
   endsWith<Suffix extends string>(
     suffix: Suffix
   ): StringSchema<O & `${string}${Suffix}`, I>
-  refine<T extends string>(schema: Reader<T, O>): StringSchema<O & T, I>
+  refine<T>(schema: Reader<T, O>): StringSchema<O & T, I>
 }
 
 declare const Marker: unique symbol

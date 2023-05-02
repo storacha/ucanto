@@ -1342,7 +1342,7 @@ export const variant = variants => new Variant(variants)
 
 /**
  * @param {string} message
- * @returns {{error: Schema.Error}}
+ * @returns {{error: Schema.Error, ok?: undefined}}
  */
 export const error = message => ({ error: new SchemaError(message) })
 

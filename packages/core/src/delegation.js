@@ -2,6 +2,10 @@ import * as UCAN from '@ipld/dag-ucan'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
 import * as DAG from './dag.js'
+import * as CAR from './car.js'
+import * as CBOR from './cbor.js'
+import * as Schema from './schema.js'
+import { ok, error } from './result.js'
 
 /**
  * @deprecated
@@ -245,6 +249,13 @@ export class Delegation {
     return exportDAG(this.root, this.blocks, this.attachedLinks)
   }
 
+  /**
+   * @returns {API.Await<API.Result<Uint8Array, Error>>}
+   */
+  archive() {
+    return archive(this)
+  }
+
   iterateIPLDBlocks() {
     return exportDAG(this.root, this.blocks, this.attachedLinks)
   }
@@ -334,6 +345,70 @@ export class Delegation {
         isDelegation(proof) ? proof : { '/': proof.toString() }
       ),
     })
+  }
+}
+
+/**
+ * Writes given `Delegation` chain into a content addressed archive (CAR)
+ * buffer and returns it.
+ *
+ * @param {API.Delegation} delegation}
+ * @returns {Promise<API.Result<Uint8Array, Error>>}
+ */
+export const archive = async delegation => {
+  try {
+    // Iterate over all of the blocks in the DAG and add them to the
+    // block store.
+    const store = new Map()
+    for (const block of delegation.iterateIPLDBlocks()) {
+      store.set(`${block.cid}`, block)
+    }
+
+    // Then we we create a descriptor block to describe what this DAG represents
+    // and it to the block store as well.
+    const variant = await CBOR.write({
+      [`ucan@${delegation.version}`]: delegation.root.cid,
+    })
+    store.set(`${variant.cid}`, variant)
+
+    // And finally we encode the whole thing into a CAR.
+    const bytes = CAR.encode({
+      roots: [variant],
+      blocks: store,
+    })
+
+    return ok(bytes)
+  } catch (cause) {
+    return error(/** @type {Error} */ (cause))
+  }
+}
+
+export const ArchiveSchema = Schema.variant({
+  'ucan@0.9.1': /** @type {Schema.Schema<API.UCANLink>} */ (
+    Schema.link({ version: 1 })
+  ),
+})
+
+/**
+ * Extracts a `Delegation` chain from a given content addressed archive (CAR)
+ * buffer. Assumes that the CAR contains a single root block corresponding to
+ * the delegation variant.
+ *
+ * @param {Uint8Array} archive
+ */
+export const extract = async archive => {
+  try {
+    const { roots, blocks } = CAR.decode(archive)
+    const [root] = roots
+    if (root == null) {
+      return Schema.error('CAR archive does not contain a root block')
+    }
+    const { bytes } = root
+    const variant = CBOR.decode(bytes)
+    const [, link] = ArchiveSchema.match(variant)
+    return ok(view({ root: link, blocks }))
+  } catch (cause) {
+    return error(/** @type {Error} */ (cause))
   }
 }
 
@@ -497,16 +572,19 @@ export const create = ({ root, blocks }) => new Delegation(root, blocks)
 
 /**
  * @template {API.Capabilities} C
- * @template [T=undefined]
+ * @template [E=never]
  * @param {object} dag
  * @param {API.UCANLink<C>} dag.root
  * @param {DAG.BlockStore} dag.blocks
- * @param {T} [fallback]
- * @returns {API.Delegation<C>|T}
+ * @param {E} [fallback]
+ * @returns {API.Delegation<C>|E}
  */
 export const view = ({ root, blocks }, fallback) => {
   const block = DAG.get(root, blocks, null)
-  return block ? create({ root: block, blocks }) : /** @type {T} */ (fallback)
+  if (block == null) {
+    return fallback !== undefined ? fallback : DAG.notFound(root)
+  }
+  return create({ root: block, blocks })
 }
 
 /**
