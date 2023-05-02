@@ -1,4 +1,5 @@
 import { URI, Link, Text, DID } from '../src/schema.js'
+import * as Schema from '../src/schema.js'
 import { test, assert, matchResult } from './test.js'
 import * as API from '@ucanto/interface'
 
@@ -139,23 +140,23 @@ test('URI.from', () => {
       matchResult(Link.read(input), out1 || { ok: input })
     })
 
-    test('Link.link()', () => {
-      const schema = Link.link()
+    test('Schema.link()', () => {
+      const schema = Schema.link()
       matchResult(schema.read(input), out1 || { ok: input })
     })
 
-    test(`Link.match({ code: 0x70 }).read(${input})`, () => {
-      const link = Link.match({ code: 0x70 })
+    test(`Schema.link({ code: 0x70 }).read(${input})`, () => {
+      const link = Schema.link({ code: 0x70 })
       matchResult(link.read(input), out2 || { ok: input })
     })
 
-    test(`Link.match({ algorithm: 0x12 }).read(${input})`, () => {
-      const link = Link.match({ multihash: { code: 0x12 } })
+    test(`Schema.link({ algorithm: 0x12 }).read(${input})`, () => {
+      const link = Schema.link({ multihash: { code: 0x12 } })
       matchResult(link.read(input), out3 || { ok: input })
     })
 
-    test(`Link.match({ version: 1 }).read(${input})`, () => {
-      const link = Link.match({ version: 1 })
+    test(`Schema.link({ version: 1 }).read(${input})`, () => {
+      const link = Schema.link({ version: 1 })
       matchResult(link.read(input), out4 || { ok: input })
     })
 

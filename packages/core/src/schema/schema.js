@@ -1,6 +1,16 @@
 import * as Schema from './type.js'
 import { ok, Failure } from '../result.js'
+import {
+  create as createLink,
+  parse as parseLink,
+  createLegacy,
+  isLink,
+  parse,
+  base32,
+} from '../link.js'
 export * from './type.js'
+import * as CBOR from '../cbor.js'
+import { sha256 } from 'multiformats/hashes/sha2'
 
 export { ok }
 /**
@@ -18,6 +28,9 @@ export class API {
   constructor(settings) {
     /** @protected */
     this.settings = settings
+
+    this.codec = CBOR
+    this.hasher = sha256
   }
 
   toString() {
@@ -140,6 +153,26 @@ export class API {
     return /** @type {Schema.DefaultSchema<Schema.NotUndefined<T>, I>} */ (
       schema
     )
+  }
+
+  /**
+   * @template {number} [Code=number]
+   * @template {number} [Alg=number]
+   * @template {1|0} [Version=0|1]
+   * @param {{
+   * codec?: Schema.BlockCodec<Code, unknown>
+   * hasher?: Schema.MultihashHasher<Alg>
+   * version?: Version
+   * }} options
+   * @returns {Schema.LinkSchema<T, Code, Alg, Version>}
+   */
+  link({ codec, hasher, version } = {}) {
+    return link({
+      ...(codec ? { code: codec.code } : {}),
+      ...(hasher ? { multihash: { code: hasher.code } } : {}),
+      ...(version ? { version } : {}),
+      schema: this,
+    })
   }
 }
 
@@ -760,7 +793,7 @@ class LessThan extends API {
 /**
  * @template {number} T
  * @param {number} n
- * @returns {Schema.Schema<T, T>}
+ * @returns {Schema.Reader<T, T>}
  */
 export const lessThan = n => new LessThan(n)
 
@@ -789,7 +822,7 @@ class GreaterThan extends API {
 /**
  * @template {number} T
  * @param {number} n
- * @returns {Schema.Schema<T, T>}
+ * @returns {Schema.Reader<T, T>}
  */
 export const greaterThan = n => new GreaterThan(n)
 
@@ -1085,15 +1118,15 @@ export const literal = value => new Literal(value)
 /**
  * @template {{[key:string]: Schema.Reader}} U
  * @template [I=unknown]
- * @extends {API<Schema.InferStruct<U>, I, U>}
+ * @extends {API<Schema.InferStruct<U>, I, {shape: U}>}
  */
 class Struct extends API {
   /**
    * @param {I} input
-   * @param {U} shape
+   * @param {{shape: U}} settings
    * @returns {Schema.ReadResult<Schema.InferStruct<U>>}
    */
-  readWith(input, shape) {
+  readWith(input, { shape }) {
     if (typeof input != 'object' || input === null || Array.isArray(input)) {
       return typeError({
         expect: 'object',
@@ -1127,17 +1160,17 @@ class Struct extends API {
    * @returns {Schema.MapRepresentation<Partial<Schema.InferStruct<U>>> & Schema.StructSchema}
    */
   partial() {
-    return new Struct(
-      Object.fromEntries(
-        Object.entries(this.shape).map(([key, value]) => [key, optional(value)])
-      )
+    const shape = Object.fromEntries(
+      Object.entries(this.shape).map(([key, value]) => [key, optional(value)])
     )
+
+    return new Struct({ shape })
   }
 
   /** @type {U} */
   get shape() {
     // @ts-ignore - We declared `settings` private but we access it here
-    return this.settings
+    return this.settings.shape
   }
 
   toString() {
@@ -1163,7 +1196,7 @@ class Struct extends API {
    * @returns {Schema.StructSchema<U & E, I>}
    */
   extend(extension) {
-    return new Struct({ ...this.shape, ...extension })
+    return new Struct({ shape: { ...this.shape, ...extension } })
   }
 }
 
@@ -1198,8 +1231,114 @@ export const struct = fields => {
     }
   }
 
-  return new Struct(/** @type {V} */ (shape))
+  return new Struct({ shape: /** @type {V} */ (shape) })
 }
+
+/**
+ * @template {unknown} [T=unknown]
+ * @template {number} [Code=number]
+ * @template {number} [Alg=number]
+ * @template {1|0} [Version=0|1]
+ * @typedef {{
+ * code?:Code,
+ * version?:Version
+ * multihash?: {code?: Alg, digest?: Uint8Array}
+ * schema?: Schema.Schema<T, unknown>
+ * }} LinkSettings
+ */
+
+/**
+ * @template {unknown} T
+ * @template {number} Code
+ * @template {number} Alg
+ * @template {1|0} Version
+ * @extends {API<Schema.Link<T, Code, Alg, Version>, unknown, LinkSettings<T, Code, Alg, Version>>}
+ * @implements {Schema.LinkSchema<T, Code, Alg, Version>}
+ */
+class LinkSchema extends API {
+  /**
+   *
+   * @param {unknown} cid
+   * @param {LinkSettings<T, Code, Alg, Version>} settings
+   * @returns {Schema.ReadResult<Schema.Link<T, Code, Alg, Version>>}
+   */
+  readWith(cid, { code, multihash = {}, version }) {
+    if (cid == null) {
+      return error(`Expected link but got ${cid} instead`)
+    } else {
+      if (!isLink(cid)) {
+        return error(`Expected link to be a CID instead of ${cid}`)
+      } else {
+        if (code != null && cid.code !== code) {
+          return error(
+            `Expected link to be CID with 0x${code.toString(16)} codec`
+          )
+        }
+
+        if (multihash.code != null && cid.multihash.code !== multihash.code)
+          return error(
+            `Expected link to be CID with 0x${multihash.code.toString(
+              16
+            )} hashing algorithm`
+          )
+
+        if (version != null && cid.version !== version) {
+          return error(
+            `Expected link to be CID version ${version} instead of ${cid.version}`
+          )
+        }
+
+        const [expectDigest, actualDigest] =
+          multihash.digest != null
+            ? [
+                base32.baseEncode(multihash.digest),
+                base32.baseEncode(cid.multihash.digest),
+              ]
+            : ['', '']
+
+        if (expectDigest !== actualDigest) {
+          return error(
+            `Expected link with "${expectDigest}" hash digest instead of "${actualDigest}"`
+          )
+        }
+
+        return {
+          ok: /** @type {Schema.Link<T, any, any, any>} */ (cid),
+        }
+      }
+    }
+  }
+
+  /**
+   * @returns {never}
+   */
+  link() {
+    throw new Error('Can not create link of link')
+  }
+
+  /**
+   * @template {string} Prefix
+   * @param {string} input
+   * @param {Schema.MultibaseDecoder<Prefix>} [base]
+   */
+  parse(input, base) {
+    const link = parseLink(input, base)
+    return this.from(link)
+  }
+}
+
+/** @type {Schema.LinkSchema<unknown, number, number, 0|1>}  */
+export const Link = new LinkSchema({})
+
+/**
+ * @template {number} Code
+ * @template {number} Alg
+ * @template {1|0} Version
+ * @template {unknown} T
+ * @param {LinkSettings<T, Code, Alg, Version>} options
+ * @returns {Schema.LinkSchema<T, Code, Alg, Version>}
+ */
+export const link = (options = {}) => new LinkSchema(options)
 
 /**
  * @template {Schema.VariantChoices} U

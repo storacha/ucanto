@@ -31,6 +31,9 @@ import {
   Block as IPLDBlock,
   ToString,
   BlockEncoder,
+  BlockDecoder,
+  BlockCodec,
+  BaseDecoder,
 } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
 import {
@@ -73,6 +76,10 @@ export type {
   MultibaseDecoder,
   MultibaseEncoder,
   MulticodecCode,
+  BaseDecoder,
+  BlockDecoder,
+  BlockEncoder,
+  BlockCodec,
   Principal,
   ToJSON,
   ToString,
@@ -82,7 +89,10 @@ export type {
 }
 export * as UCAN from '@ipld/dag-ucan'
 
-export type BlockStore <T> = Map<ToString<Link>, Block<T, number, number, 1>>
+export type BlockStore<T = unknown> = Map<
+  ToString<Link>,
+  Block<T, number, number, 1>
+>
 export type AttachedLinkSet = Set<ToString<Link>>
 
 /**

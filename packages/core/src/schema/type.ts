@@ -1,4 +1,40 @@
-import { Failure as Error, Result, Variant, Phantom } from '@ucanto/interface'
+import {
+  Failure as Error,
+  Await,
+  Result,
+  Variant,
+  Phantom,
+  Link,
+  BlockStore,
+  Block,
+  BlockCodec,
+  BlockDecoder,
+  BlockEncoder,
+  MultihashHasher,
+  MulticodecCode,
+  MultibaseDecoder,
+  UnknownLink,
+  IPLDView,
+  IPLDViewBuilder,
+  BuildOptions,
+  ByteView,
+} from '@ucanto/interface'
+
+export type {
+  Link,
+  BlockStore,
+  Block,
+  BlockCodec,
+  BlockEncoder,
+  BlockDecoder,
+  MultihashHasher,
+  MulticodecCode,
+  MultibaseDecoder,
+  ByteView,
+  IPLDView,
+  IPLDViewBuilder,
+  BuildOptions,
+}
 
 export interface Reader<O = unknown, I = unknown, X extends Error = Error> {
   read(input: I): Result<O, X>
@@ -24,6 +60,32 @@ export interface Schema<
 
   is(value: unknown): value is O
   from(value: I): O
+  link<
+    Code extends MulticodecCode,
+    Alg extends MulticodecCode,
+    V extends UnknownLink['version']
+  >(options?: {
+    codec?: BlockCodec<Code, unknown>
+    version?: V
+    hasher?: MultihashHasher<Alg>
+  }): LinkSchema<O, Code, Alg, V>
+
+  codec: BlockCodec<number, unknown>
+  hasher: MultihashHasher<number>
+
+}
+
+export interface LinkSchema<
+  O extends unknown,
+  Code extends MulticodecCode,
+  Alg extends MulticodecCode,
+  V extends UnknownLink['version']
+> extends Schema<Link<O, Code, Alg, V>> {
+  link(): never
+  parse<Prefix extends string>(
+    source: string,
+    base?: MultibaseDecoder<Prefix>
+  ): Link<O, Code, Alg, V>
 }
 
 export interface DefaultSchema<
