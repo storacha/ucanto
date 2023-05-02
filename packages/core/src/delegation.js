@@ -179,8 +179,7 @@ export class Delegation {
     // Get links from capabilities nb
     for (const capability of ucanView.capabilities) {
       /** @type {Link[]} */
-      const links = Object.values(capability.nb || {})
-        .filter(e => Link.isLink(e))
+      const links = getLinksFromObject(capability)
 
       for (const link of links) {
         _attachedLinks.add(`${link}`)
@@ -194,8 +193,7 @@ export class Delegation {
       } else {
         /** @type {Link[]} */
         // @ts-expect-error isLink does not infer value type
-        const links = Object.values(fact)
-        .filter(e => Link.isLink(e))
+        const links = Object.values(fact).filter(e => Link.isLink(e))
 
         for (const link of links) {
           _attachedLinks.add(`${link}`)
@@ -380,7 +378,7 @@ const decode = ({ bytes }) => {
  */
 
 export const delegate = async (
-  { issuer, audience, proofs = [], attachedBlocks = new Map, ...input },
+  { issuer, audience, proofs = [], attachedBlocks = new Map(), ...input },
   options
 ) => {
   const links = []
@@ -530,6 +528,34 @@ const proofs = delegation => {
   // more than once.
   Object.defineProperty(delegation, 'proofs', { value: proofs })
   return proofs
+}
+
+/**
+ * @param {API.Capability<API.Ability, `${string}:${string}`, unknown>} obj
+ */
+function getLinksFromObject(obj) {
+  /** @type {Link[]} */
+  const links = []
+
+  /**
+   * @param {object} obj
+   */
+  function recurse(obj) {
+    for (const key in obj) {
+      // @ts-expect-error record type not inferred
+      const value = obj[key]
+      if (Link.isLink(value)) {
+        // @ts-expect-error isLink does not infer value type
+        links.push(value)
+      } else if (value && typeof value === 'object') {
+        recurse(value)
+      }
+    }
+  }
+
+  recurse(obj)
+
+  return links
 }
 
 export { Delegation as View }
