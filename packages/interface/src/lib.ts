@@ -246,7 +246,7 @@ export interface Delegation<C extends Capabilities = Capabilities>
   toJSON(): DelegationJSON<this>
   delegate(): Await<Delegation<C>>
 
-  attach(block: Block): void
+  attach(block: IPLDView): void
 }
 
 /**
@@ -549,7 +549,7 @@ export interface IssuedInvocation<C extends Capability = Capability>
   readonly proofs: Proof[]
 
   delegate(): Await<Delegation<[C]>>
-  attach(block: Block): void
+  attach(block: IPLDView): void
 }
 
 export type ServiceInvocation<

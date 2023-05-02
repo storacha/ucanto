@@ -228,18 +228,20 @@ export class Delegation {
     return data
   }
   /**
-   * Attach a block to the delegation DAG so it would be included in the
-   * block iterator.
+   * Attach blocks from IPLD view to the delegation DAG so it would be included
+   * in the block iterator.
    * ⚠️ You can only attach blocks that are referenced from the `capabilities`
    * or `facts`.
    *
-   * @param {API.Block} block
+   * @param {API.IPLDView} view
    */
-  attach(block) {
-    if (!this.attachedLinks.has(`${block.cid.link()}`)) {
-      throw new Error(`given block with ${block.cid} is not an attached link`)
+  attach(view) {
+    for (const block of view.iterateIPLDBlocks()) {
+      if (!this.attachedLinks.has(`${block.cid.link()}`)) {
+        throw new Error(`given block with ${block.cid} is not an attached link`)
+      }
+      this.blocks.set(`${block.cid}`, block)
     }
-    this.blocks.set(`${block.cid}`, block)
   }
   export() {
     return exportDAG(this.root, this.blocks, this.attachedLinks)
@@ -407,9 +409,11 @@ export const delegate = async (
   const delegation = new Delegation({ cid, bytes }, blocks)
   Object.defineProperties(delegation, { proofs: { value: proofs } })
 
-  for (const block of attachedBlocks.values()) {
-    delegation.attach(block)
-  }
+  const attached = Array.from(attachedBlocks.values())
+  attached.length && delegation.attach({
+    iterateIPLDBlocks: () => attachedBlocks.values(),
+    root: attached[0]
+  })
 
   return delegation
 }

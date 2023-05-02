@@ -306,7 +306,10 @@ test('delegation.attach block in capabiliy', async () => {
     ],
   })
 
-  ucan.attach(block)
+  ucan.attach({
+    iterateIPLDBlocks: () => [block].values(),
+    root: block
+  })
 
   const delegationBlocks = []
   for (const b of ucan.iterateIPLDBlocks()) {
@@ -334,7 +337,10 @@ test('delegation.attach block in facts', async () => {
     ]
   })
 
-  ucan.attach(block)
+  ucan.attach({
+    iterateIPLDBlocks: () => [block].values(),
+    root: block
+  })
 
   const delegationBlocks = []
   for (const b of ucan.iterateIPLDBlocks()) {
@@ -357,5 +363,8 @@ test('delegation.attach fails to attach block with not attached link', async () 
   })
 
   const block = await getBlock({ test: 'inlineBlock' })
-  assert.throws(() => ucan.attach(block))
+  assert.throws(() => ucan.attach({
+    iterateIPLDBlocks: () => [block].values(),
+    root: block
+  }))
 })
