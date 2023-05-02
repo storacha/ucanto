@@ -10,7 +10,7 @@ const addCapability = Server.capability({
   can: 'store/add',
   with: Server.URI.match({ protocol: 'did:' }),
   nb: Schema.struct({
-    link: Server.Link.match().optional(),
+    link: Server.Link.optional(),
   }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
@@ -36,7 +36,7 @@ const removeCapability = Server.capability({
   can: 'store/remove',
   with: Server.URI.match({ protocol: 'did:' }),
   nb: Schema.struct({
-    link: Server.Link.match().optional(),
+    link: Server.Link.optional(),
   }),
   derives: (claimed, delegated) => {
     if (claimed.with !== delegated.with) {
