@@ -8,54 +8,56 @@ describe.only('IPLD Schema', () => {
       size: Schema.integer(),
       commit: Schema.string(),
     })
-    Deal.IN
 
-    const DL = Schema.bytes().encoding(CBOR).refine(Deal)
-    DL.IN
-    DL.OUT
+    const cbor = Schema.bytes(CBOR)
 
-    const int = Schema.bytes().encoding(CBOR).refine(Schema.integer())
-    int.IN
-    int.OUT
+    Schema.debug(cbor)
 
-    int.from(new Uint8Array())
+    const thing = Schema.dictionary({ value: Schema.unknown() })
 
-    const a = {}
+    const DL = Schema.bytes(CBOR)
 
-    const out = await Deal.compile({
-      size: 2,
-      commit: 'a',
-    })
+    const DL2 = DL.pipe(Deal)
 
-    const Offer = Deal.array()
-    Deal.link().attach().OUT
+    const dl2 = DL2.from(new Uint8Array())
+    dl2.size
 
-    const Aggregate = Schema.struct({
-      offer: Offer.link().resolve(),
-      attachment: Offer.link().attach(),
-    })
+    // const a = {}
 
-    Offer.link().IN
-    Offer.link().attach().IN
+    // const out = await Deal.compile({
+    //   size: 2,
+    //   commit: 'a',
+    // })
 
-    const offer = Offer.from([
-      { size: 1, commit: 'a' },
-      { size: 2, commit: 'b' },
-    ])
+    // const Offer = Deal.array()
+    // Deal.link().attach().OUT
 
-    Aggregate.IN.attachment
+    // const Aggregate = Schema.struct({
+    //   offer: Offer.link().resolve(),
+    //   attachment: Offer.link().attach(),
+    // })
 
-    const attachment = await Offer.attachment(offer)
-    const aggregate = await Aggregate.compile({
-      offer, //: await Offer.attach(offer)
-      attachment,
-    })
+    // Offer.link().IN
+    // Offer.link().attach().IN
 
-    const agg = aggregate.root.data
+    // const offer = Offer.from([
+    //   { size: 1, commit: 'a' },
+    //   { size: 2, commit: 'b' },
+    // ])
 
-    agg.attachment.resolve()[0].commit
+    // Aggregate.IN.attachment
 
-    aggregate.root.data.offer.resolve()[0].commit
-    // const out = aggregate.offer.load()
+    // const attachment = await Offer.attachment(offer)
+    // const aggregate = await Aggregate.compile({
+    //   offer, //: await Offer.attach(offer)
+    //   attachment,
+    // })
+
+    // const agg = aggregate.root.data
+
+    // agg.attachment.resolve()[0].commit
+
+    // aggregate.root.data.offer.resolve()[0].commit
+    // // const out = aggregate.offer.load()
   })
 })

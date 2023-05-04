@@ -65,7 +65,10 @@ export interface Schema<
   array(): ArraySchema<Out, In>
   or<O, I>(other: Convert<O, I>): Schema<Out | O, In | I>
   and<O, I>(other: Convert<O, I>): Schema<Out & O, In & I>
-  refine<O extends Out>(schema: Convert<O, Out>): Schema<O, In>
+  refine<O extends Out>(schema: Reader<O, Out>): Schema<O, In>
+
+  // into<I>(schema: Convert<In, I>): Schema<Out, I>
+  pipe<O>(schema: Convert<O, Out>): Schema<O, In>
 
   brand<K extends string>(kind?: K): Schema<Branded<Out, K>, In>
 
@@ -114,7 +117,7 @@ export interface Schema<
   // attachment(value: I): Await<IPLDView<O>>
 
   // IN: I
-  // OUT: O
+  // OUT: Out
 }
 
 export interface PropertySchema {}
@@ -285,7 +288,7 @@ export interface NumberSchema<
 
   optional(): Schema<Out | undefined, In | undefined>
 
-  refine<Into extends Out>(convert: Convert<Into, Out>): NumberSchema<Into, In>
+  refine<Into extends Out>(convert: Reader<Into, Out>): NumberSchema<Into, In>
   constraint(check: (value: Out) => ReadResult<Out>): NumberSchema<Out, In>
 }
 
@@ -420,7 +423,7 @@ export type InferOptionalReader<R extends Reader> = R extends Reader<infer T>
 export interface StringSchema<Out extends string, In extends string = string>
   extends Schema<Out, In> {
   refine<Into extends Out>(
-    convert: Convert<Into, Out>
+    convert: Reader<Into, Out>
   ): StringSchema<Into & Out, In>
   constraint(check: (value: Out) => ReadResult<Out>): StringSchema<Out, In>
   startsWith<Prefix extends string>(

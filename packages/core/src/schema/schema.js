@@ -164,6 +164,15 @@ export class API {
   }
 
   /**
+   * @template O
+   * @param {Schema.Convert<O, Out>} to
+   * @returns {Schema.Schema<O, In>}
+   */
+  pipe(to) {
+    return pipe(this, to)
+  }
+
+  /**
    * @template {string} Kind
    * @param {Kind} [kind]
    * @returns {Schema.Schema<Schema.Branded<Out, Kind>, In>}
@@ -1421,6 +1430,45 @@ class Refine extends API {
 export const refine = (base, schema) => new Refine({ base, schema })
 
 /**
+ * @template Into
+ * @template Out
+ * @template In
+ * @extends {API<Into, In, { from: Schema.Reader<Out, In>, to: Schema.Convert<Into, Out> }>}
+ * @implements {Schema.Schema<Into, In>}
+ */
+class Pipe extends API {
+  /**
+   * @param {In} input
+   * @param {{ from: Schema.Convert<Out, In>, to: Schema.Convert<Into, Out> }} settings
+   */
+  readWith(input, { from, to }) {
+    const result = from.read(input)
+    return result.error ? result : to.read(result.ok)
+  }
+  /**
+   * @param {Into} output
+   * @param {{ from: Schema.Convert<Out, In>, to: Schema.Convert<Into, Out> }} settings
+   */
+  writeWith(output, { from, to }) {
+    const result = to.write(output)
+    return result.error ? result : from.write(result.ok)
+  }
+  toString() {
+    return `${this.settings.from}.pipe(${this.settings.to})`
+  }
+}
+
+/**
+ * @template Into
+ * @template Out
+ * @template In
+ * @param {Schema.Convert<Out, In>} from
+ * @param {Schema.Convert<Into, Out>} to
+ * @returns {Schema.Schema<Into, In>}
+ */
+export const pipe = (from, to) => new Pipe({ from, to })
+
+/**
  * @template {null|boolean|string|number} Out
  * @template {null|boolean|string|number} In
  * @extends {API<Out, In, Out>}
@@ -2182,3 +2230,12 @@ const indent = (message, indent = '  ') =>
  * @param {string} message
  */
 const li = message => indent(`- ${message}`)
+
+/**
+ * @template In, Out
+ * @param {Schema.Schema<Out, In>} schema
+ * @returns {{in:In, out:Out}}
+ */
+export const debug = schema => {
+  throw new Error('Not implemented')
+}

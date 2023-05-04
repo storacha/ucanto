@@ -238,7 +238,7 @@ test.skip('literal("foo").default("bar") throws', () => {
 })
 
 test('default on literal has default', () => {
-  const schema = Schema.literal('foo').default()
+  const schema = Schema.literal('foo').implicit()
 
   assert.deepEqual(schema.read(undefined), Schema.ok('foo'))
 })
@@ -248,7 +248,7 @@ test('literal has value field', () => {
 })
 
 test('.default().optional() is noop', () => {
-  const schema = Schema.string().default('hello')
+  const schema = Schema.string().implicit('hello')
   assert.equal(schema.optional(), schema)
 })
 
@@ -318,8 +318,8 @@ test('struct', () => {
 
 test('struct with defaults', () => {
   const Point = Schema.struct({
-    x: Schema.number().default(0),
-    y: Schema.number().default(0),
+    x: Schema.number().implicit(0),
+    y: Schema.number().implicit(0),
   })
 
   assert.deepEqual(Point.read({}), { ok: { x: 0, y: 0 } })
@@ -565,7 +565,7 @@ test('optional.default removes undefined from type', () => {
   // @ts-expect-error - Schema<string | undefined> is not assignable
   const castError = schema1
 
-  const schema2 = schema1.default('')
+  const schema2 = schema1.implicit('')
   /** @type {Schema.Schema<string>} */
   const castOk = schema2
 
@@ -574,7 +574,7 @@ test('optional.default removes undefined from type', () => {
 })
 
 test('.default("one").default("two")', () => {
-  const schema = Schema.string().default('one').default('two')
+  const schema = Schema.string().implicit('one').implicit('two')
 
   assert.equal(schema.value, 'two')
   assert.deepEqual(schema.read(undefined), { ok: 'two' })
@@ -594,7 +594,7 @@ test.skip('default throws on invalid default', () => {
 
 test('unknown with default', () => {
   assert.throws(
-    () => Schema.unknown().default(undefined),
+    () => Schema.unknown().implicit(undefined),
     /undefined is not a valid default/
   )
 })
@@ -607,12 +607,12 @@ test('default swaps undefined even if decodes to undefined', () => {
     },
   })
 
-  assert.deepEqual(schema.default('X').read(null), { ok: 'X' })
+  assert.deepEqual(schema.implicit('X').read(null), { ok: 'X' })
 })
 
 test('record defaults', () => {
   const Point = Schema.struct({
-    x: Schema.integer().default(1),
+    x: Schema.integer().implicit(1),
     y: Schema.integer().optional(),
   })
 
@@ -649,8 +649,8 @@ test('record defaults', () => {
   })
 
   const Line = Schema.struct({
-    start: Point.default({ x: 0 }),
-    end: Point.default({ x: 1, y: 3 }),
+    start: Point.implicit({ x: 0 }),
+    end: Point.implicit({ x: 1, y: 3 }),
   })
 
   assert.deepEqual(Line.create(), {
