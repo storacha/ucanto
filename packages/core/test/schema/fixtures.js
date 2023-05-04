@@ -84,8 +84,8 @@ export const fixture = ({ in: input, got = input, array, ...expect }) => ({
     ...expect.startsWithHelloEndsWithWorld,
   },
   number: { any: fail({ expect: 'number', got }), ...expect.number },
-  integer: { any: fail({ expect: 'number', got }), ...expect.integer },
-  float: { any: fail({ expect: 'number', got }), ...expect.float },
+  integer: { any: fail({ expect: 'integer', got }), ...expect.integer },
+  float: { any: fail({ expect: 'float', got }), ...expect.float },
   literal: {
     any: { any: fail({ expect: 'literal', got }) },
     ...Object.fromEntries(
@@ -188,10 +188,10 @@ export const source = [
       any: fail.at('"name"', { expect: '"Point2d"', got: 'undefined' }),
     },
     xyz: {
-      any: fail.at('"x"', { expect: 'number', got: 'undefined' }),
+      any: fail.at('"x"', { expect: 'integer', got: 'undefined' }),
     },
     intDict: {
-      any: fail.at('"0"', { expect: 'number', got: '"h"' }),
+      any: fail.at('"0"', { expect: 'integer', got: '"h"' }),
     },
     pointDict: {
       any: fail.at('0', { expect: 'name|x|y', got: '"0"' }),
@@ -344,7 +344,7 @@ export const source = [
       any: fail.at('"name"', { expect: '"Point2d"', got: 'undefined' }),
     },
     xyz: {
-      any: fail.at('"x"', { expect: 'number', got: 'undefined' }),
+      any: fail.at('"x"', { expect: 'integer', got: 'undefined' }),
     },
     dict: {
       any: pass(),
@@ -428,7 +428,7 @@ export const source = [
     unknown: { any: pass() },
     tuple: {
       strNfloat: {
-        any: fail.at(1, { expect: 'number', got: '"world"' }),
+        any: fail.at(1, { expect: 'float', got: '"world"' }),
       },
       strNstr: {
         any: pass(),
@@ -465,7 +465,7 @@ export const source = [
         any: fail.at(1, { got: 'object' }),
       },
       strNfloat: {
-        any: fail.at(1, { got: 'object', expect: 'number' }),
+        any: fail.at(1, { got: 'object', expect: 'float' }),
       },
     },
   },
@@ -552,10 +552,10 @@ export const source = [
       any: pass(),
     },
     xyz: {
-      any: fail.at('"z"', { expect: 'number', got: 'undefined' }),
+      any: fail.at('"z"', { expect: 'integer', got: 'undefined' }),
     },
     intDict: {
-      any: fail.at('"name"', { expect: 'number', got: '"Point2d"' }),
+      any: fail.at('"name"', { expect: 'integer', got: '"Point2d"' }),
     },
     dict: {
       any: pass(),
@@ -565,16 +565,16 @@ export const source = [
     in: { name: 'Point2d', x: 0, z: 0 },
     got: 'object',
     point2d: {
-      any: fail.at('"y"', { expect: 'number', got: 'undefined' }),
+      any: fail.at('"y"', { expect: 'integer', got: 'undefined' }),
     },
     unknown: {
       any: pass(),
     },
     xyz: {
-      any: fail.at('"y"', { expect: 'number', got: 'undefined' }),
+      any: fail.at('"y"', { expect: 'integer', got: 'undefined' }),
     },
     intDict: {
-      any: fail.at('"name"', { expect: 'number', got: '"Point2d"' }),
+      any: fail.at('"name"', { expect: 'integer', got: '"Point2d"' }),
     },
     pointDict: {
       any: fail.at('z', { expect: 'name|x|y', got: '"z"' }),
@@ -596,7 +596,7 @@ export const source = [
       any: pass(),
     },
     intDict: {
-      any: fail.at('"name"', { expect: 'number', got: '"Point2d"' }),
+      any: fail.at('"name"', { expect: 'integer', got: '"Point2d"' }),
     },
     dict: {
       any: pass(),
@@ -635,7 +635,7 @@ export const scenarios = fixture => [
     expect: fixture.unknown.any || fixture.any,
   },
   {
-    schema: Schema.unknown().default('DEFAULT'),
+    schema: Schema.unknown().implicit('DEFAULT'),
     expect:
       (fixture.unknown.default && fixture.unknown.default('DEFAULT')) ||
       fixture.unknown.any ||
@@ -654,7 +654,7 @@ export const scenarios = fixture => [
     expect: fixture.string.nullable || fixture.string.any || fixture.any,
   },
   {
-    schema: Schema.string().default('DEFAULT'),
+    schema: Schema.string().implicit('DEFAULT'),
     expect:
       (fixture.string.default && fixture.string.default('DEFAULT')) ||
       fixture.string.any ||
@@ -692,7 +692,7 @@ export const scenarios = fixture => [
     expect: fixture.number.nullable || fixture.number.any || fixture.any,
   },
   {
-    schema: Schema.number().default(17),
+    schema: Schema.number().implicit(17),
     expect:
       (fixture.number.default && fixture.number.default(17)) ||
       fixture.number.any ||
@@ -711,7 +711,7 @@ export const scenarios = fixture => [
     expect: fixture.integer.nullable || fixture.integer.any || fixture.any,
   },
   {
-    schema: Schema.integer().default(17),
+    schema: Schema.integer().implicit(17),
     expect:
       (fixture.integer.default && fixture.integer.default(17)) ||
       fixture.integer.any ||
@@ -761,7 +761,7 @@ export const scenarios = fixture => [
       fixture.any,
   },
   {
-    schema: Schema.array(Schema.string().default('DEFAULT')),
+    schema: Schema.array(Schema.string().implicit('DEFAULT')),
     expect:
       (fixture.array.string?.default &&
         fixture.array.string?.default('DEFAULT')) ||
@@ -796,7 +796,7 @@ export const scenarios = fixture => [
       fixture.any,
   },
   {
-    schema: Schema.literal('hello').default('hello'),
+    schema: Schema.literal('hello').implicit('hello'),
     expect:
       (fixture.literal?.hello?.default &&
         fixture.literal?.hello?.default('hello')) ||
@@ -837,7 +837,7 @@ export const scenarios = fixture => [
       fixture.any,
   },
   {
-    schema: Schema.string().or(Schema.number()).default(10),
+    schema: Schema.string().or(Schema.number()).implicit(10),
     expect:
       (fixture.stringOrNumber?.default &&
         fixture.stringOrNumber?.default(10)) ||
@@ -846,7 +846,7 @@ export const scenarios = fixture => [
       fixture.any,
   },
   {
-    schema: Schema.string().or(Schema.number()).default('test'),
+    schema: Schema.string().or(Schema.number()).implicit('test'),
     expect:
       (fixture.stringOrNumber?.default &&
         fixture.stringOrNumber?.default('test')) ||

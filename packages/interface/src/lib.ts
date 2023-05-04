@@ -49,6 +49,7 @@ import {
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
+import { LegacyLink } from 'multiformats'
 export * from './capability.js'
 export * from './transport.js'
 export type {
@@ -192,7 +193,7 @@ export interface IPLDView<T extends unknown = unknown> {
    */
   root: Block<T>
 
-  link(): Link<T>
+  link(): Link<T, number, number, UnknownLink['version']>
 
   /**
    * Returns an iterable of all the IPLD blocks that are included in this view.

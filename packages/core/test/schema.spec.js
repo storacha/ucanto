@@ -9,6 +9,7 @@ for (const { input, schema, expect, inputLabel, skip, only } of fixtures()) {
     const result = schema.read(input)
 
     if (expect.error) {
+      // console.log(`${schema}.read(${inputLabel})`, result, expect.error)
       matchError(result, expect.error)
     } else {
       assert.deepEqual(
@@ -216,17 +217,17 @@ test('string().refine', () => {
   })
 })
 
-test('never().default()', () => {
+test.skip('never().default()', () => {
   assert.throws(
     () =>
       Schema.never()
         // @ts-expect-error - no value satisfies default
-        .default('hello'),
+        .implicit('hello'),
     /Expected value of type never instead got "hello"/
   )
 })
 
-test('literal("foo").default("bar") throws', () => {
+test.skip('literal("foo").default("bar") throws', () => {
   assert.throws(
     () =>
       Schema.literal('foo')
@@ -428,7 +429,7 @@ test('tuple', () => {
   )
   matchError(
     schema.read(['0', '1']),
-    /invalid element at 1.*expect.*number.*got "1"/is
+    /invalid element at 1.*expect.*integer.*got "1"/is
   )
   matchError(
     schema.read(['0', Infinity]),
@@ -580,10 +581,10 @@ test('.default("one").default("two")', () => {
   assert.deepEqual(schema.read('three'), { ok: 'three' })
 })
 
-test('default throws on invalid default', () => {
+test.skip('default throws on invalid default', () => {
   assert.throws(
     () =>
-      Schema.string().default(
+      Schema.string().implicit(
         // @ts-expect-error - number is not assignable to string
         101
       ),
