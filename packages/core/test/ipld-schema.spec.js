@@ -4,22 +4,51 @@ import { test, assert } from './test.js'
 
 describe.only('IPLD Schema', () => {
   test('cross block references', async () => {
-    const Deal = Schema.struct({
+    const Content = Schema.bytes()
+    const DealDetail = Schema.struct({
       size: Schema.integer(),
       commit: Schema.string(),
+      content: Content.link(),
+    })
+
+    const dealLink = DealDetail.link()
+    dealDetail.from({})
+
+    Schema.debug(DealDetail).in.content
+
+    const detail = DealDetail.from({
+      size: 1,
+      commit: 'a',
+      content: Content.link().parse('baakfa'),
     })
 
     const cbor = Schema.bytes(CBOR)
+    const dealDetail = cbor.refine(DealDetail)
+    const dl = dealDetail.decode(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]))
+    dl.content
 
     Schema.debug(cbor)
 
     const thing = Schema.dictionary({ value: Schema.unknown() })
 
-    const DL = Schema.bytes(CBOR)
+    const out = Schema.dag({
+      codec: CBOR,
+    })
 
-    const DL2 = DL.pipe(Deal)
+    out.refine(DealDetail)
 
-    const dl2 = DL2.from(new Uint8Array())
+    const DL = cbor.refine(DealDetail)
+
+    const DL2 = Schema.dictionary({
+      value: Schema.unknown(),
+    }).refine(DealDetail)
+
+    const hello = Schema.string()
+      .startsWith('hello')
+      .endsWith('world')
+      .startsWith('hello ')
+
+    const dl2 = DL.from(new Uint8Array())
     dl2.size
 
     // const a = {}

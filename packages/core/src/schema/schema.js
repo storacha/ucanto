@@ -156,7 +156,8 @@ export class API {
 
   /**
    * @template {Out} O
-   * @param {Schema.Reader<O, Out>} schema
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} schema
    * @returns {Schema.Schema<O, In>}
    */
   refine(schema) {
@@ -201,6 +202,10 @@ export class API {
     })
 
     return schema
+  }
+
+  toSchema() {
+    return this
   }
 
   // /**
@@ -451,8 +456,8 @@ export const nullable = schema => new Nullable(schema)
 
 /**
  * @template O
- * @template [I=unknown]
- * @extends {API<O|undefined, I, Schema.Convert<O, I>>}
+ * @template I
+ * @extends {API<O|undefined, I|undefined, Schema.Convert<O, I>>}
  * @implements {Schema.Schema<O|undefined, I|undefined>}
  */
 class Optional extends API {
@@ -500,10 +505,10 @@ export const optional = schema => new Optional(schema)
  */
 class Implicit extends API {
   /**
-   * @returns {Schema.ImplicitSchema<Out, In>}
+   * @returns {*}
    */
   optional() {
-    return this
+    return /** @type {*} */ (this)
   }
 
   /**
@@ -573,10 +578,9 @@ export const implicit = (schema, value) => {
     throw new Error(`Value of type undefined is not a valid default`)
   }
 
-  const implicit =
-    /** @type {Schema.ImplicitSchema<O & Schema.NotUndefined<O>, I>} */ (
-      new Implicit({ convert: schema, value })
-    )
+  const implicit = /** @type {Schema.ImplicitSchema<O, I>} */ (
+    new Implicit({ convert: schema, value })
+  )
 
   return implicit
 }
@@ -801,17 +805,13 @@ class Dictionary extends API {
     return this.settings.value
   }
 
-  /**
-   *
-   * @returns {Schema.DictionarySchema<V|undefined, K, U|undefined>}
-   */
   partial() {
     const { key, value } = this.settings
     const partial = new Dictionary({
       key,
       value: optional(value),
     })
-    return partial
+    return /** @type {*} */ (partial)
   }
   toString() {
     return `dictionary(${this.settings})`
@@ -1067,19 +1067,19 @@ export const Boolean = new Scalar({
 export const boolean = () => Boolean
 
 /**
- * @template {number} O
- * @template {number} I
+ * @template {number} Out
+ * @template {number} In
  * @template [Settings=void]
- * @extends {API<O, I, Settings>}
- * @implements {Schema.NumberSchema<O, I>}
+ * @extends {API<Out, In, Settings>}
+ * @implements {Schema.NumberSchema<Out, In>}
  */
 class NumberSchema extends API {
   isInteger = globalThis.Number.isInteger
   isFinite = globalThis.Number.isFinite
 
   /**
-   * @param {(input: O) => Schema.ReadResult<O>} check
-   * @returns {Schema.NumberSchema<O, I>}
+   * @param {(input: Out) => Schema.ReadResult<Out>} check
+   * @returns {Schema.NumberSchema<Out, In>}
    */
   constraint(check) {
     return this.refine({
@@ -1114,18 +1114,19 @@ class NumberSchema extends API {
   }
 
   /**
-   * @template {O} Into
-   * @param {Schema.Convert<Into, O>} convert
-   * @returns {Schema.NumberSchema<Into, I>}
+   * @template {Out} O
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} convert
+   * @returns {Schema.NumberSchema<O, In>}
    */
   refine(convert) {
     return new RefinedNumber({ schema: this, refine: convert })
   }
 
   /**
-   * @param {I} input
+   * @param {In} input
    * @param {Settings} settings
-   * @returns {Schema.ReadResult<O>}
+   * @returns {Schema.ReadResult<Out>}
    */
   readWith(input, settings) {
     return typeof input === 'number'
@@ -1144,24 +1145,25 @@ export const number = () => Number
 /**
  * @template {number} Out
  * @template {number} In
- * @template {Out} Into
- * @extends {NumberSchema<Into, In, {schema: Schema.Convert<Out, In>, refine:Schema.Reader<Into, Out>}>}
- * @implements {Schema.NumberSchema<Into, In>}
+ * @template {Out} O
+ * @template {Out} I
+ * @extends {NumberSchema<O, In, {schema: Schema.Convert<Out, In>, refine:Schema.Reader<O, I>}>}
+ * @implements {Schema.NumberSchema<O, In>}
  */
 class RefinedNumber extends NumberSchema {
   /**
    * @param {In} input
-   * @param {{schema: Schema.Convert<Out, In>, refine: Schema.Convert<Into, Out> } } settings
-   * @returns {Schema.ReadResult<Into>}
+   * @param {{schema: Schema.Convert<Out, In>, refine: Schema.Convert<O, I> } } settings
+   * @returns {Schema.ReadResult<O>}
    */
   readWith(input, { schema, refine }) {
     const result = schema.read(input)
-    return result.error ? result : refine.read(result.ok)
+    return result.error ? result : refine.read(/** @type {I} */ (result.ok))
   }
 
   /**
-   * @param {Into} output
-   * @param {{schema: Schema.Convert<Out, In>, refine: Schema.Convert<Into, Out> } } settings
+   * @param {O} output
+   * @param {{schema: Schema.Convert<Out, In>, refine: Schema.Convert<O, I> } } settings
    */
   writeWith(output, { schema, refine }) {
     const result = refine.write(output)
@@ -1241,9 +1243,10 @@ class StringSchema extends API {
   }
 
   /**
-   * @template {Out} Onto
-   * @param {Schema.Convert<Onto, Out>} schema
-   * @returns {Schema.StringSchema<Onto & Out, In>}
+   * @template {Out} O
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} schema
+   * @returns {Schema.StringSchema<O, In>}
    */
   refine(schema) {
     const refined = new RefinedString({
@@ -1251,7 +1254,7 @@ class StringSchema extends API {
       schema,
     })
 
-    return /** @type {Schema.StringSchema<Onto, In>} */ (refined)
+    return /** @type {Schema.StringSchema<O, In>} */ (refined)
   }
 
   /**
@@ -1269,14 +1272,25 @@ class StringSchema extends API {
    * @param {Prefix} prefix
    */
   startsWith(prefix) {
-    return this.refine(startsWith(prefix))
+    const constraint =
+      /** @type {Schema.Convert<Out & `${Prefix}${string}`, Out>} */ (
+        startsWith(prefix)
+      )
+
+    return this.refine(constraint)
   }
+
   /**
    * @template {string} Suffix
    * @param {Suffix} suffix
    */
   endsWith(suffix) {
-    return this.refine(endsWith(suffix))
+    const constraint =
+      /** @type {Schema.Convert<Out & `${string}${Suffix}`, Out>} */ (
+        endsWith(suffix)
+      )
+
+    return this.refine(constraint)
   }
   toString() {
     return `string()`
@@ -1284,32 +1298,32 @@ class StringSchema extends API {
 }
 
 /**
- * @template {string} Into
  * @template {string} Out
  * @template {string} In
- * @extends {StringSchema<Into & Out, In, {base:Schema.Convert<Out, In>, schema:Schema.Reader<Into, Out>}>}
- * @implements {Schema.StringSchema<Into & Out, In>}
+ * @template {Out} O
+ * @template {Out} I
+ * @extends {StringSchema<O, In, {base:Schema.Convert<Out, In>, schema:Schema.Convert<O, I>}>}
+ * @implements {Schema.StringSchema<O, In>}
  */
 class RefinedString extends StringSchema {
   /**
    * @param {In} input
-   * @param {{base:Schema.Reader<Out, In>, schema:Schema.Reader<Into, Out>}} settings
-   * @returns {Schema.ReadResult<Out & Into>}
+   * @param {{base:Schema.Reader<Out, In>, schema:Schema.Reader<O, I>}} settings
+   * @returns {Schema.ReadResult<O>}
    */
   readWith(input, { base, schema }) {
     const result = base.read(input)
-    return result.error
-      ? result
-      : /** @type {Schema.ReadResult<Out & Into>} */ (schema.read(result.ok))
+    return result.error ? result : schema.read(/** @type {I} */ (result.ok))
   }
 
   /**
-   * @param {Into & Out} output
-   * @param {{base:Schema.Writer<Out, In>, schema:Schema.Reader<Into, Out>}} settings
+   * @param {O} output
+   * @param {{base:Schema.Writer<Out, In>, schema:Schema.Writer<O, I>}} settings
    * @returns {Schema.ReadResult<In>}
    */
   writeWith(output, { base, schema }) {
-    return base.write(output)
+    const result = schema.write(output)
+    return result.error ? result : base.write(result.ok)
   }
 
   toString() {
@@ -1353,7 +1367,7 @@ class StartsWith extends API {
  * @template {string} Prefix
  * @template {string} Input
  * @param {Prefix} prefix
- * @returns {Schema.Schema<`${Prefix}${string}` & Input, Input>}
+ * @returns {Schema.Schema<Input & `${Prefix}${string}`, Input>}
  */
 export const startsWith = prefix => new StartsWith(prefix)
 
@@ -1392,27 +1406,29 @@ export const endsWith = suffix => new EndsWith(suffix)
 
 /**
  * @template Out
- * @template {Out} Into
+ * @template {Out} O
+ * @template {Out} I
  * @template In
- * @extends {API<Into & Out, In, { base: Schema.Reader<Out, In>, schema: Schema.Reader<Into, Out> }>}
- * @implements {Schema.Schema<Into & Out, In>}
+ * @extends {API<O, In, { base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }>}
+ * @implements {Schema.Schema<O, In>}
  */
 
 class Refine extends API {
   /**
    * @param {In} input
-   * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Reader<Into, Out> }} settings
+   * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }} settings
    */
   readWith(input, { base, schema }) {
     const result = base.read(input)
-    return result.error ? result : schema.read(result.ok)
+    return result.error ? result : schema.read(/** @type {I} */ (result.ok))
   }
   /**
-   * @param {Into & Out} output
-   * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Reader<Into, Out> }} settings
+   * @param {O} output
+   * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }} settings
    */
   writeWith(output, { base, schema }) {
-    return base.write(output)
+    const result = schema.write(output)
+    return result.error ? result : base.write(/** @type {Out} */ (result.ok))
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
@@ -1420,12 +1436,13 @@ class Refine extends API {
 }
 
 /**
+ * @template {Out} O
+ * @template {Out} I
  * @template Out
- * @template {Out} Into
  * @template In
  * @param {Schema.Convert<Out, In>} base
- * @param {Schema.Reader<Into, Out>} schema
- * @returns {Schema.Schema<Into, In>}
+ * @param {Schema.Convert<O, I>} schema
+ * @returns {Schema.Schema<O, In>}
  */
 export const refine = (base, schema) => new Refine({ base, schema })
 
@@ -1433,7 +1450,7 @@ export const refine = (base, schema) => new Refine({ base, schema })
  * @template Into
  * @template Out
  * @template In
- * @extends {API<Into, In, { from: Schema.Reader<Out, In>, to: Schema.Convert<Into, Out> }>}
+ * @extends {API<Into, In, { from: Schema.Convert<Out, In>, to: Schema.Convert<Into, Out> }>}
  * @implements {Schema.Schema<Into, In>}
  */
 class Pipe extends API {
@@ -1654,7 +1671,6 @@ class Struct extends API {
  * @template {null|boolean|string|number} T
  * @template {{[key:string]: T|Schema.Convert}} U
  * @template {{[K in keyof U]: U[K] extends Schema.Convert ? U[K] : Schema.Convert<U[K] & T>}} Members
- * @template [I=unknown]
  * @param {U} fields
  * @returns {Schema.StructSchema<Members>}
  */
@@ -1680,7 +1696,7 @@ export const struct = fields => {
     }
   }
 
-  return new Struct({ shape: /** @type {Members} */ (shape) })
+  return /** @type {*} */ (new Struct({ shape: shape }))
 }
 
 /**
@@ -1723,10 +1739,29 @@ class RawBytes extends API {
       return typeError({ expect: 'Uint8Array', actual: input })
     }
   }
+
+  /**
+   * @template {Uint8Array} O
+   * @template {Uint8Array} I
+   * @param {Schema.Convert<O, I>} into
+   * @returns {Schema.BytesSchema<O, typeof this.code>}
+   */
+  refine(into) {
+    const codec = /** @type {Schema.BlockCodec<0x55, * & I>} */ (this)
+    return new ByteView({ codec, convert: into })
+  }
 }
 
 /** @type {Schema.BytesSchema} */
 export const Bytes = new RawBytes()
+
+/**
+ * @type {Schema.Convert<*>}
+ */
+const direct = {
+  read: input => input,
+  write: output => output,
+}
 
 /**
  * @template {Schema.BlockCodec<number, any>} [Codec=import('multiformats/codecs/raw')]
@@ -1734,17 +1769,18 @@ export const Bytes = new RawBytes()
  * @returns {Schema.BytesSchema<ReturnType<Codec['decode']> & ({} | null), Schema.MulticodecCode<Codec['code'], Codec['name']>>}
  */
 export const bytes = codec =>
-  /** @type {*} */ (codec ? new ByteView(codec) : Bytes)
+  /** @type {*} */ (codec ? new ByteView({ codec, convert: direct }) : Bytes)
 
 /**
- * @template {{}|null} Out
+ * @template {{}|null} Model
+ * @template {Model} Out
  * @template {Schema.MulticodecCode} Code
- * @extends {API<Out, Schema.ByteView<Out>, Schema.BlockCodec<Code, Out>>}
+ * @extends {API<Out, Schema.ByteView<Model>, Schema.ByteSchemaSettings<Model, Out, Code>>}
  * @implements {Schema.BytesSchema<Out, Code>}
  */
 class ByteView extends API {
   get codec() {
-    return this.settings
+    return this.settings.codec
   }
   get name() {
     return this.codec.name
@@ -1756,22 +1792,36 @@ class ByteView extends API {
    * @param {Out} data
    */
   encode(data) {
-    return this.codec.encode(data)
+    const { codec, convert } = this.settings
+    const model = convert.write(data)
+    if (model.error) {
+      throw model.error
+    } else {
+      return /** @type {Schema.ByteView<Out>} */ (codec.encode(model.ok))
+    }
   }
   /**
    * @param {Schema.ByteView<Out>} bytes
    */
   decode(bytes) {
-    return this.codec.decode(bytes)
+    const { codec, convert } = this.settings
+    const model = codec.decode(bytes)
+    const result = convert.read(model)
+    if (result.error) {
+      throw result.error
+    } else {
+      return result.ok
+    }
   }
   /**
    * @param {Uint8Array} input
-   * @param {Schema.BlockCodec<Code, Out>} codec
+   * @param {Schema.ByteSchemaSettings<Model, Out, Code>} settings
    * @returns {Schema.ReadResult<Out>}
    */
-  readWith(input, codec) {
+  readWith(input, { codec, convert }) {
     try {
-      return { ok: codec.decode(input) }
+      const model = codec.decode(input)
+      return convert.read(model)
     } catch (cause) {
       return { error: /** @type {Error} */ (cause) }
     }
@@ -1779,14 +1829,114 @@ class ByteView extends API {
   /**
    *
    * @param {Out} output
-   * @param {Schema.BlockCodec<Code, Out>} codec
+   * @param {Schema.ByteSchemaSettings<Model, Out, Code>} settings
+   * @returns {Schema.ReadResult<Schema.ByteView<Out>>}
    */
-  writeWith(output, codec) {
+  writeWith(output, { codec, convert }) {
     try {
-      return { ok: codec.encode(output) }
+      const result = convert.write(output)
+      if (result.error) {
+        throw result.error
+      }
+      return {
+        ok: /** @type {Schema.ByteView<Out>} */ (codec.encode(result.ok)),
+      }
     } catch (cause) {
       return { error: /** @type {Error} */ (cause) }
     }
+  }
+
+  /**
+   * @template {Out} O
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} into
+   * @returns {Schema.BytesSchema<O, Code>}
+   */
+  refine(into) {
+    const { codec, convert: from } = this.settings
+    const convert =
+      from === direct
+        ? // if convertor is direct, we don't need to compose
+          /** @type {Schema.Convert<O, * & Model>} */ (into)
+        : pipe(/** @type {Schema.Convert<* & I, Model>} */ (from), into)
+
+    return new ByteView({
+      codec,
+      convert,
+    })
+  }
+}
+
+/**
+ * @template {{}|null} T
+ * @param {object} options
+ * @param {Schema.BlockCodec<number, any>} options.codec
+ * @returns {Schema.Schema<T, { root: Schema.Link, store: Map<string, Schema.Block>}>}
+ */
+export const dag = options => {
+  throw new Error('Not implemented')
+}
+
+/**
+ * @template {unknown} T
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @implements {Schema.Linked<T, Code, Alg, V>}
+ */
+class Linked {
+  /**
+   * @param {Schema.Link<T, Code, Alg, V>} cid
+   */
+  constructor(cid) {
+    this.cid = cid
+    this['/'] = cid
+  }
+  /**
+   * @param {Schema.BlockStore} [store]
+   * @returns {Schema.ResolvedLink<T, Code, Alg, V>}
+   */
+  resolve(store) {
+    throw new Error('Not implemented')
+  }
+  get version() {
+    return this.cid.version
+  }
+  get code() {
+    return this.cid.code
+  }
+  get multihash() {
+    return this.cid.multihash
+  }
+  get byteOffset() {
+    return this.cid.byteOffset
+  }
+  get byteLength() {
+    return this.cid.byteLength
+  }
+  get bytes() {
+    return this.cid.bytes
+  }
+  link() {
+    return this.cid
+  }
+  /**
+   * @param {unknown} other
+   * @returns {other is Schema.Link<T, Code, Alg, V>}
+   */
+  equals(other) {
+    return this.cid.equals(other)
+  }
+  /**
+   * @template {string} Prefix
+   * @param {Schema.MultibaseEncoder<Prefix>} [base]
+   * @returns
+   */
+  toString(base) {
+    return this.cid.toString(base)
+  }
+  toV1() {
+    return this.cid.toV1()
   }
 }
 
@@ -1809,7 +1959,7 @@ class ByteView extends API {
  * @template {number} Code
  * @template {number} Alg
  * @template {1|0} Version
- * @extends {API<Schema.Link<Out, Code, Alg, Version>, In, LinkSettings<Out, Code, Alg, Version>>}
+ * @extends {API<Schema.Linked<Out, Code, Alg, Version>, In, LinkSettings<Out, Code, Alg, Version>>}
  * @implements {Schema.LinkSchema<Out, In, Code, Alg, Version>}
  */
 class LinkSchema extends API {
@@ -1817,7 +1967,7 @@ class LinkSchema extends API {
    *
    * @param {unknown} cid
    * @param {LinkSettings<Out, Code, Alg, Version>} settings
-   * @returns {Schema.ReadResult<Schema.Link<Out, Code, Alg, Version>>}
+   * @returns {Schema.ReadResult<Schema.Linked<Out, Code, Alg, Version>>}
    */
   readWith(cid, { code, multihash = {}, version }) {
     if (cid == null) {
@@ -1860,7 +2010,7 @@ class LinkSchema extends API {
         }
 
         return {
-          ok: /** @type {Schema.Link<Out, any, any, any>} */ (cid),
+          ok: /** @type {Schema.Linked<*, *, *, *>} */ (new Linked(cid)),
         }
       }
     }
@@ -1885,7 +2035,7 @@ class LinkSchema extends API {
 }
 
 /** @type {Schema.LinkSchema<unknown, Schema.Link<unknown, number, number, 0|1>, number, number, 0|1>}  */
-export const Link = new LinkSchema({})
+const Link = new LinkSchema({})
 
 /**
  * @template {number} Code

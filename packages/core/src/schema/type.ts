@@ -13,6 +13,7 @@ import {
   MultihashHasher,
   MulticodecCode,
   MultibaseDecoder,
+  MultibaseEncoder,
   UnknownLink,
   IPLDView,
   IPLDViewBuilder,
@@ -22,6 +23,7 @@ import {
 
 export type {
   Link,
+  UnknownLink,
   BlockStore,
   Block,
   BlockCodec,
@@ -30,6 +32,7 @@ export type {
   MultihashHasher,
   MulticodecCode,
   MultibaseDecoder,
+  MultibaseEncoder,
   ByteView,
   IPLDView,
   IPLDViewBuilder,
@@ -38,11 +41,11 @@ export type {
 }
 
 export interface Reader<O = unknown, I = unknown, X extends Error = Error> {
-  read(input: I): Result<O, X>
+  read: (input: I) => Result<O, X>
 }
 
 export interface Writer<O = unknown, I = unknown, X extends Error = Error> {
-  write(output: O): Result<I, X>
+  write: (output: O) => Result<I, X>
 }
 
 export type { Error, Result }
@@ -65,7 +68,9 @@ export interface Schema<
   array(): ArraySchema<Out, In>
   or<O, I>(other: Convert<O, I>): Schema<Out | O, In | I>
   and<O, I>(other: Convert<O, I>): Schema<Out & O, In & I>
-  refine<O extends Out>(schema: Reader<O, Out>): Schema<O, In>
+  refine<O extends Out, I extends Out>(schema: Convert<O, I>): Schema<O, In>
+
+  // lift: <O extends Out, X extends Out>(from: Convert<O, X>) => Schema<O, In>
 
   // into<I>(schema: Convert<In, I>): Schema<Out, I>
   pipe<O>(schema: Convert<O, Out>): Schema<O, In>
@@ -122,14 +127,27 @@ export interface Schema<
 
 export interface PropertySchema {}
 
+export interface ByteSchemaSettings<
+  Model,
+  Out extends Model,
+  Code extends MulticodecCode
+> {
+  codec: BlockCodec<Code, Model>
+  convert: Convert<Out, Model>
+}
+
 export interface BytesSchema<
-  Out extends {} | null = Uint8Array,
+  Out = Uint8Array,
   Code extends MulticodecCode = MulticodecCode<0x55, 'raw'>
 > extends Schema<Out, Uint8Array> {
   code: Code
   name: string
   encode(value: Out): ByteView<Out>
   decode(value: ByteView<Out>): Out
+
+  refine<O extends Out, I extends Out>(
+    schema: Convert<O, I>
+  ): BytesSchema<O, Code>
 }
 
 export type ToBlock<T> = {
@@ -149,14 +167,14 @@ export interface Linked<
   Alg extends MulticodecCode = MulticodecCode,
   V extends UnknownLink['version'] = 1
 > extends Link<T, Code, Alg, V> {
-  resolve(): ResolvedLink<T, Code, Alg, V>
+  resolve(store?: BlockStore): ResolvedLink<T, Code, Alg, V>
 }
 
 export interface CompiledView<O> extends IPLDView<O> {
   root: Required<Block<O>>
 }
 
-type ResolvedLink<
+export type ResolvedLink<
   T extends unknown = unknown,
   Code extends MulticodecCode = MulticodecCode,
   Alg extends MulticodecCode = MulticodecCode,
@@ -193,7 +211,7 @@ export interface LinkSchema<
   Code extends MulticodecCode,
   Alg extends MulticodecCode,
   V extends UnknownLink['version']
-> extends Schema<Link<Out, Code, Alg, V>, In> {
+> extends Schema<Linked<Out, Code, Alg, V>, In> {
   link(): never
 
   // attach(): AttachmentSchema<O, IPLDView<O>, Code, Alg, V>
@@ -201,7 +219,7 @@ export interface LinkSchema<
   parse<Prefix extends string>(
     source: string,
     base?: MultibaseDecoder<Prefix>
-  ): Link<Out, Code, Alg, V>
+  ): Linked<Out, Code, Alg, V>
 }
 
 export interface AttachmentSchema<
@@ -226,10 +244,9 @@ export interface CreateView<T, V> {
 }
 
 export interface ImplicitSchema<O, I>
-  extends Schema<Exclude<O, undefined>, I | undefined> {
+  extends Omit<Schema<Exclude<O, undefined>, I | undefined>, 'optional'> {
   readonly value: Exclude<O, undefined>
   optional(): ImplicitSchema<O, I>
-  // nullable(): ImplicitSchema<O | null, I | null>
 }
 
 export type NotUndefined<T extends unknown = unknown> = Exclude<T, undefined>
@@ -255,7 +272,10 @@ export interface MapRepresentation<
 }
 
 export interface DictionarySchema<V, K extends string, U>
-  extends MapRepresentation<Dictionary<K, V>, Dictionary<K, U>> {
+  extends Omit<
+    MapRepresentation<Dictionary<K, V>, Dictionary<K, U>>,
+    'partial'
+  > {
   key: Reader<K, string>
   value: Convert<V, U>
 
@@ -288,7 +308,9 @@ export interface NumberSchema<
 
   optional(): Schema<Out | undefined, In | undefined>
 
-  refine<Into extends Out>(convert: Reader<Into, Out>): NumberSchema<Into, In>
+  refine<O extends Out, I extends Out>(
+    convert: Convert<O, I>
+  ): NumberSchema<O, In>
   constraint(check: (value: Out) => ReadResult<Out>): NumberSchema<Out, In>
 }
 
@@ -422,9 +444,9 @@ export type InferOptionalReader<R extends Reader> = R extends Reader<infer T>
 
 export interface StringSchema<Out extends string, In extends string = string>
   extends Schema<Out, In> {
-  refine<Into extends Out>(
-    convert: Reader<Into, Out>
-  ): StringSchema<Into & Out, In>
+  refine<I extends Out, O extends Out>(
+    convert: Reader<O, I>
+  ): StringSchema<O, In>
   constraint(check: (value: Out) => ReadResult<Out>): StringSchema<Out, In>
   startsWith<Prefix extends string>(
     prefix: Prefix
