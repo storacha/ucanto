@@ -38,6 +38,7 @@ export type {
   IPLDViewBuilder,
   BuildOptions,
   Phantom,
+  Await,
 }
 
 export interface Reader<O = unknown, I = unknown, X extends Error = Error> {
@@ -55,6 +56,18 @@ export type ReadResult<T, X extends Error = Error> = Result<T, X>
 export interface Convert<O = unknown, I = unknown, X extends Error = Error>
   extends Reader<O, I, X>,
     Writer<O, I, X> {}
+
+export interface From<Self, T> {
+  from(value: T): Self
+}
+
+export interface To<Self, T> {
+  to(value: Self): T
+}
+
+export interface Into<Self, T> extends From<Self, T>, To<Self, T> {}
+
+export interface BlockLoader extends Reader<Block, Link> {}
 
 export interface Schema<
   Out extends unknown = unknown,
@@ -88,20 +101,24 @@ export interface Schema<
     Alg extends MulticodecCode,
     V extends UnknownLink['version']
   >(options?: {
-    codec?: BlockCodec<Code, unknown>
+    codec?: BlockCodec<Code, In>
     version?: V
     hasher?: MultihashHasher<Alg>
-  }): LinkSchema<Out, Link<Out, Code, Alg, V> | IPLDView<Out>, Code, Alg, V>
+  }): LinkSchema<Out, Code, Alg, V>
 
-  // attachment<
+  // attach<
   //   Code extends MulticodecCode,
   //   Alg extends MulticodecCode,
   //   V extends UnknownLink['version']
   // >(options?: {
-  //   codec?: BlockCodec<Code, unknown>
-  //   version?: V
+  //   codec?: BlockCodec<Code, In>
   //   hasher?: MultihashHasher<Alg>
-  // }): AttachmentSchema<O, Code, Alg, V>
+  //   version?: V
+  // }): AttachmentSchema<Out, Code, Alg, V>
+
+  // with(context: { store: BlockStore }): Schema<Out, In>
+
+  // asDAG(): Schema<Out, { input: In; store: BlockStore }>
 
   // codec: BlockCodec<number, unknown>
   // hasher: MultihashHasher<number>
@@ -148,6 +165,34 @@ export interface BytesSchema<
   refine<O extends Out, I extends Out>(
     schema: Convert<O, I>
   ): BytesSchema<O, Code>
+
+  create(value: Out): BlockView<Out, Code>
+}
+
+export interface BlockView<
+  T extends unknown,
+  Code extends MulticodecCode = MulticodecCode
+> {
+  code: Code
+  encode(): ByteView<T>
+  decode(): T
+  embed(): Linked<T, Code, 0x0, 1>
+
+  detach<
+    Alg extends MulticodecCode = MulticodecCode<0x12, 'sha2-256'>
+  >(options: {
+    hasher?: MultihashHasher<Alg>
+  }): Await<DAGView<T, Code, Alg>>
+}
+
+export interface DAGView<
+  T extends unknown,
+  Code extends MulticodecCode = MulticodecCode,
+  Alg extends MulticodecCode = MulticodecCode,
+  V extends UnknownLink['version'] = 1
+> extends IPLDView<T> {
+  decode(): T
+  link(): Link<T, Code, Alg, V>
 }
 
 export type ToBlock<T> = {
@@ -186,15 +231,6 @@ export type ResolvedLink<
 //   attach(): Await<Attachment<O>>
 // }
 
-// export interface AttachmentSchema<
-//   T extends unknown = unknown,
-//   Code extends MulticodecCode = MulticodecCode,
-//   Alg extends MulticodecCode = MulticodecCode,
-//   V extends UnknownLink['version'] = 1
-// > extends Schema<Attachment<T, Code, Alg, V>> {
-//   attach(source: T): Await<Attachment<T, Code, Alg, V>>
-// }
-
 // export interface Attachment<
 //   T extends unknown = unknown,
 //   Code extends MulticodecCode = MulticodecCode,
@@ -207,11 +243,10 @@ export type ResolvedLink<
 
 export interface LinkSchema<
   Out extends unknown,
-  In extends unknown,
   Code extends MulticodecCode,
   Alg extends MulticodecCode,
   V extends UnknownLink['version']
-> extends Schema<Linked<Out, Code, Alg, V>, In> {
+> extends Schema<Linked<Out, Code, Alg, V>, IntoLink<Out>> {
   link(): never
 
   // attach(): AttachmentSchema<O, IPLDView<O>, Code, Alg, V>
@@ -222,13 +257,16 @@ export interface LinkSchema<
   ): Linked<Out, Code, Alg, V>
 }
 
+export interface IntoLink<T> {
+  link(): Link<T, MulticodecCode, MulticodecCode, UnknownLink['version']>
+}
+
 export interface AttachmentSchema<
   O extends unknown,
-  I extends unknown,
   Code extends MulticodecCode,
   Alg extends MulticodecCode,
   V extends UnknownLink['version']
-> extends Schema<Linked<O, Code, Alg, V>, I> {}
+> extends Schema<Linked<O, Code, Alg, V>, IPLDView<O>> {}
 
 export interface IPLDViewSource {
   root: Block

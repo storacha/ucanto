@@ -1,9 +1,74 @@
 import * as Schema from '../src/schema.js'
-import { CBOR } from '../src/dag.js'
+import { isLink } from '../src/lib.js'
+import { CBOR, identity, sha256 } from '../src/dag.js'
+import { CAR } from '../src/lib.js'
 import { test, assert } from './test.js'
 
 describe.only('IPLD Schema', () => {
-  test('cross block references', async () => {
+  test('link schema', async () => {
+    const Point = Schema.struct({
+      x: Schema.integer(),
+      y: Schema.integer(),
+    })
+
+    const Line = Schema.struct({
+      start: Point.link({ codec: CBOR }),
+      end: Point.link({ codec: CBOR }),
+    })
+
+    const cbor = Schema.bytes(CBOR)
+
+    const line = Line.from({
+      start: cbor
+        .refine(Point)
+        .create({
+          x: 1,
+          y: 2,
+        })
+        .embed(),
+      end: cbor
+        .refine(Point)
+        .create({
+          x: 0,
+          y: 0,
+        })
+        .embed(),
+    })
+
+    const car = Schema.bytes(CAR)
+
+    assert.ok(isLink(line.start), 'is a link')
+    assert.ok(isLink(line.end), 'is a link')
+    assert.equal(line.start.code, CBOR.code, 'is a CBOR link')
+    assert.equal(line.start.multihash.code, identity.code, 'is a CBOR link')
+
+    assert.deepEqual(line.start.resolve(), { x: 1, y: 2 })
+    assert.deepEqual(line.end.resolve(), { x: 0, y: 0 })
+  })
+
+  test.skip('attachment code', async () => {
+    const Point = Schema.struct({
+      x: Schema.integer(),
+      y: Schema.integer(),
+    })
+
+    const Line = Schema.struct({
+      start: Point.attach(),
+      end: Point.attach(),
+    })
+    const $Point = Schema.bytes(CBOR).refine(Point)
+
+    const line = Line.from({
+      start: await $Point.create({ x: 1, y: 2 }).detach({ hasher: sha256 }),
+      end: await $Point.create({ x: 1, y: 2 }).detach({ hasher: sha256 }),
+    })
+
+    assert.ok(isLink(line.start), 'is a link')
+    assert.ok(isLink(line.end), 'is a link')
+    assert.equal(line.start.code, CBOR.code, 'is a CBOR link')
+    assert.equal(line.start.multihash.code, identity.code, 'is a CBOR link')
+  })
+  test.skip('cross block references', async () => {
     const Content = Schema.bytes()
     const DealDetail = Schema.struct({
       size: Schema.integer(),

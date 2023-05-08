@@ -9,8 +9,8 @@ import {
   base32,
 } from '../link.js'
 export * from './type.js'
-import * as CBOR from '../cbor.js'
 import { sha256 } from 'multiformats/hashes/sha2'
+import { identity } from 'multiformats/hashes/identity'
 
 export { ok }
 /**
@@ -187,18 +187,18 @@ export class API {
    * @template {number} [Alg=number]
    * @template {1|0} [Version=0|1]
    * @param {{
-   * codec?: Schema.BlockCodec<Code, unknown>
+   * codec: Schema.BlockCodec<Code, In>
    * hasher?: Schema.MultihashHasher<Alg>
    * version?: Version
    * }} options
-   * @returns {Schema.LinkSchema<Out, Schema.Link<Out, Code, Alg, Version> | Schema.IPLDView<Out>, Code, Alg, Version>}
+   * @returns {Schema.LinkSchema<Out, Code, Alg, Version>}
    */
-  link({ codec, hasher, version } = {}) {
+  link({ codec, hasher, version }) {
     const schema = link({
-      ...(codec ? { code: codec.code } : {}),
+      codec,
       ...(hasher ? { multihash: { code: hasher.code } } : {}),
       ...(version ? { version } : {}),
-      schema: /** @type {Schema.Schema<Out, unknown>} */ (this),
+      schema: /** @type {Schema.Schema<Out, In>} */ (this),
     })
 
     return schema
@@ -1566,6 +1566,44 @@ class Struct extends API {
     return { ok: struct }
   }
 
+  /**
+   * @param {Schema.InferStruct<Members>} output
+   * @param {{shape: Members}} settings
+   */
+
+  writeWith(output, { shape }) {
+    if (typeof output != 'object' || output === null || Array.isArray(output)) {
+      return typeError({
+        expect: 'object',
+        actual: output,
+      })
+    }
+
+    const source = /** @type {{[K in keyof Members]: unknown}} */ (output)
+
+    const input =
+      /** @type {{[K in keyof Members]: Schema.InferInput<Members[K]>}} */ ({})
+    const entries =
+      /** @type {{[K in keyof Members]: [K & string, Members[K]]}[keyof Members][]} */ (
+        Object.entries(shape)
+      )
+
+    for (const [at, writer] of entries) {
+      const result = writer.read(source[at])
+      if (result.error) {
+        return memberError({ at, cause: result.error })
+      }
+      // skip undefined because they mess up CBOR and are generally useless.
+      else if (result.ok !== undefined) {
+        input[at] = /** @type {Schema.InferInput<Members[typeof at]>} */ (
+          result.ok
+        )
+      }
+    }
+
+    return { ok: input }
+  }
+
   partial() {
     const shape = Object.fromEntries(
       Object.entries(this.shape).map(([key, value]) => [key, optional(value)])
@@ -1750,6 +1788,17 @@ class RawBytes extends API {
     const codec = /** @type {Schema.BlockCodec<0x55, * & I>} */ (this)
     return new ByteView({ codec, convert: into })
   }
+
+  /**
+   * @param {Uint8Array} input
+   */
+  create(input) {
+    return new BlockView({
+      codec: this,
+      data: input,
+      bytes: input,
+    })
+  }
 }
 
 /** @type {Schema.BytesSchema} */
@@ -1865,8 +1914,99 @@ class ByteView extends API {
       convert,
     })
   }
+
+  /**
+   * @param {Out} data
+   * @returns {Schema.BlockView<Out, Code>}
+   */
+  create(data) {
+    return new BlockView({
+      codec: this,
+      data,
+      bytes: this.encode(data),
+    })
+  }
 }
 
+/**
+ * @template {unknown} T
+ * @template {Schema.MulticodecCode} Code
+ * @implements {Schema.BlockView<T, Code>}
+ */
+class BlockView {
+  /**
+   * @param {object} options
+   * @param {Schema.BlockCodec<Code, T>} options.codec
+   * @param {T} options.data
+   * @param {Schema.ByteView<T>} options.bytes
+   */
+  constructor({ codec, data, bytes }) {
+    this.codec = codec
+    this.data = data
+    this.bytes = bytes
+  }
+  encode() {
+    return this.bytes
+  }
+  decode() {
+    return this.data
+  }
+  get code() {
+    return this.codec.code
+  }
+  /**
+   * @returns {Schema.Linked<T, Code, typeof identity.code, 1>}
+   */
+  embed() {
+    return new Linked({
+      link: createLink(this.code, identity.digest(this.bytes)),
+      codec: this.codec,
+    })
+  }
+
+  /**
+   * @template {Schema.MulticodecCode} Alg
+   * @param {object} options
+   * @param {Schema.MultihashHasher<Alg>} options.hasher
+   * @returns {Promise<Schema.DAGView<T, Code, Alg>>}
+   */
+  async detach({ hasher = /** @type {*} */ (sha256) }) {
+    const { bytes, data } = this
+    const digest = await hasher.digest(bytes)
+    /** @type {Schema.Link<T, Code, Alg, 1>} */
+    const cid = createLink(this.code, digest)
+    return new DAGView({ root: { bytes, data, cid } })
+  }
+}
+
+/**
+ * @template {unknown} T
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ */
+class DAGView {
+  /**
+   * @param {object} source
+   * @param {Required<Schema.Block<T, Code, Alg, V>>} source.root
+   * @param {Schema.BlockStore} [source.store]
+   */
+  constructor({ root, store = emptyStore }) {
+    this.root = root
+    this.store = store
+  }
+  decode() {
+    return this.root.data
+  }
+  link() {
+    return this.root.cid
+  }
+  *iterateIPLDBlocks() {
+    yield this.root
+  }
+}
+
+const emptyStore = Object.freeze(new Map())
 /**
  * @template {{}|null} T
  * @param {object} options
@@ -1878,26 +2018,47 @@ export const dag = options => {
 }
 
 /**
- * @template {unknown} T
+ * @template {unknown} Out
+ * @template {unknown} In
  * @template {Schema.MulticodecCode} Code
  * @template {Schema.MulticodecCode} Alg
  * @template {Schema.UnknownLink['version']} V
- * @implements {Schema.Linked<T, Code, Alg, V>}
+ * @implements {Schema.Linked<Out, Code, Alg, V>}
  */
 class Linked {
   /**
-   * @param {Schema.Link<T, Code, Alg, V>} cid
+   * @param {object} source
+   * @param {Schema.Link<Out, Code, Alg, V>} source.link
+   * @param {Schema.BlockCodec<Code, In>} source.codec
+   * @param {Schema.BlockStore} [source.store]
    */
-  constructor(cid) {
-    this.cid = cid
-    this['/'] = cid
+  constructor({ link, codec, store = emptyStore }) {
+    this.codec = codec
+    this.cid = link
+    this.store = store
+    this['/'] = link.bytes
   }
   /**
    * @param {Schema.BlockStore} [store]
-   * @returns {Schema.ResolvedLink<T, Code, Alg, V>}
+   * @returns {Schema.ResolvedLink<Out, Code, Alg, V>}
    */
   resolve(store) {
-    throw new Error('Not implemented')
+    const { cid, codec } = this
+    if (cid.multihash.code === identity.code) {
+      const bytes = cid.multihash.digest
+      const data = codec.decode(bytes)
+      return /** @type {Schema.ResolvedLink<Out, Code, Alg, V>} */ (data)
+    } else {
+      const block = (store && store.get(`${cid}`)) || this.store.get(`${cid}`)
+      if (block) {
+        const data = codec.decode(/** @type {Uint8Array} */ (block.bytes))
+        return /** @type {Schema.ResolvedLink<Out, Code, Alg, V>} */ (data)
+      } else {
+        throw new Error(
+          'Block can not be resolved, please provide a store from which to resolve it'
+        )
+      }
+    }
   }
   get version() {
     return this.cid.version
@@ -1922,7 +2083,7 @@ class Linked {
   }
   /**
    * @param {unknown} other
-   * @returns {other is Schema.Link<T, Code, Alg, V>}
+   * @returns {other is Schema.Link<Out, Code, Alg, V>}
    */
   equals(other) {
     return this.cid.equals(other)
@@ -1941,57 +2102,74 @@ class Linked {
 }
 
 /**
- * @template {unknown} [T=unknown]
+ * @template {unknown} [Out=unknown]
+ * @template {unknown} [In=number]
  * @template {number} [Code=number]
  * @template {number} [Alg=number]
  * @template {1|0} [Version=0|1]
  * @typedef {{
- * code?:Code,
+ * codec: Schema.BlockCodec<Code, In>,
  * version?:Version
  * multihash?: {code?: Alg, digest?: Uint8Array}
- * schema?: Schema.Schema<T, unknown>
+ * schema?: Schema.Schema<Out, In>
  * }} LinkSettings
  */
 
 /**
  * @template {unknown} Out
  * @template {unknown} In
- * @template {number} Code
- * @template {number} Alg
- * @template {1|0} Version
- * @extends {API<Schema.Linked<Out, Code, Alg, Version>, In, LinkSettings<Out, Code, Alg, Version>>}
- * @implements {Schema.LinkSchema<Out, In, Code, Alg, Version>}
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @extends {API<Schema.Linked<Out, Code, Alg, V>, Schema.IntoLink<Out>, LinkSettings<Out, In, Code, Alg, V>>}
+ * @implements {Schema.LinkSchema<Out, Code, Alg, V>}
  */
 class LinkSchema extends API {
   /**
    *
-   * @param {unknown} cid
-   * @param {LinkSettings<Out, Code, Alg, Version>} settings
-   * @returns {Schema.ReadResult<Schema.Linked<Out, Code, Alg, Version>>}
+   * @param {Schema.IntoLink<Out>} cid
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.Linked<Out, Code, Alg, V>>}
    */
-  readWith(cid, { code, multihash = {}, version }) {
-    if (cid == null) {
-      return error(`Expected link but got ${cid} instead`)
+  readWith(cid, { codec, multihash = {}, version }) {
+    const result = this.validateWith(cid, { codec, multihash, version })
+    if (result.ok) {
+      const link = result.ok
+      const ok = link instanceof Linked ? link : new Linked({ link, codec })
+      return { ok }
     } else {
-      if (!isLink(cid)) {
-        return error(`Expected link to be a CID instead of ${cid}`)
+      return result
+    }
+  }
+
+  /**
+   * @param {Schema.IntoLink<Out>} source
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.Link<Out, Code, Alg, V>>}
+   */
+  validateWith(source, { codec, multihash = {}, version }) {
+    if (source == null) {
+      return error(`Expected link but got ${source} instead`)
+    } else {
+      if (!isLink(source)) {
+        return error(`Expected link to be a CID instead of ${source}`)
       } else {
-        if (code != null && cid.code !== code) {
+        if (source.code !== codec.code) {
           return error(
-            `Expected link to be CID with 0x${code.toString(16)} codec`
+            `Expected link to be CID with 0x${codec.code.toString(16)} codec`
           )
         }
 
-        if (multihash.code != null && cid.multihash.code !== multihash.code)
+        if (multihash.code != null && source.multihash.code !== multihash.code)
           return error(
             `Expected link to be CID with 0x${multihash.code.toString(
               16
             )} hashing algorithm`
           )
 
-        if (version != null && cid.version !== version) {
+        if (version != null && source.version !== version) {
           return error(
-            `Expected link to be CID version ${version} instead of ${cid.version}`
+            `Expected link to be CID version ${version} instead of ${source.version}`
           )
         }
 
@@ -1999,7 +2177,7 @@ class LinkSchema extends API {
           multihash.digest != null
             ? [
                 base32.baseEncode(multihash.digest),
-                base32.baseEncode(cid.multihash.digest),
+                base32.baseEncode(source.multihash.digest),
               ]
             : ['', '']
 
@@ -2009,11 +2187,20 @@ class LinkSchema extends API {
           )
         }
 
-        return {
-          ok: /** @type {Schema.Linked<*, *, *, *>} */ (new Linked(cid)),
-        }
+        const link = /** @type {Schema.Link<Out, *, *, *>} */ (source)
+        return { ok: link }
       }
     }
+  }
+
+  /**
+   *
+   * @param {Schema.Linked<Out, Code, Alg, V>} source
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.IntoLink<Out>>}
+   */
+  writeWith(source, settings) {
+    return this.validateWith(source.link(), settings)
   }
 
   /**
@@ -2034,18 +2221,16 @@ class LinkSchema extends API {
   }
 }
 
-/** @type {Schema.LinkSchema<unknown, Schema.Link<unknown, number, number, 0|1>, number, number, 0|1>}  */
-const Link = new LinkSchema({})
-
 /**
  * @template {number} Code
  * @template {number} Alg
  * @template {1|0} Version
  * @template {unknown} Out
- * @param {LinkSettings<Out, Code, Alg, Version>} options
- * @returns {Schema.LinkSchema<Out, Schema.Link<Out, Code, Alg, Version> | Schema.IPLDView<Out>, Code, Alg, Version>}
+ * @template {unknown} In
+ * @param {LinkSettings<Out, In, Code, Alg, Version>} options
+ * @returns {Schema.LinkSchema<Out, Code, Alg, Version>}
  */
-export const link = (options = {}) => new LinkSchema(options)
+export const link = options => new LinkSchema(options)
 
 /**
  * @template {Schema.VariantChoices} Choices
