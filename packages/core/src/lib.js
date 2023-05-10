@@ -15,7 +15,7 @@ export {
   parse as parseLink,
   decode as decodeLink,
 } from './link.js'
-export { sha256 } from 'multiformats/hashes/sha2'
+export * as sha256 from './sha256.js'
 export * as UCAN from '@ipld/dag-ucan'
 export * as DID from '@ipld/dag-ucan/did'
 export * as Signature from '@ipld/dag-ucan/signature'

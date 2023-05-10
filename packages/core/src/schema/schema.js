@@ -9,8 +9,9 @@ import {
   base32,
 } from '../link.js'
 export * from './type.js'
-import { sha256 } from 'multiformats/hashes/sha2'
-import { identity } from 'multiformats/hashes/identity'
+import * as sha256 from '../sha256.js'
+import * as identity from '../identity.js'
+import * as CBOR from '../cbor.js'
 
 export { ok }
 /**
@@ -40,10 +41,11 @@ export class API {
    * @abstract
    * @param {In} input
    * @param {Settings} settings
+   * @param {Schema.Region} [region]
    * @returns {Schema.ReadResult<Out>}
    */
   /* c8 ignore next 3 */
-  readWith(input, settings) {
+  readWith(input, settings, region) {
     throw new Error(`Abstract method readWith must be implemented by subclass`)
   }
 
@@ -54,22 +56,23 @@ export class API {
    * @returns {Schema.ReadResult<In>}
    */
   writeWith(output, settings) {
-    throw new Error(`Abstract method readWith must be implemented by subclass`)
+    throw new Error(`Abstract method writeWith must be implemented by subclass`)
   }
 
   /**
    * @param {In} input
+   * @param {Schema.Region} [region]
    * @returns {Schema.ReadResult<Out>}
    */
-  read(input) {
-    return this.readWith(input, this.settings)
+  tryFrom(input, region) {
+    return this.readWith(input, this.settings, region)
   }
 
   /**
    * @param {Out} output
    * @returns {Schema.ReadResult<In>}
    */
-  write(output) {
+  tryTo(output) {
     return this.writeWith(output, this.settings)
   }
 
@@ -78,7 +81,7 @@ export class API {
    * @returns {value is Out}
    */
   is(value) {
-    return !this.read(/** @type {In} */ (value))?.error
+    return !this.tryFrom(/** @type {In} */ (value))?.error
   }
 
   /**
@@ -86,7 +89,7 @@ export class API {
    * @return {Out}
    */
   from(value) {
-    const result = this.read(/** @type {In} */ (value))
+    const result = this.tryFrom(/** @type {In} */ (value))
     if (result.error) {
       throw result.error
     } else {
@@ -98,7 +101,7 @@ export class API {
    * @param {Out} value
    */
   to(value) {
-    const result = this.write(value)
+    const result = this.tryTo(value)
     if (result.error) {
       throw result.error
     } else {
@@ -130,7 +133,7 @@ export class API {
   }
 
   /**
-   * @returns {Schema.ArraySchema<Out, In>}
+   * @returns {Schema.ArraySchema<Schema.Convert<Out, In>>}
    */
   array() {
     return array(this)
@@ -183,21 +186,21 @@ export class API {
   }
 
   /**
-   * @template {number} [Code=number]
-   * @template {number} [Alg=number]
-   * @template {1|0} [Version=0|1]
+   * @template {Schema.BlockCodec<Schema.MulticodecCode, In>} Codec
+   * @template {Schema.MultihashHasher<Schema.MulticodecCode>} Hasher
+   * @template {Schema.UnknownLink['version']} Version
    * @param {{
-   * codec: Schema.BlockCodec<Code, In>
-   * hasher?: Schema.MultihashHasher<Alg>
+   * codec?: Codec
+   * hasher?: Hasher
    * version?: Version
    * }} options
-   * @returns {Schema.LinkSchema<Out, Code, Alg, Version>}
+   * @returns {Schema.LinkSchema<Out, Codec['code'], Hasher['code'], Version>}
    */
-  link({ codec, hasher, version }) {
+  link({ codec = /** @type {*} */ (CBOR), hasher, version } = {}) {
     const schema = link({
       codec,
-      ...(hasher ? { multihash: { code: hasher.code } } : {}),
-      ...(version ? { version } : {}),
+      hasher,
+      version,
       schema: /** @type {Schema.Schema<Out, In>} */ (this),
     })
 
@@ -275,14 +278,14 @@ class Never extends API {
   /**
    * @param {never} value
    */
-  to(value) {
+  tryTo(value) {
     return value
   }
   /**
    * @param {any} input
    * @returns {Schema.ReadResult<never>}
    */
-  read(input) {
+  tryFrom(input) {
     return typeError({ expect: 'never', actual: input })
   }
 }
@@ -301,13 +304,13 @@ class Unknown extends API {
   /**
    * @param {unknown} input
    */
-  read(input) {
+  tryFrom(input) {
     return /** @type {Schema.ReadResult<unknown>}*/ ({ ok: input })
   }
   /**
    * @param {unknown} output
    */
-  write(output) {
+  tryTo(output) {
     return { ok: output }
   }
   toString() {
@@ -411,14 +414,15 @@ export const unknown = () => new Unknown()
 class Nullable extends API {
   /**
    * @param {I|null} input
-   * @param {Schema.Reader<O, I>} reader
+   * @param {Schema.Convert<O, I>} convert
+   * @param {Schema.Region} [region]
    */
-  readWith(input, reader) {
+  readWith(input, convert, region) {
     if (input === null) {
       return { ok: null }
     }
 
-    const result = reader.read(input)
+    const result = convert.tryFrom(input, region)
     if (result.error) {
       return input === null
         ? { ok: null }
@@ -436,10 +440,10 @@ class Nullable extends API {
   }
   /**
    * @param {O|null} output
-   * @param {Schema.Writer<O, I>} writer
+   * @param {Schema.Convert<O, I>} writer
    */
   writeWith(output, writer) {
-    return output === null ? { ok: null } : writer.write(output)
+    return output === null ? { ok: null } : writer.tryTo(output)
   }
   toString() {
     return `${this.settings}.nullable()`
@@ -466,23 +470,24 @@ class Optional extends API {
   }
   /**
    * @param {I|undefined} input
-   * @param {Schema.Reader<O, I>} reader
+   * @param {Schema.Convert<O, I>} convert
+   * @param {Schema.Region} [region]
    * @returns {Schema.ReadResult<O|undefined>}
    */
-  readWith(input, reader) {
+  readWith(input, convert, region) {
     if (input === undefined) {
       return { ok: undefined }
     }
-    const result = reader.read(input)
+    const result = convert.tryFrom(input, region)
     return result.error && input === undefined ? { ok: undefined } : result
   }
   /**
    *
    * @param {O|undefined} output
-   * @param {Schema.Convert} writer
+   * @param {Schema.Convert} convert
    */
-  writeWith(output, writer) {
-    return output === undefined ? { ok: undefined } : writer.write(output)
+  writeWith(output, convert) {
+    return output === undefined ? { ok: undefined } : convert.tryTo(output)
   }
   toString() {
     return `${this.settings}.optional()`
@@ -523,13 +528,14 @@ class Implicit extends API {
    * @param {object} options
    * @param {Schema.Convert<Out, In>} options.convert
    * @param {Exclude<Out, undefined>} options.value
+   * @param {Schema.Region} [region]
    * @returns {Schema.ReadResult<Exclude<Out, undefined>>}
    */
-  readWith(input, { convert, value }) {
+  readWith(input, { convert, value }, region) {
     if (input === undefined) {
       return { ok: value }
     } else {
-      const result = convert.read(input)
+      const result = convert.tryFrom(input, region)
 
       return result.error
         ? result
@@ -548,7 +554,7 @@ class Implicit extends API {
    * @param {Schema.Convert<Out, In>} options.convert
    */
   writeWith(output, { convert }) {
-    return convert.write(output)
+    return convert.tryTo(output)
   }
   toString() {
     return `${this.settings.convert}.default(${JSON.stringify(
@@ -586,24 +592,23 @@ export const implicit = (schema, value) => {
 }
 
 /**
- * @template O
- * @template I
- * @extends {API<O[], I[], Schema.Convert<O, I>>}
- * @implements {Schema.ArraySchema<O, I>}
+ * @template {Schema.Convert} Convert
+ * @extends {API<Schema.Infer<Convert>[], Schema.InferInput<Convert>[], Convert>}
+ * @implements {Schema.ArraySchema<Convert>}
  */
 class ArrayOf extends API {
   /**
-   * @param {I[]} input
-   * @param {Schema.Reader<O, I>} schema
+   * @param {Schema.InferInput<Convert>[]} input
+   * @param {Convert} convert
+   * @param {Schema.Region} [context]
    */
-  readWith(input, schema) {
+  readWith(input, convert, context) {
     if (!Array.isArray(input)) {
       return typeError({ expect: 'array', actual: input })
     }
-    /** @type {O[]} */
     const results = []
     for (const [index, value] of input.entries()) {
-      const result = schema.read(value)
+      const result = convert.tryFrom(value, context)
       if (result.error) {
         return memberError({ at: index, cause: result.error })
       } else {
@@ -614,14 +619,13 @@ class ArrayOf extends API {
   }
   /**
    *
-   * @param {O[]} output
-   * @param {Schema.Writer<O, I>} schema
+   * @param {Schema.Infer<Convert>[]} output
+   * @param {Convert} convert
    */
-  writeWith(output, schema) {
-    /** @type {I[]} */
+  writeWith(output, convert) {
     const results = []
     for (const [index, value] of output.entries()) {
-      const result = schema.write(value)
+      const result = convert.tryTo(value)
       if (result.error) {
         return memberError({ at: index, cause: result.error })
       } else {
@@ -630,9 +634,7 @@ class ArrayOf extends API {
     }
     return { ok: results }
   }
-  /**
-   * @type {Schema.Convert<O, I>}
-   */
+
   get element() {
     return this.settings
   }
@@ -642,12 +644,15 @@ class ArrayOf extends API {
 }
 
 /**
- * @template O
- * @template [I=unknown]
- * @param {Schema.Convert<O, I>} schema
- * @returns {Schema.ArraySchema<O, I>}
+ * @template O, I
+ * @template {Schema.Convert} Schema
+ * @param {Schema} schema
+ * @returns {Schema.ArraySchema<Schema>}
  */
-export const array = schema => new ArrayOf(schema)
+export const array = schema => {
+  const out = new ArrayOf(schema)
+  return out
+}
 
 /**
  * @template {[Schema.Convert, ...Schema.Convert[]]} Shape
@@ -658,9 +663,10 @@ class Tuple extends API {
   /**
    * @param {Schema.InferTupleInput<Shape>} input
    * @param {Shape} shape
+   * @param {Schema.Region} [context]
    * @returns {Schema.ReadResult<Schema.InferTuple<Shape>>}
    */
-  readWith(input, shape) {
+  readWith(input, shape, context) {
     if (!Array.isArray(input)) {
       return typeError({ expect: 'array', actual: input })
     }
@@ -670,7 +676,7 @@ class Tuple extends API {
 
     const results = []
     for (const [index, reader] of shape.entries()) {
-      const result = reader.read(input[index])
+      const result = reader.tryFrom(input[index], context)
       if (result.error) {
         return memberError({ at: index, cause: result.error })
       } else {
@@ -697,7 +703,7 @@ class Tuple extends API {
 
     const results = []
     for (const [index, writer] of shape.entries()) {
-      const result = writer.write(output[index])
+      const result = writer.tryTo(output[index])
       if (result.error) {
         return memberError({ at: index, cause: result.error })
       } else {
@@ -729,17 +735,18 @@ export const tuple = shape => new Tuple(shape)
  * @template V
  * @template {string} K
  * @template U
- * @extends {API<Schema.Dictionary<K, V>, Schema.Dictionary<K, U>, { key: Schema.Reader<K, string>, value: Schema.Convert<V, U> }>}
+ * @extends {API<Schema.Dictionary<K, V>, Schema.Dictionary<K, U>, { key: Schema.From<K, string>, value: Schema.Convert<V, U> }>}
  * @implements {Schema.DictionarySchema<V, K, U>}
  */
 class Dictionary extends API {
   /**
    * @param {Schema.Dictionary<K, U>} input
    * @param {object} schema
-   * @param {Schema.Reader<K, string>} schema.key
-   * @param {Schema.Reader<V, U>} schema.value
+   * @param {Schema.From<K, string>} schema.key
+   * @param {Schema.From<V, U>} schema.value
+   * @param {Schema.Region} [context]
    */
-  readWith(input, { key, value }) {
+  readWith(input, { key, value }, context) {
     if (typeof input != 'object' || input === null || Array.isArray(input)) {
       return typeError({
         expect: 'dictionary',
@@ -750,12 +757,12 @@ class Dictionary extends API {
     const dict = /** @type {Schema.Dictionary<K, V>} */ ({})
 
     for (const [k, v] of Object.entries(input)) {
-      const keyResult = key.read(k)
+      const keyResult = key.tryFrom(k, context)
       if (keyResult.error) {
         return memberError({ at: k, cause: keyResult.error })
       }
 
-      const valueResult = value.read(v)
+      const valueResult = value.tryFrom(v, context)
       if (valueResult.error) {
         return memberError({ at: k, cause: valueResult.error })
       }
@@ -773,19 +780,19 @@ class Dictionary extends API {
    *
    * @param {Schema.Dictionary<K, V>} output
    * @param {object} schema
-   * @param {Schema.Reader<K, string>} schema.key
-   * @param {Schema.Writer<V, U>} schema.value
+   * @param {Schema.From<K, string>} schema.key
+   * @param {Schema.To<V, U>} schema.value
    */
   writeWith(output, { key, value }) {
     const dict = /** @type {Schema.Dictionary<K, U>} */ ({})
 
     for (const [k, v] of Object.entries(output)) {
-      const keyResult = key.read(k)
+      const keyResult = key.tryFrom(k)
       if (keyResult.error) {
         return memberError({ at: k, cause: keyResult.error })
       }
 
-      const valueResult = value.write(/** @type {V} */ (v))
+      const valueResult = value.tryTo(/** @type {V} */ (v))
       if (valueResult.error) {
         return memberError({ at: k, cause: valueResult.error })
       }
@@ -824,13 +831,13 @@ class Dictionary extends API {
  * @template {unknown} U
  * @param {object} shape
  * @param {Schema.Convert<V, U>} shape.value
- * @param {Schema.Reader<K, string>} [shape.key]
+ * @param {Schema.From<K, string>} [shape.key]
  * @returns {Schema.DictionarySchema<V, K, U>}
  */
 export const dictionary = ({ value, key }) =>
   new Dictionary({
     value,
-    key: key || /** @type {Schema.Reader<K, string>} */ (string()),
+    key: key || /** @type {Schema.From<K, string>} */ (string()),
   })
 
 /**
@@ -891,11 +898,12 @@ class Union extends API {
   /**
    * @param {Schema.InferUnionInput<Members>} input
    * @param {Members} variants
+   * @param {Schema.Region} [context]
    */
-  readWith(input, variants) {
+  readWith(input, variants, context) {
     const causes = []
     for (const reader of variants) {
-      const result = reader.read(input)
+      const result = reader.tryFrom(input, context)
       if (result.error) {
         causes.push(result.error)
       } else {
@@ -913,7 +921,7 @@ class Union extends API {
   writeWith(output, variants) {
     const causes = []
     for (const member of variants) {
-      const result = member.write(output)
+      const result = member.tryTo(output)
       if (result.error) {
         causes.push(result.error)
       } else {
@@ -959,12 +967,13 @@ class Intersection extends API {
   /**
    * @param {Schema.InferIntersectionInput<Members>} input
    * @param {Members} schemas
+   * @param {Schema.Region} [context]
    * @returns {Schema.ReadResult<Schema.InferIntersection<Members>>}
    */
-  readWith(input, schemas) {
+  readWith(input, schemas, context) {
     const causes = []
     for (const schema of schemas) {
-      const result = schema.read(input)
+      const result = schema.tryFrom(input, context)
       if (result.error) {
         causes.push(result.error)
       }
@@ -984,7 +993,7 @@ class Intersection extends API {
   writeWith(output, members) {
     const causes = []
     for (const member of members) {
-      const result = member.write(output)
+      const result = member.tryTo(output)
       if (result.error) {
         causes.push(result.error)
       }
@@ -1083,8 +1092,8 @@ class NumberSchema extends API {
    */
   constraint(check) {
     return this.refine({
-      read: check,
-      write: check,
+      tryFrom: check,
+      tryTo: check,
     })
   }
 
@@ -1133,6 +1142,16 @@ class NumberSchema extends API {
       ? { ok: /** @type {*} */ (input) }
       : typeError({ expect: 'number', actual: input })
   }
+  /**
+   * @param {Out} output
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<In>}
+   */
+  writeWith(output, settings) {
+    return typeof output === 'number'
+      ? { ok: /** @type {*} */ (output) }
+      : typeError({ expect: 'number', actual: output })
+  }
   toString() {
     return `number()`
   }
@@ -1147,7 +1166,7 @@ export const number = () => Number
  * @template {number} In
  * @template {Out} O
  * @template {Out} I
- * @extends {NumberSchema<O, In, {schema: Schema.Convert<Out, In>, refine:Schema.Reader<O, I>}>}
+ * @extends {NumberSchema<O, In, {schema: Schema.Convert<Out, In>, refine:Schema.From<O, I>}>}
  * @implements {Schema.NumberSchema<O, In>}
  */
 class RefinedNumber extends NumberSchema {
@@ -1157,8 +1176,8 @@ class RefinedNumber extends NumberSchema {
    * @returns {Schema.ReadResult<O>}
    */
   readWith(input, { schema, refine }) {
-    const result = schema.read(input)
-    return result.error ? result : refine.read(/** @type {I} */ (result.ok))
+    const result = schema.tryFrom(input)
+    return result.error ? result : refine.tryFrom(/** @type {I} */ (result.ok))
   }
 
   /**
@@ -1166,8 +1185,8 @@ class RefinedNumber extends NumberSchema {
    * @param {{schema: Schema.Convert<Out, In>, refine: Schema.Convert<O, I> } } settings
    */
   writeWith(output, { schema, refine }) {
-    const result = refine.write(output)
-    return result.error ? result : schema.write(result.ok)
+    const result = refine.tryTo(output)
+    return result.error ? result : schema.tryTo(result.ok)
   }
 
   toString() {
@@ -1180,16 +1199,30 @@ class RefinedNumber extends NumberSchema {
  */
 class IntegerSchema extends NumberSchema {
   /**
-   * @param {number} input
+   * @param {number} number
    * @returns {Schema.ReadResult<Schema.Integer>}
    */
-  read(input) {
-    return Number.isInteger(input)
-      ? { ok: /** @type {Schema.Integer} */ (input) }
+  static validate(number) {
+    return Number.isInteger(number)
+      ? { ok: /** @type {Schema.Integer} */ (number) }
       : typeError({
           expect: 'integer',
-          actual: input,
+          actual: number,
         })
+  }
+  /**
+   * @param {number} number
+   * @returns {Schema.ReadResult<Schema.Integer>}
+   */
+  tryFrom(number) {
+    return IntegerSchema.validate(number)
+  }
+  /**
+   * @param {Schema.Integer} number
+   * @returns {Schema.ReadResult<number>}
+   */
+  tryTo(number) {
+    return IntegerSchema.validate(number)
   }
   toString() {
     return `Integer`
@@ -1207,13 +1240,27 @@ class FloatSchema extends NumberSchema {
    * @param {number} number
    * @returns {Schema.ReadResult<Schema.Float>}
    */
-  read(number) {
+  static validate(number) {
     return Number.isFinite(number)
       ? { ok: /** @type {Schema.Float} */ (number) }
       : typeError({
           expect: 'Float',
           actual: number,
         })
+  }
+  /**
+   * @param {number} number
+   * @returns {Schema.ReadResult<Schema.Float>}
+   */
+  tryFrom(number) {
+    return FloatSchema.validate(number)
+  }
+  /**
+   * @param {Schema.Float} number
+   * @returns {Schema.ReadResult<Schema.Float>}
+   */
+  tryTo(number) {
+    return FloatSchema.validate(number)
   }
   toString() {
     return 'Float'
@@ -1263,8 +1310,8 @@ class StringSchema extends API {
    */
   constraint(check) {
     return this.refine({
-      read: check,
-      write: check,
+      tryFrom: check,
+      tryTo: check,
     })
   }
   /**
@@ -1308,22 +1355,22 @@ class StringSchema extends API {
 class RefinedString extends StringSchema {
   /**
    * @param {In} input
-   * @param {{base:Schema.Reader<Out, In>, schema:Schema.Reader<O, I>}} settings
+   * @param {{base:Schema.From<Out, In>, schema:Schema.From<O, I>}} settings
    * @returns {Schema.ReadResult<O>}
    */
   readWith(input, { base, schema }) {
-    const result = base.read(input)
-    return result.error ? result : schema.read(/** @type {I} */ (result.ok))
+    const result = base.tryFrom(input)
+    return result.error ? result : schema.tryFrom(/** @type {I} */ (result.ok))
   }
 
   /**
    * @param {O} output
-   * @param {{base:Schema.Writer<Out, In>, schema:Schema.Writer<O, I>}} settings
+   * @param {{base:Schema.To<Out, In>, schema:Schema.To<O, I>}} settings
    * @returns {Schema.ReadResult<In>}
    */
   writeWith(output, { base, schema }) {
-    const result = schema.write(output)
-    return result.error ? result : base.write(result.ok)
+    const result = schema.tryTo(output)
+    return result.error ? result : base.tryTo(result.ok)
   }
 
   toString() {
@@ -1417,18 +1464,21 @@ class Refine extends API {
   /**
    * @param {In} input
    * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }} settings
+   * @param {Schema.Region} [context]
    */
-  readWith(input, { base, schema }) {
-    const result = base.read(input)
-    return result.error ? result : schema.read(/** @type {I} */ (result.ok))
+  readWith(input, { base, schema }, context) {
+    const result = base.tryFrom(input, context)
+    return result.error
+      ? result
+      : schema.tryFrom(/** @type {I} */ (result.ok), context)
   }
   /**
    * @param {O} output
    * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }} settings
    */
   writeWith(output, { base, schema }) {
-    const result = schema.write(output)
-    return result.error ? result : base.write(/** @type {Out} */ (result.ok))
+    const result = schema.tryTo(output)
+    return result.error ? result : base.tryTo(/** @type {Out} */ (result.ok))
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
@@ -1456,19 +1506,20 @@ export const refine = (base, schema) => new Refine({ base, schema })
 class Pipe extends API {
   /**
    * @param {In} input
-   * @param {{ from: Schema.Convert<Out, In>, to: Schema.Convert<Into, Out> }} settings
+   * @param {{ from: Schema.From<Out, In>, to: Schema.From<Into, Out> }} settings
+   * @param {Schema.Region} [context]
    */
-  readWith(input, { from, to }) {
-    const result = from.read(input)
-    return result.error ? result : to.read(result.ok)
+  readWith(input, { from, to }, context) {
+    const result = from.tryFrom(input, context)
+    return result.error ? result : to.tryFrom(result.ok, context)
   }
   /**
    * @param {Into} output
-   * @param {{ from: Schema.Convert<Out, In>, to: Schema.Convert<Into, Out> }} settings
+   * @param {{ from: Schema.To<Out, In>, to: Schema.To<Into, Out> }} settings
    */
   writeWith(output, { from, to }) {
-    const result = to.write(output)
-    return result.error ? result : from.write(result.ok)
+    const result = to.tryTo(output)
+    return result.error ? result : from.tryTo(result.ok)
   }
   toString() {
     return `${this.settings.from}.pipe(${this.settings.to})`
@@ -1533,9 +1584,10 @@ class Struct extends API {
   /**
    * @param {Schema.InferStructInput<Members>} input
    * @param {{shape: Members}} settings
+   * @param {Schema.Region} [context]
    * @returns {Schema.ReadResult<Schema.InferStruct<Members>>}
    */
-  readWith(input, { shape }) {
+  readWith(input, { shape }, context) {
     if (typeof input != 'object' || input === null || Array.isArray(input)) {
       return typeError({
         expect: 'object',
@@ -1553,7 +1605,7 @@ class Struct extends API {
       )
 
     for (const [at, reader] of entries) {
-      const result = reader.read(source[at])
+      const result = reader.tryFrom(source[at], context)
       if (result.error) {
         return memberError({ at, cause: result.error })
       }
@@ -1589,7 +1641,7 @@ class Struct extends API {
       )
 
     for (const [at, writer] of entries) {
-      const result = writer.read(source[at])
+      const result = writer.tryTo(source[at])
       if (result.error) {
         return memberError({ at, cause: result.error })
       }
@@ -1788,17 +1840,6 @@ class RawBytes extends API {
     const codec = /** @type {Schema.BlockCodec<0x55, * & I>} */ (this)
     return new ByteView({ codec, convert: into })
   }
-
-  /**
-   * @param {Uint8Array} input
-   */
-  create(input) {
-    return new BlockView({
-      codec: this,
-      data: input,
-      bytes: input,
-    })
-  }
 }
 
 /** @type {Schema.BytesSchema} */
@@ -1808,8 +1849,8 @@ export const Bytes = new RawBytes()
  * @type {Schema.Convert<*>}
  */
 const direct = {
-  read: input => input,
-  write: output => output,
+  tryFrom: input => input,
+  tryTo: output => output,
 }
 
 /**
@@ -1842,7 +1883,7 @@ class ByteView extends API {
    */
   encode(data) {
     const { codec, convert } = this.settings
-    const model = convert.write(data)
+    const model = convert.tryFrom(data)
     if (model.error) {
       throw model.error
     } else {
@@ -1855,7 +1896,7 @@ class ByteView extends API {
   decode(bytes) {
     const { codec, convert } = this.settings
     const model = codec.decode(bytes)
-    const result = convert.read(model)
+    const result = convert.tryFrom(model)
     if (result.error) {
       throw result.error
     } else {
@@ -1870,7 +1911,7 @@ class ByteView extends API {
   readWith(input, { codec, convert }) {
     try {
       const model = codec.decode(input)
-      return convert.read(model)
+      return convert.tryFrom(model)
     } catch (cause) {
       return { error: /** @type {Error} */ (cause) }
     }
@@ -1883,7 +1924,7 @@ class ByteView extends API {
    */
   writeWith(output, { codec, convert }) {
     try {
-      const result = convert.write(output)
+      const result = convert.tryTo(output)
       if (result.error) {
         throw result.error
       }
@@ -1914,97 +1955,93 @@ class ByteView extends API {
       convert,
     })
   }
-
-  /**
-   * @param {Out} data
-   * @returns {Schema.BlockView<Out, Code>}
-   */
-  create(data) {
-    return new BlockView({
-      codec: this,
-      data,
-      bytes: this.encode(data),
-    })
-  }
 }
 
-/**
- * @template {unknown} T
- * @template {Schema.MulticodecCode} Code
- * @implements {Schema.BlockView<T, Code>}
- */
-class BlockView {
-  /**
-   * @param {object} options
-   * @param {Schema.BlockCodec<Code, T>} options.codec
-   * @param {T} options.data
-   * @param {Schema.ByteView<T>} options.bytes
-   */
-  constructor({ codec, data, bytes }) {
-    this.codec = codec
-    this.data = data
-    this.bytes = bytes
-  }
-  encode() {
-    return this.bytes
-  }
-  decode() {
-    return this.data
-  }
-  get code() {
-    return this.codec.code
-  }
-  /**
-   * @returns {Schema.Linked<T, Code, typeof identity.code, 1>}
-   */
-  embed() {
-    return new Linked({
-      link: createLink(this.code, identity.digest(this.bytes)),
-      codec: this.codec,
-    })
-  }
+// /**
+//  * @template {Schema.UnknownLink['version']} V
+//  * @template {Schema.Block<unknown, number, number, V>} Block
+//  * @implements {Schema.IPLDView<Required<Block>['data']>}
+//  */
+// class DAGView {
+//   /**
+//    * @param {object} source
+//    * @param {Required<Block>} source.root
+//    * @param {Schema.Region} [source.store]
+//    */
+//   constructor({ root, store = emptyStore }) {
+//     this.root = root
+//     this.store = store
+//     this['/'] = this.root.cid.bytes
+//   }
+//   resolve() {
+//     return /** @type {Schema.ResolvedLink<Required<Block>['data'], Block['cid']['code'], Block['cid']['multihash']['code'], Block['cid']['version']>} */ (
+//       this.root.data
+//     )
+//   }
+//   /**
+//    *
+//    * @param {object} context
+//    * @param {Schema.Region} [context.store]
+//    * @returns {*}
+//    */
+//   with({ store = this.store }) {
+//     return new DAGView({ root: this.root, store })
+//   }
+//   decode() {
+//     return this.root.data
+//   }
+//   link() {
+//     return this.root.cid
+//   }
+//   *iterateIPLDBlocks() {
+//     const model = this.root.data
+//     if (model && typeof model === 'object') {
+//       for (const value of Object.values(model)) {
+//         if (value && typeof value['iterateIPLDBlocks'] === 'function') {
+//           yield* value.iterateIPLDBlocks()
+//         }
+//       }
+//     }
+//     yield /** @type {Schema.Block} */ (this.root)
+//   }
 
-  /**
-   * @template {Schema.MulticodecCode} Alg
-   * @param {object} options
-   * @param {Schema.MultihashHasher<Alg>} options.hasher
-   * @returns {Promise<Schema.DAGView<T, Code, Alg>>}
-   */
-  async detach({ hasher = /** @type {*} */ (sha256) }) {
-    const { bytes, data } = this
-    const digest = await hasher.digest(bytes)
-    /** @type {Schema.Link<T, Code, Alg, 1>} */
-    const cid = createLink(this.code, digest)
-    return new DAGView({ root: { bytes, data, cid } })
-  }
-}
+//   get version() {
+//     return this.root.cid.version
+//   }
+//   get code() {
+//     return this.root.cid.code
+//   }
+//   get multihash() {
+//     return this.root.cid.multihash
+//   }
+//   get byteOffset() {
+//     return this.root.cid.byteOffset
+//   }
+//   get byteLength() {
+//     return this.root.cid.byteLength
+//   }
+//   get bytes() {
+//     return this.root.cid.bytes
+//   }
 
-/**
- * @template {unknown} T
- * @template {Schema.MulticodecCode} Code
- * @template {Schema.MulticodecCode} Alg
- * @template {Schema.UnknownLink['version']} V
- */
-class DAGView {
-  /**
-   * @param {object} source
-   * @param {Required<Schema.Block<T, Code, Alg, V>>} source.root
-   * @param {Schema.BlockStore} [source.store]
-   */
-  constructor({ root, store = emptyStore }) {
-    this.root = root
-    this.store = store
-  }
-  decode() {
-    return this.root.data
-  }
-  link() {
-    return this.root.cid
-  }
-  *iterateIPLDBlocks() {
-    yield this.root
-  }
-}
+//   /**
+//    * @param {unknown} other
+//    */
+//   equals(other) {
+//     return this.root.cid.equals(other)
+//   }
+//   /**
+//    * @template {string} Prefix
+//    * @param {Schema.MultibaseEncoder<Prefix>} [base]
+//    * @returns
+//    */
+//   toString(base) {
+//     return this.root.cid.toString(base)
+//   }
+//   toV1() {
+//     return this.root.cid.toV1()
+//   }
+// }
 
 const emptyStore = Object.freeze(new Map())
 /**
@@ -2023,42 +2060,56 @@ export const dag = options => {
  * @template {Schema.MulticodecCode} Code
  * @template {Schema.MulticodecCode} Alg
  * @template {Schema.UnknownLink['version']} V
- * @implements {Schema.Linked<Out, Code, Alg, V>}
+ * @implements {Schema.LinkOf<Out, Code, Alg, V>}
  */
-class Linked {
+class Link {
   /**
    * @param {object} source
    * @param {Schema.Link<Out, Code, Alg, V>} source.link
    * @param {Schema.BlockCodec<Code, In>} source.codec
-   * @param {Schema.BlockStore} [source.store]
+   * @param {Schema.Convert<Out, In>} source.schema
+   * @param {Schema.Region} [source.store]
    */
-  constructor({ link, codec, store = emptyStore }) {
+  constructor({ link, codec, schema }) {
     this.codec = codec
     this.cid = link
-    this.store = store
+    this.schema = schema
     this['/'] = link.bytes
   }
+
   /**
-   * @param {Schema.BlockStore} [store]
+   * @param {Schema.Region} region
+   * @returns {Schema.Attachment<Out, Code, Alg, V>}
+   */
+  select(region) {
+    const { cid, codec, schema } = this
+    const block = region.get(`${cid}`)
+    const bytes = block
+      ? block.bytes
+      : cid.multihash.code === identity.code
+      ? cid.multihash.digest
+      : undefined
+
+    if (bytes) {
+      return new Attachment({
+        root: { cid, bytes },
+        codec,
+        schema,
+        store: region,
+      })
+    } else {
+      throw new RangeError(
+        `Block can not be resolved, please provide a store from which to resolve it`
+      )
+    }
+  }
+
+  /**
+   * @param {Schema.Region} region
    * @returns {Schema.ResolvedLink<Out, Code, Alg, V>}
    */
-  resolve(store) {
-    const { cid, codec } = this
-    if (cid.multihash.code === identity.code) {
-      const bytes = cid.multihash.digest
-      const data = codec.decode(bytes)
-      return /** @type {Schema.ResolvedLink<Out, Code, Alg, V>} */ (data)
-    } else {
-      const block = (store && store.get(`${cid}`)) || this.store.get(`${cid}`)
-      if (block) {
-        const data = codec.decode(/** @type {Uint8Array} */ (block.bytes))
-        return /** @type {Schema.ResolvedLink<Out, Code, Alg, V>} */ (data)
-      } else {
-        throw new Error(
-          'Block can not be resolved, please provide a store from which to resolve it'
-        )
-      }
-    }
+  resolve(region) {
+    return this.select(region).resolve()
   }
   get version() {
     return this.cid.version
@@ -2102,6 +2153,145 @@ class Linked {
 }
 
 /**
+ * @template {unknown} Out
+ * @template {unknown} In
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @implements {Schema.Attachment<Out, Code, Alg, V>}
+ */
+class Attachment {
+  /**
+   * @param {object} source
+   * @param {Schema.Block<Out, Code, Alg, V>} source.root
+   * @param {Schema.BlockCodec<Code, In>} source.codec
+   * @param {Schema.Convert<Out, In>} source.schema
+   * @param {Schema.Region} [source.store]
+   */
+  constructor({ root, codec, schema, store = emptyStore }) {
+    this.codec = codec
+    this.root = root
+    this.store = store
+    this.schema = schema
+    this['/'] = root.cid.bytes
+
+    /** @type {Schema.ReadResult<Out>|null} */
+    this._resolved = null
+  }
+
+  /**
+   * @returns {Schema.ResolvedLink<Out, Code, Alg, V>}
+   */
+  resolve() {
+    let result = this._resolved
+    if (result == null) {
+      const { schema, codec, root } = this
+      const data = codec.decode(/** @type {Uint8Array} */ (root.bytes))
+      result = schema.tryFrom(data, this.store)
+
+      this._resolved = result
+    }
+
+    if (result.error) {
+      throw result.error
+    } else {
+      return /** @type {Schema.ResolvedLink<Out, Code, Alg, V>} */ (result.ok)
+    }
+  }
+  get version() {
+    return this.root.cid.version
+  }
+  get code() {
+    return this.root.cid.code
+  }
+  get multihash() {
+    return this.root.cid.multihash
+  }
+  get byteOffset() {
+    return this.root.cid.byteOffset
+  }
+  get byteLength() {
+    return this.root.cid.byteLength
+  }
+  get bytes() {
+    return this.root.cid.bytes
+  }
+  link() {
+    return this.root.cid
+  }
+  /**
+   * @param {unknown} other
+   * @returns {other is Schema.Link<Out, Code, Alg, V>}
+   */
+  equals(other) {
+    return this.root.cid.equals(other)
+  }
+  /**
+   * @template {string} Prefix
+   * @param {Schema.MultibaseEncoder<Prefix>} [base]
+   * @returns
+   */
+  toString(base) {
+    return this.root.cid.toString(base)
+  }
+  toV1() {
+    return this.root.cid.toV1()
+  }
+  /**
+   * @param {object} context
+   * @param {Schema.Region} [context.store]
+   */
+  with({ store = this.store }) {
+    return new Attachment({
+      root: this.root,
+      codec: this.codec,
+      schema: this.schema,
+      store,
+    })
+  }
+
+  *iterateIPLDBlocks() {
+    const dag = this.resolve()
+    const { store, root } = this
+    for (const link of Attachment.links(dag)) {
+      const block = store.get(`${link}`)
+      if (block) {
+        yield { cid: link, bytes: block.bytes }
+      }
+    }
+
+    yield /** @type {Schema.Block} */ (root)
+  }
+
+  /**
+   * @param {unknown} source
+   * @returns {IterableIterator<Schema.Link>}
+   */
+  static *links(source) {
+    if (isLink(source)) {
+      yield /** @type {Schema.Link} */ (source)
+    } else if (source && typeof source === 'object') {
+      for (const value of Object.values(source)) {
+        yield* this.links(value)
+      }
+    }
+  }
+
+  /**
+   * @param {unknown} source
+   */
+  static *iterateIPLDBlocks(source) {
+    if (source && typeof source === 'object') {
+      for (const value of Object.values(source)) {
+        if (value && typeof value['iterateIPLDBlocks'] === 'function') {
+          yield* value.iterateIPLDBlocks()
+        }
+      }
+    }
+  }
+}
+
+/**
  * @template {unknown} [Out=unknown]
  * @template {unknown} [In=number]
  * @template {number} [Code=number]
@@ -2109,9 +2299,9 @@ class Linked {
  * @template {1|0} [Version=0|1]
  * @typedef {{
  * codec: Schema.BlockCodec<Code, In>,
- * version?:Version
- * multihash?: {code?: Alg, digest?: Uint8Array}
- * schema?: Schema.Schema<Out, In>
+ * version?: Version
+ * hasher?: {code: Alg}
+ * schema: Schema.Schema<Out, In>
  * }} LinkSettings
  */
 
@@ -2121,33 +2311,21 @@ class Linked {
  * @template {Schema.MulticodecCode} Code
  * @template {Schema.MulticodecCode} Alg
  * @template {Schema.UnknownLink['version']} V
- * @extends {API<Schema.Linked<Out, Code, Alg, V>, Schema.IntoLink<Out>, LinkSettings<Out, In, Code, Alg, V>>}
+ * @extends {API<Schema.LinkOf<Out, Code, Alg, V>, Schema.IntoLink<Out>, LinkSettings<Out, In, Code, Alg, V>>}
  * @implements {Schema.LinkSchema<Out, Code, Alg, V>}
  */
 class LinkSchema extends API {
   /**
-   *
-   * @param {Schema.IntoLink<Out>} cid
-   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
-   * @returns {Schema.ReadResult<Schema.Linked<Out, Code, Alg, V>>}
-   */
-  readWith(cid, { codec, multihash = {}, version }) {
-    const result = this.validateWith(cid, { codec, multihash, version })
-    if (result.ok) {
-      const link = result.ok
-      const ok = link instanceof Linked ? link : new Linked({ link, codec })
-      return { ok }
-    } else {
-      return result
-    }
-  }
-
-  /**
+   * @template {unknown} Out
+   * @template {unknown} In
+   * @template {Schema.MulticodecCode} Code
+   * @template {Schema.MulticodecCode} Alg
+   * @template {Schema.UnknownLink['version']} V
    * @param {Schema.IntoLink<Out>} source
    * @param {LinkSettings<Out, In, Code, Alg, V>} settings
    * @returns {Schema.ReadResult<Schema.Link<Out, Code, Alg, V>>}
    */
-  validateWith(source, { codec, multihash = {}, version }) {
+  static validate(source, { codec, hasher, version, schema }) {
     if (source == null) {
       return error(`Expected link but got ${source} instead`)
     } else {
@@ -2160,9 +2338,13 @@ class LinkSchema extends API {
           )
         }
 
-        if (multihash.code != null && source.multihash.code !== multihash.code)
+        if (
+          hasher &&
+          hasher.code != null &&
+          source.multihash.code !== hasher.code
+        )
           return error(
-            `Expected link to be CID with 0x${multihash.code.toString(
+            `Expected link to be CID with 0x${hasher.code.toString(
               16
             )} hashing algorithm`
           )
@@ -2173,20 +2355,6 @@ class LinkSchema extends API {
           )
         }
 
-        const [expectDigest, actualDigest] =
-          multihash.digest != null
-            ? [
-                base32.baseEncode(multihash.digest),
-                base32.baseEncode(source.multihash.digest),
-              ]
-            : ['', '']
-
-        if (expectDigest !== actualDigest) {
-          return error(
-            `Expected link with "${expectDigest}" hash digest instead of "${actualDigest}"`
-          )
-        }
-
         const link = /** @type {Schema.Link<Out, *, *, *>} */ (source)
         return { ok: link }
       }
@@ -2194,13 +2362,35 @@ class LinkSchema extends API {
   }
 
   /**
+   * @param {Schema.IntoLink<Out>} cid
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.LinkOf<Out, Code, Alg, V>>}
+   */
+  readWith(cid, { codec, hasher, version, schema }) {
+    const result = LinkSchema.validate(cid, {
+      codec,
+      hasher,
+      version,
+      schema,
+    })
+
+    if (result.ok) {
+      const link = result.ok
+      const ok = link instanceof Link ? link : new Link({ link, codec, schema })
+      return { ok }
+    } else {
+      return result
+    }
+  }
+
+  /**
    *
-   * @param {Schema.Linked<Out, Code, Alg, V>} source
+   * @param {Schema.LinkOf<Out, Code, Alg, V>} source
    * @param {LinkSettings<Out, In, Code, Alg, V>} settings
    * @returns {Schema.ReadResult<Schema.IntoLink<Out>>}
    */
   writeWith(source, settings) {
-    return this.validateWith(source.link(), settings)
+    return LinkSchema.validate(source.link(), settings)
   }
 
   /**
@@ -2208,6 +2398,33 @@ class LinkSchema extends API {
    */
   link() {
     throw new Error('Can not create link of link')
+  }
+
+  /**
+   * @returns {Schema.AttachmentSchema<Out, Code, Alg, V>}
+   */
+  attached() {
+    let attachment = this._attached
+    if (attachment == null) {
+      const attachment = new AttachmentSchema(this.settings)
+      this._attached = attachment
+      return attachment
+    }
+
+    return attachment
+  }
+
+  /**
+   * @param {Out} target
+   */
+  embed(target) {
+    return this.attached().embed(target)
+  }
+  /**
+   * @param {Out} target
+   */
+  attach(target) {
+    return this.attached().attach(target)
   }
 
   /**
@@ -2222,13 +2439,142 @@ class LinkSchema extends API {
 }
 
 /**
- * @template {number} Code
- * @template {number} Alg
- * @template {1|0} Version
  * @template {unknown} Out
  * @template {unknown} In
- * @param {LinkSettings<Out, In, Code, Alg, Version>} options
- * @returns {Schema.LinkSchema<Out, Code, Alg, Version>}
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @extends {API<Schema.Attachment<Out, Code, Alg, V>, Schema.IPLDView<Out>, LinkSettings<Out, In, Code, Alg, V>>}
+ * @implements {Schema.AttachmentSchema<Out, Code, Alg, V>}
+ */
+class AttachmentSchema extends API {
+  /**
+   * @param {Schema.IPLDView<Out>} source
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @param {Schema.Region} [region]
+   */
+  readWith(source, { codec, schema }, region = emptyStore) {
+    const link = /** @type {Schema.Link<Out, Code, Alg, V>} */ (source.link())
+    const block = source.root ? source.root : region.get(`${link}`)
+    /** @type {Uint8Array|undefined} */
+    const bytes = block
+      ? block.bytes
+      : link.multihash.code === identity.code
+      ? link.multihash.digest
+      : undefined
+
+    if (bytes) {
+      const attachment = new Attachment({
+        root: { cid: link, bytes },
+        codec,
+        schema,
+        store: region,
+      })
+      return { ok: attachment }
+    } else {
+      return error(`Could not find block for ${link}`)
+    }
+  }
+  /**
+   * @param {Schema.Attachment<Out, Code, Alg, V>} attachment
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.IPLDView<Out>>}
+   */
+  writeWith(attachment, { codec, schema }) {
+    if (attachment instanceof Attachment) {
+      return { ok: attachment }
+    }
+
+    console.log('!!!!!!!!!')
+    try {
+      const link = attachment.link()
+      const out = attachment.resolve()
+      const data = schema.tryTo(out)
+      if (data.error) {
+        return data
+      } else {
+        /** @type {Uint8Array} */
+        const bytes = codec.encode(data.ok)
+        /** @type {Required<Schema.Block<Out, Code, Alg, V>>} */
+        const root = { cid: link, bytes, data: out }
+        const view = new Attachment({ root, codec, schema })
+        return { ok: view }
+      }
+    } catch (cause) {
+      return { error: /** @type {Error} */ (cause) }
+    }
+  }
+
+  /**
+   * @param {Out} target
+   * @param {{hasher?: Schema.MultihashHasher<Alg> }} options
+   */
+  async attach(target, { hasher = /** @type {*} */ (sha256) } = {}) {
+    const { schema, codec } = this.settings
+    const result = schema.tryTo(target)
+    if (result.error) {
+      throw result.error
+    }
+    const data = result.ok
+    /** @type {Uint8Array} */
+    const bytes = codec.encode(data)
+    const digest = await hasher.digest(bytes)
+    /** @type {Schema.Link<Out, Code, Alg, *>} */
+    const cid = createLink(codec.code, digest)
+
+    const store = new Map()
+    for (const block of Attachment.iterateIPLDBlocks(target)) {
+      store.set(`${block.cid}`, block)
+    }
+    store.set(`${cid}`, { bytes, cid })
+
+    return new Attachment({
+      codec,
+      schema,
+      root: { bytes, cid },
+      store,
+    })
+  }
+
+  /**
+   * @param {Out} target
+   */
+  embed(target) {
+    const { schema, codec } = this.settings
+    const result = schema.tryTo(target)
+    if (result.error) {
+      throw result.error
+    }
+    const data = result.ok
+    /** @type {Uint8Array} */
+    const bytes = codec.encode(data)
+    const digest = identity.digest(bytes)
+    /** @type {Schema.Link<Out, Code, *>} */
+    const cid = createLink(codec.code, digest)
+
+    return new Attachment({
+      codec,
+      schema,
+      root: { bytes, cid },
+    })
+  }
+
+  /**
+   * @returns {never}
+   */
+  link() {
+    throw new Error('Can not create link of link')
+  }
+}
+
+/**
+ * @template {unknown} Out
+ * @template In
+ * @template {Schema.BlockCodec<Schema.MulticodecCode, In>} Codec
+ * @template {Schema.MultihashHasher<Schema.MulticodecCode>} Hasher
+ * @template {Schema.UnknownLink['version']} Version
+ * @param {LinkSettings<Out, In, Codec['code'], Hasher['code'], Version>} options
+ * @returns {Schema.LinkSchema<Out, Codec['code'], Hasher['code'], Version>}
  */
 export const link = options => new LinkSchema(options)
 
@@ -2241,9 +2587,10 @@ class Variant extends API {
   /**
    * @param {Schema.InferVariantInput<Choices>} input
    * @param {Choices} variants
+   * @param {Schema.Region} [context]
    * @returns {Schema.ReadResult<Schema.InferVariant<Choices>>}
    */
-  readWith(input, variants) {
+  readWith(input, variants, context) {
     if (typeof input != 'object' || input === null || Array.isArray(input)) {
       return typeError({
         expect: 'object',
@@ -2259,7 +2606,7 @@ class Variant extends API {
     const reader = key ? variants[key] : undefined
 
     if (reader) {
-      const result = reader.read(input[key])
+      const result = reader.tryFrom(input[key], context)
       return result.error
         ? memberError({ at: key, cause: result.error })
         : {
@@ -2268,7 +2615,7 @@ class Variant extends API {
             }),
           }
     } else if (variants._) {
-      const result = variants._.read(input)
+      const result = variants._.tryFrom(input, context)
       return result.error
         ? result
         : { ok: /** @type {Schema.InferVariant<Choices>} */ ({ _: result.ok }) }
@@ -2292,7 +2639,7 @@ class Variant extends API {
    * @param {E} [fallback]
    */
   match(input, fallback) {
-    const result = this.read(/** @type {*} */ (input))
+    const result = this.tryFrom(/** @type {*} */ (input))
     if (result.error) {
       if (fallback !== undefined) {
         return [null, fallback]

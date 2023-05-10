@@ -1,7 +1,6 @@
 import * as Schema from '../src/schema.js'
-import { isLink } from '../src/lib.js'
-import { CBOR, identity, sha256 } from '../src/dag.js'
-import { CAR } from '../src/lib.js'
+import { isLink, parseLink } from '../src/lib.js'
+import { CBOR, identity, sha256, createStore, writeInto } from '../src/dag.js'
 import { test, assert } from './test.js'
 
 describe.only('IPLD Schema', () => {
@@ -11,147 +10,309 @@ describe.only('IPLD Schema', () => {
       y: Schema.integer(),
     })
 
-    const Line = Schema.struct({
-      start: Point.link({ codec: CBOR }),
-      end: Point.link({ codec: CBOR }),
+    const PointLink = Point.link({ codec: CBOR })
+
+    assert.equal(
+      PointLink.tryFrom(parseLink('bafkqaaa')).error?.message,
+      'Expected link to be CID with 0x71 codec'
+    )
+
+    const onlyX = await CBOR.write({ x: 1 })
+    const onlyXLink = await PointLink.from(
+      // @ts-expect-error - does not have y
+      onlyX.cid
+    )
+    assert.ok(onlyX)
+
+    assert.deepEqual(
+      onlyX.cid.toString(),
+      onlyXLink.link().toString(),
+      'links match'
+    )
+
+    assert.throws(
+      () => onlyXLink.resolve(new Map()),
+      'Block can not be resolved, please provide a store from which to resolve it'
+    )
+
+    assert.throws(
+      () => onlyXLink.resolve(new Map([[onlyX.cid.toString(), onlyX]])),
+      /invalid field "y"/
+    )
+
+    const point = await CBOR.write({ x: 1, y: 2 })
+    const pointLink = await PointLink.from(point.cid)
+
+    equalLink(point.cid, pointLink)
+
+    assert.throws(
+      () => pointLink.resolve(new Map()),
+      'Block can not be resolved, please provide a store from which to resolve it'
+    )
+
+    assert.deepEqual(
+      pointLink.resolve(new Map([[point.cid.toString(), point]])),
+      {
+        x: 1,
+        y: 2,
+      }
+    )
+
+    const view = pointLink.select(new Map([[point.cid.toString(), point]]))
+    equalLink(view, point.cid)
+
+    assert.deepEqual(view.resolve(), { x: 1, y: 2 })
+
+    assert.equal(isLink(PointLink.from(view)), true)
+    equalLink(PointLink.from(view), point.cid)
+
+    const p2 = await PointLink.attach({
+      x: 1,
+      y: 2,
     })
 
-    const cbor = Schema.bytes(CBOR)
-
-    const line = Line.from({
-      start: cbor
-        .refine(Point)
-        .create({
-          x: 1,
-          y: 2,
-        })
-        .embed(),
-      end: cbor
-        .refine(Point)
-        .create({
-          x: 0,
-          y: 0,
-        })
-        .embed(),
-    })
-
-    const car = Schema.bytes(CAR)
-
-    assert.ok(isLink(line.start), 'is a link')
-    assert.ok(isLink(line.end), 'is a link')
-    assert.equal(line.start.code, CBOR.code, 'is a CBOR link')
-    assert.equal(line.start.multihash.code, identity.code, 'is a CBOR link')
-
-    assert.deepEqual(line.start.resolve(), { x: 1, y: 2 })
-    assert.deepEqual(line.end.resolve(), { x: 0, y: 0 })
+    assert.deepEqual(p2.link(), point.cid)
+    assert.deepEqual(p2.root.bytes, point.bytes)
   })
 
-  test.skip('attachment code', async () => {
+  test('embed links', async () => {
     const Point = Schema.struct({
       x: Schema.integer(),
       y: Schema.integer(),
     })
 
     const Line = Schema.struct({
-      start: Point.attach(),
-      end: Point.attach(),
+      start: Point.link({ codec: CBOR }),
+      end: Point.link({ codec: CBOR }).attached(),
     })
-    const $Point = Schema.bytes(CBOR).refine(Point)
+
+    const PointLink = Point.link({ codec: CBOR })
 
     const line = Line.from({
-      start: await $Point.create({ x: 1, y: 2 }).detach({ hasher: sha256 }),
-      end: await $Point.create({ x: 1, y: 2 }).detach({ hasher: sha256 }),
+      start: PointLink.embed({
+        x: 1,
+        y: 2,
+      }),
+      end: PointLink.embed({
+        x: 0,
+        y: 0,
+      }),
     })
 
     assert.ok(isLink(line.start), 'is a link')
     assert.ok(isLink(line.end), 'is a link')
     assert.equal(line.start.code, CBOR.code, 'is a CBOR link')
     assert.equal(line.start.multihash.code, identity.code, 'is a CBOR link')
+
+    assert.deepEqual(line.start.resolve(new Map()), { x: 1, y: 2 })
+    assert.deepEqual(line.end.resolve(), { x: 0, y: 0 })
   })
-  test.skip('cross block references', async () => {
-    const Content = Schema.bytes()
-    const DealDetail = Schema.struct({
-      size: Schema.integer(),
-      commit: Schema.string(),
-      content: Content.link(),
+
+  test('attached links', async () => {
+    const Point = Schema.struct({
+      x: Schema.integer(),
+      y: Schema.integer(),
     })
 
-    const dealLink = DealDetail.link()
-    dealDetail.from({})
-
-    Schema.debug(DealDetail).in.content
-
-    const detail = DealDetail.from({
-      size: 1,
-      commit: 'a',
-      content: Content.link().parse('baakfa'),
+    const Line = Schema.struct({
+      start: Point.link({ codec: CBOR }).attached(),
+      end: Point.link({ codec: CBOR }).attached(),
     })
 
-    const cbor = Schema.bytes(CBOR)
-    const dealDetail = cbor.refine(DealDetail)
-    const dl = dealDetail.decode(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]))
-    dl.content
+    const int = Schema.integer()
+    const store = createStore()
+    const start = await writeInto({ x: int.from(0), y: int.from(0) }, store)
+    const end = await writeInto({ x: int.from(7), y: int.from(8) }, store)
+    const line = await writeInto({ start: start.cid, end: end.cid }, store)
 
-    Schema.debug(cbor)
+    const Root = Line.link({ codec: CBOR })
 
-    const thing = Schema.dictionary({ value: Schema.unknown() })
+    const root = Root.parse(line.cid.toString())
 
-    const out = Schema.dag({
-      codec: CBOR,
+    {
+      const line = root.resolve(store)
+
+      assert.equal(line.start.resolve().x, 0)
+      assert.equal(line.start.resolve().y, 0)
+      assert.equal(line.end.resolve().x, 7)
+      assert.equal(line.end.resolve().y, 8)
+    }
+
+    const PointLink = Point.link({ codec: CBOR })
+
+    {
+      const line = Line.from({
+        start: PointLink.embed({ x: 0, y: 0 }),
+        end: await PointLink.attach({
+          x: 1,
+          y: 2,
+        }),
+      })
+
+      assert.equal(line.start.code, CBOR.code)
+      assert.equal(line.start.multihash.code, identity.code)
+      assert.equal(line.end.code, CBOR.code)
+      assert.equal(line.end.multihash.code, sha256.code)
+    }
+  })
+
+  test('read from archive', async () => {
+    const Point = Schema.struct({
+      x: Schema.integer(),
+      y: Schema.integer(),
     })
 
-    out.refine(DealDetail)
+    const Line = Schema.struct({
+      start: Point.link({ codec: CBOR }).attached(),
+      end: Point.link({ codec: CBOR }).attached(),
+    })
 
-    const DL = cbor.refine(DealDetail)
+    const int = Schema.integer()
+    const archive = createStore()
+    const start = await writeInto({ x: int.from(0), y: int.from(0) }, archive)
+    const end = await writeInto({ x: int.from(7), y: int.from(8) }, archive)
+    const root = await writeInto({ start: start.cid, end: end.cid }, archive)
 
-    const DL2 = Schema.dictionary({
-      value: Schema.unknown(),
-    }).refine(DealDetail)
+    const Root = Line.link({ codec: CBOR })
 
-    const hello = Schema.string()
-      .startsWith('hello')
-      .endsWith('world')
-      .startsWith('hello ')
+    const line = Root.parse(root.cid.toString()).resolve(archive)
+    assert.deepEqual(line.start.resolve(), { x: 0, y: 0 })
+    assert.deepEqual(line.end.resolve(), { x: 7, y: 8 })
+  })
 
-    const dl2 = DL.from(new Uint8Array())
-    dl2.size
+  test('build dag', async () => {
+    const Point = Schema.struct({
+      x: Schema.integer(),
+      y: Schema.integer(),
+    })
 
-    // const a = {}
+    const Line = Schema.struct({
+      start: Point.link({ codec: CBOR }).attached(),
+      end: Point.link({ codec: CBOR }).attached(),
+    })
 
-    // const out = await Deal.compile({
-    //   size: 2,
-    //   commit: 'a',
-    // })
+    const start = await Point.link({ codec: CBOR }).attach({
+      x: 1,
+      y: 2,
+    })
 
-    // const Offer = Deal.array()
-    // Deal.link().attach().OUT
+    const CBORPoint = Point.link({ codec: CBOR })
+    const end = await Point.link({ codec: CBOR }).attach({
+      x: 3,
+      y: 4,
+    })
 
-    // const Aggregate = Schema.struct({
-    //   offer: Offer.link().resolve(),
-    //   attachment: Offer.link().attach(),
-    // })
+    const PointLink = Point.link({ codec: CBOR })
+    const PointAttachment = PointLink.attached()
 
-    // Offer.link().IN
-    // Offer.link().attach().IN
+    const BoxedPoint = Schema.struct({
+      point: Point.link({ codec: CBOR }).attached(),
+    })
 
-    // const offer = Offer.from([
-    //   { size: 1, commit: 'a' },
-    //   { size: 2, commit: 'b' },
-    // ])
+    BoxedPoint.from({ point: await PointLink.attach({ x: 1, y: 2 }) })
+    const BoxedPointLink = BoxedPoint.link({ codec: CBOR })
 
-    // Aggregate.IN.attachment
+    BoxedPointLink.embed({
+      point: PointLink.embed({ x: 1, y: 2 }),
+    })
 
-    // const attachment = await Offer.attachment(offer)
-    // const aggregate = await Aggregate.compile({
-    //   offer, //: await Offer.attach(offer)
-    //   attachment,
-    // })
+    PointAttachment.from
 
-    // const agg = aggregate.root.data
+    const point = await PointLink.attach({
+      x: 1,
+      y: 2,
+    })
 
-    // agg.attachment.resolve()[0].commit
+    assert.deepEqual(point.resolve(), { x: 1, y: 2 })
 
-    // aggregate.root.data.offer.resolve()[0].commit
-    // // const out = aggregate.offer.load()
+    const lineEmbed = await Line.link({ codec: CBOR }).attach({
+      start: point,
+      end: point,
+    })
+
+    const embed = lineEmbed.resolve()
+    assert.deepEqual(embed.start.link(), point.link())
+    assert.deepEqual(embed.start.resolve(), { x: 1, y: 2 })
+    assert.deepEqual(embed.end.link(), point.link())
+    assert.deepEqual(embed.end.resolve(), { x: 1, y: 2 })
+
+    const blocks = Object.fromEntries(
+      [...lineEmbed.iterateIPLDBlocks()].map(block => [`${block.cid}`, block])
+    )
+
+    assert.ok(blocks[lineEmbed.link().toString()])
+    assert.ok(blocks[point.link().toString()])
+  })
+
+  test('array of dags', async () => {
+    const Point = Schema.struct({
+      x: Schema.integer(),
+      y: Schema.integer(),
+    })
+
+    const Polygon = Schema.array(Point.link({ codec: CBOR }).attached())
+
+    const polygon = await Polygon.link({ codec: CBOR }).attach([
+      await Polygon.element.attach({ x: 1, y: 2 }),
+      await Polygon.element.attach({ x: 3, y: 4 }),
+      await Polygon.element.attach({ x: 5, y: 6 }),
+    ])
+
+    const compile = async (data = {}) => {
+      const { bytes, cid } = await CBOR.write(data)
+      return { bytes, cid, data }
+    }
+
+    const link = async (data = {}) => {
+      const { cid } = await CBOR.write(data)
+      return cid
+    }
+
+    assert.deepEqual(
+      [...polygon.iterateIPLDBlocks()],
+      [
+        await compile({ x: 1, y: 2 }),
+        await compile({ x: 3, y: 4 }),
+        await compile({ x: 5, y: 6 }),
+        polygon.root,
+      ]
+    )
+
+    assert.deepEqual(
+      polygon.link(),
+      await link([
+        await link({ x: 1, y: 2 }),
+        await link({ x: 3, y: 4 }),
+        await link({ x: 5, y: 6 }),
+      ])
+    )
+
+    const region = new Map(
+      [...polygon.iterateIPLDBlocks()].map(block => [`${block.cid}`, block])
+    )
+
+    const root = Polygon.link({ codec: CBOR })
+      .parse(polygon.link().toString())
+      .select(region)
+
+    const replica = root.resolve()
+
+    assert.deepEqual(replica, [
+      await link({ x: 1, y: 2 }),
+      await link({ x: 3, y: 4 }),
+      await link({ x: 5, y: 6 }),
+    ])
+
+    assert.deepEqual(replica[0].resolve(), { x: 1, y: 2 })
+    assert.deepEqual(replica[0].resolve(), { x: 3, y: 4 })
+    assert.deepEqual(replica[0].resolve(), { x: 5, y: 6 })
   })
 })
+
+/**
+ *
+ * @param {Schema.UnknownLink} actual
+ * @param {Schema.UnknownLink} expected
+ */
+const equalLink = (actual, expected) =>
+  assert.deepEqual(CBOR.encode(actual), CBOR.encode(expected))

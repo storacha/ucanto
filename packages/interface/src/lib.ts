@@ -186,14 +186,19 @@ export interface IPLDViewBuilder<View extends IPLDView = IPLDView> {
  * a generic traversal API. It is useful for encoding (potentially partial) IPLD
  * DAGs into content archives (e.g. CARs).
  */
-export interface IPLDView<T extends unknown = unknown> {
+export interface IPLDView<
+  T extends unknown = unknown,
+  Code extends MulticodecCode = MulticodecCode,
+  Alg extends MulticodecCode = MulticodecCode,
+  V extends UnknownLink['version'] = UnknownLink['version']
+> {
   /**
    * The root block of the IPLD DAG this is the view of. This is the the block
    * from which all other blocks are linked directly or transitively.
    */
-  root: Block<T>
+  root: Block<T, Code, Alg, V>
 
-  link(): Link<T, number, number, UnknownLink['version']>
+  link(): Link<T, Code, Alg, V>
 
   /**
    * Returns an iterable of all the IPLD blocks that are included in this view.

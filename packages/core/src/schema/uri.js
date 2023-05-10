@@ -46,7 +46,7 @@ export const uri = () => schema
 /**
  * @param {unknown} input
  */
-export const read = input => schema.read(input)
+export const read = input => schema.tryFrom(input)
 
 /**
  * @template {API.Protocol} P

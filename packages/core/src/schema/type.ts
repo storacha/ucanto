@@ -20,6 +20,8 @@ import {
   BuildOptions,
   ByteView,
 } from '@ucanto/interface'
+import type * as identity from '../identity'
+import type * as sha256 from '../sha256'
 
 export type {
   Link,
@@ -41,33 +43,36 @@ export type {
   Await,
 }
 
-export interface Reader<O = unknown, I = unknown, X extends Error = Error> {
-  read: (input: I) => Result<O, X>
-}
-
-export interface Writer<O = unknown, I = unknown, X extends Error = Error> {
-  write: (output: O) => Result<I, X>
-}
-
 export type { Error, Result }
 
 export type ReadResult<T, X extends Error = Error> = Result<T, X>
 
-export interface Convert<O = unknown, I = unknown, X extends Error = Error>
-  extends Reader<O, I, X>,
-    Writer<O, I, X> {}
-
-export interface From<Self, T> {
-  from(value: T): Self
+export interface From<Self = unknown, T = unknown> {
+  tryFrom(value: T, context?: Region): ReadResult<Self>
 }
 
-export interface To<Self, T> {
-  to(value: Self): T
+export interface To<Self = unknown, T = unknown> {
+  tryTo(value: Self): ReadResult<T>
 }
 
-export interface Into<Self, T> extends From<Self, T>, To<Self, T> {}
+export interface Convert<Self = unknown, T = unknown>
+  extends From<Self, T>,
+    To<Self, T> {}
 
-export interface BlockLoader extends Reader<Block, Link> {}
+export interface Conform<Self = unknown> {
+  conform(value: unknown): Conformance<Self, Error>
+}
+
+export type Conformance<Self, Reason extends Error = Error> = Result<
+  Self,
+  Reason
+>
+
+export interface BlockLoader extends From<Block, Link> {}
+
+export interface Region {
+  get(id: string): undefined | { bytes: Uint8Array }
+}
 
 export interface Schema<
   Out extends unknown = unknown,
@@ -97,14 +102,14 @@ export interface Schema<
   // conforms(value: unknown): value is Out
 
   link<
-    Code extends MulticodecCode,
-    Alg extends MulticodecCode,
-    V extends UnknownLink['version']
+    Codec extends BlockCodec<MulticodecCode, In>,
+    Hasher extends MultihashHasher<MulticodecCode> = MultihashHasher<MulticodecCode>,
+    V extends UnknownLink['version'] = 1
   >(options?: {
-    codec?: BlockCodec<Code, In>
+    codec?: Codec
     version?: V
-    hasher?: MultihashHasher<Alg>
-  }): LinkSchema<Out, Code, Alg, V>
+    hasher?: Hasher
+  }): LinkSchema<Out, Codec['code'], Hasher['code'], V>
 
   // attach<
   //   Code extends MulticodecCode,
@@ -118,7 +123,7 @@ export interface Schema<
 
   // with(context: { store: BlockStore }): Schema<Out, In>
 
-  // asDAG(): Schema<Out, { input: In; store: BlockStore }>
+  // resolve(settings: { store: BlockStore }): Schema<Out, In>
 
   // codec: BlockCodec<number, unknown>
   // hasher: MultihashHasher<number>
@@ -142,7 +147,10 @@ export interface Schema<
   // OUT: Out
 }
 
-export interface PropertySchema {}
+export interface DAGRoot<T> {
+  link(): Link<T>
+  resolve(link: Link): Uint8Array
+}
 
 export interface ByteSchemaSettings<
   Model,
@@ -165,8 +173,6 @@ export interface BytesSchema<
   refine<O extends Out, I extends Out>(
     schema: Convert<O, I>
   ): BytesSchema<O, Code>
-
-  create(value: Out): BlockView<Out, Code>
 }
 
 export interface BlockView<
@@ -176,7 +182,7 @@ export interface BlockView<
   code: Code
   encode(): ByteView<T>
   decode(): T
-  embed(): Linked<T, Code, 0x0, 1>
+  embed(): Attachment<T, Code, typeof identity.code>
 
   detach<
     Alg extends MulticodecCode = MulticodecCode<0x12, 'sha2-256'>
@@ -190,7 +196,8 @@ export interface DAGView<
   Code extends MulticodecCode = MulticodecCode,
   Alg extends MulticodecCode = MulticodecCode,
   V extends UnknownLink['version'] = 1
-> extends IPLDView<T> {
+> extends IPLDView<T>,
+    Attachment<T, Code, Alg, V> {
   decode(): T
   link(): Link<T, Code, Alg, V>
 }
@@ -202,17 +209,31 @@ export type ToBlock<T> = {
     infer Alg,
     infer V
   >
-    ? Linked<O, Code, Alg, V>
+    ? Attachment<O, Code, Alg, V>
     : T[K]
 }
 
-export interface Linked<
+export interface LinkOf<
   T extends unknown = unknown,
   Code extends MulticodecCode = MulticodecCode,
   Alg extends MulticodecCode = MulticodecCode,
   V extends UnknownLink['version'] = 1
 > extends Link<T, Code, Alg, V> {
-  resolve(store?: BlockStore): ResolvedLink<T, Code, Alg, V>
+  resolve(region: Region): ResolvedLink<T, Code, Alg, V>
+  select(region: Region): Attachment<T, Code, Alg, V>
+}
+
+export interface Attachment<
+  T extends unknown = unknown,
+  Code extends MulticodecCode = MulticodecCode,
+  Alg extends MulticodecCode = MulticodecCode,
+  V extends UnknownLink['version'] = 1
+> extends Link<T, Code, Alg, V>,
+    IPLDView<T> {
+  link(): Link<T, Code, Alg, V>
+  resolve(): ResolvedLink<T, Code, Alg, V>
+
+  with(context: { store?: Region }): Attachment<T, Code, Alg, V>
 }
 
 export interface CompiledView<O> extends IPLDView<O> {
@@ -246,15 +267,17 @@ export interface LinkSchema<
   Code extends MulticodecCode,
   Alg extends MulticodecCode,
   V extends UnknownLink['version']
-> extends Schema<Linked<Out, Code, Alg, V>, IntoLink<Out>> {
+> extends Schema<LinkOf<Out, Code, Alg, V>, IntoLink<Out>> {
   link(): never
 
-  // attach(): AttachmentSchema<O, IPLDView<O>, Code, Alg, V>
-  // resolve(): Schema<ResolvedLink<O, Code, Alg, V>, O | IPLDView<O>>
+  attached(): AttachmentSchema<Out, Code, Alg, V>
   parse<Prefix extends string>(
     source: string,
     base?: MultibaseDecoder<Prefix>
-  ): Linked<Out, Code, Alg, V>
+  ): LinkOf<Out, Code, Alg, V>
+
+  embed(target: Out): Attachment<Out, Code, typeof identity.code>
+  attach(target: Out): Await<Attachment<Out, Code, Alg, V>>
 }
 
 export interface IntoLink<T> {
@@ -262,11 +285,19 @@ export interface IntoLink<T> {
 }
 
 export interface AttachmentSchema<
-  O extends unknown,
+  Target extends unknown,
   Code extends MulticodecCode,
   Alg extends MulticodecCode,
   V extends UnknownLink['version']
-> extends Schema<Linked<O, Code, Alg, V>, IPLDView<O>> {}
+> extends Schema<Attachment<Target, Code, Alg, V>, IPLDView<Target>> {
+  link(): never
+  attach(
+    target: Target,
+    options?: { hasher?: MultihashHasher<Alg> }
+  ): Await<Attachment<Target, Code, Alg, V>>
+
+  embed(target: Target): Attachment<Target, Code, typeof identity.code>
+}
 
 export interface IPLDViewSource {
   root: Block
@@ -289,8 +320,9 @@ export interface ImplicitSchema<O, I>
 
 export type NotUndefined<T extends unknown = unknown> = Exclude<T, undefined>
 
-export interface ArraySchema<O, I> extends Schema<O[], I[]> {
-  element: Convert<O, I>
+export interface ArraySchema<C extends Convert>
+  extends Schema<Infer<C>[], InferInput<C>[]> {
+  element: C
 }
 
 /**
@@ -314,7 +346,7 @@ export interface DictionarySchema<V, K extends string, U>
     MapRepresentation<Dictionary<K, V>, Dictionary<K, U>>,
     'partial'
   > {
-  key: Reader<K, string>
+  key: From<K, string>
   value: Convert<V, U>
 
   partial(): DictionarySchema<V | undefined, K, U | undefined>
@@ -449,7 +481,7 @@ export type InferVariant<Choices extends VariantChoices> = {
   [Case in keyof Choices]: {
     [Key in Exclude<keyof Choices, Case>]?: never
   } & {
-    [Key in Case]: Choices[Case] extends Reader<infer T> ? T : never
+    [Key in Case]: Choices[Case] extends From<infer T> ? T : never
   }
 }[keyof Choices]
 
@@ -457,7 +489,7 @@ export type InferVariantInput<Choices extends VariantChoices> = {
   [Case in keyof Choices]: {
     [Key in Exclude<keyof Choices, Case>]?: never
   } & {
-    [Key in Case]: Choices[Case] extends Writer<any, infer T> ? T : never
+    [Key in Case]: Choices[Case] extends To<any, infer T> ? T : never
   }
 }[keyof Choices]
 
@@ -467,24 +499,22 @@ export type InferVariantInput<Choices extends VariantChoices> = {
  * use of `switch` statement for type narrowing.
  */
 export type InferVariantMatch<Choices extends VariantChoices> = {
-  [Branch in keyof Choices]: Choices[Branch] extends Reader<infer Value>
+  [Branch in keyof Choices]: Choices[Branch] extends From<infer Value>
     ? [Branch, Value]
     : never
 }[keyof Choices]
 
-export type InferOptionalStructShape<U extends { [key: string]: Reader }> = {
+export type InferOptionalStructShape<U extends { [key: string]: From }> = {
   [K in keyof U]: InferOptionalReader<U[K]>
 }
 
-export type InferOptionalReader<R extends Reader> = R extends Reader<infer T>
-  ? Reader<T | undefined>
+export type InferOptionalReader<R extends From> = R extends From<infer T>
+  ? From<T | undefined>
   : R
 
 export interface StringSchema<Out extends string, In extends string = string>
   extends Schema<Out, In> {
-  refine<I extends Out, O extends Out>(
-    convert: Reader<O, I>
-  ): StringSchema<O, In>
+  refine<I extends Out, O extends Out>(convert: From<O, I>): StringSchema<O, In>
   constraint(check: (value: Out) => ReadResult<Out>): StringSchema<Out, In>
   startsWith<Prefix extends string>(
     prefix: Prefix
@@ -502,33 +532,29 @@ export type Branded<T, Brand> = T & {
 export type Integer = number & Phantom<{ typeof: 'integer' }>
 export type Float = number & Phantom<{ typeof: 'float' }>
 
-export type Infer<T extends Reader> = T extends Reader<infer T, any> ? T : never
-export type InferInput<T extends Writer> = T extends Writer<any, infer T>
-  ? T
-  : never
+export type Infer<T extends From> = T extends From<infer T, any> ? T : never
+export type InferInput<T extends To> = T extends To<any, infer T> ? T : never
 
-export type InferIntersection<U extends [Reader, ...Reader[]]> = {
+export type InferIntersection<U extends [From, ...From[]]> = {
   [K in keyof U]: (input: Infer<U[K]>) => void
 }[number] extends (input: infer T) => void
   ? T
   : never
 
-export type InferIntersectionInput<U extends [Writer, ...Writer[]]> = {
+export type InferIntersectionInput<U extends [To, ...To[]]> = {
   [K in keyof U]: (input: InferInput<U[K]>) => void
 }[number] extends (input: infer T) => void
   ? T
   : never
 
-export type InferUnion<U extends [Reader, ...Reader[]]> = Infer<U[number]>
-export type InferUnionInput<U extends [Writer, ...Writer[]]> = InferInput<
-  U[number]
->
+export type InferUnion<U extends [From, ...From[]]> = Infer<U[number]>
+export type InferUnionInput<U extends [To, ...To[]]> = InferInput<U[number]>
 
-export type InferTuple<U extends [Reader, ...Reader[]]> = {
+export type InferTuple<U extends [From, ...From[]]> = {
   [K in keyof U]: Infer<U[K]>
 }
 
-export type InferTupleInput<U extends [Writer, ...Writer[]]> = {
+export type InferTupleInput<U extends [To, ...To[]]> = {
   [K in keyof U]: InferInput<U[K]>
 }
 
@@ -540,21 +566,18 @@ export type InferStructInput<Shape extends StructMembers> = MarkOptionals<{
   [K in keyof Shape]: InferInput<Shape[K]>
 }>
 
-export type InferStructSource<U extends { [key: string]: Reader }> =
+export type InferStructSource<U extends { [key: string]: From }> =
   // MarkEmptyOptional<
   MarkOptionals<{
     [K in keyof U]: InferSource<U[K]>
   }>
 // >
 
-export type InferSource<U extends Reader> = U extends ImplicitSchema<
-  infer T,
-  any
->
+export type InferSource<U extends From> = U extends ImplicitSchema<infer T, any>
   ? T | undefined
   : U extends StructSchema
   ? InferStructSource<U['shape']>
-  : U extends Reader<infer T>
+  : U extends From<infer T>
   ? T
   : never
 

@@ -13,7 +13,7 @@ export const text = match
 /**
  * @param {unknown} input
  */
-export const read = input => schema.read(input)
+export const read = input => schema.tryFrom(input)
 
 /**
  * @extends {Schema.API<string, string, RegExp>}

@@ -15,12 +15,12 @@ test('.partial on structs', () => {
     y: Schema.integer().optional(),
   })
 
-  assert.deepEqual(PartialPoint.from({}), {})
-  assert.deepEqual(PartialPoint.from({ x: 1 }), { x: 1 })
-  assert.deepEqual(PartialPoint.from({ x: 1, y: 2 }), { x: 1, y: 2 })
-  assert.deepEqual(PartialPoint.from({ y: 2 }), { y: 2 })
-  assert.deepEqual(PartialPoint.from({ x: undefined }), {})
-  assert.deepEqual(PartialPoint.from({ x: undefined, y: 2 }), { y: 2 })
+  assert.deepEqual(PartialPoint.tryFrom({}), {})
+  assert.deepEqual(PartialPoint.tryFrom({ x: 1 }), { x: 1 })
+  assert.deepEqual(PartialPoint.tryFrom({ x: 1, y: 2 }), { x: 1, y: 2 })
+  assert.deepEqual(PartialPoint.tryFrom({ y: 2 }), { y: 2 })
+  assert.deepEqual(PartialPoint.tryFrom({ x: undefined }), {})
+  assert.deepEqual(PartialPoint.tryFrom({ x: undefined, y: 2 }), { y: 2 })
 
   assert.throws(
     () =>
@@ -39,12 +39,12 @@ test('.partial on dicts', () => {
   assert.equal(IntsMaybe.key, Ints.key)
   assert.deepEqual(IntsMaybe.value, Schema.integer().optional())
 
-  assert.deepEqual(IntsMaybe.from({}), {})
-  assert.deepEqual(IntsMaybe.from({ x: 1 }), { x: 1 })
-  assert.deepEqual(IntsMaybe.from({ x: 1, y: 2 }), { x: 1, y: 2 })
-  assert.deepEqual(IntsMaybe.from({ y: 2 }), { y: 2 })
-  assert.deepEqual(IntsMaybe.from({ x: undefined }), {})
-  assert.deepEqual(IntsMaybe.from({ x: undefined, y: 2 }), { y: 2 })
+  assert.deepEqual(IntsMaybe.tryFrom({}), {})
+  assert.deepEqual(IntsMaybe.tryFrom({ x: 1 }), { x: 1 })
+  assert.deepEqual(IntsMaybe.tryFrom({ x: 1, y: 2 }), { x: 1, y: 2 })
+  assert.deepEqual(IntsMaybe.tryFrom({ y: 2 }), { y: 2 })
+  assert.deepEqual(IntsMaybe.tryFrom({ x: undefined }), {})
+  assert.deepEqual(IntsMaybe.tryFrom({ x: undefined, y: 2 }), { y: 2 })
 })
 
 test('.creteIPLDView', async () => {

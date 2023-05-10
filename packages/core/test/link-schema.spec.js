@@ -27,16 +27,16 @@ const digests = new Set(links.map(link => link.multihash.digest))
 
 for (const link of links) {
   test(`${link} ➡ Schema.link()`, () => {
-    assert.deepEqual(Schema.link().read(link), { ok: link }, `${link}`)
+    assert.deepEqual(Schema.link().tryFrom(link), { ok: link }, `${link}`)
   })
 
   for (const version of versions) {
     test(`${link} ➡ Schema.link({ version: ${version}})`, () => {
       const schema = Schema.link({ version })
       if (link.version === version) {
-        assert.deepEqual(schema.read(link), { ok: link })
+        assert.deepEqual(schema.tryFrom(link), { ok: link })
       } else {
-        matchError(schema.read(link), /Expected link to be CID version/)
+        matchError(schema.tryFrom(link), /Expected link to be CID version/)
       }
     })
   }
@@ -45,9 +45,12 @@ for (const link of links) {
     test(`${link} ➡ Schema.link({ code: ${code}})`, () => {
       const schema = Schema.link({ code })
       if (link.code === code) {
-        assert.deepEqual(schema.read(link), { ok: link })
+        assert.deepEqual(schema.tryFrom(link), { ok: link })
       } else {
-        matchError(schema.read(link), /Expected link to be CID with .* codec/)
+        matchError(
+          schema.tryFrom(link),
+          /Expected link to be CID with .* codec/
+        )
       }
     })
   }
@@ -56,10 +59,10 @@ for (const link of links) {
     test(`${link} ➡ Schema.link({ multihash: {code: ${code}} })`, () => {
       const schema = Schema.link({ multihash: { code } })
       if (link.multihash.code === code) {
-        assert.deepEqual(schema.read(link), { ok: link })
+        assert.deepEqual(schema.tryFrom(link), { ok: link })
       } else {
         matchError(
-          schema.read(link),
+          schema.tryFrom(link),
           /Expected link to be CID with .* hashing algorithm/
         )
       }
@@ -72,9 +75,9 @@ for (const link of links) {
         multihash: { digest: new Uint8Array(digest) },
       })
       if (link.multihash.digest === digest) {
-        assert.deepEqual(schema.read(link), { ok: link })
+        assert.deepEqual(schema.tryFrom(link), { ok: link })
       } else {
-        matchError(schema.read(link), /Expected link with .* hash digest/)
+        matchError(schema.tryFrom(link), /Expected link with .* hash digest/)
       }
     })
   }
@@ -87,7 +90,7 @@ test('struct().link()', () => {
   })
   const PointLink = Point.link()
 
-  assert.equal(PointLink.read(fixtures.pb).ok, fixtures.pb)
+  assert.equal(PointLink.tryFrom(fixtures.pb).ok, fixtures.pb)
 
   assert.throws(() => PointLink.link(), /link of link/)
 })
@@ -101,8 +104,8 @@ test('struct().link({ codec })', () => {
     codec: CBOR,
   })
 
-  assert.match(PointLink.read(fixtures.pb).error?.message || '', /0x71 code/)
-  assert.equal(PointLink.read(fixtures.cbor).ok, fixtures.cbor)
+  assert.match(PointLink.tryFrom(fixtures.pb).error?.message || '', /0x71 code/)
+  assert.equal(PointLink.tryFrom(fixtures.cbor).ok, fixtures.cbor)
 })
 
 test('struct().link({ hasher })', () => {
@@ -115,10 +118,10 @@ test('struct().link({ hasher })', () => {
   })
 
   assert.match(
-    PointLink.read(fixtures.sha512).error?.message || '',
+    PointLink.tryFrom(fixtures.sha512).error?.message || '',
     /0x12 hashing/
   )
-  assert.equal(PointLink.read(fixtures.cbor).ok, fixtures.cbor)
+  assert.equal(PointLink.tryFrom(fixtures.cbor).ok, fixtures.cbor)
 })
 
 test('struct().link({ hasher })', () => {
@@ -130,6 +133,6 @@ test('struct().link({ hasher })', () => {
     version: 1,
   })
 
-  assert.match(PointLink.read(fixtures.pb).error?.message || '', /version 1/)
-  assert.equal(PointLink.read(fixtures.cbor).ok, fixtures.cbor)
+  assert.match(PointLink.tryFrom(fixtures.pb).error?.message || '', /version 1/)
+  assert.equal(PointLink.tryFrom(fixtures.cbor).ok, fixtures.cbor)
 })
