@@ -2,6 +2,10 @@ import * as UCAN from '@ipld/dag-ucan'
 import * as API from '@ucanto/interface'
 import * as Link from './link.js'
 import * as DAG from './dag.js'
+import * as CAR from './car.js'
+import * as CBOR from './cbor.js'
+import * as Schema from './schema.js'
+import { ok, error } from './result.js'
 
 /**
  * @deprecated
@@ -162,14 +166,46 @@ export class Delegation {
     this.root = root
     this.blocks = blocks
 
-    /** @type {API.AttachedLinkSet} */
-    this.attachedLinks = new Set()
-
     Object.defineProperties(this, {
       blocks: {
         enumerable: false,
       },
     })
+  }
+
+  /**
+   * @returns {API.AttachedLinkSet}
+   */
+  get attachedLinks() {
+    const _attachedLinks = new Set()
+    const ucanView = this.data
+
+    // Get links from capabilities nb
+    for (const capability of ucanView.capabilities) {
+      /** @type {Link[]} */
+      const links = getLinksFromObject(capability)
+
+      for (const link of links) {
+        _attachedLinks.add(`${link}`)
+      }
+    }
+
+    // Get links from facts values
+    for (const fact of ucanView.facts) {
+      if (Link.isLink(fact)) {
+        _attachedLinks.add(`${fact}`)
+      } else {
+        /** @type {Link[]} */
+        // @ts-expect-error isLink does not infer value type
+        const links = Object.values(fact).filter(e => Link.isLink(e))
+
+        for (const link of links) {
+          _attachedLinks.add(`${link}`)
+        }
+      }
+    }
+
+    return _attachedLinks
   }
 
   get version() {
@@ -198,18 +234,26 @@ export class Delegation {
   /**
    * Attach a block to the delegation DAG so it would be included in the
    * block iterator.
-   * ⚠️ You should only attach blocks that are referenced from the `capabilities`
-   * or `facts`, if that is not the case you probably should reconsider.
-   * ⚠️ Once a delegation is de-serialized the attached blocks will not be re-attached.
+   * ⚠️ You can only attach blocks that are referenced from the `capabilities`
+   * or `facts`.
    *
    * @param {API.Block} block
    */
   attach(block) {
-    this.attachedLinks.add(`${block.cid}`)
+    if (!this.attachedLinks.has(`${block.cid.link()}`)) {
+      throw new Error(`given block with ${block.cid} is not an attached link`)
+    }
     this.blocks.set(`${block.cid}`, block)
   }
   export() {
     return exportDAG(this.root, this.blocks, this.attachedLinks)
+  }
+
+  /**
+   * @returns {API.Await<API.Result<Uint8Array, Error>>}
+   */
+  archive() {
+    return archive(this)
   }
 
   iterateIPLDBlocks() {
@@ -305,6 +349,70 @@ export class Delegation {
 }
 
 /**
+ * Writes given `Delegation` chain into a content addressed archive (CAR)
+ * buffer and returns it.
+ *
+ * @param {API.Delegation} delegation}
+ * @returns {Promise<API.Result<Uint8Array, Error>>}
+ */
+export const archive = async delegation => {
+  try {
+    // Iterate over all of the blocks in the DAG and add them to the
+    // block store.
+    const store = new Map()
+    for (const block of delegation.iterateIPLDBlocks()) {
+      store.set(`${block.cid}`, block)
+    }
+
+    // Then we we create a descriptor block to describe what this DAG represents
+    // and it to the block store as well.
+    const variant = await CBOR.write({
+      [`ucan@${delegation.version}`]: delegation.root.cid,
+    })
+    store.set(`${variant.cid}`, variant)
+
+    // And finally we encode the whole thing into a CAR.
+    const bytes = CAR.encode({
+      roots: [variant],
+      blocks: store,
+    })
+
+    return ok(bytes)
+  } catch (cause) {
+    return error(/** @type {Error} */ (cause))
+  }
+}
+
+export const ArchiveSchema = Schema.variant({
+  'ucan@0.9.1': /** @type {Schema.Schema<API.UCANLink>} */ (
+    Schema.link({ version: 1 })
+  ),
+})
+
+/**
+ * Extracts a `Delegation` chain from a given content addressed archive (CAR)
+ * buffer. Assumes that the CAR contains a single root block corresponding to
+ * the delegation variant.
+ *
+ * @param {Uint8Array} archive
+ */
+export const extract = async archive => {
+  try {
+    const { roots, blocks } = CAR.decode(archive)
+    const [root] = roots
+    if (root == null) {
+      return Schema.error('CAR archive does not contain a root block')
+    }
+    const { bytes } = root
+    const variant = CBOR.decode(bytes)
+    const [, link] = ArchiveSchema.match(variant)
+    return ok(view({ root: link, blocks }))
+  } catch (cause) {
+    return error(/** @type {Error} */ (cause))
+  }
+}
+
+/**
  * @param {API.Delegation} delegation
  * @returns {IterableIterator<API.Delegation>}
  */
@@ -345,7 +453,7 @@ const decode = ({ bytes }) => {
  */
 
 export const delegate = async (
-  { issuer, audience, proofs = [], attachedBlocks = new Map, ...input },
+  { issuer, audience, proofs = [], attachedBlocks = new Map(), ...input },
   options
 ) => {
   const links = []
@@ -401,12 +509,10 @@ export const exportDAG = function* (root, blocks, attachedLinks) {
   for (const link of attachedLinks.values()) {
     const block = blocks.get(link)
 
-    /* c8 ignore next 3 */
-    if (!block) {
-      throw new Error(`Attached block with link ${link} is not in BlockStore`)
+    if (block) {
+      // @ts-expect-error can get blocks with v0 and v1
+      yield block
     }
-    // @ts-expect-error can get blocks with v0 and v1
-    yield block
   }
 
   yield root
@@ -466,16 +572,19 @@ export const create = ({ root, blocks }) => new Delegation(root, blocks)
 
 /**
  * @template {API.Capabilities} C
- * @template [T=undefined]
+ * @template [E=never]
  * @param {object} dag
  * @param {API.UCANLink<C>} dag.root
  * @param {DAG.BlockStore} dag.blocks
- * @param {T} [fallback]
- * @returns {API.Delegation<C>|T}
+ * @param {E} [fallback]
+ * @returns {API.Delegation<C>|E}
  */
 export const view = ({ root, blocks }, fallback) => {
   const block = DAG.get(root, blocks, null)
-  return block ? create({ root: block, blocks }) : /** @type {T} */ (fallback)
+  if (block == null) {
+    return fallback !== undefined ? fallback : DAG.notFound(root)
+  }
+  return create({ root: block, blocks })
 }
 
 /**
@@ -497,6 +606,34 @@ const proofs = delegation => {
   // more than once.
   Object.defineProperty(delegation, 'proofs', { value: proofs })
   return proofs
+}
+
+/**
+ * @param {API.Capability<API.Ability, `${string}:${string}`, unknown>} obj
+ */
+function getLinksFromObject(obj) {
+  /** @type {Link[]} */
+  const links = []
+
+  /**
+   * @param {object} obj
+   */
+  function recurse(obj) {
+    for (const key in obj) {
+      // @ts-expect-error record type not inferred
+      const value = obj[key]
+      if (Link.isLink(value)) {
+        // @ts-expect-error isLink does not infer value type
+        links.push(value)
+      } else if (value && typeof value === 'object') {
+        recurse(value)
+      }
+    }
+  }
+
+  recurse(obj)
+
+  return links
 }
 
 export { Delegation as View }

@@ -264,6 +264,8 @@ export interface Delegation<C extends Capabilities = Capabilities>
   toJSON(): DelegationJSON<this>
   delegate(): Await<Delegation<C>>
 
+  archive(): Await<Result<Uint8Array, Error>>
+
   attach(block: Block): void
 }
 
