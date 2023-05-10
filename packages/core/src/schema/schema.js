@@ -1261,28 +1261,6 @@ export const String = new StringSchema(undefined)
 export const string = () => String
 
 /**
- * @template [I=unknown]
- * @extends {API<Uint8Array, I, void>}
- */
-class BytesSchema extends API {
-  /**
-   * @param {I} input
-   * @returns {Schema.ReadResult<Uint8Array>}
-   */
-  readWith(input) {
-    if (input instanceof Uint8Array) {
-      return { ok: input }
-    } else {
-      return typeError({ expect: 'Uint8Array', actual: input })
-    }
-  }
-}
-
-/** @type {Schema.Schema<Uint8Array, unknown>} */
-export const Bytes = new BytesSchema()
-export const bytes = () => Bytes
-
-/**
  * @template {string} Prefix
  * @template {string} In
  * @extends {API<`${Prefix}${string}` & In, In, Prefix>}
