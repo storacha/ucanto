@@ -1,5 +1,6 @@
 import * as Schema from '../src/schema.js'
-import { isLink, parseLink } from '../src/lib.js'
+import { isLink, parseLink, delegate, CAR } from '../src/lib.js'
+import { alice, service as w3 } from './fixtures.js'
 import { CBOR, identity, sha256, createStore, writeInto } from '../src/dag.js'
 import { test, assert } from './test.js'
 
@@ -306,6 +307,54 @@ describe.only('IPLD Schema', () => {
     assert.deepEqual(replica[0].resolve(), { x: 1, y: 2 })
     assert.deepEqual(replica[0].resolve(), { x: 3, y: 4 })
     assert.deepEqual(replica[0].resolve(), { x: 5, y: 6 })
+  })
+
+  test.only('inline into delegation', async () => {
+    const Detail = Schema.struct({
+      link: Schema.unknown().link(),
+      size: Schema.integer(),
+      src: Schema.string().array(),
+    })
+    const Offer = Schema.array(Detail)
+    const Capability = Schema.struct({
+      with: Schema.did(),
+      can: Schema.literal('aggregate/offer'),
+      nb: Schema.struct({
+        offer: Offer.link({ codec: CBOR }).attached(),
+      }),
+    })
+
+    const userData = await CBOR.write({ hello: 'world' })
+
+    const car = await CAR.write({
+      roots: [userData],
+    })
+
+    const offer = await delegate({
+      issuer: alice,
+      audience: w3,
+      capabilities: [
+        Capability.from({
+          can: 'aggregate/offer',
+          with: alice.did(),
+          nb: {
+            offer: await Offer.link({ codec: CBOR, hasher: sha256 }).attach([
+              Detail.from({
+                link: car.cid,
+                size: car.bytes.length,
+                src: [`ipfs://${car.cid}`],
+              }),
+            ]),
+          },
+        }),
+      ],
+    })
+
+    const region = new Map(
+      [...offer.export()].map(block => [`${block.cid}`, block])
+    )
+
+    assert.equal(region.size, 2)
   })
 })
 

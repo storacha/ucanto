@@ -193,7 +193,7 @@ export class API {
    * }} options
    * @returns {Schema.LinkSchema<Out, Codec['code'], Hasher['code'], Version>}
    */
-  link({ codec = /** @type {*} */ (CBOR), hasher, version } = {}) {
+  link({ codec, hasher, version } = {}) {
     const schema = link({
       codec,
       hasher,
@@ -1140,14 +1140,31 @@ export const float = () => Float
  */
 class StringSchema extends API {
   /**
+   * @template {string} Source
+   * @param {Source} source
+   * @returns {Schema.ReadResult<Source>}
+   */
+  static validate(source) {
+    return typeof source === 'string'
+      ? { ok: source }
+      : typeError({ expect: 'string', actual: source })
+  }
+  /**
    * @param {In} input
    * @param {Settings} settings
    * @returns {Schema.ReadResult<Out>}
    */
   readWith(input, settings) {
-    return typeof input === 'string'
-      ? { ok: /** @type {Out & In} */ (input) }
-      : typeError({ expect: 'string', actual: input })
+    return StringSchema.validate(/** @type {In & Out} */ (input))
+  }
+
+  /**
+   * @param {Out} input
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<In>}
+   */
+  writeWith(input, settings) {
+    return StringSchema.validate(/** @type {In & Out} */ (input))
   }
 
   /**
@@ -1780,7 +1797,7 @@ class Link {
   /**
    * @param {object} source
    * @param {Schema.Link<Out, Code, Alg, V>} source.link
-   * @param {Schema.BlockCodec<Code, In>} source.codec
+   * @param {Schema.BlockCodec<Code, In>} [source.codec]
    * @param {Schema.Convert<Out, In>} source.schema
    * @param {Schema.Region} [source.store]
    */
@@ -1878,7 +1895,7 @@ class Attachment {
   /**
    * @param {object} source
    * @param {Schema.Block<Out, Code, Alg, V>} source.root
-   * @param {Schema.BlockCodec<Code, In>} source.codec
+   * @param {Schema.BlockCodec<Code, In>} [source.codec]
    * @param {Schema.Convert<Out, In>} source.schema
    * @param {Schema.Region} [source.store]
    */
@@ -1899,7 +1916,7 @@ class Attachment {
   resolve() {
     let result = this._resolved
     if (result == null) {
-      const { schema, codec, root } = this
+      const { schema, codec = CBOR, root } = this
       const data = codec.decode(/** @type {Uint8Array} */ (root.bytes))
       result = schema.tryFrom(data, this.store)
 
@@ -2012,7 +2029,7 @@ class Attachment {
  * @template {number} [Alg=number]
  * @template {1|0} [Version=0|1]
  * @typedef {{
- * codec: Schema.BlockCodec<Code, In>,
+ * codec?: Schema.BlockCodec<Code, In>,
  * version?: Version
  * hasher?: {code: Alg}
  * schema: Schema.Schema<Out, In>
@@ -2046,24 +2063,20 @@ class LinkSchema extends API {
       if (!isLink(source)) {
         return error(`Expected link to be a CID instead of ${source}`)
       } else {
-        if (source.code !== codec.code) {
+        if (codec && codec.code !== source.code) {
           return error(
             `Expected link to be CID with 0x${codec.code.toString(16)} codec`
           )
         }
 
-        if (
-          hasher &&
-          hasher.code != null &&
-          source.multihash.code !== hasher.code
-        )
+        if (hasher && hasher.code !== source.multihash.code)
           return error(
             `Expected link to be CID with 0x${hasher.code.toString(
               16
             )} hashing algorithm`
           )
 
-        if (version != null && source.version !== version) {
+        if (version != null && version !== source.version) {
           return error(
             `Expected link to be CID version ${version} instead of ${source.version}`
           )
@@ -2194,13 +2207,14 @@ class AttachmentSchema extends API {
    * @param {LinkSettings<Out, In, Code, Alg, V>} settings
    * @returns {Schema.ReadResult<Schema.IPLDView<Out>>}
    */
-  writeWith(attachment, { codec, schema }) {
+  writeWith(attachment, settings) {
     if (attachment instanceof Attachment) {
       return { ok: attachment }
     }
 
     console.log('!!!!!!!!!')
     try {
+      const { codec, schema } = settings
       const link = attachment.link()
       const out = attachment.resolve()
       const data = schema.tryTo(out)
@@ -2208,7 +2222,7 @@ class AttachmentSchema extends API {
         return data
       } else {
         /** @type {Uint8Array} */
-        const bytes = codec.encode(data.ok)
+        const bytes = (codec || CBOR).encode(data.ok)
         /** @type {Required<Schema.Block<Out, Code, Alg, V>>} */
         const root = { cid: link, bytes, data: out }
         const view = new Attachment({ root, codec, schema })
@@ -2224,7 +2238,7 @@ class AttachmentSchema extends API {
    * @param {{hasher?: Schema.MultihashHasher<Alg> }} options
    */
   async attach(target, { hasher = /** @type {*} */ (sha256) } = {}) {
-    const { schema, codec } = this.settings
+    const { schema, codec = CBOR } = this.settings
     const result = schema.tryTo(target)
     if (result.error) {
       throw result.error
@@ -2233,7 +2247,7 @@ class AttachmentSchema extends API {
     /** @type {Uint8Array} */
     const bytes = codec.encode(data)
     const digest = await hasher.digest(bytes)
-    /** @type {Schema.Link<Out, Code, Alg, *>} */
+    /** @type {Schema.Link<Out, *, Alg, *>} */
     const cid = createLink(codec.code, digest)
 
     const store = new Map()
@@ -2254,7 +2268,7 @@ class AttachmentSchema extends API {
    * @param {Out} target
    */
   embed(target) {
-    const { schema, codec } = this.settings
+    const { schema, codec = /** @type {*} */ (CBOR) } = this.settings
     const result = schema.tryTo(target)
     if (result.error) {
       throw result.error
