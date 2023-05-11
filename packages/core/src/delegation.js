@@ -419,9 +419,11 @@ export const delegate = async (
   }
 
   for (const fact of facts) {
-    for (const node of [...Object.values(fact || {}), fact]) {
-      for (const block of DAG.iterate(node)) {
-        blocks.set(block.cid.toString(), block)
+    if (fact) {
+      for (const node of [...Object.values(fact), fact]) {
+        for (const block of DAG.iterate(node)) {
+          blocks.set(block.cid.toString(), block)
+        }
       }
     }
   }
@@ -600,11 +602,7 @@ const iterateLinks = function* (source, region) {
       yield `${source}`
     } else {
       for (const member of Object.values(source)) {
-        if (Link.isLink(member)) {
-          yield `${member}`
-        } else {
-          yield* iterateLinks(member, region)
-        }
+        yield* iterateLinks(member, region)
       }
     }
   }

@@ -1674,8 +1674,8 @@ export const Bytes = new RawBytes()
  * @type {Schema.Convert<*>}
  */
 const direct = {
-  tryFrom: input => input,
-  tryTo: output => output,
+  tryFrom: input => ({ ok: input }),
+  tryTo: output => ({ ok: output }),
 }
 
 /**
@@ -1778,6 +1778,25 @@ class ByteView extends API {
     return new ByteView({
       codec,
       convert,
+    })
+  }
+
+  /**
+   * @template {Schema.BlockCodec<Schema.MulticodecCode, *>} Codec
+   * @template {Schema.MultihashHasher<Schema.MulticodecCode>} Hasher
+   * @template {Schema.UnknownLink['version']} Version
+   * @param {{
+   * codec?: Codec
+   * hasher?: Hasher
+   * version?: Version
+   * }} options
+   * @returns {Schema.LinkSchema<Out, Codec['code'], Hasher['code'], Version>}
+   */
+  link(options) {
+    return link({
+      codec: this.codec,
+      ...options,
+      schema: this.settings.convert,
     })
   }
 }
@@ -2060,7 +2079,7 @@ class Attachment {
  * codec?: Schema.BlockCodec<Code, In>,
  * version?: Version
  * hasher?: {code: Alg}
- * schema: Schema.Schema<Out, In>
+ * schema: Schema.Convert<Out, In>
  * }} LinkSettings
  */
 
@@ -2199,12 +2218,12 @@ class LinkSchema extends API {
  * @template {Schema.MulticodecCode} Code
  * @template {Schema.MulticodecCode} Alg
  * @template {Schema.UnknownLink['version']} V
- * @extends {API<Schema.Attachment<Out, Code, Alg, V>, Schema.IPLDView<Out>, LinkSettings<Out, In, Code, Alg, V>>}
+ * @extends {API<Schema.Attachment<Out, Code, Alg, V>, Schema.IPLDView<Out, Code, Alg, V>, LinkSettings<Out, In, Code, Alg, V>>}
  * @implements {Schema.AttachmentSchema<Out, Code, Alg, V>}
  */
 class AttachmentSchema extends API {
   /**
-   * @param {Schema.IPLDView<Out>} source
+   * @param {Schema.IPLDView<Out, Code, Alg, V>} source
    * @param {LinkSettings<Out, In, Code, Alg, V>} settings
    * @param {Schema.Region} [region]
    */
@@ -2233,7 +2252,7 @@ class AttachmentSchema extends API {
   /**
    * @param {Schema.Attachment<Out, Code, Alg, V>} attachment
    * @param {LinkSettings<Out, In, Code, Alg, V>} settings
-   * @returns {Schema.ReadResult<Schema.IPLDView<Out>>}
+   * @returns {Schema.ReadResult<Schema.IPLDView<Out, Code, Alg, V>>}
    */
   writeWith(attachment, settings) {
     if (attachment instanceof Attachment) {

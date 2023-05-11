@@ -177,44 +177,6 @@ export interface BytesSchema<
   ): BytesSchema<O, Code>
 }
 
-export interface BlockView<
-  T extends unknown,
-  Code extends MulticodecCode = MulticodecCode
-> {
-  code: Code
-  encode(): ByteView<T>
-  decode(): T
-  embed(): Attachment<T, Code, typeof identity.code>
-
-  detach<
-    Alg extends MulticodecCode = MulticodecCode<0x12, 'sha2-256'>
-  >(options: {
-    hasher?: MultihashHasher<Alg>
-  }): Await<DAGView<T, Code, Alg>>
-}
-
-export interface DAGView<
-  T extends unknown,
-  Code extends MulticodecCode = MulticodecCode,
-  Alg extends MulticodecCode = MulticodecCode,
-  V extends UnknownLink['version'] = 1
-> extends IPLDView<T>,
-    Attachment<T, Code, Alg, V> {
-  decode(): T
-  link(): Link<T, Code, Alg, V>
-}
-
-export type ToBlock<T> = {
-  [K in keyof T]: T[K] extends ResolvedLink<
-    infer O,
-    infer Code,
-    infer Alg,
-    infer V
-  >
-    ? Attachment<O, Code, Alg, V>
-    : T[K]
-}
-
 export interface LinkOf<
   T extends unknown = unknown,
   Code extends MulticodecCode = MulticodecCode,
@@ -231,7 +193,7 @@ export interface Attachment<
   Alg extends MulticodecCode = MulticodecCode,
   V extends UnknownLink['version'] = 1
 > extends Link<T, Code, Alg, V>,
-    IPLDView<T> {
+    IPLDView<T, Code, Alg, V> {
   link(): Link<T, Code, Alg, V>
   resolve(): ResolvedLink<T, Code, Alg, V>
 
@@ -291,7 +253,10 @@ export interface AttachmentSchema<
   Code extends MulticodecCode,
   Alg extends MulticodecCode,
   V extends UnknownLink['version']
-> extends Schema<Attachment<Target, Code, Alg, V>, IPLDView<Target>> {
+> extends Schema<
+    Attachment<Target, Code, Alg, V>,
+    IPLDView<Target, Code, Alg, V>
+  > {
   link(): never
   attach(
     target: Target,

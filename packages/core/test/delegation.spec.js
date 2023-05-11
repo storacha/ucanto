@@ -1,8 +1,17 @@
 import { assert, test } from './test.js'
-import { CAR, CBOR, delegate, Delegation, parseLink, UCAN } from '../src/lib.js'
+import {
+  CAR,
+  CBOR,
+  delegate,
+  Delegation,
+  parseLink,
+  Schema,
+  UCAN,
+} from '../src/lib.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { base64 } from 'multiformats/bases/base64'
 import { getBlock } from './utils.js'
+import { sha256 } from '../src/dag.js'
 
 const utf8 = new TextEncoder()
 
@@ -427,8 +436,10 @@ test('archive delegation chain', async () => {
   assert.deepEqual(extract.ok.proofs[0], proof)
 })
 
-test.skip('delegation.attach block in capabiliy', async () => {
-  const block = await getBlock({ test: 'inlineBlock' })
+test('includes attachment in capability.nb', async () => {
+  const Block = Schema.bytes(CBOR).link({ hasher: sha256 })
+  const block = await Block.attach({ test: 'inlineBlock' })
+
   const ucan = await Delegation.delegate({
     issuer: alice,
     audience: bob,
@@ -437,24 +448,79 @@ test.skip('delegation.attach block in capabiliy', async () => {
         can: 'store/add',
         with: alice.did(),
         nb: {
-          inlineBlock: block.cid.link(),
+          inlineBlock: block,
         },
       },
     ],
   })
 
-  ucan.attach(block)
+  const delegationBlocks = [...ucan.iterateIPLDBlocks()]
+  const attachment = delegationBlocks.find(b => b.cid.equals(block.link()))
 
-  const delegationBlocks = []
-  for (const b of ucan.iterateIPLDBlocks()) {
-    delegationBlocks.push(b)
+  if (!attachment) {
+    return assert.fail('attachment not found')
   }
 
-  assert.ok(delegationBlocks.find(b => b.cid.equals(block.cid)))
+  assert.deepEqual(CBOR.decode(attachment.bytes), { test: 'inlineBlock' })
 })
 
-test.skip('delegation.attach block in facts', async () => {
-  const block = await getBlock({ test: 'inlineBlock' })
+test('includes attachment if it is capability.nb', async () => {
+  const Block = Schema.bytes(CBOR).link({ hasher: sha256 })
+  const block = await Block.attach({ test: 'inlineBlock' })
+
+  const ucan = await Delegation.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+        nb: block,
+      },
+    ],
+  })
+
+  const delegationBlocks = [...ucan.iterateIPLDBlocks()]
+  const attachment = delegationBlocks.find(b => b.cid.equals(block.link()))
+
+  if (!attachment) {
+    return assert.fail('attachment not found')
+  }
+
+  assert.deepEqual(CBOR.decode(attachment.bytes), { test: 'inlineBlock' })
+})
+
+test('includes attachment in facts', async () => {
+  const Block = Schema.unknown().link({
+    codec: CBOR,
+    hasher: sha256,
+  })
+
+  const block = await Block.attach({ test: 'inlineBlock' })
+  const ucan = await Delegation.delegate({
+    issuer: alice,
+    audience: bob,
+    capabilities: [
+      {
+        can: 'store/add',
+        with: alice.did(),
+      },
+    ],
+    facts: [{ [`${block.link()}`]: block }],
+  })
+
+  const delegationBlocks = [...ucan.iterateIPLDBlocks()]
+
+  assert.ok(delegationBlocks.find(b => b.cid.equals(block.link())))
+})
+
+test('includes unboxed attachment in facts', async () => {
+  const Block = Schema.unknown().link({
+    codec: CBOR,
+    hasher: sha256,
+  })
+
+  const block = await Block.attach({ test: 'inlineBlock' })
   const ucan = await Delegation.delegate({
     issuer: alice,
     audience: bob,
@@ -465,34 +531,12 @@ test.skip('delegation.attach block in facts', async () => {
       },
     ],
     facts: [
-      { [`${block.cid.link()}`]: block.cid.link() },
-      // @ts-expect-error Link has fact entry
-      block.cid.link(),
+      // @ts-expect-error - expects dict
+      block,
     ],
   })
 
-  ucan.attach(block)
+  const delegationBlocks = [...ucan.iterateIPLDBlocks()]
 
-  const delegationBlocks = []
-  for (const b of ucan.iterateIPLDBlocks()) {
-    delegationBlocks.push(b)
-  }
-
-  assert.ok(delegationBlocks.find(b => b.cid.equals(block.cid)))
-})
-
-test('delegation.attach fails to attach block with not attached link', async () => {
-  const ucan = await Delegation.delegate({
-    issuer: alice,
-    audience: bob,
-    capabilities: [
-      {
-        can: 'store/add',
-        with: alice.did(),
-      },
-    ],
-  })
-
-  const block = await getBlock({ test: 'inlineBlock' })
-  assert.throws(() => ucan.attach(block))
+  assert.ok(delegationBlocks.find(b => b.cid.equals(block.link())))
 })
