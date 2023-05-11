@@ -10,7 +10,6 @@ import {
 } from '../src/lib.js'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import { base64 } from 'multiformats/bases/base64'
-import { getBlock } from './utils.js'
 import { sha256 } from '../src/dag.js'
 
 const utf8 = new TextEncoder()

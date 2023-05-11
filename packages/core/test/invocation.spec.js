@@ -1,6 +1,5 @@
 import { invoke, UCAN, Invocation, Schema, CBOR } from '../src/lib.js'
 import { alice, service as w3 } from './fixtures.js'
-import { getBlock } from './utils.js'
 import { assert, test } from './test.js'
 import { sha256 } from '../src/dag.js'
 
