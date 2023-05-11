@@ -704,21 +704,39 @@ test('record defaults', () => {
 
 test('bytes schema', () => {
   const schema = Schema.bytes()
-  matchError(schema.read(undefined), /expect.* Uint8Array .* got undefined/is)
+  matchError(
+    schema.tryFrom(
+      // @ts-expect-error - expects Uint8Array
+      undefined
+    ),
+    /expect.* Uint8Array .* got undefined/is
+  )
 
   const bytes = new Uint8Array([1, 2, 3])
 
-  assert.equal(schema.read(bytes).ok, bytes, 'returns same bytes back')
+  assert.equal(schema.tryFrom(bytes).ok, bytes, 'returns same bytes back')
 
   matchError(
-    schema.read(bytes.buffer),
+    schema.tryFrom(
+      // @ts-expect-error - expects Uint8Array
+      bytes.buffer
+    ),
     /expect.* Uint8Array .* got ArrayBuffer/is
   )
 
   matchError(
-    schema.read(new Int8Array(bytes.buffer)),
+    schema.tryFrom(
+      // @ts-expect-error - expects Uint8Array
+      new Int8Array(bytes.buffer)
+    ),
     /expect.* Uint8Array .* got Int8Array/is
   )
 
-  matchError(schema.read([...bytes]), /expect.* Uint8Array .* got array/is)
+  matchError(
+    schema.tryFrom(
+      // @ts-expect-error
+      [...bytes]
+    ),
+    /expect.* Uint8Array .* got array/is
+  )
 })

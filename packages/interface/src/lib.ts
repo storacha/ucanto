@@ -265,8 +265,6 @@ export interface Delegation<C extends Capabilities = Capabilities>
   delegate(): Await<Delegation<C>>
 
   archive(): Await<Result<Uint8Array, Error>>
-
-  attach(block: Block): void
 }
 
 /**

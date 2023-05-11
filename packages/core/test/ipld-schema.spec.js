@@ -1,8 +1,9 @@
 import * as Schema from '../src/schema.js'
-import { isLink, parseLink, delegate, CAR } from '../src/lib.js'
+import { isLink, parseLink, delegate, Delegation, CAR } from '../src/lib.js'
 import { alice, service as w3 } from './fixtures.js'
 import { CBOR, identity, sha256, createStore, writeInto } from '../src/dag.js'
 import { test, assert } from './test.js'
+import { archive } from '../src/delegation.js'
 
 describe.only('IPLD Schema', () => {
   test('link schema', async () => {
@@ -261,7 +262,7 @@ describe.only('IPLD Schema', () => {
 
     const compile = async (data = {}) => {
       const { bytes, cid } = await CBOR.write(data)
-      return { bytes, cid, data }
+      return { bytes, cid }
     }
 
     const link = async (data = {}) => {
@@ -270,12 +271,15 @@ describe.only('IPLD Schema', () => {
     }
 
     assert.deepEqual(
-      [...polygon.iterateIPLDBlocks()],
+      [...polygon.iterateIPLDBlocks()].map(({ cid, bytes }) => ({
+        bytes,
+        cid: cid.link(),
+      })),
       [
         await compile({ x: 1, y: 2 }),
         await compile({ x: 3, y: 4 }),
         await compile({ x: 5, y: 6 }),
-        polygon.root,
+        { cid: polygon.link(), bytes: polygon.root.bytes },
       ]
     )
 
@@ -298,18 +302,26 @@ describe.only('IPLD Schema', () => {
 
     const replica = root.resolve()
 
-    assert.deepEqual(replica, [
-      await link({ x: 1, y: 2 }),
-      await link({ x: 3, y: 4 }),
-      await link({ x: 5, y: 6 }),
-    ])
+    assert.deepEqual(
+      replica.map(point => point.link()),
+      [
+        await link({ x: 1, y: 2 }),
+        await link({ x: 3, y: 4 }),
+        await link({ x: 5, y: 6 }),
+      ]
+    )
 
-    assert.deepEqual(replica[0].resolve(), { x: 1, y: 2 })
-    assert.deepEqual(replica[0].resolve(), { x: 3, y: 4 })
-    assert.deepEqual(replica[0].resolve(), { x: 5, y: 6 })
+    assert.deepEqual(
+      replica.map(point => point.resolve()),
+      [
+        { x: 1, y: 2 },
+        { x: 3, y: 4 },
+        { x: 5, y: 6 },
+      ]
+    )
   })
 
-  test.only('inline into delegation', async () => {
+  test('inline into delegation', async () => {
     const Detail = Schema.struct({
       link: Schema.unknown().link(),
       size: Schema.integer(),
@@ -350,11 +362,30 @@ describe.only('IPLD Schema', () => {
       ],
     })
 
-    const region = new Map(
-      [...offer.export()].map(block => [`${block.cid}`, block])
-    )
+    const nodes = [...offer.export()]
 
-    assert.equal(region.size, 2)
+    assert.deepEqual(nodes.length, 2, 'links to the attached block')
+    const [node, root] = nodes
+    assert.deepEqual(root.cid, offer.link())
+    assert.deepEqual(CBOR.decode(node.bytes), [
+      {
+        link: car.cid,
+        size: car.bytes.length,
+        src: [`ipfs://${car.cid}`],
+      },
+    ])
+
+    const archive = await offer.archive()
+    if (archive.error) {
+      throw archive.error
+    }
+
+    const replica = await Delegation.extract(archive.ok)
+    if (replica.error) {
+      throw replica.error
+    }
+
+    assert.equal([...replica.ok.export()].length, 2)
   })
 })
 
