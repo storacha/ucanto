@@ -83,7 +83,7 @@ export interface Schema<
 
   implicit(value: Exclude<Out, undefined>): ImplicitSchema<Out, In>
 
-  array(): ArraySchema<Out, In>
+  array(): ArraySchema<Convert<Out, In>>
   or<O, I>(other: Convert<O, I>): Schema<Out | O, In | I>
   and<O, I>(other: Convert<O, I>): Schema<Out & O, In & I>
   refine<O extends Out, I extends Out>(schema: Convert<O, I>): Schema<O, In>
@@ -96,6 +96,8 @@ export interface Schema<
   brand<K extends string>(kind?: K): Schema<Branded<Out, K>, In>
 
   is(value: unknown): value is Out
+
+  read(unknown: unknown): ReadResult<Out>
   from(value: In): Out
   to(value: Out): In
 

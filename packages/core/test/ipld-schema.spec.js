@@ -5,7 +5,7 @@ import { CBOR, identity, sha256, createStore, writeInto } from '../src/dag.js'
 import { test, assert } from './test.js'
 import { archive } from '../src/delegation.js'
 
-describe.only('IPLD Schema', () => {
+describe('IPLD Schema', () => {
   test('link schema', async () => {
     const Point = Schema.struct({
       x: Schema.integer(),

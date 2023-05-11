@@ -190,6 +190,7 @@ test('string().refine', () => {
     /**
      * @template {string} In
      * @param {In} hello
+     * @returns {Schema.ReadResult<In & { length: 11 }>}
      */
     tryFrom(hello) {
       if (hello.length === 11) {
@@ -199,7 +200,7 @@ test('string().refine', () => {
       }
     },
   })
-  /** @type {Schema.StringSchema<`hello${string}` & `hello ${string}` & { length: 11 }>} */
+  /** @type {Schema.StringSchema<`hello ${string}` & { length: 11 }>} */
   const typeofGreet = greet
 
   assert.equal(

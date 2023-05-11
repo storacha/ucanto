@@ -27,7 +27,7 @@ export const did = () => schema
  *
  * @param {unknown} input
  */
-export const read = input => schema.tryFrom(input)
+export const read = input => schema.read(input)
 
 /**
  * @template {string} Method
@@ -42,4 +42,4 @@ export const match = (options = {}) =>
  * Create a DID string from any input (or throw)
  * @param {unknown} input
  */
-export const from = input => match({}).tryFrom(input)
+export const from = input => match({}).from(input)

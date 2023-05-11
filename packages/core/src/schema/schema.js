@@ -57,6 +57,14 @@ export class API {
   }
 
   /**
+   * @param {unknown} input
+   */
+
+  read(input) {
+    return this.tryFrom(/** @type {In} */ (input))
+  }
+
+  /**
    * @param {In} input
    * @param {Schema.Region} [region]
    * @returns {Schema.ReadResult<Out>}
@@ -1805,7 +1813,18 @@ class Link {
     this.codec = codec
     this.cid = link
     this.schema = schema
+
     this['/'] = link.bytes
+    this.version = link.version
+    this.multihash = link.multihash
+    this.code = link.code
+    this.bytes = link.bytes
+
+    Object.defineProperties(this, {
+      codec: { enumerable: false },
+      cid: { enumerable: false },
+      schema: { enumerable: false },
+    })
   }
 
   /**
@@ -1842,24 +1861,24 @@ class Link {
   resolve(region) {
     return this.select(region).resolve()
   }
-  get version() {
-    return this.cid.version
-  }
-  get code() {
-    return this.cid.code
-  }
-  get multihash() {
-    return this.cid.multihash
-  }
+  // get version() {
+  //   return this.cid.version
+  // }
+  // get code() {
+  //   return this.cid.code
+  // }
+  // get multihash() {
+  //   return this.cid.multihash
+  // }
   get byteOffset() {
     return this.cid.byteOffset
   }
   get byteLength() {
     return this.cid.byteLength
   }
-  get bytes() {
-    return this.cid.bytes
-  }
+  // get bytes() {
+  //   return this.cid.bytes
+  // }
   link() {
     return this.cid
   }
@@ -1877,6 +1896,15 @@ class Link {
    */
   toString(base) {
     return this.cid.toString(base)
+  }
+  toJSON() {
+    return { '/': this.toString() }
+  }
+  get [Symbol.toStringTag]() {
+    return 'CID'
+  }
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    return `CID(${this.toString()})`
   }
   toV1() {
     return this.cid.toV1()

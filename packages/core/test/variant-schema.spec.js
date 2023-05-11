@@ -23,24 +23,21 @@ test('variant', () => {
   })
 
   matchError(
-    Shape.tryFrom({ rectangle: { width: 1 } }),
+    Shape.read({ rectangle: { width: 1 } }),
     /contains invalid field "rectangle"/
   )
 
   matchError(
-    Shape.tryFrom({ square: { width: 5 } }),
+    Shape.read({ square: { width: 5 } }),
     /Expected an object with one of the these keys: circle, rectangle instead got object with key square/
   )
 
-  matchError(
-    Shape.tryFrom([]),
-    /Expected value of type object instead got array/
-  )
+  matchError(Shape.read([]), /Expected value of type object instead got array/)
 })
 
 test('variant can not have extra fields', () => {
   matchError(
-    Shape.tryFrom({
+    Shape.read({
       rectangle: { width: 1, height: 2 },
       circle: { radius: 3 },
     }),
@@ -59,17 +56,17 @@ test('variant with default match', () => {
     _: Schema.dictionary({ value: Schema.unknown() }),
   })
 
-  assert.deepEqual(Shapes.tryFrom({ circle: { radius: 1 } }), {
+  assert.deepEqual(Shapes.read({ circle: { radius: 1 } }), {
     ok: { circle: { radius: 1 } },
   })
 
-  assert.deepEqual(Shapes.tryFrom({ rectangle: { width: 10, height: 7 } }), {
+  assert.deepEqual(Shapes.read({ rectangle: { width: 10, height: 7 } }), {
     ok: {
       rectangle: { width: 10, height: 7 },
     },
   })
 
-  assert.deepEqual(Shapes.tryFrom({ square: { width: 5 } }), {
+  assert.deepEqual(Shapes.read({ square: { width: 5 } }), {
     ok: { _: { square: { width: 5 } } },
   })
 })
@@ -97,7 +94,7 @@ test('variant with default', () => {
     },
   })
 
-  assert.deepEqual(Shapes.tryFrom({ isShape: true }), {
+  assert.deepEqual(Shapes.read({ isShape: true }), {
     ok: {
       _: {
         isShape: true,
@@ -105,7 +102,7 @@ test('variant with default', () => {
     },
   })
 
-  matchError(Shapes.tryFrom({ square: { width: 5 } }), /isShape/)
+  matchError(Shapes.read({ square: { width: 5 } }), /isShape/)
 })
 
 test('variant match', () => {

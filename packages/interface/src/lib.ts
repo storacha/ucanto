@@ -34,6 +34,7 @@ import {
   BlockDecoder,
   BlockCodec,
   BaseDecoder,
+  MultibaseCodec,
 } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
 import {
@@ -120,7 +121,6 @@ export interface UCANOptions {
 
   facts?: Fact[]
   proofs?: Proof[]
-  attachedBlocks?: BlockStore<unknown>
 }
 
 /**
@@ -190,7 +190,7 @@ export interface IPLDView<
   T extends unknown = unknown,
   Code extends MulticodecCode = MulticodecCode,
   Alg extends MulticodecCode = MulticodecCode,
-  V extends UnknownLink['version'] = UnknownLink['version']
+  V extends UnknownLink['version'] = 1
 > {
   /**
    * The root block of the IPLD DAG this is the view of. This is the the block
@@ -567,7 +567,6 @@ export interface IssuedInvocation<C extends Capability = Capability>
   readonly proofs: Proof[]
 
   delegate(): Await<Delegation<[C]>>
-  attach(block: Block): void
 }
 
 export type ServiceInvocation<

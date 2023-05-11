@@ -336,7 +336,7 @@ export const archive = async delegation => {
 
 export const ArchiveSchema = Schema.variant({
   'ucan@0.9.1': /** @type {Schema.Schema<API.UCANLink>} */ (
-    Schema.link({ version: 1 })
+    Schema.unknown().link({ version: 1 })
   ),
 })
 
@@ -404,14 +404,7 @@ const decode = ({ bytes }) => {
  */
 
 export const delegate = async (
-  {
-    issuer,
-    audience,
-    proofs = [],
-    attachedBlocks = new Map(),
-    facts = [],
-    ...input
-  },
+  { issuer, audience, proofs = [], facts = [], ...input },
   options
 ) => {
   const links = []
@@ -433,6 +426,10 @@ export const delegate = async (
     }
   }
 
+  const attachments = [...blocks.values()]
+    .map(block => block.cid)
+    .sort((left, right) => left.toString().localeCompare(right.toString()))
+
   for (const proof of proofs) {
     if (!isDelegation(proof)) {
       links.push(proof)
@@ -448,12 +445,8 @@ export const delegate = async (
   // wire, which is why we capture all the links in a flat list which we include
   // in facts. That way recipient will know all of the blocks without having to
   // know to know how to traverse the graph.
-  if (blocks.size !== 0) {
-    facts.push({
-      'ucan/attachments': [...blocks.values()]
-        .map(block => block.cid)
-        .sort((left, right) => left.toString().localeCompare(right.toString())),
-    })
+  if (attachments.length > 0) {
+    facts.push({ 'ucan/attachments': attachments })
   }
 
   const data = await UCAN.issue({
@@ -469,10 +462,6 @@ export const delegate = async (
   /** @type {API.Delegation<C>} */
   const delegation = new Delegation({ cid, bytes }, blocks)
   Object.defineProperties(delegation, { proofs: { value: proofs } })
-
-  for (const block of attachedBlocks.values()) {
-    delegation.attach(block)
-  }
 
   return delegation
 }

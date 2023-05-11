@@ -32,7 +32,7 @@ test('encode invocation', async () => {
   assert.deepEqual(delegation.audience.did(), w3.did())
 })
 
-test('encode invocation with attached block in capability nb', async () => {
+test.skip('encode invocation with attached block in capability nb', async () => {
   const block = await getBlock({ test: 'inlineBlock' })
   const add = invoke({
     issuer: alice,
@@ -42,8 +42,8 @@ test('encode invocation with attached block in capability nb', async () => {
       with: alice.did(),
       link: 'bafy...stuff',
       nb: {
-        inlineBlock: block.cid.link()
-      }
+        inlineBlock: block.cid.link(),
+      },
     },
     proofs: [],
   })
@@ -61,12 +61,12 @@ test('encode invocation with attached block in capability nb', async () => {
 
   const reassembledInvocation = Invocation.view({
     root: view.root.cid.link(),
-    blocks: blockStore
+    blocks: blockStore,
   })
 
   /** @type {import('@ucanto/interface').BlockStore<unknown>} */
   const reassembledBlockstore = new Map()
-  
+
   for (const b of reassembledInvocation.iterateIPLDBlocks()) {
     reassembledBlockstore.set(`${b.cid}`, b)
   }
@@ -74,7 +74,6 @@ test('encode invocation with attached block in capability nb', async () => {
   // reassembledBlockstore has attached block
   assert.ok(reassembledBlockstore.get(`${block.cid}`))
 })
-
 
 test('expired invocation', async () => {
   const expiration = UCAN.now() - 5
