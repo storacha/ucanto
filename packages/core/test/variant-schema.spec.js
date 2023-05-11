@@ -10,13 +10,13 @@ const Shape = Schema.variant({
 })
 
 test('variant', () => {
-  assert.deepEqual(Shape.read({ circle: { radius: 1 } }), {
+  assert.deepEqual(Shape.tryFrom({ circle: { radius: 1 } }), {
     ok: {
       circle: { radius: 1 },
     },
   })
 
-  assert.deepEqual(Shape.read({ rectangle: { width: 1, height: 2 } }), {
+  assert.deepEqual(Shape.tryFrom({ rectangle: { width: 1, height: 2 } }), {
     ok: {
       rectangle: { width: 1, height: 2 },
     },
@@ -37,7 +37,10 @@ test('variant', () => {
 
 test('variant can not have extra fields', () => {
   matchError(
-    Shape.read({ rectangle: { width: 1, height: 2 }, circle: { radius: 3 } }),
+    Shape.read({
+      rectangle: { width: 1, height: 2 },
+      circle: { radius: 3 },
+    }),
     /Expected an object with a single key instead got object with keys circle, rectangle/
   )
 })
@@ -81,11 +84,11 @@ test('variant with default', () => {
     }),
   })
 
-  assert.deepEqual(Shapes.read({ circle: { radius: 1 } }), {
+  assert.deepEqual(Shapes.tryFrom({ circle: { radius: 1 } }), {
     ok: { circle: { radius: 1 } },
   })
 
-  assert.deepEqual(Shapes.read({ rectangle: { width: 10, height: 7 } }), {
+  assert.deepEqual(Shapes.tryFrom({ rectangle: { width: 10, height: 7 } }), {
     ok: {
       rectangle: { width: 10, height: 7 },
     },

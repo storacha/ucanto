@@ -173,41 +173,6 @@ export class Delegation {
     })
   }
 
-  /**
-   * @returns {API.AttachedLinkSet}
-   */
-  get attachedLinks() {
-    const _attachedLinks = new Set()
-    const ucanView = this.data
-
-    // Get links from capabilities nb
-    for (const capability of ucanView.capabilities) {
-      /** @type {Link[]} */
-      const links = getLinksFromObject(capability)
-
-      for (const link of links) {
-        _attachedLinks.add(`${link}`)
-      }
-    }
-
-    // Get links from facts values
-    for (const fact of ucanView.facts) {
-      if (Link.isLink(fact)) {
-        _attachedLinks.add(`${fact}`)
-      } else {
-        /** @type {Link[]} */
-        // @ts-expect-error isLink does not infer value type
-        const links = Object.values(fact).filter(e => Link.isLink(e))
-
-        for (const link of links) {
-          _attachedLinks.add(`${link}`)
-        }
-      }
-    }
-
-    return _attachedLinks
-  }
-
   get version() {
     return this.data.version
   }
@@ -231,22 +196,8 @@ export class Delegation {
     Object.defineProperties(this, { data: { value: data, enumerable: false } })
     return data
   }
-  /**
-   * Attach a block to the delegation DAG so it would be included in the
-   * block iterator.
-   * ⚠️ You can only attach blocks that are referenced from the `capabilities`
-   * or `facts`.
-   *
-   * @param {API.Block} block
-   */
-  attach(block) {
-    if (!this.attachedLinks.has(`${block.cid.link()}`)) {
-      throw new Error(`given block with ${block.cid} is not an attached link`)
-    }
-    this.blocks.set(`${block.cid}`, block)
-  }
   export() {
-    return exportDAG(this.root, this.blocks, this.attachedLinks)
+    return exportDAG(this)
   }
 
   /**
@@ -257,7 +208,7 @@ export class Delegation {
   }
 
   iterateIPLDBlocks() {
-    return exportDAG(this.root, this.blocks, this.attachedLinks)
+    return exportDAG(this)
   }
 
   /**
@@ -385,7 +336,7 @@ export const archive = async delegation => {
 
 export const ArchiveSchema = Schema.variant({
   'ucan@0.9.1': /** @type {Schema.Schema<API.UCANLink>} */ (
-    Schema.link({ version: 1 })
+    Schema.unknown().link({ version: 1 })
   ),
 })
 
@@ -453,11 +404,34 @@ const decode = ({ bytes }) => {
  */
 
 export const delegate = async (
-  { issuer, audience, proofs = [], attachedBlocks = new Map(), ...input },
+  { issuer, audience, proofs = [], facts = [], ...input },
   options
 ) => {
   const links = []
+  /** @type {Map<string, API.Block>} */
   const blocks = new Map()
+  for (const capability of input.capabilities) {
+    for (const node of [...Object.values(capability.nb || {}), capability.nb]) {
+      for (const block of DAG.iterate(node)) {
+        blocks.set(block.cid.toString(), block)
+      }
+    }
+  }
+
+  for (const fact of facts) {
+    if (fact) {
+      for (const node of [...Object.values(fact), fact]) {
+        for (const block of DAG.iterate(node)) {
+          blocks.set(block.cid.toString(), block)
+        }
+      }
+    }
+  }
+
+  const attachments = [...blocks.values()]
+    .map(block => block.cid)
+    .sort((left, right) => left.toString().localeCompare(right.toString()))
+
   for (const proof of proofs) {
     if (!isDelegation(proof)) {
       links.push(proof)
@@ -469,11 +443,20 @@ export const delegate = async (
     }
   }
 
+  // We may not have codecs to traverse all the blocks on the other side of the
+  // wire, which is why we capture all the links in a flat list which we include
+  // in facts. That way recipient will know all of the blocks without having to
+  // know to know how to traverse the graph.
+  if (attachments.length > 0) {
+    facts.push({ 'ucan/attachments': attachments })
+  }
+
   const data = await UCAN.issue({
     ...input,
     issuer,
     audience,
     proofs: links,
+    facts,
   })
   const { cid, bytes } = await UCAN.write(data, options)
   decodeCache.set(cid, data)
@@ -482,23 +465,20 @@ export const delegate = async (
   const delegation = new Delegation({ cid, bytes }, blocks)
   Object.defineProperties(delegation, { proofs: { value: proofs } })
 
-  for (const block of attachedBlocks.values()) {
-    delegation.attach(block)
-  }
-
   return delegation
 }
 
 /**
  * @template {API.Capabilities} C
- * @param {API.UCANBlock<C>} root
- * @param {DAG.BlockStore} blocks
- * @param {API.AttachedLinkSet} attachedLinks
+ * @param {object} source
+ * @param {API.UCANBlock<C>} source.root
+ * @param {DAG.BlockStore} source.blocks
  * @returns {IterableIterator<API.Block>}
  */
 
-export const exportDAG = function* (root, blocks, attachedLinks) {
-  for (const link of decode(root).proofs) {
+export const exportDAG = function* ({ root, blocks }) {
+  const { proofs, facts, capabilities } = decode(root)
+  for (const link of proofs) {
     // Check if block is included in this delegation
     const root = /** @type {UCAN.Block} */ (blocks.get(`${link}`))
     if (root) {
@@ -506,7 +486,8 @@ export const exportDAG = function* (root, blocks, attachedLinks) {
     }
   }
 
-  for (const link of attachedLinks.values()) {
+  const links = new Set([...iterateLinks({ facts, capabilities }, blocks)])
+  for (const link of links) {
     const block = blocks.get(link)
 
     if (block) {
@@ -609,31 +590,22 @@ const proofs = delegation => {
 }
 
 /**
- * @param {API.Capability<API.Ability, `${string}:${string}`, unknown>} obj
+ * Traverses source and yields all links found.
+ *
+ * @param {unknown} source
+ * @param {Schema.Region} region
+ * @returns {IterableIterator<string>}
  */
-function getLinksFromObject(obj) {
-  /** @type {Link[]} */
-  const links = []
-
-  /**
-   * @param {object} obj
-   */
-  function recurse(obj) {
-    for (const key in obj) {
-      // @ts-expect-error record type not inferred
-      const value = obj[key]
-      if (Link.isLink(value)) {
-        // @ts-expect-error isLink does not infer value type
-        links.push(value)
-      } else if (value && typeof value === 'object') {
-        recurse(value)
+const iterateLinks = function* (source, region) {
+  if (source && typeof source === 'object') {
+    if (Link.isLink(source)) {
+      yield `${source}`
+    } else {
+      for (const member of Object.values(source)) {
+        yield* iterateLinks(member, region)
       }
     }
   }
-
-  recurse(obj)
-
-  return links
 }
 
 export { Delegation as View }

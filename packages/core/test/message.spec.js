@@ -72,6 +72,8 @@ test('Message.view', async () => {
     invocations: [hi.invocation],
   })
 
+  assert.equal(buildHi.link(), buildHi.root.cid)
+
   assert.throws(
     () =>
       Message.view({

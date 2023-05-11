@@ -31,6 +31,10 @@ import {
   Block as IPLDBlock,
   ToString,
   BlockEncoder,
+  BlockDecoder,
+  BlockCodec,
+  BaseDecoder,
+  MultibaseCodec,
 } from 'multiformats'
 import * as UCAN from '@ipld/dag-ucan'
 import {
@@ -46,6 +50,7 @@ import {
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
+import { LegacyLink } from 'multiformats'
 export * from './capability.js'
 export * from './transport.js'
 export type {
@@ -73,6 +78,10 @@ export type {
   MultibaseDecoder,
   MultibaseEncoder,
   MulticodecCode,
+  BaseDecoder,
+  BlockDecoder,
+  BlockEncoder,
+  BlockCodec,
   Principal,
   ToJSON,
   ToString,
@@ -82,7 +91,10 @@ export type {
 }
 export * as UCAN from '@ipld/dag-ucan'
 
-export type BlockStore <T> = Map<ToString<Link>, Block<T, number, number, 1>>
+export type BlockStore<T = unknown> = Map<
+  ToString<Link>,
+  Block<T, number, number, 1>
+>
 export type AttachedLinkSet = Set<ToString<Link>>
 
 /**
@@ -109,7 +121,6 @@ export interface UCANOptions {
 
   facts?: Fact[]
   proofs?: Proof[]
-  attachedBlocks?: BlockStore<unknown>
 }
 
 /**
@@ -175,12 +186,19 @@ export interface IPLDViewBuilder<View extends IPLDView = IPLDView> {
  * a generic traversal API. It is useful for encoding (potentially partial) IPLD
  * DAGs into content archives (e.g. CARs).
  */
-export interface IPLDView<T extends unknown = unknown> {
+export interface IPLDView<
+  T extends unknown = unknown,
+  Code extends MulticodecCode = MulticodecCode,
+  Alg extends MulticodecCode = MulticodecCode,
+  V extends UnknownLink['version'] = 1
+> {
   /**
    * The root block of the IPLD DAG this is the view of. This is the the block
    * from which all other blocks are linked directly or transitively.
    */
-  root: Block<T>
+  root: Block<T, Code, Alg, V>
+
+  link(): Link<T, Code, Alg, V>
 
   /**
    * Returns an iterable of all the IPLD blocks that are included in this view.
@@ -247,8 +265,6 @@ export interface Delegation<C extends Capabilities = Capabilities>
   delegate(): Await<Delegation<C>>
 
   archive(): Await<Result<Uint8Array, Error>>
-
-  attach(block: Block): void
 }
 
 /**
@@ -551,7 +567,6 @@ export interface IssuedInvocation<C extends Capability = Capability>
   readonly proofs: Proof[]
 
   delegate(): Await<Delegation<[C]>>
-  attach(block: Block): void
 }
 
 export type ServiceInvocation<

@@ -1,4 +1,5 @@
 import * as Schema from '../src/schema.js'
+import { CBOR } from '../src/dag.js'
 import { test, assert } from './test.js'
 
 test('.partial on structs', () => {

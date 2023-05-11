@@ -1,7 +1,7 @@
-import { invoke, UCAN, Invocation } from '../src/lib.js'
+import { invoke, UCAN, Invocation, Schema, CBOR } from '../src/lib.js'
 import { alice, service as w3 } from './fixtures.js'
-import { getBlock } from './utils.js'
 import { assert, test } from './test.js'
+import { sha256 } from '../src/dag.js'
 
 test('encode invocation', async () => {
   const add = invoke({
@@ -33,48 +33,50 @@ test('encode invocation', async () => {
 })
 
 test('encode invocation with attached block in capability nb', async () => {
-  const block = await getBlock({ test: 'inlineBlock' })
+  const Block = Schema.unknown().link({
+    codec: CBOR,
+    hasher: sha256,
+  })
+
+  const block = await Block.attach({ test: 'inlineBlock' })
   const add = invoke({
     issuer: alice,
     audience: w3,
     capability: {
       can: 'store/add',
       with: alice.did(),
-      link: 'bafy...stuff',
       nb: {
-        inlineBlock: block.cid.link()
-      }
+        link: 'bafy...stuff',
+        inlineBlock: block,
+      },
     },
     proofs: [],
   })
-  add.attach(block)
 
-  /** @type {import('@ucanto/interface').BlockStore<unknown>} */
-  const blockStore = new Map()
   const view = await add.buildIPLDView()
-  for (const b of view.iterateIPLDBlocks()) {
-    blockStore.set(`${b.cid}`, b)
-  }
+
+  const blocks = new Map(
+    [...view.iterateIPLDBlocks()].map(block => [`${block.cid}`, block])
+  )
 
   // blockstore has attached block
-  assert.ok(blockStore.get(`${block.cid}`))
+  assert.ok(blocks.get(`${block.link()}`))
 
   const reassembledInvocation = Invocation.view({
     root: view.root.cid.link(),
-    blocks: blockStore
+    blocks,
   })
 
-  /** @type {import('@ucanto/interface').BlockStore<unknown>} */
-  const reassembledBlockstore = new Map()
-  
-  for (const b of reassembledInvocation.iterateIPLDBlocks()) {
-    reassembledBlockstore.set(`${b.cid}`, b)
-  }
+  const reassembledBlockstore = new Map(
+    [...reassembledInvocation.iterateIPLDBlocks()].map(block => [
+      `${block.cid}`,
+      block,
+    ])
+  )
 
   // reassembledBlockstore has attached block
-  assert.ok(reassembledBlockstore.get(`${block.cid}`))
+  assert.ok(reassembledBlockstore.get(`${block.link()}`))
 })
-
 
 test('expired invocation', async () => {
   const expiration = UCAN.now() - 5

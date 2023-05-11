@@ -1,6 +1,9 @@
-import { URI, Link, Text, DID } from '../src/schema.js'
+import { URI, Text, DID } from '../src/schema.js'
+import { parseLink } from '../src/lib.js'
+import * as Schema from '../src/schema.js'
 import { test, assert, matchResult } from './test.js'
 import * as API from '@ucanto/interface'
+import { sha256 } from '../src/dag.js'
 
 {
   /** @type {[string, API.Result|RegExp][]} */
@@ -13,7 +16,7 @@ import * as API from '@ucanto/interface'
   for (const [input, expect] of dataset) {
     test(`URI.read(${JSON.stringify(input)}}`, () => {
       matchResult(URI.read(input), expect)
-      matchResult(URI.uri().read(input), expect)
+      matchResult(URI.uri().tryFrom(input), expect)
     })
   }
 }
@@ -53,7 +56,7 @@ test('URI.from', () => {
     test(`URI.match(${JSON.stringify({
       protocol,
     })}).read(${JSON.stringify(input)})}}`, () => {
-      matchResult(URI.match({ protocol }).read(input), expect)
+      matchResult(URI.match({ protocol }).tryFrom(input), expect)
     })
   }
 }
@@ -82,7 +85,7 @@ test('URI.from', () => {
     test(`URI.match(${JSON.stringify({
       protocol,
     })}).optional().read(${JSON.stringify(input)})}}`, () => {
-      matchResult(URI.match({ protocol }).optional().read(input), expect)
+      matchResult(URI.match({ protocol }).optional().tryFrom(input), expect)
     })
   }
 }
@@ -91,7 +94,7 @@ test('URI.from', () => {
   /** @type {any[][]} */
   const dataset = [
     [
-      Link.parse('bafkqaaa'),
+      parseLink('bafkqaaa'),
       null,
       /Expected link to be CID with 0x70 codec/,
       /Expected link to be CID with 0x12 hashing algorithm/,
@@ -99,7 +102,7 @@ test('URI.from', () => {
       null,
     ],
     [
-      Link.parse('QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB'),
+      parseLink('QmdpiaQ9q7n4E224syBJz4peZpAFLArwJgSXHZWH5F6DxB'),
       null,
       null,
       null,
@@ -107,7 +110,7 @@ test('URI.from', () => {
       null,
     ],
     [
-      Link.parse('bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'),
+      parseLink('bafybeiepa5hmd3vg2i2unyzrhnxnthwi2aksunykhmcaykbl2jx2u77cny'),
       null,
       null,
       null,
@@ -135,33 +138,33 @@ test('URI.from', () => {
   ]
 
   for (const [input, out1, out2, out3, out4, out5] of dataset) {
-    test(`Link.read(${input})`, () => {
-      matchResult(Link.read(input), out1 || { ok: input })
+    test(`unknown().link().tryFrom(${input})`, () => {
+      matchResult(Schema.unknown().link().tryFrom(input), out1 || { ok: input })
     })
 
-    test('Link.link()', () => {
-      const schema = Link.link()
-      matchResult(schema.read(input), out1 || { ok: input })
+    test('Schema.link()', () => {
+      const schema = Schema.unknown().link()
+      matchResult(schema.tryFrom(input), out1 || { ok: input })
     })
 
-    test(`Link.match({ code: 0x70 }).read(${input})`, () => {
-      const link = Link.match({ code: 0x70 })
-      matchResult(link.read(input), out2 || { ok: input })
+    test(`Schema.link({ code: 0x70 }).read(${input})`, () => {
+      const link = Schema.unknown().link({ codec: { code: 0x70 } })
+      matchResult(link.tryFrom(input), out2 || { ok: input })
     })
 
-    test(`Link.match({ algorithm: 0x12 }).read(${input})`, () => {
-      const link = Link.match({ multihash: { code: 0x12 } })
-      matchResult(link.read(input), out3 || { ok: input })
+    test(`Schema.link({ algorithm: 0x12 }).read(${input})`, () => {
+      const link = Schema.unknown().link({ hasher: sha256 })
+      matchResult(link.tryFrom(input), out3 || { ok: input })
     })
 
-    test(`Link.match({ version: 1 }).read(${input})`, () => {
-      const link = Link.match({ version: 1 })
-      matchResult(link.read(input), out4 || { ok: input })
+    test(`Schema.link({ version: 1 }).read(${input})`, () => {
+      const link = Schema.unknown().link({ version: 1 })
+      matchResult(link.tryFrom(input), out4 || { ok: input })
     })
 
     test(`Link.optional().read(${input})`, () => {
-      const link = Link.optional()
-      matchResult(link.read(input), out5 || { ok: input })
+      const link = Schema.unknown().link().optional()
+      matchResult(link.tryFrom(input), out5 || { ok: input })
     })
   }
 }
@@ -306,7 +309,7 @@ test('URI.from', () => {
 
   for (const [options, input, out] of dataset) {
     test(`DID.match({ method: ${options.method} }).read(${input})`, () => {
-      matchResult(DID.match(options).read(input), out)
+      matchResult(DID.match(options).tryFrom(input), out)
     })
   }
 }
@@ -349,7 +352,7 @@ test('URI.from', () => {
   for (const [options, input, out] of dataset) {
     test(`DID.match({ method: "${options.method}" }).optional().read(${input})`, () => {
       const schema = options.method ? DID.match(options) : DID.did()
-      matchResult(schema.optional().read(input), out)
+      matchResult(schema.optional().tryFrom(input), out)
     })
   }
 }

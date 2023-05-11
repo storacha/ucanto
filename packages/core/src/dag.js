@@ -106,18 +106,18 @@ export const notFound = link => {
 /**
  * @template T
  * @template {T} U
- * @template {API.MulticodecCode} C
- * @template {API.MulticodecCode} A
+ * @template {MF.BlockEncoder<number, U>} [Codec=MF.BlockEncoder<API.MulticodecCode<typeof CBOR.code, typeof CBOR.name>, U>]
+ * @template {MF.MultihashHasher} [Hasher=MF.MultihashHasher<API.MulticodecCode<typeof sha256.code, typeof sha256.name>>]
  * @param {U} source
  * @param {BlockStore<T>} store
  * @param {object} options
- * @param {MF.BlockEncoder<C, unknown>} [options.codec]
- * @param {MF.MultihashHasher<A>} [options.hasher]
- * @returns {Promise<API.Block<U, C, A> & { data: U }>}
+ * @param {Codec} [options.codec]
+ * @param {Hasher} [options.hasher]
+ * @returns {Promise<API.Block<U, Codec['code'], Hasher['code']> & { data: U }>}
  */
 export const writeInto = async (source, store, options = {}) => {
-  const codec = /** @type {MF.BlockEncoder<C, U>} */ (options.codec || CBOR)
-  const hasher = /** @type {MF.MultihashHasher<A>} */ (options.hasher || sha256)
+  const codec = /** @type {Codec} */ (options.codec || CBOR)
+  const hasher = /** @type {Hasher} */ (options.hasher || sha256)
 
   const bytes = codec.encode(source)
   const digest = await hasher.digest(bytes)

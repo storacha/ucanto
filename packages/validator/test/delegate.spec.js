@@ -187,7 +187,7 @@ test('capability with optional caveats', async () => {
     with: URI.match({ protocol: 'did:' }),
     nb: Schema.struct({
       message: URI.match({ protocol: 'data:' }),
-      meta: Link.match().optional(),
+      meta: Link.optional(),
     }),
   })
 

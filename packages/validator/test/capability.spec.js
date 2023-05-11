@@ -790,7 +790,7 @@ test('parse with nb', () => {
     can: 'store/add',
     with: URI.match({ protocol: 'did:' }),
     nb: Schema.struct({
-      link: Link.match().optional(),
+      link: Link.optional(),
     }),
     derives: (claimed, delegated) => {
       if (claimed.with !== delegated.with) {
@@ -1499,7 +1499,7 @@ test('capability with optional caveats', async () => {
     with: URI.match({ protocol: 'did:' }),
     nb: Schema.struct({
       message: URI.match({ protocol: 'data:' }),
-      meta: Link.match().optional(),
+      meta: Link.optional(),
     }),
   })
 

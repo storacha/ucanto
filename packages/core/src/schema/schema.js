@@ -1,15 +1,26 @@
 import * as Schema from './type.js'
 import { ok, Failure } from '../result.js'
+import {
+  create as createLink,
+  parse as parseLink,
+  createLegacy,
+  isLink,
+  parse,
+  base32,
+} from '../link.js'
 export * from './type.js'
+import * as sha256 from '../sha256.js'
+import * as identity from '../identity.js'
+import * as CBOR from '../cbor.js'
 
 export { ok }
 /**
  * @abstract
- * @template [T=unknown]
- * @template [I=unknown]
+ * @template [Out=unknown]
+ * @template [In=unknown]
  * @template [Settings=void]
- * @extends {Schema.Base<T, I, Settings>}
- * @implements {Schema.Schema<T, I>}
+ * @extends {Schema.Base<Out, In, Settings>}
+ * @implements {Schema.Schema<Out, In>}
  */
 export class API {
   /**
@@ -25,36 +36,65 @@ export class API {
   }
   /**
    * @abstract
-   * @param {I} input
+   * @param {In} input
    * @param {Settings} settings
-   * @returns {Schema.ReadResult<T>}
+   * @param {Schema.Region} [region]
+   * @returns {Schema.ReadResult<Out>}
    */
   /* c8 ignore next 3 */
-  readWith(input, settings) {
+  readWith(input, settings, region) {
     throw new Error(`Abstract method readWith must be implemented by subclass`)
   }
+
   /**
-   * @param {I} input
-   * @returns {Schema.ReadResult<T>}
+   *
+   * @param {Out} output
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<In>}
    */
+  writeWith(output, settings) {
+    throw new Error(`Abstract method writeWith must be implemented by subclass`)
+  }
+
+  /**
+   * @param {unknown} input
+   */
+
   read(input) {
-    return this.readWith(input, this.settings)
+    return this.tryFrom(/** @type {In} */ (input))
+  }
+
+  /**
+   * @param {In} input
+   * @param {Schema.Region} [region]
+   * @returns {Schema.ReadResult<Out>}
+   */
+  tryFrom(input, region) {
+    return this.readWith(input, this.settings, region)
+  }
+
+  /**
+   * @param {Out} output
+   * @returns {Schema.ReadResult<In>}
+   */
+  tryTo(output) {
+    return this.writeWith(output, this.settings)
   }
 
   /**
    * @param {unknown} value
-   * @returns {value is T}
+   * @returns {value is Out}
    */
   is(value) {
-    return !this.read(/** @type {I} */ (value))?.error
+    return !this.tryFrom(/** @type {In} */ (value))?.error
   }
 
   /**
-   * @param {unknown} value
-   * @return {T}
+   * @param {In} value
+   * @return {Out}
    */
   from(value) {
-    const result = this.read(/** @type {I} */ (value))
+    const result = this.tryFrom(/** @type {In} */ (value))
     if (result.error) {
       throw result.error
     } else {
@@ -63,29 +103,50 @@ export class API {
   }
 
   /**
-   * @returns {Schema.Schema<T|undefined, I>}
+   * @param {Out} value
    */
+  to(value) {
+    const result = this.tryTo(value)
+    if (result.error) {
+      throw result.error
+    } else {
+      return result.ok
+    }
+  }
+
   optional() {
     return optional(this)
   }
 
-  /**
-   * @returns {Schema.Schema<T|null, I>}
-   */
   nullable() {
     return nullable(this)
   }
 
   /**
-   * @returns {Schema.Schema<T[], I>}
+   * @deprecated - use {@link Schema.Schema.implicit} instead
+   * @param {Schema.NotUndefined<Out>} value
+   */
+  default(value) {
+    return this.implicit(value)
+  }
+
+  /**
+   * @param {Schema.NotUndefined<Out>} value
+   */
+  implicit(value) {
+    return implicit(this, value)
+  }
+
+  /**
+   * @returns {Schema.ArraySchema<Schema.Convert<Out, In>>}
    */
   array() {
     return array(this)
   }
   /**
-   * @template U
-   * @param {Schema.Reader<U, I>} schema
-   * @returns {Schema.Schema<T | U, I>}
+   * @template I, O
+   * @param {Schema.Convert<O, I>} schema
+   * @returns {Schema.Schema<Out | O, In | I>}
    */
 
   or(schema) {
@@ -93,70 +154,89 @@ export class API {
   }
 
   /**
-   * @template U
-   * @param {Schema.Reader<U, I>} schema
-   * @returns {Schema.Schema<T & U, I>}
+   * @template I, O
+   * @param {Schema.Convert<O, I>} schema
+   * @returns {Schema.Schema<Out & O, In & I>}
    */
   and(schema) {
     return and(this, schema)
   }
 
   /**
-   * @template {T} U
-   * @param {Schema.Reader<U, T>} schema
-   * @returns {Schema.Schema<U, I>}
+   * @template {Out} O
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} schema
+   * @returns {Schema.Schema<O, In>}
    */
   refine(schema) {
     return refine(this, schema)
   }
 
   /**
-   * @template {string} Kind
-   * @param {Kind} [kind]
-   * @returns {Schema.Schema<Schema.Branded<T, Kind>, I>}
+   * @template O
+   * @param {Schema.Convert<O, Out>} to
+   * @returns {Schema.Schema<O, In>}
    */
-  brand(kind) {
-    return /** @type {Schema.Schema<Schema.Branded<T, Kind>, I>} */ (this)
+  pipe(to) {
+    return pipe(this, to)
   }
 
   /**
-   * @param {Schema.NotUndefined<T>} value
-   * @returns {Schema.DefaultSchema<Schema.NotUndefined<T>, I>}
+   * @template {string} Kind
+   * @param {Kind} [kind]
+   * @returns {Schema.Schema<Schema.Branded<Out, Kind>, In>}
    */
-  default(value) {
-    // ⚠️ this.from will throw if wrong default is provided
-    const fallback = this.from(value)
-    // we also check that fallback is not undefined because that is the point
-    // of having a fallback
-    if (fallback === undefined) {
-      throw new Error(`Value of type undefined is not a valid default`)
-    }
+  brand(kind) {
+    return /** @type {Schema.Schema<Schema.Branded<Out, Kind>, In>} */ (this)
+  }
 
-    const schema = new Default({
-      reader: /** @type {Schema.Reader<T, I>} */ (this),
-      value: /** @type {Schema.NotUndefined<T>} */ (fallback),
+  /**
+   * @template {Schema.BlockCodec<Schema.MulticodecCode, In>} Codec
+   * @template {Schema.MultihashHasher<Schema.MulticodecCode>} Hasher
+   * @template {Schema.UnknownLink['version']} Version
+   * @param {{
+   * codec?: Codec
+   * hasher?: Hasher
+   * version?: Version
+   * }} options
+   * @returns {Schema.LinkSchema<Out, Codec['code'], Hasher['code'], Version>}
+   */
+  link({ codec, hasher, version } = {}) {
+    const schema = link({
+      codec,
+      hasher,
+      version,
+      schema: /** @type {Schema.Schema<Out, In>} */ (this),
     })
 
-    return /** @type {Schema.DefaultSchema<Schema.NotUndefined<T>, I>} */ (
-      schema
-    )
+    return schema
+  }
+
+  toSchema() {
+    return this
   }
 }
 
 /**
- * @template [I=unknown]
- * @extends {API<never, I>}
- * @implements {Schema.Schema<never, I>}
+ * @extends {API<never, any>}
+ * @implements {Schema.Schema<never, any>}
  */
 class Never extends API {
   toString() {
     return 'never()'
   }
+
   /**
-   * @param {I} input
+   * @param {never} value
+   */
+  tryTo(value) {
+    return value
+  }
+  /**
+   * @param {any} input
    * @returns {Schema.ReadResult<never>}
    */
-  read(input) {
+  tryFrom(input) {
     return typeError({ expect: 'never', actual: input })
   }
 }
@@ -168,16 +248,21 @@ class Never extends API {
 export const never = () => new Never()
 
 /**
- * @template [I=unknown]
- * @extends API<unknown, I, void>
- * @implements {Schema.Schema<unknown, I>}
+ * @extends API<unknown, unknown, void>
+ * @implements {Schema.Schema<unknown, unknown>}
  */
 class Unknown extends API {
   /**
-   * @param {I} input
+   * @param {unknown} input
    */
-  read(input) {
+  tryFrom(input) {
     return /** @type {Schema.ReadResult<unknown>}*/ ({ ok: input })
+  }
+  /**
+   * @param {unknown} output
+   */
+  tryTo(output) {
+    return { ok: output }
   }
   toString() {
     return 'unknown()'
@@ -186,23 +271,27 @@ class Unknown extends API {
 
 /**
  * @template [I=unknown]
- * @returns {Schema.Schema<unknown, I>}
+ * @returns {Schema.Schema<unknown, unknown>}
  */
 export const unknown = () => new Unknown()
 
 /**
- * @template O
- * @template [I=unknown]
- * @extends {API<null|O, I, Schema.Reader<O, I>>}
- * @implements {Schema.Schema<null|O, I>}
+ * @template I, O
+ * @extends {API<null|O, null|I, Schema.Convert<O, I>>}
+ * @implements {Schema.Schema<null|O, I|null>}
  */
 class Nullable extends API {
   /**
-   * @param {I} input
-   * @param {Schema.Reader<O, I>} reader
+   * @param {I|null} input
+   * @param {Schema.Convert<O, I>} convert
+   * @param {Schema.Region} [region]
    */
-  readWith(input, reader) {
-    const result = reader.read(input)
+  readWith(input, convert, region) {
+    if (input === null) {
+      return { ok: null }
+    }
+
+    const result = convert.tryFrom(input, region)
     if (result.error) {
       return input === null
         ? { ok: null }
@@ -218,6 +307,13 @@ class Nullable extends API {
       return result
     }
   }
+  /**
+   * @param {O|null} output
+   * @param {Schema.Convert<O, I>} writer
+   */
+  writeWith(output, writer) {
+    return output === null ? { ok: null } : writer.tryTo(output)
+  }
   toString() {
     return `${this.settings}.nullable()`
   }
@@ -226,29 +322,41 @@ class Nullable extends API {
 /**
  * @template O
  * @template [I=unknown]
- * @param {Schema.Reader<O, I>} schema
- * @returns {Schema.Schema<O|null, I>}
+ * @param {Schema.Convert<O, I>} schema
+ * @returns {Schema.Schema<O|null, I | null>}
  */
 export const nullable = schema => new Nullable(schema)
 
 /**
  * @template O
- * @template [I=unknown]
- * @extends {API<O|undefined, I, Schema.Reader<O, I>>}
- * @implements {Schema.Schema<O|undefined, I>}
+ * @template I
+ * @extends {API<O|undefined, I|undefined, Schema.Convert<O, I>>}
+ * @implements {Schema.Schema<O|undefined, I|undefined>}
  */
 class Optional extends API {
   optional() {
     return this
   }
   /**
-   * @param {I} input
-   * @param {Schema.Reader<O, I>} reader
+   * @param {I|undefined} input
+   * @param {Schema.Convert<O, I>} convert
+   * @param {Schema.Region} [region]
    * @returns {Schema.ReadResult<O|undefined>}
    */
-  readWith(input, reader) {
-    const result = reader.read(input)
+  readWith(input, convert, region) {
+    if (input === undefined) {
+      return { ok: undefined }
+    }
+    const result = convert.tryFrom(input, region)
     return result.error && input === undefined ? { ok: undefined } : result
+  }
+  /**
+   *
+   * @param {O|undefined} output
+   * @param {Schema.Convert} convert
+   */
+  writeWith(output, convert) {
+    return output === undefined ? { ok: undefined } : convert.tryTo(output)
   }
   toString() {
     return `${this.settings}.optional()`
@@ -256,81 +364,120 @@ class Optional extends API {
 }
 
 /**
- * @template {unknown} O
- * @template [I=unknown]
- * @extends {API<O, I, {reader:Schema.Reader<O, I>, value:O & Schema.NotUndefined<O>}>}
- * @implements {Schema.DefaultSchema<O, I>}
- */
-class Default extends API {
-  /**
-   * @returns {Schema.DefaultSchema<O & Schema.NotUndefined<O>, I>}
-   */
-  optional() {
-    // Short circuit here as we there is no point in wrapping this in optional.
-    return /** @type {Schema.DefaultSchema<O & Schema.NotUndefined<O>, I>} */ (
-      this
-    )
-  }
-  /**
-   * @param {I} input
-   * @param {object} options
-   * @param {Schema.Reader<O|undefined, I>} options.reader
-   * @param {O} options.value
-   * @returns {Schema.ReadResult<O>}
-   */
-  readWith(input, { reader, value }) {
-    if (input === undefined) {
-      return /** @type {Schema.ReadResult<O>} */ ({ ok: value })
-    } else {
-      const result = reader.read(input)
-
-      return result.error
-        ? result
-        : result.ok !== undefined
-        ? // We just checked that result.ok is not undefined but still needs
-          // reassurance
-          /** @type {Schema.ReadResult<O>} */ (result)
-        : { ok: value }
-    }
-  }
-  toString() {
-    return `${this.settings.reader}.default(${JSON.stringify(
-      this.settings.value
-    )})`
-  }
-
-  get value() {
-    return this.settings.value
-  }
-}
-
-/**
  * @template O
  * @template [I=unknown]
- * @param {Schema.Reader<O, I>} schema
- * @returns {Schema.Schema<O|undefined, I>}
+ * @param {Schema.Convert<O, I>} schema
+ * @returns {Schema.Schema<O|undefined, I|undefined>}
  */
 export const optional = schema => new Optional(schema)
 
 /**
- * @template O
- * @template [I=unknown]
- * @extends {API<O[], I, Schema.Reader<O, I>>}
- * @implements {Schema.ArraySchema<O, I>}
+ * @template Out
+ * @template In
+ * @extends {API<Exclude<Out, undefined>, In | undefined, {convert:Schema.Convert<Out, In>, value:Exclude<Out, undefined>}>}
+ * @implements {Schema.ImplicitSchema<Out, In>}
+ */
+class Implicit extends API {
+  /**
+   * @returns {*}
+   */
+  optional() {
+    return /** @type {*} */ (this)
+  }
+
+  /**
+   * @param {Exclude<Out, undefined>} value
+   */
+  implicit(value) {
+    return /** @type {*} */ (implicit(this.settings.convert, value))
+  }
+
+  /**
+   * @param {In|undefined} input
+   * @param {object} options
+   * @param {Schema.Convert<Out, In>} options.convert
+   * @param {Exclude<Out, undefined>} options.value
+   * @param {Schema.Region} [region]
+   * @returns {Schema.ReadResult<Exclude<Out, undefined>>}
+   */
+  readWith(input, { convert, value }, region) {
+    if (input === undefined) {
+      return { ok: value }
+    } else {
+      const result = convert.tryFrom(input, region)
+
+      return result.error
+        ? result
+        : result.ok === undefined
+        ? { ok: value }
+        : // We just checked that result.ok is not undefined but still needs
+          // reassurance
+          /** @type {*} */ (result)
+    }
+  }
+
+  /**
+   *
+   * @param {Exclude<Out, undefined>} output
+   * @param {object} options
+   * @param {Schema.Convert<Out, In>} options.convert
+   */
+  writeWith(output, { convert }) {
+    return convert.tryTo(output)
+  }
+  toString() {
+    return `${this.settings.convert}.default(${JSON.stringify(
+      this.settings.value
+    )})`
+  }
+
+  /**
+   * @returns {Schema.NotUndefined<Out>}
+   */
+  get value() {
+    return /** @type {Schema.NotUndefined<Out>} */ (this.settings.value)
+  }
+}
+
+/**
+ * @template O, I
+ * @template {Exclude<O, undefined>} Q
+ * @param {Schema.Convert<O, I>} schema
+ * @param {Q} value
+ * @returns {Schema.ImplicitSchema<O, I>}
+ */
+export const implicit = (schema, value) => {
+  // we also check that fallback is not undefined because that is the point
+  // of having a fallback
+  if (value === undefined) {
+    throw new Error(`Value of type undefined is not a valid default`)
+  }
+
+  const implicit = /** @type {Schema.ImplicitSchema<O, I>} */ (
+    new Implicit({ convert: schema, value })
+  )
+
+  return implicit
+}
+
+/**
+ * @template {Schema.Convert} Convert
+ * @extends {API<Schema.Infer<Convert>[], Schema.InferInput<Convert>[], Convert>}
+ * @implements {Schema.ArraySchema<Convert>}
  */
 class ArrayOf extends API {
   /**
-   * @param {I} input
-   * @param {Schema.Reader<O, I>} schema
+   * @param {Schema.InferInput<Convert>[]} input
+   * @param {Convert} convert
+   * @param {Schema.Region} [context]
    */
-  readWith(input, schema) {
+  readWith(input, convert, context) {
     if (!Array.isArray(input)) {
       return typeError({ expect: 'array', actual: input })
     }
-    /** @type {O[]} */
     const results = []
     for (const [index, value] of input.entries()) {
-      const result = schema.read(value)
+      const result = convert.tryFrom(value, context)
       if (result.error) {
         return memberError({ at: index, cause: result.error })
       } else {
@@ -339,6 +486,24 @@ class ArrayOf extends API {
     }
     return { ok: results }
   }
+  /**
+   *
+   * @param {Schema.Infer<Convert>[]} output
+   * @param {Convert} convert
+   */
+  writeWith(output, convert) {
+    const results = []
+    for (const [index, value] of output.entries()) {
+      const result = convert.tryTo(value)
+      if (result.error) {
+        return memberError({ at: index, cause: result.error })
+      } else {
+        results.push(result.ok)
+      }
+    }
+    return { ok: results }
+  }
+
   get element() {
     return this.settings
   }
@@ -348,27 +513,29 @@ class ArrayOf extends API {
 }
 
 /**
- * @template O
- * @template [I=unknown]
- * @param {Schema.Reader<O, I>} schema
- * @returns {Schema.ArraySchema<O, I>}
+ * @template O, I
+ * @template {Schema.Convert} Schema
+ * @param {Schema} schema
+ * @returns {Schema.ArraySchema<Schema>}
  */
-export const array = schema => new ArrayOf(schema)
+export const array = schema => {
+  const out = new ArrayOf(schema)
+  return out
+}
 
 /**
- * @template {Schema.Reader<unknown, I>} T
- * @template {[T, ...T[]]} U
- * @template [I=unknown]
- * @extends {API<Schema.InferTuple<U>, I, U>}
- * @implements {Schema.Schema<Schema.InferTuple<U>, I>}
+ * @template {[Schema.Convert, ...Schema.Convert[]]} Shape
+ * @extends {API<Schema.InferTuple<Shape>, Schema.InferTupleInput<Shape>, Shape>}
+ * @implements {Schema.Schema<Schema.InferTuple<Shape>, Schema.InferTupleInput<Shape>>}
  */
 class Tuple extends API {
   /**
-   * @param {I} input
-   * @param {U} shape
-   * @returns {Schema.ReadResult<Schema.InferTuple<U>>}
+   * @param {Schema.InferTupleInput<Shape>} input
+   * @param {Shape} shape
+   * @param {Schema.Region} [context]
+   * @returns {Schema.ReadResult<Schema.InferTuple<Shape>>}
    */
-  readWith(input, shape) {
+  readWith(input, shape, context) {
     if (!Array.isArray(input)) {
       return typeError({ expect: 'array', actual: input })
     }
@@ -378,7 +545,7 @@ class Tuple extends API {
 
     const results = []
     for (const [index, reader] of shape.entries()) {
-      const result = reader.read(input[index])
+      const result = reader.tryFrom(input[index], context)
       if (result.error) {
         return memberError({ at: index, cause: result.error })
       } else {
@@ -386,43 +553,69 @@ class Tuple extends API {
       }
     }
 
-    return { ok: /** @type {Schema.InferTuple<U>} */ (results) }
+    return { ok: /** @type {Schema.InferTuple<Shape>} */ (results) }
+  }
+  /**
+   *
+   * @param {Schema.InferTuple<Shape>} output
+   * @param {Shape} shape
+   * @returns {Schema.ReadResult<Schema.InferTupleInput<Shape>>}
+   */
+  writeWith(output, shape) {
+    if (!Array.isArray(output)) {
+      return typeError({ expect: 'array', actual: output })
+    }
+
+    if (output.length !== this.shape.length) {
+      return error(`Array must contain exactly ${this.shape.length} elements`)
+    }
+
+    const results = []
+    for (const [index, writer] of shape.entries()) {
+      const result = writer.tryTo(output[index])
+      if (result.error) {
+        return memberError({ at: index, cause: result.error })
+      } else {
+        results[index] = result.ok
+      }
+    }
+
+    return { ok: /** @type {Schema.InferTupleInput<Shape>} */ (results) }
   }
 
-  /** @type {U} */
+  /** @type {Shape} */
   get shape() {
     return this.settings
   }
 
   toString() {
-    return `tuple([${this.shape.map(reader => reader.toString()).join(', ')}])`
+    return `tuple([${this.shape.map(member => member.toString()).join(', ')}])`
   }
 }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
- * @template {[T, ...T[]]} U
- * @template [I=unknown]
- * @param {U} shape
- * @returns {Schema.Schema<Schema.InferTuple<U>, I>}
+ * @template {[Schema.Convert, ...Schema.Convert[]]} Shape
+ * @param {Shape} shape
+ * @returns {Schema.Schema<Schema.InferTuple<Shape>, Schema.InferTupleInput<Shape>>}
  */
 export const tuple = shape => new Tuple(shape)
 
 /**
  * @template V
  * @template {string} K
- * @template [I=unknown]
- * @extends {API<Schema.Dictionary<K, V>, I, { key: Schema.Reader<K, string>, value: Schema.Reader<V, I> }>}
- * @implements {Schema.DictionarySchema<V, K, I>}
+ * @template U
+ * @extends {API<Schema.Dictionary<K, V>, Schema.Dictionary<K, U>, { key: Schema.From<K, string>, value: Schema.Convert<V, U> }>}
+ * @implements {Schema.DictionarySchema<V, K, U>}
  */
 class Dictionary extends API {
   /**
-   * @param {I} input
+   * @param {Schema.Dictionary<K, U>} input
    * @param {object} schema
-   * @param {Schema.Reader<K, string>} schema.key
-   * @param {Schema.Reader<V, I>} schema.value
+   * @param {Schema.From<K, string>} schema.key
+   * @param {Schema.From<V, U>} schema.value
+   * @param {Schema.Region} [context]
    */
-  readWith(input, { key, value }) {
+  readWith(input, { key, value }, context) {
     if (typeof input != 'object' || input === null || Array.isArray(input)) {
       return typeError({
         expect: 'dictionary',
@@ -433,12 +626,42 @@ class Dictionary extends API {
     const dict = /** @type {Schema.Dictionary<K, V>} */ ({})
 
     for (const [k, v] of Object.entries(input)) {
-      const keyResult = key.read(k)
+      const keyResult = key.tryFrom(k, context)
       if (keyResult.error) {
         return memberError({ at: k, cause: keyResult.error })
       }
 
-      const valueResult = value.read(v)
+      const valueResult = value.tryFrom(v, context)
+      if (valueResult.error) {
+        return memberError({ at: k, cause: valueResult.error })
+      }
+
+      // skip undefined because they mess up CBOR and are generally useless.
+      if (valueResult.ok !== undefined) {
+        dict[keyResult.ok] = valueResult.ok
+      }
+    }
+
+    return { ok: dict }
+  }
+
+  /**
+   *
+   * @param {Schema.Dictionary<K, V>} output
+   * @param {object} schema
+   * @param {Schema.From<K, string>} schema.key
+   * @param {Schema.To<V, U>} schema.value
+   */
+  writeWith(output, { key, value }) {
+    const dict = /** @type {Schema.Dictionary<K, U>} */ ({})
+
+    for (const [k, v] of Object.entries(output)) {
+      const keyResult = key.tryFrom(k)
+      if (keyResult.error) {
+        return memberError({ at: k, cause: keyResult.error })
+      }
+
+      const valueResult = value.tryTo(/** @type {V} */ (v))
       if (valueResult.error) {
         return memberError({ at: k, cause: valueResult.error })
       }
@@ -460,10 +683,11 @@ class Dictionary extends API {
 
   partial() {
     const { key, value } = this.settings
-    return new Dictionary({
+    const partial = new Dictionary({
       key,
       value: optional(value),
     })
+    return /** @type {*} */ (partial)
   }
   toString() {
     return `dictionary(${this.settings})`
@@ -473,35 +697,46 @@ class Dictionary extends API {
 /**
  * @template {string} K
  * @template {unknown} V
- * @template [I=unknown]
+ * @template {unknown} U
  * @param {object} shape
- * @param {Schema.Reader<V, I>} shape.value
- * @param {Schema.Reader<K, string>} [shape.key]
- * @returns {Schema.DictionarySchema<V, K, I>}
+ * @param {Schema.Convert<V, U>} shape.value
+ * @param {Schema.From<K, string>} [shape.key]
+ * @returns {Schema.DictionarySchema<V, K, U>}
  */
 export const dictionary = ({ value, key }) =>
   new Dictionary({
     value,
-    key: key || /** @type {Schema.Reader<K, string>} */ (string()),
+    key: key || /** @type {Schema.From<K, string>} */ (string()),
   })
 
 /**
- * @template {[unknown, ...unknown[]]} T
- * @template [I=unknown]
- * @extends {API<T[number], I, {type: string, variants:Set<T[number]>}>}
- * @implements {Schema.Schema<T[number], I>}
+ * @template {string} T
+ * @template {[T, ...T[]]} U
+ * @extends {API<U[number], string, {type: string, variants:Set<U[number]>}>}
+ * @implements {Schema.Schema<U[number], string>}
  */
 class Enum extends API {
   /**
-   * @param {I} input
-   * @param {{type:string, variants:Set<T[number]>}} settings
-   * @returns {Schema.ReadResult<T[number]>}
+   * @param {string} input
+   * @param {{type:string, variants:Set<U[number]>}} settings
+   * @returns {Schema.ReadResult<U[number]>}
    */
   readWith(input, { variants, type }) {
-    if (variants.has(input)) {
-      return /** @type {Schema.ReadResult<T[number]>} */ ({ ok: input })
+    if (variants.has(/** @type {T} */ (input))) {
+      return /** @type {Schema.ReadResult<U[number]>} */ ({ ok: input })
     } else {
       return typeError({ expect: type, actual: input })
+    }
+  }
+  /**
+   * @param {U[number]} output
+   * @param {{type:string, variants:Set<T[number]>}} settings
+   */
+  writeWith(output, settings) {
+    if (settings.variants.has(output)) {
+      return { ok: output }
+    } else {
+      return typeError({ expect: settings.type, actual: output })
     }
   }
   toString() {
@@ -514,7 +749,7 @@ class Enum extends API {
  * @template {[T, ...T[]]} U
  * @template [I=unknown]
  * @param {U} variants
- * @returns {Schema.Schema<U[number], I>}
+ * @returns {Schema.Schema<U[number], string>}
  */
 const createEnum = variants =>
   new Enum({
@@ -524,73 +759,90 @@ const createEnum = variants =>
 export { createEnum as enum }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
- * @template {[T, ...T[]]} U
- * @template [I=unknown]
- * @extends {API<Schema.InferUnion<U>, I, U>}
- * @implements {Schema.Schema<Schema.InferUnion<U>, I>}
+ * @template {[Schema.Convert, ...Schema.Convert[]]} Members
+ * @extends {API<Schema.InferUnion<Members>, Schema.InferUnionInput<Members>, Members>}
+ * @implements {Schema.Schema<Schema.InferUnion<Members>, Schema.InferUnionInput<Members>>}
  */
 class Union extends API {
   /**
-   * @param {I} input
-   * @param {U} variants
+   * @param {Schema.InferUnionInput<Members>} input
+   * @param {Members} variants
+   * @param {Schema.Region} [context]
    */
-  readWith(input, variants) {
+  readWith(input, variants, context) {
     const causes = []
     for (const reader of variants) {
-      const result = reader.read(input)
+      const result = reader.tryFrom(input, context)
       if (result.error) {
         causes.push(result.error)
       } else {
-        return /** @type {Schema.ReadResult<Schema.InferUnion<U>>} */ (result)
+        return /** @type {Schema.ReadResult<Schema.InferUnion<Members>>} */ (
+          result
+        )
+      }
+    }
+    return { error: new UnionError({ causes }) }
+  }
+  /**
+   * @param {Schema.InferUnion<Members>} output
+   * @param {Members} variants
+   */
+  writeWith(output, variants) {
+    const causes = []
+    for (const member of variants) {
+      const result = member.tryTo(output)
+      if (result.error) {
+        causes.push(result.error)
+      } else {
+        return /** @type {Schema.ReadResult<Schema.InferUnionInput<Members>>} */ (
+          result
+        )
       }
     }
     return { error: new UnionError({ causes }) }
   }
 
-  get variants() {
+  get members() {
     return this.settings
   }
   toString() {
-    return `union([${this.variants.map(type => type.toString()).join(', ')}])`
+    return `union([${this.members
+      .map(member => member.toString())
+      .join(', ')}])`
   }
 }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
- * @template {[T, ...T[]]} U
- * @template [I=unknown]
- * @param {U} variants
- * @returns {Schema.Schema<Schema.InferUnion<U>, I>}
+ * @template {[Schema.Convert, ...Schema.Convert[]]} Members
+ * @param {Members} members
+ * @returns {Schema.Schema<Schema.InferUnion<Members>, Schema.InferUnionInput<Members>>}
  */
-const union = variants => new Union(variants)
+const union = members => new Union(members)
 
 /**
- * @template T, U
- * @template [I=unknown]
- * @param {Schema.Reader<T, I>} left
- * @param {Schema.Reader<U, I>} right
- * @returns {Schema.Schema<T|U, I>}
+ * @template O, Q, I, J
+ * @param {Schema.Convert<O, I>} left
+ * @param {Schema.Convert<Q, J>} right
+ * @returns {Schema.Schema<O|Q, I|J>}
  */
 export const or = (left, right) => union([left, right])
 
 /**
- * @template {Schema.Reader<unknown, I>} T
- * @template {[T, ...T[]]} U
- * @template [I=unknown]
- * @extends {API<Schema.InferIntersection<U>, I, U>}
- * @implements {Schema.Schema<Schema.InferIntersection<U>, I>}
+ * @template {[Schema.Convert, ...Schema.Convert[]]} Members
+ * @extends {API<Schema.InferIntersection<Members>, Schema.InferIntersectionInput<Members>, Members>}
+ * @implements {Schema.Schema<Schema.InferIntersection<Members>, Schema.InferIntersectionInput<Members>>}
  */
 class Intersection extends API {
   /**
-   * @param {I} input
-   * @param {U} schemas
-   * @returns {Schema.ReadResult<Schema.InferIntersection<U>>}
+   * @param {Schema.InferIntersectionInput<Members>} input
+   * @param {Members} schemas
+   * @param {Schema.Region} [context]
+   * @returns {Schema.ReadResult<Schema.InferIntersection<Members>>}
    */
-  readWith(input, schemas) {
+  readWith(input, schemas, context) {
     const causes = []
     for (const schema of schemas) {
-      const result = schema.read(input)
+      const result = schema.tryFrom(input, context)
       if (result.error) {
         causes.push(result.error)
       }
@@ -598,44 +850,86 @@ class Intersection extends API {
 
     return causes.length > 0
       ? { error: new IntersectionError({ causes }) }
-      : /** @type {Schema.ReadResult<Schema.InferIntersection<U>>} */ ({
+      : /** @type {Schema.ReadResult<Schema.InferIntersection<Members>>} */ ({
           ok: input,
         })
   }
+  /**
+   * @param {Schema.InferIntersection<Members>} output
+   * @param {Members} members
+   * @returns {Schema.ReadResult<Schema.InferIntersectionInput<Members>>}
+   */
+  writeWith(output, members) {
+    const causes = []
+    for (const member of members) {
+      const result = member.tryTo(output)
+      if (result.error) {
+        causes.push(result.error)
+      }
+    }
+
+    return causes.length > 0
+      ? { error: new IntersectionError({ causes }) }
+      : /** @type {Schema.ReadResult<Schema.InferIntersectionInput<Members>>} */ ({
+          ok: output,
+        })
+  }
+  get members() {
+    return this.settings
+  }
   toString() {
-    return `intersection([${this.settings
-      .map(type => type.toString())
+    return `intersection([${this.members
+      .map(member => member.toString())
       .join(',')}])`
   }
 }
 
 /**
- * @template {Schema.Reader<unknown, I>} T
- * @template {[T, ...T[]]} U
- * @template [I=unknown]
- * @param {U} variants
- * @returns {Schema.Schema<Schema.InferIntersection<U>, I>}
+ * @template {[Schema.Convert, ...Schema.Convert[]]} Members
+ * @param {Members} members
+ * @returns {Schema.Schema<Schema.InferIntersection<Members>, Schema.InferIntersectionInput<Members>>}
  */
-export const intersection = variants => new Intersection(variants)
+export const intersection = members => new Intersection(members)
 
 /**
- * @template T, U
- * @template [I=unknown]
- * @param {Schema.Reader<T, I>} left
- * @param {Schema.Reader<U, I>} right
- * @returns {Schema.Schema<T & U, I>}
+ * @template O, Q, I, J
+ * @param {Schema.Convert<O, I>} left
+ * @param {Schema.Convert<Q, J>} right
+ * @returns {Schema.Schema<O & Q, I & J>}
  */
 export const and = (left, right) => intersection([left, right])
 
 /**
- * @template [I=unknown]
- * @extends {API<boolean, I>}
+ * @template {string|number|boolean|null} Type
+ * @template {string} Name
+ * @extends {API<Type, Type, {name: Name, cast(input:Type): Schema.ReadResult<Type>}>}
  */
-class Boolean extends API {
+class Scalar extends API {
   /**
-   * @param {I} input
+   * @param {Type} input
+   * @param {typeof this.settings} settings
    */
-  readWith(input) {
+  readWith(input, { cast }) {
+    return cast(input)
+  }
+  /**
+   * @param {Type} output
+   * @param {typeof this.settings} settings
+   */
+  writeWith(output, { cast }) {
+    return cast(output)
+  }
+  toString() {
+    return `${this.settings.name}()`
+  }
+}
+
+export const Boolean = new Scalar({
+  name: 'boolean',
+  /**
+   * @param {boolean} input
+   */
+  cast(input) {
     switch (input) {
       case true:
       case false:
@@ -646,229 +940,290 @@ class Boolean extends API {
           actual: input,
         })
     }
-  }
-
-  toString() {
-    return `boolean()`
-  }
-}
-
-/** @type {Schema.Schema<boolean, unknown>} */
-const anyBoolean = new Boolean()
-
-export const boolean = () => anyBoolean
+  },
+})
+export const boolean = () => Boolean
 
 /**
- * @template {number} [O=number]
- * @template [I=unknown]
+ * @template {number} Out
+ * @template {number} In
  * @template [Settings=void]
- * @extends {API<O, I, Settings>}
- * @implements {Schema.NumberSchema<O, I>}
+ * @extends {API<Out, In, Settings>}
+ * @implements {Schema.NumberSchema<Out, In>}
  */
-class UnknownNumber extends API {
+class NumberSchema extends API {
+  isInteger = globalThis.Number.isInteger
+  isFinite = globalThis.Number.isFinite
+
+  /**
+   * @param {(input: Out) => Schema.ReadResult<Out>} check
+   * @returns {Schema.NumberSchema<Out, In>}
+   */
+  constraint(check) {
+    return this.refine({
+      tryFrom: check,
+      tryTo: check,
+    })
+  }
+
   /**
    * @param {number} n
    */
   greaterThan(n) {
-    return this.refine(greaterThan(n))
+    return this.constraint(number => {
+      if (number > n) {
+        return { ok: number }
+      } else {
+        return error(`Expected ${number} > ${n}`)
+      }
+    })
   }
   /**
    * @param {number} n
    */
   lessThan(n) {
-    return this.refine(lessThan(n))
+    return this.constraint(number => {
+      if (number < n) {
+        return { ok: number }
+      } else {
+        return error(`Expected ${number} < ${n}`)
+      }
+    })
   }
 
   /**
-   * @template {O} U
-   * @param {Schema.Reader<U, O>} schema
-   * @returns {Schema.NumberSchema<U, I>}
+   * @template {Out} O
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} convert
+   * @returns {Schema.NumberSchema<O, In>}
    */
-  refine(schema) {
-    return new RefinedNumber({ base: this, schema })
+  refine(convert) {
+    return new RefinedNumber({ schema: this, refine: convert })
   }
-}
 
-/**
- * @template [I=unknown]
- * @extends {UnknownNumber<number, I>}
- * @implements {Schema.NumberSchema<number, I>}
- */
-class AnyNumber extends UnknownNumber {
   /**
-   * @param {I} input
-   * @returns {Schema.ReadResult<number>}
+   * @param {In} input
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<Out>}
    */
-  readWith(input) {
+  readWith(input, settings) {
     return typeof input === 'number'
-      ? { ok: input }
+      ? { ok: /** @type {*} */ (input) }
       : typeError({ expect: 'number', actual: input })
+  }
+  /**
+   * @param {Out} output
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<In>}
+   */
+  writeWith(output, settings) {
+    return typeof output === 'number'
+      ? { ok: /** @type {*} */ (output) }
+      : typeError({ expect: 'number', actual: output })
   }
   toString() {
     return `number()`
   }
 }
 
-/** @type {Schema.NumberSchema<number, unknown>} */
-const anyNumber = new AnyNumber()
-export const number = () => anyNumber
+/** @type {Schema.NumberSchema<number, number>} */
+export const Number = new NumberSchema(undefined)
+export const number = () => Number
 
 /**
- * @template {number} [T=number]
- * @template {T} [O=T]
- * @template [I=unknown]
- * @extends {UnknownNumber<O, I, {base:Schema.Reader<T, I>, schema:Schema.Reader<O, T>}>}
- * @implements {Schema.NumberSchema<O, I>}
+ * @template {number} Out
+ * @template {number} In
+ * @template {Out} O
+ * @template {Out} I
+ * @extends {NumberSchema<O, In, {schema: Schema.Convert<Out, In>, refine:Schema.From<O, I>}>}
+ * @implements {Schema.NumberSchema<O, In>}
  */
-class RefinedNumber extends UnknownNumber {
+class RefinedNumber extends NumberSchema {
   /**
-   * @param {I} input
-   * @param {{base:Schema.Reader<T, I>, schema:Schema.Reader<O, T>}} settings
+   * @param {In} input
+   * @param {{schema: Schema.Convert<Out, In>, refine: Schema.Convert<O, I> } } settings
    * @returns {Schema.ReadResult<O>}
    */
-  readWith(input, { base, schema }) {
-    const result = base.read(input)
-    return result.error ? result : schema.read(result.ok)
+  readWith(input, { schema, refine }) {
+    const result = schema.tryFrom(input)
+    return result.error ? result : refine.tryFrom(/** @type {I} */ (result.ok))
   }
-  toString() {
-    return `${this.settings.base}.refine(${this.settings.schema})`
-  }
-}
 
-/**
- * @template {number} T
- * @extends {API<T, T, number>}
- */
-class LessThan extends API {
   /**
-   * @param {T} input
-   * @param {number} number
-   * @returns {Schema.ReadResult<T>}
+   * @param {O} output
+   * @param {{schema: Schema.Convert<Out, In>, refine: Schema.Convert<O, I> } } settings
    */
-  readWith(input, number) {
-    if (input < number) {
-      return { ok: input }
-    } else {
-      return error(`Expected ${input} < ${number}`)
-    }
+  writeWith(output, { schema, refine }) {
+    const result = refine.tryTo(output)
+    return result.error ? result : schema.tryTo(result.ok)
   }
+
   toString() {
-    return `lessThan(${this.settings})`
+    return `${this.settings.schema}.refine(${this.settings.refine})`
   }
 }
 
 /**
- * @template {number} T
- * @param {number} n
- * @returns {Schema.Schema<T, T>}
+ * @extends {NumberSchema<Schema.Integer, number, void>}
  */
-export const lessThan = n => new LessThan(n)
-
-/**
- * @template {number} T
- * @extends {API<T, T, number>}
- */
-class GreaterThan extends API {
+class IntegerSchema extends NumberSchema {
   /**
-   * @param {T} input
    * @param {number} number
-   * @returns {Schema.ReadResult<T>}
-   */
-  readWith(input, number) {
-    if (input > number) {
-      return { ok: input }
-    } else {
-      return error(`Expected ${input} > ${number}`)
-    }
-  }
-  toString() {
-    return `greaterThan(${this.settings})`
-  }
-}
-
-/**
- * @template {number} T
- * @param {number} n
- * @returns {Schema.Schema<T, T>}
- */
-export const greaterThan = n => new GreaterThan(n)
-
-const Integer = {
-  /**
-   * @param {number} input
    * @returns {Schema.ReadResult<Schema.Integer>}
    */
-  read(input) {
-    return Number.isInteger(input)
-      ? { ok: /** @type {Schema.Integer} */ (input) }
+  static validate(number) {
+    return Number.isInteger(number)
+      ? { ok: /** @type {Schema.Integer} */ (number) }
       : typeError({
           expect: 'integer',
-          actual: input,
+          actual: number,
         })
-  },
+  }
+  /**
+   * @param {number} number
+   * @returns {Schema.ReadResult<Schema.Integer>}
+   */
+  tryFrom(number) {
+    return IntegerSchema.validate(number)
+  }
+  /**
+   * @param {Schema.Integer} number
+   * @returns {Schema.ReadResult<number>}
+   */
+  tryTo(number) {
+    return IntegerSchema.validate(number)
+  }
   toString() {
     return `Integer`
-  },
+  }
 }
+/** @type {Schema.NumberSchema<Schema.Integer, number>} */
+const Integer = new IntegerSchema()
+export const integer = () => Integer
 
-const anyInteger = anyNumber.refine(Integer)
-export const integer = () => anyInteger
-
-const Float = {
+/**
+ * @extends {NumberSchema<Schema.Float, number, void>}
+ */
+class FloatSchema extends NumberSchema {
   /**
    * @param {number} number
    * @returns {Schema.ReadResult<Schema.Float>}
    */
-  read(number) {
+  static validate(number) {
     return Number.isFinite(number)
       ? { ok: /** @type {Schema.Float} */ (number) }
       : typeError({
           expect: 'Float',
           actual: number,
         })
-  },
+  }
+  /**
+   * @param {number} number
+   * @returns {Schema.ReadResult<Schema.Float>}
+   */
+  tryFrom(number) {
+    return FloatSchema.validate(number)
+  }
+  /**
+   * @param {Schema.Float} number
+   * @returns {Schema.ReadResult<Schema.Float>}
+   */
+  tryTo(number) {
+    return FloatSchema.validate(number)
+  }
   toString() {
     return 'Float'
-  },
+  }
 }
 
-const anyFloat = anyNumber.refine(Float)
-export const float = () => anyFloat
+const Float = new FloatSchema()
+export const float = () => Float
 
 /**
- * @template {string} [O=string]
- * @template [I=unknown]
+ * @template {string} Out
+ * @template {string} In
  * @template [Settings=void]
- * @extends {API<O, I, Settings>}
+ * @extends {API<Out, In, Settings>}
+ * @implements {Schema.StringSchema<Out, In>}
  */
-class UnknownString extends API {
+class StringSchema extends API {
   /**
-   * @template {O|unknown} U
-   * @param {Schema.Reader<U, O>} schema
-   * @returns {Schema.StringSchema<O & U, I>}
+   * @template {string} Source
+   * @param {Source} source
+   * @returns {Schema.ReadResult<Source>}
+   */
+  static validate(source) {
+    return typeof source === 'string'
+      ? { ok: source }
+      : typeError({ expect: 'string', actual: source })
+  }
+  /**
+   * @param {In} input
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<Out>}
+   */
+  readWith(input, settings) {
+    return StringSchema.validate(/** @type {In & Out} */ (input))
+  }
+
+  /**
+   * @param {Out} input
+   * @param {Settings} settings
+   * @returns {Schema.ReadResult<In>}
+   */
+  writeWith(input, settings) {
+    return StringSchema.validate(/** @type {In & Out} */ (input))
+  }
+
+  /**
+   * @template {Out} O
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} schema
+   * @returns {Schema.StringSchema<O, In>}
    */
   refine(schema) {
-    const other = /** @type {Schema.Reader<U, O>} */ (schema)
-    const rest = new RefinedString({
+    const refined = new RefinedString({
       base: this,
-      schema: other,
+      schema,
     })
 
-    return /** @type {Schema.StringSchema<O & U, I>} */ (rest)
+    return /** @type {Schema.StringSchema<O, In>} */ (refined)
+  }
+
+  /**
+   * @param {(value: Out) => Schema.ReadResult<Out>} check
+   * @returns {Schema.StringSchema<Out, In>}
+   */
+  constraint(check) {
+    return this.refine({
+      tryFrom: check,
+      tryTo: check,
+    })
   }
   /**
    * @template {string} Prefix
    * @param {Prefix} prefix
    */
   startsWith(prefix) {
-    return this.refine(startsWith(prefix))
+    const constraint =
+      /** @type {Schema.Convert<Out & `${Prefix}${string}`, Out>} */ (
+        startsWith(prefix)
+      )
+
+    return this.refine(constraint)
   }
+
   /**
    * @template {string} Suffix
    * @param {Suffix} suffix
    */
   endsWith(suffix) {
-    return this.refine(endsWith(suffix))
+    const constraint =
+      /** @type {Schema.Convert<Out & `${string}${Suffix}`, Out>} */ (
+        endsWith(suffix)
+      )
+
+    return this.refine(constraint)
   }
   toString() {
     return `string()`
@@ -876,86 +1231,57 @@ class UnknownString extends API {
 }
 
 /**
- * @template O
- * @template {string} [T=string]
- * @template [I=unknown]
- * @extends {UnknownString<T & O, I, {base:Schema.Reader<T, I>, schema:Schema.Reader<O, T>}>}
- * @implements {Schema.StringSchema<O & T, I>}
+ * @template {string} Out
+ * @template {string} In
+ * @template {Out} O
+ * @template {Out} I
+ * @extends {StringSchema<O, In, {base:Schema.Convert<Out, In>, schema:Schema.Convert<O, I>}>}
+ * @implements {Schema.StringSchema<O, In>}
  */
-class RefinedString extends UnknownString {
+class RefinedString extends StringSchema {
   /**
-   * @param {I} input
-   * @param {{base:Schema.Reader<T, I>, schema:Schema.Reader<O, T>}} settings
-   * @returns {Schema.ReadResult<T & O>}
+   * @param {In} input
+   * @param {{base:Schema.From<Out, In>, schema:Schema.From<O, I>}} settings
+   * @returns {Schema.ReadResult<O>}
    */
   readWith(input, { base, schema }) {
-    const result = base.read(input)
-    return result.error
-      ? result
-      : /** @type {Schema.ReadResult<T & O>} */ (schema.read(result.ok))
+    const result = base.tryFrom(input)
+    return result.error ? result : schema.tryFrom(/** @type {I} */ (result.ok))
   }
+
+  /**
+   * @param {O} output
+   * @param {{base:Schema.To<Out, In>, schema:Schema.To<O, I>}} settings
+   * @returns {Schema.ReadResult<In>}
+   */
+  writeWith(output, { base, schema }) {
+    const result = schema.tryTo(output)
+    return result.error ? result : base.tryTo(result.ok)
+  }
+
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
   }
 }
 
-/**
- * @template [I=unknown]
- * @extends {UnknownString<string, I>}
- * @implements {Schema.StringSchema<string, I>}
- */
-class AnyString extends UnknownString {
-  /**
-   * @param {I} input
-   * @returns {Schema.ReadResult<string>}
-   */
-  readWith(input) {
-    return typeof input === 'string'
-      ? { ok: input }
-      : typeError({ expect: 'string', actual: input })
-  }
-}
-
-/** @type {Schema.StringSchema<string, unknown>} */
-const anyString = new AnyString()
-export const string = () => anyString
-
-/**
- * @template [I=unknown]
- * @extends {API<Uint8Array, I, void>}
- */
-class BytesSchema extends API {
-  /**
-   * @param {I} input
-   * @returns {Schema.ReadResult<Uint8Array>}
-   */
-  readWith(input) {
-    if (input instanceof Uint8Array) {
-      return { ok: input }
-    } else {
-      return typeError({ expect: 'Uint8Array', actual: input })
-    }
-  }
-}
-
-/** @type {Schema.Schema<Uint8Array, unknown>} */
-export const Bytes = new BytesSchema()
-export const bytes = () => Bytes
+/** @type {Schema.StringSchema<string, string>} */
+export const String = new StringSchema(undefined)
+export const string = () => String
 
 /**
  * @template {string} Prefix
- * @template {string} Body
- * @extends {API<Body & `${Prefix}${Body}`, Body, Prefix>}
- * @implements {Schema.Schema<Body & `${Prefix}${Body}`, Body>}
+ * @template {string} In
+ * @extends {API<`${Prefix}${string}` & In, In, Prefix>}
+ * @implements {Schema.Schema<`${Prefix}${string}` & In, In>}
  */
 class StartsWith extends API {
   /**
-   * @param {Body} input
+   * @param {In} input
    * @param {Prefix} prefix
    */
   readWith(input, prefix) {
     const result = input.startsWith(prefix)
-      ? /** @type {Schema.ReadResult<Body & `${Prefix}${Body}`>} */ ({
+      ? /** @type {Schema.ReadResult<`${Prefix}${string}` & In>} */ ({
           ok: input,
         })
       : error(`Expect string to start with "${prefix}" instead got "${input}"`)
@@ -972,16 +1298,16 @@ class StartsWith extends API {
 
 /**
  * @template {string} Prefix
- * @template {string} Body
+ * @template {string} Input
  * @param {Prefix} prefix
- * @returns {Schema.Schema<`${Prefix}${string}`, string>}
+ * @returns {Schema.Schema<Input & `${Prefix}${string}`, Input>}
  */
 export const startsWith = prefix => new StartsWith(prefix)
 
 /**
  * @template {string} Suffix
  * @template {string} Body
- * @extends {API<Body & `${Body}${Suffix}`, Body, Suffix>}
+ * @extends {API<Body & `${string}${Suffix}`, Body, Suffix>}
  */
 class EndsWith extends API {
   /**
@@ -990,7 +1316,7 @@ class EndsWith extends API {
    */
   readWith(input, suffix) {
     return input.endsWith(suffix)
-      ? /** @type {Schema.ReadResult<Body & `${Body}${Suffix}`>} */ ({
+      ? /** @type {Schema.ReadResult<Body & `${string}${Suffix}`>} */ ({
           ok: input,
         })
       : error(`Expect string to end with "${suffix}" instead got "${input}"`)
@@ -1005,27 +1331,40 @@ class EndsWith extends API {
 
 /**
  * @template {string} Suffix
+ * @template {string} Input
  * @param {Suffix} suffix
- * @returns {Schema.Schema<`${string}${Suffix}`, string>}
+ * @returns {Schema.Schema<`${string}${Suffix}` & Input, Input>}
  */
 export const endsWith = suffix => new EndsWith(suffix)
 
 /**
- * @template T
- * @template {T} U
- * @template [I=unknown]
- * @extends {API<U, I, { base: Schema.Reader<T, I>, schema: Schema.Reader<U, T> }>}
- * @implements {Schema.Schema<U, I>}
+ * @template Out
+ * @template {Out} O
+ * @template {Out} I
+ * @template In
+ * @extends {API<O, In, { base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }>}
+ * @implements {Schema.Schema<O, In>}
  */
 
 class Refine extends API {
   /**
-   * @param {I} input
-   * @param {{ base: Schema.Reader<T, I>, schema: Schema.Reader<U, T> }} settings
+   * @param {In} input
+   * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }} settings
+   * @param {Schema.Region} [context]
    */
-  readWith(input, { base, schema }) {
-    const result = base.read(input)
-    return result.error ? result : schema.read(result.ok)
+  readWith(input, { base, schema }, context) {
+    const result = base.tryFrom(input, context)
+    return result.error
+      ? result
+      : schema.tryFrom(/** @type {I} */ (result.ok), context)
+  }
+  /**
+   * @param {O} output
+   * @param {{ base: Schema.Convert<Out, In>, schema: Schema.Convert<O, I> }} settings
+   */
+  writeWith(output, { base, schema }) {
+    const result = schema.tryTo(output)
+    return result.error ? result : base.tryTo(/** @type {Out} */ (result.ok))
   }
   toString() {
     return `${this.settings.base}.refine(${this.settings.schema})`
@@ -1033,26 +1372,67 @@ class Refine extends API {
 }
 
 /**
- * @template T
- * @template {T} U
- * @template [I=unknown]
- * @param {Schema.Reader<T, I>} base
- * @param {Schema.Reader<U, T>} schema
- * @returns {Schema.Schema<U, I>}
+ * @template {Out} O
+ * @template {Out} I
+ * @template Out
+ * @template In
+ * @param {Schema.Convert<Out, In>} base
+ * @param {Schema.Convert<O, I>} schema
+ * @returns {Schema.Schema<O, In>}
  */
 export const refine = (base, schema) => new Refine({ base, schema })
 
 /**
- * @template {null|boolean|string|number} T
- * @template [I=unknown]
- * @extends {API<T, I, T>}
- * @implements {Schema.LiteralSchema<T, I>}
+ * @template Into
+ * @template Out
+ * @template In
+ * @extends {API<Into, In, { from: Schema.Convert<Out, In>, to: Schema.Convert<Into, Out> }>}
+ * @implements {Schema.Schema<Into, In>}
+ */
+class Pipe extends API {
+  /**
+   * @param {In} input
+   * @param {{ from: Schema.From<Out, In>, to: Schema.From<Into, Out> }} settings
+   * @param {Schema.Region} [context]
+   */
+  readWith(input, { from, to }, context) {
+    const result = from.tryFrom(input, context)
+    return result.error ? result : to.tryFrom(result.ok, context)
+  }
+  /**
+   * @param {Into} output
+   * @param {{ from: Schema.To<Out, In>, to: Schema.To<Into, Out> }} settings
+   */
+  writeWith(output, { from, to }) {
+    const result = to.tryTo(output)
+    return result.error ? result : from.tryTo(result.ok)
+  }
+  toString() {
+    return `${this.settings.from}.pipe(${this.settings.to})`
+  }
+}
+
+/**
+ * @template Into
+ * @template Out
+ * @template In
+ * @param {Schema.Convert<Out, In>} from
+ * @param {Schema.Convert<Into, Out>} to
+ * @returns {Schema.Schema<Into, In>}
+ */
+export const pipe = (from, to) => new Pipe({ from, to })
+
+/**
+ * @template {null|boolean|string|number} Out
+ * @template {null|boolean|string|number} In
+ * @extends {API<Out, In, Out>}
+ * @implements {Schema.LiteralSchema<Out, In>}
  */
 class Literal extends API {
   /**
-   * @param {I} input
-   * @param {T} expect
-   * @returns {Schema.ReadResult<T>}
+   * @param {In} input
+   * @param {Out} expect
+   * @returns {Schema.ReadResult<Out>}
    */
   readWith(input, expect) {
     return input !== /** @type {unknown} */ (expect)
@@ -1060,14 +1440,13 @@ class Literal extends API {
       : { ok: expect }
   }
   get value() {
-    return /** @type {Exclude<T, undefined>} */ (this.settings)
+    return /** @type {Exclude<Out, undefined>} */ (this.settings)
   }
   /**
-   * @template {Schema.NotUndefined<T>} U
-   * @param {U} value
+   * @param {Out} value
    */
-  default(value = /** @type {U} */ (this.value)) {
-    return super.default(value)
+  implicit(value = this.value) {
+    return implicit(this, /** @type {Exclude<Out, undefined>} */ (value))
   }
   toString() {
     return `literal(${displayTypeName(this.value)})`
@@ -1075,25 +1454,26 @@ class Literal extends API {
 }
 
 /**
- * @template {null|boolean|string|number} T
- * @template [I=unknown]
- * @param {T} value
- * @returns {Schema.LiteralSchema<T, I>}
+ * @template {null|boolean|string|number} Out
+ * @template {null|boolean|string|number} In
+ * @param {Out} value
+ * @returns {Schema.LiteralSchema<Out, In>}
  */
 export const literal = value => new Literal(value)
 
 /**
- * @template {{[key:string]: Schema.Reader}} U
- * @template [I=unknown]
- * @extends {API<Schema.InferStruct<U>, I, U>}
+ * @template {Schema.StructMembers} Members
+ * @extends {API<Schema.InferStruct<Members>, Schema.InferStructInput<Members>, {shape: Members}>}
+ * @implements {Schema.StructSchema<Members>}
  */
 class Struct extends API {
   /**
-   * @param {I} input
-   * @param {U} shape
-   * @returns {Schema.ReadResult<Schema.InferStruct<U>>}
+   * @param {Schema.InferStructInput<Members>} input
+   * @param {{shape: Members}} settings
+   * @param {Schema.Region} [context]
+   * @returns {Schema.ReadResult<Schema.InferStruct<Members>>}
    */
-  readWith(input, shape) {
+  readWith(input, { shape }, context) {
     if (typeof input != 'object' || input === null || Array.isArray(input)) {
       return typeError({
         expect: 'object',
@@ -1101,22 +1481,23 @@ class Struct extends API {
       })
     }
 
-    const source = /** @type {{[K in keyof U]: unknown}} */ (input)
+    const source = /** @type {{[K in keyof Members]: unknown}} */ (input)
 
-    const struct = /** @type {{[K in keyof U]: Schema.Infer<U[K]>}} */ ({})
+    const struct =
+      /** @type {{[K in keyof Members]: Schema.Infer<Members[K]>}} */ ({})
     const entries =
-      /** @type {{[K in keyof U]: [K & string, U[K]]}[keyof U][]} */ (
+      /** @type {{[K in keyof Members]: [K & string, Members[K]]}[keyof Members][]} */ (
         Object.entries(shape)
       )
 
     for (const [at, reader] of entries) {
-      const result = reader.read(source[at])
+      const result = reader.tryFrom(source[at], context)
       if (result.error) {
         return memberError({ at, cause: result.error })
       }
       // skip undefined because they mess up CBOR and are generally useless.
       else if (result.ok !== undefined) {
-        struct[at] = /** @type {Schema.Infer<U[typeof at]>} */ (result.ok)
+        struct[at] = /** @type {Schema.Infer<Members[typeof at]>} */ (result.ok)
       }
     }
 
@@ -1124,20 +1505,54 @@ class Struct extends API {
   }
 
   /**
-   * @returns {Schema.MapRepresentation<Partial<Schema.InferStruct<U>>> & Schema.StructSchema}
+   * @param {Schema.InferStruct<Members>} output
+   * @param {{shape: Members}} settings
    */
-  partial() {
-    return new Struct(
-      Object.fromEntries(
-        Object.entries(this.shape).map(([key, value]) => [key, optional(value)])
+
+  writeWith(output, { shape }) {
+    if (typeof output != 'object' || output === null || Array.isArray(output)) {
+      return typeError({
+        expect: 'object',
+        actual: output,
+      })
+    }
+
+    const source = /** @type {{[K in keyof Members]: unknown}} */ (output)
+
+    const input =
+      /** @type {{[K in keyof Members]: Schema.InferInput<Members[K]>}} */ ({})
+    const entries =
+      /** @type {{[K in keyof Members]: [K & string, Members[K]]}[keyof Members][]} */ (
+        Object.entries(shape)
       )
-    )
+
+    for (const [at, writer] of entries) {
+      const result = writer.tryTo(source[at])
+      if (result.error) {
+        return memberError({ at, cause: result.error })
+      }
+      // skip undefined because they mess up CBOR and are generally useless.
+      else if (result.ok !== undefined) {
+        input[at] = /** @type {Schema.InferInput<Members[typeof at]>} */ (
+          result.ok
+        )
+      }
+    }
+
+    return { ok: input }
   }
 
-  /** @type {U} */
+  partial() {
+    const shape = Object.fromEntries(
+      Object.entries(this.shape).map(([key, value]) => [key, optional(value)])
+    )
+
+    return /** @type {*} */ (new Struct({ shape }))
+  }
+
+  /** @type {Members} */
   get shape() {
-    // @ts-ignore - We declared `settings` private but we access it here
-    return this.settings
+    return this.settings.shape
   }
 
   toString() {
@@ -1151,34 +1566,32 @@ class Struct extends API {
   }
 
   /**
-   * @param {Schema.InferStructSource<U>} data
+   * @param {Schema.InferStructSource<Members>} data
    */
   create(data) {
-    return this.from(data || {})
+    return this.from(/** @type {*} */ (data || {}))
   }
 
   /**
-   * @template {{[key:string]: Schema.Reader}} E
+   * @template {Schema.StructMembers} E
    * @param {E} extension
-   * @returns {Schema.StructSchema<U & E, I>}
+   * @returns {Schema.StructSchema<Members & E>}
    */
   extend(extension) {
-    return new Struct({ ...this.shape, ...extension })
+    return new Struct({ shape: { ...this.shape, ...extension } })
   }
 }
 
 /**
  * @template {null|boolean|string|number} T
- * @template {{[key:string]: T|Schema.Reader}} U
- * @template {{[K in keyof U]: U[K] extends Schema.Reader ? U[K] : Schema.LiteralSchema<U[K] & T>}} V
- * @template [I=unknown]
+ * @template {{[key:string]: T|Schema.Convert}} U
+ * @template {{[K in keyof U]: U[K] extends Schema.Convert ? U[K] : Schema.Convert<U[K] & T>}} Members
  * @param {U} fields
- * @returns {Schema.StructSchema<V, I>}
+ * @returns {Schema.StructSchema<Members>}
  */
 export const struct = fields => {
-  const shape =
-    /** @type {{[K in keyof U]: Schema.Reader<unknown, unknown>}} */ ({})
-  /** @type {[keyof U & string, T|Schema.Reader][]} */
+  const shape = /** @type {{[K in keyof U]: Schema.Convert}} */ ({})
+  /** @type {[keyof U & string, T|Schema.Convert][]} */
   const entries = Object.entries(fields)
 
   for (const [key, field] of entries) {
@@ -1198,22 +1611,761 @@ export const struct = fields => {
     }
   }
 
-  return new Struct(/** @type {V} */ (shape))
+  return /** @type {*} */ (new Struct({ shape: shape }))
 }
 
 /**
- * @template {Schema.VariantChoices} U
- * @template [I=unknown]
- * @extends {API<Schema.InferVariant<U>, I, U>}
- * @implements {Schema.VariantSchema<U, I>}
+ * @extends {API<Uint8Array, Uint8Array, void>}
+ * @implements {Schema.BytesSchema<Uint8Array, Schema.MulticodecCode<0x55, 'raw'>>}
+ */
+class RawBytes extends API {
+  name = 'raw'
+  code = /** @type {const} */ (0x55)
+
+  /**
+   * @param {Uint8Array} input
+   */
+  encode(input) {
+    if (input instanceof Uint8Array) {
+      return input
+    } else {
+      throw typeError({ expect: 'Uint8Array', actual: input }).error
+    }
+  }
+
+  /**
+   * @param {Uint8Array} output
+   */
+  decode(output) {
+    if (output instanceof Uint8Array) {
+      return output
+    } else {
+      throw typeError({ expect: 'Uint8Array', actual: output }).error
+    }
+  }
+  /**
+   * @param {Uint8Array} input
+   * @returns {Schema.ReadResult<Uint8Array>}
+   */
+  readWith(input) {
+    if (input instanceof Uint8Array) {
+      return { ok: input }
+    } else {
+      return typeError({ expect: 'Uint8Array', actual: input })
+    }
+  }
+
+  /**
+   * @template {Uint8Array} O
+   * @template {Uint8Array} I
+   * @param {Schema.Convert<O, I>} into
+   * @returns {Schema.BytesSchema<O, typeof this.code>}
+   */
+  refine(into) {
+    const codec = /** @type {Schema.BlockCodec<0x55, * & I>} */ (this)
+    return new ByteView({ codec, convert: into })
+  }
+}
+
+/** @type {Schema.BytesSchema} */
+export const Bytes = new RawBytes()
+
+/**
+ * @type {Schema.Convert<*>}
+ */
+const direct = {
+  tryFrom: input => ({ ok: input }),
+  tryTo: output => ({ ok: output }),
+}
+
+/**
+ * @template {Schema.BlockCodec<number, any>} [Codec=import('multiformats/codecs/raw')]
+ * @param {Codec} [codec]
+ * @returns {Schema.BytesSchema<ReturnType<Codec['decode']> & ({} | null), Schema.MulticodecCode<Codec['code'], Codec['name']>>}
+ */
+export const bytes = codec =>
+  /** @type {*} */ (codec ? new ByteView({ codec, convert: direct }) : Bytes)
+
+/**
+ * @template {{}|null} Model
+ * @template {Model} Out
+ * @template {Schema.MulticodecCode} Code
+ * @extends {API<Out, Schema.ByteView<Model>, Schema.ByteSchemaSettings<Model, Out, Code>>}
+ * @implements {Schema.BytesSchema<Out, Code>}
+ */
+class ByteView extends API {
+  get codec() {
+    return this.settings.codec
+  }
+  get name() {
+    return this.codec.name
+  }
+  get code() {
+    return this.codec.code
+  }
+  /**
+   * @param {Out} data
+   */
+  encode(data) {
+    const { codec, convert } = this.settings
+    const model = convert.tryFrom(data)
+    if (model.error) {
+      throw model.error
+    } else {
+      return /** @type {Schema.ByteView<Out>} */ (codec.encode(model.ok))
+    }
+  }
+  /**
+   * @param {Schema.ByteView<Out>} bytes
+   */
+  decode(bytes) {
+    const { codec, convert } = this.settings
+    const model = codec.decode(bytes)
+    const result = convert.tryFrom(model)
+    if (result.error) {
+      throw result.error
+    } else {
+      return result.ok
+    }
+  }
+  /**
+   * @param {Uint8Array} input
+   * @param {Schema.ByteSchemaSettings<Model, Out, Code>} settings
+   * @returns {Schema.ReadResult<Out>}
+   */
+  readWith(input, { codec, convert }) {
+    try {
+      const model = codec.decode(input)
+      return convert.tryFrom(model)
+    } catch (cause) {
+      return { error: /** @type {Error} */ (cause) }
+    }
+  }
+  /**
+   *
+   * @param {Out} output
+   * @param {Schema.ByteSchemaSettings<Model, Out, Code>} settings
+   * @returns {Schema.ReadResult<Schema.ByteView<Out>>}
+   */
+  writeWith(output, { codec, convert }) {
+    try {
+      const result = convert.tryTo(output)
+      if (result.error) {
+        throw result.error
+      }
+      return {
+        ok: /** @type {Schema.ByteView<Out>} */ (codec.encode(result.ok)),
+      }
+    } catch (cause) {
+      return { error: /** @type {Error} */ (cause) }
+    }
+  }
+
+  /**
+   * @template {Out} O
+   * @template {Out} I
+   * @param {Schema.Convert<O, I>} into
+   * @returns {Schema.BytesSchema<O, Code>}
+   */
+  refine(into) {
+    const { codec, convert: from } = this.settings
+    const convert =
+      from === direct
+        ? // if convertor is direct, we don't need to compose
+          /** @type {Schema.Convert<O, * & Model>} */ (into)
+        : pipe(/** @type {Schema.Convert<* & I, Model>} */ (from), into)
+
+    return new ByteView({
+      codec,
+      convert,
+    })
+  }
+
+  /**
+   * @template {Schema.BlockCodec<Schema.MulticodecCode, *>} Codec
+   * @template {Schema.MultihashHasher<Schema.MulticodecCode>} Hasher
+   * @template {Schema.UnknownLink['version']} Version
+   * @param {{
+   * codec?: Codec
+   * hasher?: Hasher
+   * version?: Version
+   * }} options
+   * @returns {Schema.LinkSchema<Out, Codec['code'], Hasher['code'], Version>}
+   */
+  link(options) {
+    return link({
+      codec: this.codec,
+      ...options,
+      schema: this.settings.convert,
+    })
+  }
+}
+
+const emptyStore = Object.freeze(new Map())
+/**
+ * @template {{}|null} T
+ * @param {object} options
+ * @param {Schema.BlockCodec<number, any>} options.codec
+ * @returns {Schema.Schema<T, { root: Schema.Link, store: Map<string, Schema.Block>}>}
+ */
+export const dag = options => {
+  throw new Error('Not implemented')
+}
+
+/**
+ * @template {unknown} Out
+ * @template {unknown} In
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @implements {Schema.LinkOf<Out, Code, Alg, V>}
+ */
+class Link {
+  /**
+   * @param {object} source
+   * @param {Schema.Link<Out, Code, Alg, V>} source.link
+   * @param {Schema.BlockCodec<Code, In>} [source.codec]
+   * @param {Schema.Convert<Out, In>} source.schema
+   * @param {Schema.Region} [source.store]
+   */
+  constructor({ link, codec, schema }) {
+    this.codec = codec
+    this.cid = link
+    this.schema = schema
+
+    this['/'] = link.bytes
+    this.version = link.version
+    this.multihash = link.multihash
+    this.code = link.code
+    this.bytes = link.bytes
+
+    Object.defineProperties(this, {
+      codec: { enumerable: false },
+      cid: { enumerable: false },
+      schema: { enumerable: false },
+    })
+  }
+
+  /**
+   * @param {Schema.Region} region
+   * @returns {Schema.Attachment<Out, Code, Alg, V>}
+   */
+  select(region) {
+    const { cid, codec, schema } = this
+    const block = region.get(`${cid}`)
+    const bytes = block
+      ? block.bytes
+      : cid.multihash.code === identity.code
+      ? cid.multihash.digest
+      : undefined
+
+    if (bytes) {
+      return new Attachment({
+        root: { cid, bytes },
+        codec,
+        schema,
+        store: region,
+      })
+    } else {
+      throw new RangeError(
+        `Block can not be resolved, please provide a store from which to resolve it`
+      )
+    }
+  }
+
+  /**
+   * @param {Schema.Region} region
+   * @returns {Schema.ResolvedLink<Out, Code, Alg, V>}
+   */
+  resolve(region) {
+    return this.select(region).resolve()
+  }
+  // get version() {
+  //   return this.cid.version
+  // }
+  // get code() {
+  //   return this.cid.code
+  // }
+  // get multihash() {
+  //   return this.cid.multihash
+  // }
+  get byteOffset() {
+    return this.cid.byteOffset
+  }
+  get byteLength() {
+    return this.cid.byteLength
+  }
+  // get bytes() {
+  //   return this.cid.bytes
+  // }
+  link() {
+    return this.cid
+  }
+  /**
+   * @param {unknown} other
+   * @returns {other is Schema.Link<Out, Code, Alg, V>}
+   */
+  equals(other) {
+    return this.cid.equals(other)
+  }
+  /**
+   * @template {string} Prefix
+   * @param {Schema.MultibaseEncoder<Prefix>} [base]
+   * @returns
+   */
+  toString(base) {
+    return this.cid.toString(base)
+  }
+  toJSON() {
+    return { '/': this.toString() }
+  }
+  get [Symbol.toStringTag]() {
+    return 'CID'
+  }
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    return `CID(${this.toString()})`
+  }
+  toV1() {
+    return this.cid.toV1()
+  }
+}
+
+/**
+ * @template {unknown} Out
+ * @template {unknown} In
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @implements {Schema.Attachment<Out, Code, Alg, V>}
+ */
+class Attachment {
+  /**
+   * @param {object} source
+   * @param {Schema.Block<Out, Code, Alg, V>} source.root
+   * @param {Schema.BlockCodec<Code, In>} [source.codec]
+   * @param {Schema.Convert<Out, In>} source.schema
+   * @param {Schema.Region} [source.store]
+   */
+  constructor({ root, codec, schema, store = emptyStore }) {
+    this.codec = codec
+    this.root = root
+    this.store = store
+    this.schema = schema
+    this['/'] = root.cid.bytes
+
+    /** @type {Schema.ReadResult<Out>|null} */
+    this._resolved = null
+  }
+
+  /**
+   * @returns {Schema.ResolvedLink<Out, Code, Alg, V>}
+   */
+  resolve() {
+    let result = this._resolved
+    if (result == null) {
+      const { schema, codec = CBOR, root } = this
+      const data = codec.decode(/** @type {Uint8Array} */ (root.bytes))
+      result = schema.tryFrom(data, this.store)
+
+      this._resolved = result
+    }
+
+    if (result.error) {
+      throw result.error
+    } else {
+      return /** @type {Schema.ResolvedLink<Out, Code, Alg, V>} */ (result.ok)
+    }
+  }
+  get version() {
+    return this.root.cid.version
+  }
+  get code() {
+    return this.root.cid.code
+  }
+  get multihash() {
+    return this.root.cid.multihash
+  }
+  get byteOffset() {
+    return this.root.cid.byteOffset
+  }
+  get byteLength() {
+    return this.root.cid.byteLength
+  }
+  get bytes() {
+    return this.root.cid.bytes
+  }
+  link() {
+    return this.root.cid
+  }
+  /**
+   * @param {unknown} other
+   * @returns {other is Schema.Link<Out, Code, Alg, V>}
+   */
+  equals(other) {
+    return this.root.cid.equals(other)
+  }
+  /**
+   * @template {string} Prefix
+   * @param {Schema.MultibaseEncoder<Prefix>} [base]
+   * @returns
+   */
+  toString(base) {
+    return this.root.cid.toString(base)
+  }
+  toV1() {
+    return this.root.cid.toV1()
+  }
+  /**
+   * @param {object} context
+   * @param {Schema.Region} [context.store]
+   */
+  with({ store = this.store }) {
+    return new Attachment({
+      root: this.root,
+      codec: this.codec,
+      schema: this.schema,
+      store,
+    })
+  }
+
+  *iterateIPLDBlocks() {
+    const dag = this.resolve()
+    const { store, root } = this
+    for (const link of Attachment.links(dag)) {
+      const block = store.get(`${link}`)
+      if (block) {
+        yield { cid: link, bytes: block.bytes }
+      }
+    }
+
+    yield /** @type {Schema.Block} */ (root)
+  }
+
+  /**
+   * @param {unknown} source
+   * @returns {IterableIterator<Schema.Link>}
+   */
+  static *links(source) {
+    if (isLink(source)) {
+      yield /** @type {Schema.Link} */ (source)
+    } else if (source && typeof source === 'object') {
+      for (const value of Object.values(source)) {
+        yield* this.links(value)
+      }
+    }
+  }
+
+  /**
+   * @param {unknown} source
+   */
+  static *iterateIPLDBlocks(source) {
+    if (source && typeof source === 'object') {
+      for (const value of Object.values(source)) {
+        if (value && typeof value['iterateIPLDBlocks'] === 'function') {
+          yield* value.iterateIPLDBlocks()
+        }
+      }
+    }
+  }
+}
+
+/**
+ * @template {unknown} [Out=unknown]
+ * @template {unknown} [In=number]
+ * @template {number} [Code=number]
+ * @template {number} [Alg=number]
+ * @template {1|0} [Version=0|1]
+ * @typedef {{
+ * codec?: Schema.BlockCodec<Code, In>,
+ * version?: Version
+ * hasher?: {code: Alg}
+ * schema: Schema.Convert<Out, In>
+ * }} LinkSettings
+ */
+
+/**
+ * @template {unknown} Out
+ * @template {unknown} In
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @extends {API<Schema.LinkOf<Out, Code, Alg, V>, Schema.IntoLink<Out>, LinkSettings<Out, In, Code, Alg, V>>}
+ * @implements {Schema.LinkSchema<Out, Code, Alg, V>}
+ */
+class LinkSchema extends API {
+  /**
+   * @template {unknown} Out
+   * @template {unknown} In
+   * @template {Schema.MulticodecCode} Code
+   * @template {Schema.MulticodecCode} Alg
+   * @template {Schema.UnknownLink['version']} V
+   * @param {Schema.IntoLink<Out>} source
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.Link<Out, Code, Alg, V>>}
+   */
+  static validate(source, { codec, hasher, version, schema }) {
+    if (source == null) {
+      return error(`Expected link but got ${source} instead`)
+    } else {
+      if (!isLink(source)) {
+        return error(`Expected link to be a CID instead of ${source}`)
+      } else {
+        if (codec && codec.code !== source.code) {
+          return error(
+            `Expected link to be CID with 0x${codec.code.toString(16)} codec`
+          )
+        }
+
+        if (hasher && hasher.code !== source.multihash.code)
+          return error(
+            `Expected link to be CID with 0x${hasher.code.toString(
+              16
+            )} hashing algorithm`
+          )
+
+        if (version != null && version !== source.version) {
+          return error(
+            `Expected link to be CID version ${version} instead of ${source.version}`
+          )
+        }
+
+        const link = /** @type {Schema.Link<Out, *, *, *>} */ (source)
+        return { ok: link }
+      }
+    }
+  }
+
+  /**
+   * @param {Schema.IntoLink<Out>} cid
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.LinkOf<Out, Code, Alg, V>>}
+   */
+  readWith(cid, { codec, hasher, version, schema }) {
+    const result = LinkSchema.validate(cid, {
+      codec,
+      hasher,
+      version,
+      schema,
+    })
+
+    if (result.ok) {
+      const link = result.ok
+      const ok = link instanceof Link ? link : new Link({ link, codec, schema })
+      return { ok }
+    } else {
+      return result
+    }
+  }
+
+  /**
+   *
+   * @param {Schema.LinkOf<Out, Code, Alg, V>} source
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.IntoLink<Out>>}
+   */
+  writeWith(source, settings) {
+    return LinkSchema.validate(source.link(), settings)
+  }
+
+  /**
+   * @returns {never}
+   */
+  link() {
+    throw new Error('Can not create link of link')
+  }
+
+  /**
+   * @returns {Schema.AttachmentSchema<Out, Code, Alg, V>}
+   */
+  attached() {
+    let attachment = this._attached
+    if (attachment == null) {
+      const attachment = new AttachmentSchema(this.settings)
+      this._attached = attachment
+      return attachment
+    }
+
+    return attachment
+  }
+
+  /**
+   * @param {Out} target
+   */
+  embed(target) {
+    return this.attached().embed(target)
+  }
+  /**
+   * @param {Out} target
+   */
+  attach(target) {
+    return this.attached().attach(target)
+  }
+
+  /**
+   * @template {string} Prefix
+   * @param {string} input
+   * @param {Schema.MultibaseDecoder<Prefix>} [base]
+   */
+  parse(input, base) {
+    const link = parseLink(input, base)
+    return this.from(/** @type {*} */ (link))
+  }
+}
+
+/**
+ * @template {unknown} Out
+ * @template {unknown} In
+ * @template {Schema.MulticodecCode} Code
+ * @template {Schema.MulticodecCode} Alg
+ * @template {Schema.UnknownLink['version']} V
+ * @extends {API<Schema.Attachment<Out, Code, Alg, V>, Schema.IPLDView<Out, Code, Alg, V>, LinkSettings<Out, In, Code, Alg, V>>}
+ * @implements {Schema.AttachmentSchema<Out, Code, Alg, V>}
+ */
+class AttachmentSchema extends API {
+  /**
+   * @param {Schema.IPLDView<Out, Code, Alg, V>} source
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @param {Schema.Region} [region]
+   */
+  readWith(source, { codec, schema }, region = emptyStore) {
+    const link = /** @type {Schema.Link<Out, Code, Alg, V>} */ (source.link())
+    const block = source.root ? source.root : region.get(`${link}`)
+    /** @type {Uint8Array|undefined} */
+    const bytes = block
+      ? block.bytes
+      : link.multihash.code === identity.code
+      ? link.multihash.digest
+      : undefined
+
+    if (bytes) {
+      const attachment = new Attachment({
+        root: { cid: link, bytes },
+        codec,
+        schema,
+        store: region,
+      })
+      return { ok: attachment }
+    } else {
+      return error(`Could not find block for ${link}`)
+    }
+  }
+  /**
+   * @param {Schema.Attachment<Out, Code, Alg, V>} attachment
+   * @param {LinkSettings<Out, In, Code, Alg, V>} settings
+   * @returns {Schema.ReadResult<Schema.IPLDView<Out, Code, Alg, V>>}
+   */
+  writeWith(attachment, settings) {
+    if (attachment instanceof Attachment) {
+      return { ok: attachment }
+    }
+
+    console.log('!!!!!!!!!')
+    try {
+      const { codec, schema } = settings
+      const link = attachment.link()
+      const out = attachment.resolve()
+      const data = schema.tryTo(out)
+      if (data.error) {
+        return data
+      } else {
+        /** @type {Uint8Array} */
+        const bytes = (codec || CBOR).encode(data.ok)
+        /** @type {Required<Schema.Block<Out, Code, Alg, V>>} */
+        const root = { cid: link, bytes, data: out }
+        const view = new Attachment({ root, codec, schema })
+        return { ok: view }
+      }
+    } catch (cause) {
+      return { error: /** @type {Error} */ (cause) }
+    }
+  }
+
+  /**
+   * @param {Out} target
+   * @param {{hasher?: Schema.MultihashHasher<Alg> }} options
+   */
+  async attach(target, { hasher = /** @type {*} */ (sha256) } = {}) {
+    const { schema, codec = CBOR } = this.settings
+    const result = schema.tryTo(target)
+    if (result.error) {
+      throw result.error
+    }
+    const data = result.ok
+    /** @type {Uint8Array} */
+    const bytes = codec.encode(data)
+    const digest = await hasher.digest(bytes)
+    /** @type {Schema.Link<Out, *, Alg, *>} */
+    const cid = createLink(codec.code, digest)
+
+    const store = new Map()
+    for (const block of Attachment.iterateIPLDBlocks(target)) {
+      store.set(`${block.cid}`, block)
+    }
+    store.set(`${cid}`, { bytes, cid })
+
+    return new Attachment({
+      codec,
+      schema,
+      root: { bytes, cid },
+      store,
+    })
+  }
+
+  /**
+   * @param {Out} target
+   */
+  embed(target) {
+    const { schema, codec = /** @type {*} */ (CBOR) } = this.settings
+    const result = schema.tryTo(target)
+    if (result.error) {
+      throw result.error
+    }
+    const data = result.ok
+    /** @type {Uint8Array} */
+    const bytes = codec.encode(data)
+    const digest = identity.digest(bytes)
+    /** @type {Schema.Link<Out, Code, *>} */
+    const cid = createLink(codec.code, digest)
+
+    return new Attachment({
+      codec,
+      schema,
+      root: { bytes, cid },
+    })
+  }
+
+  /**
+   * @returns {never}
+   */
+  link() {
+    throw new Error('Can not create link of link')
+  }
+}
+
+/**
+ * @template {unknown} Out
+ * @template In
+ * @template {Schema.BlockCodec<Schema.MulticodecCode, In>} Codec
+ * @template {Schema.MultihashHasher<Schema.MulticodecCode>} Hasher
+ * @template {Schema.UnknownLink['version']} Version
+ * @param {LinkSettings<Out, In, Codec['code'], Hasher['code'], Version>} options
+ * @returns {Schema.LinkSchema<Out, Codec['code'], Hasher['code'], Version>}
+ */
+export const link = options => new LinkSchema(options)
+
+/**
+ * @template {Schema.VariantChoices} Choices
+ * @extends {API<Schema.InferVariant<Choices>, Schema.InferVariantInput<Choices>, Choices>}
+ * @implements {Schema.VariantSchema<Choices>}
  */
 class Variant extends API {
   /**
-   * @param {I} input
-   * @param {U} variants
-   * @returns {Schema.ReadResult<Schema.InferVariant<U>>}
+   * @param {Schema.InferVariantInput<Choices>} input
+   * @param {Choices} variants
+   * @param {Schema.Region} [context]
+   * @returns {Schema.ReadResult<Schema.InferVariant<Choices>>}
    */
-  readWith(input, variants) {
+  readWith(input, variants, context) {
     if (typeof input != 'object' || input === null || Array.isArray(input)) {
       return typeError({
         expect: 'object',
@@ -1229,15 +2381,19 @@ class Variant extends API {
     const reader = key ? variants[key] : undefined
 
     if (reader) {
-      const result = reader.read(input[key])
+      const result = reader.tryFrom(input[key], context)
       return result.error
         ? memberError({ at: key, cause: result.error })
-        : { ok: /** @type {Schema.InferVariant<U>} */ ({ [key]: result.ok }) }
+        : {
+            ok: /** @type {Schema.InferVariant<Choices>} */ ({
+              [key]: result.ok,
+            }),
+          }
     } else if (variants._) {
-      const result = variants._.read(input)
+      const result = variants._.tryFrom(input, context)
       return result.error
         ? result
-        : { ok: /** @type {Schema.InferVariant<U>} */ ({ _: result.ok }) }
+        : { ok: /** @type {Schema.InferVariant<Choices>} */ ({ _: result.ok }) }
     } else if (key) {
       return error(
         `Expected an object with one of the these keys: ${Object.keys(variants)
@@ -1254,11 +2410,11 @@ class Variant extends API {
 
   /**
    * @template [E=never]
-   * @param {I} input
+   * @param {unknown} input
    * @param {E} [fallback]
    */
   match(input, fallback) {
-    const result = this.read(input)
+    const result = this.tryFrom(/** @type {*} */ (input))
     if (result.error) {
       if (fallback !== undefined) {
         return [null, fallback]
@@ -1268,17 +2424,17 @@ class Variant extends API {
     } else {
       const [key] = Object.keys(result.ok)
       const value = result.ok[key]
-      return /** @type {any} */ ([key, value])
+      return /** @type {*} */ ([key, value])
     }
   }
 
   /**
-   * @template {Schema.InferVariant<U>} O
-   * @param {O} source
-   * @returns {O}
+   * @template {Schema.InferVariant<Choices>} Choice
+   * @param {Choice} source
+   * @returns {Choice}
    */
   create(source) {
-    return /** @type {O} */ (this.from(source))
+    return /** @type {Choice} */ (this.from(/** @type {*} */ (source)))
   }
 }
 
@@ -1334,9 +2490,8 @@ class Variant extends API {
  * ```
  *
  * @template {Schema.VariantChoices} Choices
- * @template [In=unknown]
  * @param {Choices} variants
- * @returns {Schema.VariantSchema<Choices, In>}
+ * @returns {Schema.VariantSchema<Choices>}
  */
 export const variant = variants => new Variant(variants)
 
@@ -1397,10 +2552,11 @@ const displayTypeName = value => {
     // eg turn NaN and Infinity to null
     case 'bigint':
       return `${value}n`
-    case 'number':
     case 'symbol':
+      return /** @type {symbol} */ (value).toString()
+    case 'number':
     case 'undefined':
-      return String(value)
+      return `${value}`
     case 'object':
       return value === null
         ? 'null'
@@ -1537,3 +2693,12 @@ const indent = (message, indent = '  ') =>
  * @param {string} message
  */
 const li = message => indent(`- ${message}`)
+
+/**
+ * @template In, Out
+ * @param {Schema.Schema<Out, In>} schema
+ * @returns {{in:In, out:Out}}
+ */
+export const debug = schema => {
+  throw new Error('Not implemented')
+}

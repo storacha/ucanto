@@ -6,15 +6,13 @@ import * as Schema from './schema.js'
 
 export const MessageSchema = Schema.variant({
   'ucanto/message@7.0.0': Schema.struct({
-    execute: Schema.link().array().optional(),
-    delegate: Schema.dictionary({
+    execute: Schema.unknown().link().array().optional(),
+    report: Schema.dictionary({
       key: Schema.string(),
-      value: /** @type {API.Reader<API.Link<API.ReceiptModel>>} */ (
-        Schema.link()
+      value: /** @type {Schema.Convert<API.Link<API.ReceiptModel>>} */ (
+        Schema.unknown().link()
       ),
-    })
-      .array()
-      .optional(),
+    }).optional(),
   }),
 })
 
@@ -177,6 +175,9 @@ class Message {
     this.store = store
     this._invocations = invocations
     this._receipts = receipts
+  }
+  link() {
+    return this.root.cid
   }
   *iterateIPLDBlocks() {
     for (const invocation of this.invocations) {

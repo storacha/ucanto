@@ -1,11 +1,15 @@
 import * as API from '@ucanto/interface'
 import * as CBOR from '@ipld/dag-cbor'
-export { code, name, decode } from '@ipld/dag-cbor'
-import { sha256 } from 'multiformats/hashes/sha2'
+export { decode } from '@ipld/dag-cbor'
+import * as sha256 from './sha256.js'
 import { create as createLink, isLink } from 'multiformats/link'
 
 // @see https://www.iana.org/assignments/media-types/application/vnd.ipld.dag-cbor
 export const contentType = 'application/vnd.ipld.dag-cbor'
+
+/** @type {API.MulticodecCode<typeof CBOR.code, typeof CBOR.name>} */
+export const code = CBOR.code
+export const name = CBOR.name
 
 /**
  * @param {unknown} data
