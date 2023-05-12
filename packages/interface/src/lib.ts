@@ -248,6 +248,12 @@ export interface Delegation<C extends Capabilities = Capabilities>
 
   archive(): Await<Result<Uint8Array, Error>>
 
+  /**
+   * Attach a block to the delegation DAG so it would be included in the
+   * block iterator.
+   * ⚠️ You can only attach blocks that are referenced from the `capabilities`
+   * or `facts`.
+   */
   attach(block: Block): void
 }
 
@@ -551,6 +557,14 @@ export interface IssuedInvocation<C extends Capability = Capability>
   readonly proofs: Proof[]
 
   delegate(): Await<Delegation<[C]>>
+
+  /**
+   * Attach a block to the invocation DAG so it would be included in the
+   * block iterator.
+   * ⚠️ You should only attach blocks that are referenced from the `capabilities`
+   * or `facts`, if that is not the case you probably should reconsider.
+   * ⚠️ Once a delegation is de-serialized the attached blocks will not be re-attached.
+   */
   attach(block: Block): void
 }
 
