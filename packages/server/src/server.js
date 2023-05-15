@@ -7,9 +7,9 @@ export {
   Failure,
   MalformedCapability,
 } from '@ucanto/validator'
-import { Receipt, ok, fail, Message, Failure } from '@ucanto/core'
-export { ok, fail }
-
+import { Receipt, Message, Failure, fail } from '@ucanto/core'
+export { ok, error } from './handler.js'
+export { fail }
 /**
  * Creates a connection to a service.
  *
@@ -136,11 +136,15 @@ export const invoke = async (invocation, server) => {
     })
   } else {
     try {
-      const result = await handler[method](invocation, server.context)
+      const outcome = await handler[method](invocation, server.context)
+      const result = outcome.do ? outcome.do.out : outcome
+      const fx = outcome.do ? outcome.do.fx : undefined
+
       return await Receipt.issue({
         issuer: server.id,
         ran: invocation,
         result,
+        fx,
       })
     } catch (cause) {
       /** @type {API.HandlerExecutionError} */
@@ -263,6 +267,7 @@ class InvocationCapabilityError extends Error {
 /**
  * @param {Record<string, any>} service
  * @param {string[]} path
+ * @returns {null|Record<string, API.ServiceMethod<API.Capability, {}, API.Failure>>}
  */
 
 const resolve = (service, path) => {

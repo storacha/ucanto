@@ -9,6 +9,8 @@ import * as Access from './service/access.js'
 import { Verifier } from '@ucanto/principal/ed25519'
 import { Schema, UnavailableProof } from '@ucanto/validator'
 import { Absentee } from '@ucanto/principal'
+import { capability } from '../src/server.js'
+import { isLink, parseLink, fail } from '../src/lib.js'
 
 const w3 = service.withDID('did:web:web3.storage')
 
@@ -369,3 +371,312 @@ test('union result', () => {
     }
   })
 })
+
+const Offer = capability({
+  can: 'aggregate/offer',
+  with: Schema.did(),
+  nb: Schema.struct({
+    commP: Schema.string(),
+  }),
+})
+
+const Arrange = capability({
+  can: 'offer/arrange',
+  with: Schema.did(),
+  nb: Schema.struct({
+    commP: Schema.string(),
+  }),
+})
+
+test('fx.join', async () => {
+  let cid = undefined
+  const offer = Provider.provideAdvanced({
+    capability: Offer,
+    handler: async ({ capability, context }) => {
+      const fx = await Arrange.invoke({
+        issuer: context.id,
+        audience: context.id,
+        with: context.id.did(),
+        nb: { commP: capability.nb.commP },
+      }).delegate()
+
+      cid = fx.root.cid
+
+      return Provider.ok({ status: 'pending' }).join(fx.link())
+    },
+  })
+
+  const { provider, consumer } = setup({ aggregate: { offer } })
+  const receipt = await Offer.invoke({
+    issuer: alice,
+    audience: provider.id,
+    with: alice.did(),
+    nb: {
+      commP: 'hello',
+    },
+  }).execute(consumer)
+
+  assert.deepEqual(receipt.out, { ok: { status: 'pending' } })
+
+  assert.ok(isLink(receipt.fx.join), 'join is effect is set')
+  assert.deepEqual(receipt.fx.join, cid)
+})
+
+test('fx.fork', async () => {
+  /** @type {API.Link[]} */
+  let forks = []
+  const offer = Provider.provideAdvanced({
+    capability: Offer,
+    handler: async ({ capability, context }) => {
+      const fx = await Arrange.invoke({
+        issuer: context.id,
+        audience: context.id,
+        with: context.id.did(),
+        nb: { commP: capability.nb.commP },
+      }).delegate()
+
+      forks.push(fx.root.cid)
+
+      return Provider.ok({ status: 'pending' }).fork(fx.link())
+    },
+  })
+
+  const { provider, consumer } = setup({ aggregate: { offer } })
+  const receipt = await Offer.invoke({
+    issuer: alice,
+    audience: provider.id,
+    with: alice.did(),
+    nb: {
+      commP: 'hello',
+    },
+  }).execute(consumer)
+
+  assert.deepEqual(receipt.out, { ok: { status: 'pending' } })
+
+  assert.deepEqual(receipt.fx.fork, forks)
+})
+
+test('fx.ok API', () => {
+  const ok = Provider.ok({ x: 1 })
+  assert.deepEqual(ok.result, { ok: { x: 1 } })
+  assert.deepEqual(ok.effects, { fork: [] })
+  assert.deepEqual(
+    JSON.stringify(ok),
+    JSON.stringify({
+      ok: { x: 1 },
+    })
+  )
+
+  /** @type {API.Run} */
+  const run = parseLink('bafkqaaa')
+  const join = ok.join(run)
+  assert.equal(
+    // @ts-expect-error - has no method
+    join.join,
+    undefined
+  )
+  assert.deepEqual(ok.result, { ok: { x: 1 } }, 'does not mutate')
+
+  assert.deepEqual(
+    join.do,
+    {
+      out: { ok: { x: 1 } },
+      fx: { fork: [], join: run },
+    },
+    'includes join'
+  )
+  assert.deepEqual(join.result, { ok: { x: 1 } })
+  assert.deepEqual(join.effects, { fork: [], join: run })
+  assert.deepEqual(
+    JSON.stringify(join),
+    JSON.stringify({
+      do: {
+        out: { ok: { x: 1 } },
+        fx: { fork: [], join: { '/': run.toString() } },
+      },
+    })
+  )
+
+  const fork = ok.fork(run)
+  assert.deepEqual(ok.result, { ok: { x: 1 } }, 'does not mutate')
+
+  assert.deepEqual(
+    fork.do,
+    {
+      out: { ok: { x: 1 } },
+      fx: { fork: [run] },
+    },
+    'includes fork'
+  )
+  assert.deepEqual(
+    JSON.stringify(fork),
+    JSON.stringify({
+      do: {
+        out: { ok: { x: 1 } },
+        fx: { fork: [{ '/': run.toString() }] },
+      },
+    })
+  )
+
+  const joinfork = join.fork(run)
+  assert.equal(
+    // @ts-expect-error - has no join
+    joinfork.join,
+    undefined
+  )
+
+  assert.deepEqual(
+    join.do,
+    { out: { ok: { x: 1 } }, fx: { fork: [], join: run } },
+    'does not mutate'
+  )
+
+  assert.deepEqual(
+    joinfork.do,
+    {
+      out: { ok: { x: 1 } },
+      fx: { fork: [run], join: run },
+    },
+    'includes fork'
+  )
+  assert.deepEqual(
+    JSON.stringify(joinfork),
+    JSON.stringify({
+      do: {
+        out: { ok: { x: 1 } },
+        fx: { fork: [{ '/': run.toString() }], join: { '/': run.toString() } },
+      },
+    })
+  )
+
+  const forkjoin = ok.fork(run).join(run)
+  assert.equal(
+    // @ts-expect-error - has no join
+    forkjoin.join,
+    undefined
+  )
+
+  assert.deepEqual(
+    forkjoin.do,
+    {
+      out: { ok: { x: 1 } },
+      fx: { fork: [run], join: run },
+    },
+    'includes fork'
+  )
+  assert.deepEqual(
+    JSON.stringify(forkjoin),
+    JSON.stringify({
+      do: {
+        out: { ok: { x: 1 } },
+        fx: { fork: [{ '/': run.toString() }], join: { '/': run.toString() } },
+      },
+    })
+  )
+
+  const { error } = fail('boom')
+  const crash = Provider.error(error)
+  assert.deepEqual(crash.result, { error })
+  assert.deepEqual(ok.effects, { fork: [] })
+  assert.deepEqual(
+    JSON.stringify(crash),
+    JSON.stringify({
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      },
+    })
+  )
+
+  const recover = crash.join(run)
+  assert.equal(
+    // @ts-expect-error - has no method
+    recover.join,
+    undefined
+  )
+  assert.deepEqual(crash.result, { error }, 'does not mutate')
+  assert.deepEqual(crash.effects, { fork: [] })
+
+  assert.deepEqual(
+    recover.do,
+    {
+      out: { error },
+      fx: { fork: [], join: run },
+    },
+    'includes join'
+  )
+  assert.deepEqual(
+    JSON.stringify(recover),
+    JSON.stringify({
+      do: {
+        out: { error },
+        fx: { fork: [], join: { '/': run.toString() } },
+      },
+    })
+  )
+
+  const errorfork = crash.fork(run)
+
+  assert.deepEqual(crash.result, { error }, 'does not mutate')
+  assert.deepEqual(crash.effects, { fork: [] })
+
+  assert.deepEqual(
+    errorfork.do,
+    {
+      out: { error },
+      fx: { fork: [run] },
+    },
+    'includes join'
+  )
+  assert.deepEqual(
+    JSON.stringify(errorfork),
+    JSON.stringify({
+      do: {
+        out: { error },
+        fx: { fork: [{ '/': run.toString() }] },
+      },
+    })
+  )
+
+  /** @type {API.Run} */
+  const spawn = parseLink('bafkqaalb')
+  const concurrent = errorfork.fork(spawn)
+
+  assert.deepEqual(concurrent.do, {
+    out: { error },
+    fx: { fork: [run, spawn] },
+  })
+
+  assert.deepEqual(
+    JSON.stringify(concurrent),
+    JSON.stringify({
+      do: {
+        out: { error },
+        fx: {
+          fork: [{ '/': run.toString() }, { '/': spawn.toString() }],
+        },
+      },
+    })
+  )
+})
+
+/**
+ * @template {Record<string, any>} Service
+ * @param {Service} service
+ */
+const setup = service => {
+  const provider = Server.create({
+    id: w3,
+    service,
+    codec: CAR.inbound,
+  })
+
+  const consumer = Client.connect({
+    id: alice,
+    codec: CAR.outbound,
+    channel: provider,
+  })
+
+  return { provider, consumer }
+}

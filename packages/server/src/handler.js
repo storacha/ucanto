@@ -34,12 +34,12 @@ export const provide = (capability, handler) =>
  * @template {API.Caveats} C
  * @template {{}} O
  * @template {API.Failure} X
- * @template {API.Result<O, X>} Result
+ * @template {API.Transaction<O, X>} Result
  * @param {object} input
  * @param {API.Reader<API.DID>} [input.audience]
  * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} input.capability
  * @param {(input:API.ProviderInput<API.ParsedCapability<A, R, C>>) => API.Await<Result>} input.handler
- * @returns {API.ServiceMethod<API.Capability<A, R, C>, O & Result['ok'], X & Result['error']>}
+ * @returns {API.ServiceMethod<API.Capability<A, R, C>, O & API.InferTransaction<Result>['ok'], X & API.InferTransaction<Result>['error']>}
  */
 
 export const provideAdvanced =
@@ -92,3 +92,176 @@ class InvalidAudience extends Failure {
     return this.cause.message
   }
 }
+
+/**
+ * @template {unknown} T
+ * @template {{}} X
+ * @implements {API.OkBuilder<T, X>}
+ */
+class Ok {
+  /**
+   * @param {T} ok
+   */
+  constructor(ok) {
+    this.ok = ok
+  }
+  get result() {
+    return { ok: this.ok }
+  }
+  get effects() {
+    return { fork: [] }
+  }
+
+  /**
+   * @param {API.Run} run
+   * @returns {API.ForkBuilder<T, X>}
+   */
+  fork(run) {
+    return new Fork({
+      out: this.result,
+      fx: {
+        fork: [run],
+      },
+    })
+  }
+  /**
+   * @param {API.Run} run
+   * @returns {API.JoinBuilder<T, X>}
+   */
+  join(run) {
+    return new Join({
+      out: this.result,
+      fx: {
+        fork: [],
+        join: run,
+      },
+    })
+  }
+}
+
+/**
+ * @template {unknown} T
+ * @template {{}} X
+ * @implements {API.ErrorBuilder<T, X>}
+ */
+class Error {
+  /**
+   * @param {X} error
+   */
+  constructor(error) {
+    this.error = error
+  }
+  get result() {
+    return { error: this.error }
+  }
+  get effects() {
+    return { fork: [] }
+  }
+
+  /**
+   * @param {API.Run} run
+   * @returns {API.ForkBuilder<T, X>}
+   */
+  fork(run) {
+    return new Fork({
+      out: this.result,
+      fx: {
+        fork: [run],
+      },
+    })
+  }
+  /**
+   * @param {API.Run} run
+   * @returns {API.JoinBuilder<T, X>}
+   */
+  join(run) {
+    return new Join({
+      out: this.result,
+      fx: {
+        fork: [],
+        join: run,
+      },
+    })
+  }
+}
+
+/**
+ * @template {unknown} T
+ * @template {{}} X
+ * @implements {API.JoinBuilder<T, X>}
+ */
+class Join {
+  /**
+   * @param {API.Do<T, X>} model
+   */
+  constructor(model) {
+    this.do = model
+  }
+  get result() {
+    return this.do.out
+  }
+  get effects() {
+    return this.do.fx
+  }
+  /**
+   * @param {API.Run} run
+   * @returns {API.JoinBuilder<T, X>}
+   */
+  fork(run) {
+    const { out, fx } = this.do
+    return new Join({
+      out,
+      fx: {
+        ...fx,
+        fork: [...fx.fork, run],
+      },
+    })
+  }
+}
+
+/**
+ * @template {unknown} T
+ * @template {{}} X
+ * @extends {Join<T, X>}
+ * @implements {API.ForkBuilder<T, X>}
+ */
+class Fork extends Join {
+  /**
+   * @param {API.Run} run
+   * @returns {API.JoinBuilder<T, X>}
+   */
+  join(run) {
+    const { out, fx } = this.do
+    return new Join({
+      out,
+      fx: { ...fx, join: run },
+    })
+  }
+  /**
+   * @param {API.Run} run
+   * @returns {API.ForkBuilder<T, X>}
+   */
+  fork(run) {
+    const { out, fx } = this.do
+    return new Fork({
+      out,
+      fx: { ...fx, fork: [...fx.fork, run] },
+    })
+  }
+}
+
+/**
+ * @template {{}} T
+ * @template {API.Failure} X
+ * @param {T} value
+ * @returns {API.OkBuilder<T, X>}
+ */
+export const ok = value => new Ok(value)
+
+/**
+ * @template {{}} T
+ * @template {API.Failure} X
+ * @param {X} error
+ * @returns {API.ErrorBuilder<T, X>}
+ */
+export const error = error => new Error(error)

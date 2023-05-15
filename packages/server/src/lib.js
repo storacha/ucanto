@@ -1,4 +1,5 @@
 export * from './api.js'
+export * from '@ucanto/core'
 export * from './server.js'
 export {
   Failure,
@@ -6,8 +7,9 @@ export {
   HandlerNotFound,
   Link,
   URI,
+  ok,
+  error,
 } from './server.js'
-export * from '@ucanto/core'
 export {
   invoke,
   Invocation,
