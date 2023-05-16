@@ -156,14 +156,15 @@ test('receipt with fx.fork', async () => {
     },
   }).delegate()
 
-  const echo = await CBOR.write(
-    /** @type {API.InstructionModel} */ ({
-      op: 'debug/echo',
-      rsc: alice.did(),
-      input: {},
-      nnc: '',
-    })
-  )
+  const echo = await invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'debug/echo',
+      with: alice.did(),
+      nb: {},
+    },
+  }).delegate()
 
   const receipt = await Receipt.issue({
     issuer: w3,
@@ -200,14 +201,15 @@ test('receipt with fx.join', async () => {
     },
   }).delegate()
 
-  const echo = await CBOR.write(
-    /** @type {API.InstructionModel} */ ({
-      op: 'debug/echo',
-      rsc: alice.did(),
-      input: {},
-      nnc: '',
-    })
-  )
+  const echo = await invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'debug/echo',
+      with: alice.did(),
+      nb: {},
+    },
+  }).delegate()
 
   const receipt = await Receipt.issue({
     issuer: w3,

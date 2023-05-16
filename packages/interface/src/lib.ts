@@ -82,7 +82,7 @@ export type {
 }
 export * as UCAN from '@ipld/dag-ucan'
 
-export type BlockStore <T> = Map<ToString<Link>, Block<T, number, number, 1>>
+export type BlockStore<T> = Map<ToString<Link>, Block<T, number, number, 1>>
 export type AttachedLinkSet = Set<ToString<Link>>
 
 /**
@@ -457,12 +457,27 @@ export interface SignatureError extends Error {}
 
 export interface Meta extends Record<string, unknown> {}
 
+/**
+ * Represents invocation in pre-invocation spec, which is simply a UCAN
+ * delegation with a single capability.
+ */
+export type ImpliedInvocationModel<C extends Capability = Capability> =
+  UCAN.UCAN<[C]>
+
+/**
+ * Currently we represent effects in non-standard format that uses links to
+ * {@link ImpliedInvocationModel} as opposed {@link InstructionModel}. We do
+ * such a representation because we do not have an invocation spec implemented
+ * yet and most things expect {@link ImpliedInvocationModel} in place if
+ * invocations & instructions.
+ */
 export interface EffectsModel {
-  fork: readonly Link<InstructionModel>[]
-  join?: Link<InstructionModel>
+  fork: readonly Link<ImpliedInvocationModel>[]
+  join?: Link<ImpliedInvocationModel>
 }
 
 export interface Effects extends EffectsModel {}
+
 export interface InstructionModel<
   Op extends Ability = Ability,
   URI extends Resource = Resource,
@@ -484,6 +499,78 @@ export type Result<T = unknown, X extends {} = {}> = Variant<{
   ok: T
   error: X
 }>
+
+/**
+ * Defines result & effect pair, used by provider that wish to return
+ * results that have effects.
+ */
+export type Transaction<T = unknown, X extends {} = {}> = Variant<{
+  ok: T
+  error: X
+  do: Do<T, X>
+}>
+
+export type InferTransaction<T extends Transaction> = T extends Transaction<
+  infer Ok,
+  infer Error
+>
+  ? { ok: Ok; error: Error }
+  : never
+
+export type Run = Link<ImpliedInvocationModel>
+
+export interface Do<T = unknown, X extends {} = {}> {
+  out: Result<T, X>
+  fx: Effects
+}
+
+export interface OkBuilder<T extends unknown = undefined, X extends {} = {}> {
+  ok: T
+  error?: undefined
+  do?: undefined
+
+  result: Result<T, X>
+  effects: Effects
+
+  fork(fx: Run): ForkBuilder<T, X>
+  join(fx: Run): JoinBuilder<T, X>
+}
+
+export interface ErrorBuilder<
+  T extends unknown = undefined,
+  X extends {} = {}
+> {
+  ok?: undefined
+  error: X
+  do?: undefined
+
+  result: Result<T, X>
+  effects: Effects
+
+  fork(fx: Run): ForkBuilder<T, X>
+  join(fx: Run): JoinBuilder<T, X>
+}
+
+export interface ForkBuilder<T extends unknown = undefined, X extends {} = {}> {
+  ok?: undefined
+  error?: undefined
+  do: Do<T, X>
+  result: Result<T, X>
+  effects: Effects
+
+  fork(fx: Run): ForkBuilder<T, X>
+  join(fx: Run): JoinBuilder<T, X>
+}
+
+export interface JoinBuilder<T extends unknown = unknown, X extends {} = {}> {
+  ok?: undefined
+  error?: undefined
+  do: Do<T, X>
+  result: Result<T, X>
+  effects: Effects
+
+  fork(fx: Run): JoinBuilder<T, X>
+}
 
 /**
  * @see {@link https://en.wikipedia.org/wiki/Unit_type|Unit type - Wikipedia}
@@ -585,9 +672,21 @@ export interface ServiceMethod<
   X extends {}
 > {
   (input: Invocation<I>, context: InvocationContext): Await<
-    Result<O, X | InvocationError>
+    Transaction<O, X | InvocationError>
   >
 }
+
+export interface ProviderInput<T extends ParsedCapability> {
+  capability: T
+  invocation: Invocation<Capability<T['can'], T['with'], T['nb']>>
+
+  context: InvocationContext
+}
+
+export type ProviderMethod<
+  I extends ParsedCapability,
+  O extends Transaction
+> = (input: ProviderInput<I>) => Await<O>
 
 /**
  * Error types returned by the framework during invocation that are not
@@ -600,7 +699,7 @@ export type InvocationError =
   | Unauthorized
 
 export interface InvocationContext extends ValidatorOptions {
-  id: Verifier
+  id: Signer
 
   resolve?: (proof: UCANLink) => Await<Result<Delegation, UnavailableProof>>
 
