@@ -1,5 +1,18 @@
 # Changelog
 
+## [8.0.0](https://github.com/web3-storage/ucanto/compare/core-v7.1.1...core-v8.0.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* effects support ([#309](https://github.com/web3-storage/ucanto/issues/309))
+
+### Features
+
+* add Schema.bytes ([#300](https://github.com/web3-storage/ucanto/issues/300)) ([2bbdd1c](https://github.com/web3-storage/ucanto/commit/2bbdd1c4725ec716bd06c512fec933d48e9820e0))
+* archive/extract api for delegations ([#287](https://github.com/web3-storage/ucanto/issues/287)) ([75036c1](https://github.com/web3-storage/ucanto/commit/75036c1af6cb35ea564087aa1a3b0d76b0099476))
+* effects support ([#309](https://github.com/web3-storage/ucanto/issues/309)) ([2a59d8a](https://github.com/web3-storage/ucanto/commit/2a59d8a2fe97325afcdacd5b769c9e88f96488be))
+
 ## [7.1.1](https://github.com/web3-storage/ucanto/compare/core-v7.1.0...core-v7.1.1) (2023-05-02)
 
 
