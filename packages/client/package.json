@@ -1,7 +1,7 @@
 {
   "name": "@ucanto/client",
   "description": "UCAN RPC Client",
-  "version": "7.0.1",
+  "version": "8.0.0",
   "keywords": [
     "UCAN",
     "RPC",

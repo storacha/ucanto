@@ -1,5 +1,16 @@
 # Changelog
 
+## [8.0.0](https://github.com/web3-storage/ucanto/compare/transport-v7.0.3...transport-v8.0.0) (2023-05-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* update `@ucanto/interface` dependencies ([#310](https://github.com/web3-storage/ucanto/issues/310))
+
+### Features
+
+* update `@ucanto/interface` dependencies ([#310](https://github.com/web3-storage/ucanto/issues/310)) ([3d1adbf](https://github.com/web3-storage/ucanto/commit/3d1adbf0011db1a1d602040bbdc84b1e3721f62c))
+
 ## [7.0.3](https://github.com/web3-storage/ucanto/compare/transport-v7.0.2...transport-v7.0.3) (2023-04-26)
 
 
