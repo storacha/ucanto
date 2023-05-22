@@ -1,5 +1,16 @@
 # Changelog
 
+## [8.0.0](https://github.com/web3-storage/ucanto/compare/server-v7.0.2...server-v8.0.0) (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* effects support ([#309](https://github.com/web3-storage/ucanto/issues/309))
+
+### Features
+
+* effects support ([#309](https://github.com/web3-storage/ucanto/issues/309)) ([2a59d8a](https://github.com/web3-storage/ucanto/commit/2a59d8a2fe97325afcdacd5b769c9e88f96488be))
+
 ## [7.0.2](https://github.com/web3-storage/ucanto/compare/server-v7.0.1...server-v7.0.2) (2023-04-25)
 
 
