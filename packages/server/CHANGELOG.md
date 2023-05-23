@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.0.1](https://github.com/web3-storage/ucanto/compare/server-v8.0.0...server-v8.0.1) (2023-05-23)
+
+
+### Bug Fixes
+
+* ensure `@ucanto/server` depends on v8 deps ([#313](https://github.com/web3-storage/ucanto/issues/313)) ([54268cd](https://github.com/web3-storage/ucanto/commit/54268cd47806d789fba7daffd1cdc50ca944833a))
+
 ## [8.0.0](https://github.com/web3-storage/ucanto/compare/server-v7.0.2...server-v8.0.0) (2023-05-19)
 
 
