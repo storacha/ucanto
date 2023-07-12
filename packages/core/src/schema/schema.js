@@ -814,6 +814,70 @@ const Integer = {
 const anyInteger = anyNumber.refine(Integer)
 export const integer = () => anyInteger
 
+const MAX_UINT64 = 2n ** 64n - 1n
+
+/**
+ * @template {bigint} [O=Schema.Uint64]
+ * @template [I=unknown]
+ * @extends {API<O, I, void>}
+ * @implements {Schema.Schema<O, I>}
+ */
+class Uint64Schema extends API {
+  /**
+   * @param {I} input
+   * @returns {Schema.ReadResult<O>}
+   */
+  read(input) {
+    switch (typeof input) {
+      case 'bigint':
+        return input > MAX_UINT64
+          ? error(`Integer is too big for uint64, ${input} > ${MAX_UINT64}`)
+          : input < 0
+          ? error(
+              `Negative integer can not be represented as uint64, ${input} < ${0}`
+            )
+          : { ok: /** @type {I & O} */ (input) }
+
+      case 'number':
+        return !Number.isInteger(input)
+          ? typeError({
+              expect: 'uint64',
+              actual: input,
+            })
+          : input < 0
+          ? error(
+              `Negative integer can not be represented as uint64, ${input} < ${0}`
+            )
+          : { ok: /** @type {O} */ (BigInt(input)) }
+
+      default:
+        return typeError({
+          expect: 'uint64',
+          actual: input,
+        })
+    }
+  }
+
+  toString() {
+    return `uint64`
+  }
+}
+
+/** @type {Schema.Schema<Schema.Uint64, unknown>} */
+const Uint64 = new Uint64Schema()
+
+/**
+ * Creates a schema for {@link Schema.Uint64} values represented as  a`bigint`.
+ *
+ * ⚠️ Please note that while IPLD in principal considers the range of integers
+ * to be infinite n practice, many libraries / codecs may choose to implement
+ * things in such a way that numbers may have limited sizes.
+ *
+ * So please use this with caution and always ensure that used codecs do support
+ * uint64.
+ */
+export const uint64 = () => Uint64
+
 const Float = {
   /**
    * @param {number} number
@@ -1070,7 +1134,7 @@ class Literal extends API {
     return super.default(value)
   }
   toString() {
-    return `literal(${displayTypeName(this.value)})`
+    return `literal(${toString(this.value)})`
   }
 }
 
@@ -1143,10 +1207,10 @@ class Struct extends API {
   toString() {
     return [
       `struct({ `,
-      ...Object.entries(this.shape).map(
-        ([key, schema]) => `${key}: ${schema}, `
-      ),
-      `})`,
+      ...Object.entries(this.shape)
+        .map(([key, schema]) => `${key}: ${schema}`)
+        .join(', '),
+      ` })`,
     ].join('')
   }
 
@@ -1369,7 +1433,7 @@ class TypeError extends SchemaError {
     return 'TypeError'
   }
   describe() {
-    return `Expected value of type ${this.expect} instead got ${displayTypeName(
+    return `Expected value of type ${this.expect} instead got ${toString(
       this.actual
     )}`
   }
@@ -1387,7 +1451,7 @@ export const typeError = data => ({ error: new TypeError(data) })
  *
  * @param {unknown} value
  */
-const displayTypeName = value => {
+export const toString = value => {
   const type = typeof value
   switch (type) {
     case 'boolean':
@@ -1430,9 +1494,9 @@ class LiteralError extends SchemaError {
     return 'LiteralError'
   }
   describe() {
-    return `Expected literal ${displayTypeName(
-      this.expect
-    )} instead got ${displayTypeName(this.actual)}`
+    return `Expected literal ${toString(this.expect)} instead got ${toString(
+      this.actual
+    )}`
   }
 }
 

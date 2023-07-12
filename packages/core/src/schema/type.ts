@@ -217,6 +217,7 @@ export type Branded<T, Brand> = T & {
 
 export type Integer = number & Phantom<{ typeof: 'integer' }>
 export type Float = number & Phantom<{ typeof: 'float' }>
+export type Uint64 = bigint & Phantom<{ typeof: 'uint64' }>
 
 export type Infer<T extends Reader> = T extends Reader<infer T, any> ? T : never
 
