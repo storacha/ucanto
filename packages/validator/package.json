@@ -30,7 +30,7 @@
     "@ipld/car": "^5.1.0",
     "@ipld/dag-cbor": "^9.0.0",
     "@ucanto/core": "workspace:^",
-    "@ucanto/interface": "workspace:^8",
+    "@ucanto/interface": "workspace:^",
     "multiformats": "^11.0.0"
   },
   "devDependencies": {

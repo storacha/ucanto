@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@ucanto/core": "workspace:^",
-    "@ucanto/interface": "workspace:^8"
+    "@ucanto/interface": "workspace:^"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",

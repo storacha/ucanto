@@ -29,7 +29,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ucanto/interface": "workspace:^8",
+    "@ucanto/interface": "workspace:^",
     "@ucanto/core": "workspace:^"
   },
   "devDependencies": {

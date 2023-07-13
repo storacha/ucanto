@@ -29,7 +29,7 @@
   "dependencies": {
     "@ipld/dag-ucan": "^3.3.2",
     "@noble/ed25519": "^1.7.3",
-    "@ucanto/interface": "workspace:^8",
+    "@ucanto/interface": "workspace:^",
     "multiformats": "^11.0.0",
     "one-webcrypto": "^1.0.3"
   },

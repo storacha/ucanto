@@ -20,7 +20,7 @@ importers:
         specifier: workspace:^
         version: link:../core
       '@ucanto/interface':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../interface
     devDependencies:
       '@types/chai':
@@ -128,7 +128,7 @@ importers:
         specifier: ^1.7.3
         version: 1.7.3
       '@ucanto/interface':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../interface
       multiformats:
         specifier: ^11.0.0
@@ -226,7 +226,7 @@ importers:
         specifier: workspace:^
         version: link:../core
       '@ucanto/interface':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../interface
     devDependencies:
       '@types/chai':
@@ -272,7 +272,7 @@ importers:
         specifier: workspace:^
         version: link:../core
       '@ucanto/interface':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../interface
       multiformats:
         specifier: ^11.0.0
