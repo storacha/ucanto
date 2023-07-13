@@ -60,12 +60,12 @@ export const execute = async (invocations, connection) => {
   } catch (error) {
     // No third party code is run during decode and we know
     // we only throw an Error
-    const { message, ...cause } = /** @type {Error} */ (error)
+    const { message, name = 'Error', ...cause } = /** @type {Error} */ (error)
     const receipts = []
     for await (const ran of input.invocationLinks) {
       const receipt = await Receipt.issue({
         ran,
-        result: { error: { ...cause, message } },
+        result: { error: { ...cause, name, message } },
         // @ts-expect-error - we can not really sign a receipt without having
         // an access to a signer which client does not have. In the future
         // we will change client API requiring a signer to be passed in but

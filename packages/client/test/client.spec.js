@@ -319,11 +319,17 @@ test('decode error', async () => {
   })
 
   const [e1] = await client.execute(await add.delegate())
-  assert.deepEqual(e1.out, {
-    error: {
-      error: true,
-      message:
-        "Can not decode response with content-type 'application/vnd.ipld.car' because no matching transport decoder is configured.",
+
+  assert.deepEqual(
+    {
+      error: {
+        message:
+          "Can not decode response with content-type 'application/vnd.ipld.car' because no matching transport decoder is configured.",
+        // @ts-expect-error
+        name: 'TypeError',
+        error: true,
+      },
     },
-  })
+    e1.out
+  )
 })
