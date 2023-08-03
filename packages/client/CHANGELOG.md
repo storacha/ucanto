@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.0.1](https://github.com/web3-storage/ucanto/compare/client-v8.0.0...client-v8.0.1) (2023-08-03)
+
+
+### Bug Fixes
+
+* add missing dependency on `@ucanto/principal` ([#317](https://github.com/web3-storage/ucanto/issues/317)) ([c62f9c2](https://github.com/web3-storage/ucanto/commit/c62f9c239de4b2a8931b26364d4c401533f2bd93))
+
 ## [8.0.0](https://github.com/web3-storage/ucanto/compare/client-v7.0.1...client-v8.0.0) (2023-05-22)
 
 
