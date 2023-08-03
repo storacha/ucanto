@@ -225,6 +225,7 @@ test('execute', async () => {
 
   assert.deepEqual(e1.out, {
     error: {
+      // @ts-expect-error
       name: 'UnknownDIDError',
       message: `DID ${alice.did()} has no account`,
       did: alice.did(),
@@ -269,6 +270,7 @@ test('execute with delegations', async () => {
 
   assert.deepEqual(e1.out, {
     error: {
+      // @ts-expect-error
       name: 'UnknownDIDError',
       message: `DID ${bob.did()} has no account`,
       did: bob.did(),
