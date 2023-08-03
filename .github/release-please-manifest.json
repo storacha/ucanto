@@ -1,9 +1,9 @@
 {
-  "packages/client": "8.0.0",
-  "packages/core": "8.0.0",
+  "packages/client": "8.0.1",
+  "packages/core": "8.1.0",
   "packages/interface": "8.0.0",
   "packages/principal": "8.0.0",
-  "packages/server": "8.0.1",
+  "packages/server": "8.0.2",
   "packages/transport": "8.0.0",
   "packages/validator": "8.0.0"
 }

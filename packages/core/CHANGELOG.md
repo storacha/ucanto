@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.1.0](https://github.com/web3-storage/ucanto/compare/core-v8.0.0...core-v8.1.0) (2023-08-03)
+
+
+### Features
+
+* Add Uint64 support to schema ([#315](https://github.com/web3-storage/ucanto/issues/315)) ([2a74f92](https://github.com/web3-storage/ucanto/commit/2a74f92a7ea6da307e1dc4149f0d5a705842b659))
+
 ## [8.0.0](https://github.com/web3-storage/ucanto/compare/core-v7.1.1...core-v8.0.0) (2023-05-19)
 
 
