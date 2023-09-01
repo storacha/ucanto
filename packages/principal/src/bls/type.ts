@@ -22,14 +22,14 @@ export type SigAlg = MulticodecCode<typeof Signature.BLS12381G2, 'BLS12381G2'>
 export type Name = 'BLS12381G2'
 
 /**
- * This interface parametrizes {@link SignerKey} and extends it with Ed specific
+ * This interface parametrizes {@link SignerKey} and extends it with BLS specific
  * details.
  */
 export interface BLSSigner extends SignerKey<SigAlg> {
   readonly signatureAlgorithm: Name
   readonly signatureCode: SigAlg
   /**
-   * Multicodec code that corresponds to Ed private key.
+   * Multicodec code that corresponds to BLS private key.
    */
   readonly code: MulticodecCode<0x1309, 'bls12-381-private-key'>
 
@@ -65,7 +65,7 @@ export interface BLSSignature<T = unknown> extends SignatureView<T, SigAlg> {}
  */
 export interface BLSVerifier extends VerifierKey<SigAlg> {
   /**
-   * Multicodec code that corresponds to Ed public key.
+   * Multicodec code that corresponds to BLS public key.
    */
   readonly code: MulticodecCode<0xeb, 'BLS12-381'>
   readonly signatureCode: SigAlg
