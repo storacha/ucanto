@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.2.0](https://github.com/web3-storage/ucanto/compare/core-v8.1.0...core-v8.2.0) (2023-09-01)
+
+
+### Features
+
+* implement support for BLS keys ([#318](https://github.com/web3-storage/ucanto/issues/318)) ([0bee77e](https://github.com/web3-storage/ucanto/commit/0bee77e13174a1f964fe67fd25a3eaf6ee00f141))
+
 ## [8.1.0](https://github.com/web3-storage/ucanto/compare/core-v8.0.0...core-v8.1.0) (2023-08-03)
 
 
