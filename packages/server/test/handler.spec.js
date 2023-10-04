@@ -7,7 +7,7 @@ import { alice, bob, mallory, service } from './fixtures.js'
 import { test, assert } from './test.js'
 import * as Access from './service/access.js'
 import { Verifier } from '@ucanto/principal/ed25519'
-import { Schema, UnavailableProof } from '@ucanto/validator'
+import { Schema, UnavailableProof, Unauthorized } from '@ucanto/validator'
 import { Absentee } from '@ucanto/principal'
 import { capability } from '../src/server.js'
 import { isLink, parseLink, fail } from '../src/lib.js'
@@ -31,6 +31,7 @@ const context = {
   resolve: link => ({
     error: new UnavailableProof(link),
   }),
+  validateAuthorization: () => ({ ok: {} }),
 }
 
 test('invocation', async () => {
@@ -113,6 +114,7 @@ test('checks service id', async () => {
     id: w3,
     service: { identity: Access },
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const client = Client.connect({
@@ -186,6 +188,7 @@ test('checks for single capability invocation', async () => {
     id: w3,
     service: { identity: Access },
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const client = Client.connect({
@@ -237,6 +240,7 @@ test('test access/claim provider', async () => {
     id: w3,
     service: { access: Access },
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   /**
@@ -305,6 +309,7 @@ test('handle did:mailto audiences', async () => {
   const result = await handler(request, {
     id: w3,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(result.error, undefined)
@@ -328,6 +333,7 @@ test('handle did:mailto audiences', async () => {
   const badAudience = await handler(badRequest, {
     id: w3,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(badAudience, {
@@ -670,6 +676,7 @@ const setup = service => {
     id: w3,
     service,
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const consumer = Client.connect({

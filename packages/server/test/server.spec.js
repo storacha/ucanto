@@ -71,6 +71,7 @@ test('encode delegated invocation', async () => {
     service: Service.create(),
     codec: CAR.inbound,
     id: w3,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const connection = Client.connect({
@@ -184,6 +185,7 @@ test('unknown handler', async () => {
     id: w3,
     service: Service.create(),
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const connection = Client.connect({
@@ -258,6 +260,7 @@ test('execution error', async () => {
     },
     codec: CAR.inbound,
     id: w3,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const connection = Client.connect({
@@ -306,6 +309,7 @@ test('did:web server', async () => {
     service: Service.create(),
     codec: CAR.inbound,
     id: w3.withDID('did:web:web3.storage'),
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const connection = Client.connect({
@@ -346,6 +350,7 @@ test('unsupported content-type', async () => {
         'application/car': CAR.response,
       },
     }),
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const connection = Client.connect({
@@ -399,6 +404,7 @@ test('falsy errors are turned into {}', async () => {
     },
     id: w3.withDID('did:web:web3.storage'),
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const connection = Client.connect({
@@ -426,6 +432,7 @@ test('run invocation without encode / decode', async () => {
     service: Service.create(),
     codec: CAR.inbound,
     id: w3,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const identify = invoke({

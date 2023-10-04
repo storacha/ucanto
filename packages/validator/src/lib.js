@@ -4,6 +4,7 @@ import { capability } from './capability.js'
 import * as Schema from '@ucanto/core/schema'
 import {
   UnavailableProof,
+  Unauthorized,
   PrincipalAlignmentError,
   Expired,
   NotValidBefore,
@@ -25,6 +26,7 @@ export {
   fail,
   ok,
   UnavailableProof,
+  Unauthorized,
   MalformedCapability,
   DIDKeyResolutionError as DIDResolutionError,
 }
@@ -201,7 +203,7 @@ const isSelfIssued = (capability, issuer) => capability.with === issuer
  * @template {API.Caveats} C
  * @param {API.Invocation<API.Capability<A, URI, C>>} invocation
  * @param {API.ValidationOptions<API.ParsedCapability<A, R, C>>} options
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, C>>, API.Unauthorized>>}
+ * @returns {Promise<API.Result<API.Authorization<API.ParsedCapability<A, R, C>>, API.Unauthorized>>}
  */
 export const access = async (invocation, { capability, ...config }) =>
   claim(capability, [invocation], config)
@@ -218,7 +220,7 @@ export const access = async (invocation, { capability, ...config }) =>
  * @param {API.CapabilityParser<API.Match<API.ParsedCapability<A, R, C>>>} capability
  * @param {API.Proof[]} proofs
  * @param {API.ClaimOptions} config
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability<A, R, C>>, API.Unauthorized>>}
+ * @returns {Promise<API.Result<API.Authorization<API.ParsedCapability<A, R, C>>, API.Unauthorized>>}
  */
 export const claim = async (
   capability,
@@ -226,6 +228,7 @@ export const claim = async (
   {
     authority,
     principal,
+    validateAuthorization,
     resolveDIDKey = failDIDKeyResolution,
     canIssue = isSelfIssued,
     resolve = unavailable,
@@ -237,6 +240,7 @@ export const claim = async (
     principal,
     capability,
     authority,
+    validateAuthorization,
     resolveDIDKey,
   }
 
@@ -273,13 +277,25 @@ export const claim = async (
   for (const matched of selection.matches) {
     const selector = matched.prune(config)
     if (selector == null) {
-      return { ok: new Authorization(matched, []) }
+      const authorization = new Authorization(matched, [])
+      const result = await validateAuthorization(authorization)
+      if (result.error) {
+        invalidProofs.push(result.error)
+      } else {
+        return { ok: authorization }
+      }
     } else {
       const result = await authorize(selector, config)
       if (result.error) {
         failedProofs.push(result.error)
       } else {
-        return { ok: new Authorization(matched, [result.ok]) }
+        const authorization = new Authorization(matched, [result.ok])
+        const approval = await validateAuthorization(authorization)
+        if (approval.error) {
+          invalidProofs.push(approval.error)
+        } else {
+          return { ok: authorization }
+        }
       }
     }
   }
@@ -297,11 +313,12 @@ export const claim = async (
 
 /**
  * @template {API.ParsedCapability} C
+ * @implements {API.Authorization<C>}
  */
 class Authorization {
   /**
    * @param {API.Match<C>} match
-   * @param {Authorization<API.ParsedCapability>[]} proofs
+   * @param {API.Authorization<API.ParsedCapability>[]} proofs
    */
   constructor(match, proofs) {
     this.match = match
@@ -326,7 +343,7 @@ class Authorization {
  * @template {API.Match} Match
  * @param {Match} match
  * @param {Required<API.ClaimOptions>} config
- * @returns {Promise<API.Result<Authorization<API.ParsedCapability>, API.InvalidClaim>>}
+ * @returns {Promise<API.Result<API.Authorization<API.ParsedCapability>, API.InvalidClaim>>}
  */
 
 export const authorize = async (match, config) => {
@@ -425,58 +442,6 @@ class InvalidClaim extends Failure {
       `Capability ${this.info.match} is not authorized because:`,
       li(`Capability can not be (self) issued by '${this.issuer.did()}'`),
       ...(errors.length > 0 ? errors : [li(`Delegated capability not found`)]),
-      ...(unknown.length > 0
-        ? [li(`Encountered unknown capabilities\n${unknown.join('\n')}`)]
-        : []),
-    ].join('\n')
-  }
-}
-
-/**
- * @implements {API.Unauthorized}
- */
-
-class Unauthorized extends Failure {
-  /**
-   * @param {{
-   * capability: API.CapabilityParser
-   * delegationErrors: API.DelegationError[]
-   * unknownCapabilities: API.Capability[]
-   * invalidProofs: API.InvalidProof[]
-   * failedProofs: API.InvalidClaim[]
-   * }} cause
-   */
-  constructor({
-    capability,
-    delegationErrors,
-    unknownCapabilities,
-    invalidProofs,
-    failedProofs,
-  }) {
-    super()
-    /** @type {"Unauthorized"} */
-    this.name = 'Unauthorized'
-    this.capability = capability
-    this.delegationErrors = delegationErrors
-    this.unknownCapabilities = unknownCapabilities
-    this.invalidProofs = invalidProofs
-    this.failedProofs = failedProofs
-  }
-
-  describe() {
-    const errors = [
-      ...this.failedProofs.map(error => li(error.message)),
-      ...this.delegationErrors.map(error => li(error.message)),
-      ...this.invalidProofs.map(error => li(error.message)),
-    ]
-
-    const unknown = this.unknownCapabilities.map(c => li(JSON.stringify(c)))
-
-    return [
-      `Claim ${this.capability} is not authorized`,
-      ...(errors.length > 0
-        ? errors
-        : [li(`No matching delegated capability found`)]),
       ...(unknown.length > 0
         ? [li(`Encountered unknown capabilities\n${unknown.join('\n')}`)]
         : []),

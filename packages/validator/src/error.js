@@ -288,6 +288,58 @@ export class NotValidBefore extends Failure {
 }
 
 /**
+ * @implements {API.Unauthorized}
+ */
+
+export class Unauthorized extends Failure {
+  /**
+   * @param {{
+   * capability: API.CapabilityParser
+   * delegationErrors: API.DelegationError[]
+   * unknownCapabilities: API.Capability[]
+   * invalidProofs: API.InvalidProof[]
+   * failedProofs: API.InvalidClaim[]
+   * }} cause
+   */
+  constructor({
+    capability,
+    delegationErrors,
+    unknownCapabilities,
+    invalidProofs,
+    failedProofs,
+  }) {
+    super()
+    /** @type {"Unauthorized"} */
+    this.name = 'Unauthorized'
+    this.capability = capability
+    this.delegationErrors = delegationErrors
+    this.unknownCapabilities = unknownCapabilities
+    this.invalidProofs = invalidProofs
+    this.failedProofs = failedProofs
+  }
+
+  describe() {
+    const errors = [
+      ...this.failedProofs.map(error => li(error.message)),
+      ...this.delegationErrors.map(error => li(error.message)),
+      ...this.invalidProofs.map(error => li(error.message)),
+    ]
+
+    const unknown = this.unknownCapabilities.map(c => li(JSON.stringify(c)))
+
+    return [
+      `Claim ${this.capability} is not authorized`,
+      ...(errors.length > 0
+        ? errors
+        : [li(`No matching delegated capability found`)]),
+      ...(unknown.length > 0
+        ? [li(`Encountered unknown capabilities\n${unknown.join('\n')}`)]
+        : []),
+    ].join('\n')
+  }
+}
+
+/**
  * @param {unknown} capability
  * @param {string|number} [space]
  */

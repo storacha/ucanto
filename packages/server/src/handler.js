@@ -63,6 +63,7 @@ export const provideAdvanced =
       authority: options.id,
       capability,
     })
+
     if (authorization.error) {
       return authorization
     } else {
@@ -73,6 +74,18 @@ export const provideAdvanced =
       })
     }
   }
+
+/**
+ *
+ * @param {API.Authorization} authorization
+ * @returns {Iterable<API.Link>}
+ */
+const iterateAuthorization = function* ({ delegation, proofs }) {
+  yield delegation.cid
+  for (const proof of proofs) {
+    yield* iterateAuthorization(proof)
+  }
+}
 
 /**
  * @implements {API.InvalidAudience}

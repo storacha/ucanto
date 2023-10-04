@@ -42,7 +42,9 @@ import {
   DIDKeyResolutionError,
   ParsedCapability,
   CapabilityParser,
+  Revoked,
   InferCapability,
+  Authorization,
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
@@ -974,6 +976,7 @@ export interface ValidatorOptions {
 
   readonly canIssue?: CanIssue['canIssue']
   readonly resolve?: InvocationContext['resolve']
+  validateAuthorization: (proofs: Authorization) => Await<Result<Unit, Revoked>>
 }
 
 export interface ServerOptions extends ValidatorOptions {

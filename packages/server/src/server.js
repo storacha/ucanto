@@ -17,7 +17,10 @@ export { fail }
  * @param {API.Server<Service>} options
  * @returns {API.ServerView<Service>}
  */
-export const create = options => new Server(options)
+export const create = options => {
+  const server = new Server(options)
+  return server
+}
 
 /**
  * @template {Record<string, any>} S
@@ -33,6 +36,9 @@ class Server {
     this.service = service
     this.codec = codec
     this.catch = fail || (() => {})
+    this.validateAuthorization = this.context.validateAuthorization.bind(
+      this.context
+    )
   }
   get id() {
     return this.context.id
