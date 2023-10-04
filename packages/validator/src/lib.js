@@ -2,6 +2,7 @@ import * as API from '@ucanto/interface'
 import { isDelegation, UCAN, ok, fail } from '@ucanto/core'
 import { capability } from './capability.js'
 import * as Schema from '@ucanto/core/schema'
+import * as Authorization from './authorization.js'
 import {
   UnavailableProof,
   Unauthorized,
@@ -23,6 +24,7 @@ export * from '@ucanto/core/schema'
 
 export {
   Schema,
+  Authorization,
   Failure,
   fail,
   ok,
@@ -279,7 +281,7 @@ export const claim = async (
   for (const matched of selection.matches) {
     const selector = matched.prune(config)
     if (selector == null) {
-      const authorization = new Authorization(matched, [])
+      const authorization = Authorization.create(matched, [])
       const result = await validateAuthorization(authorization)
       if (result.error) {
         invalidProofs.push(result.error)
@@ -291,7 +293,7 @@ export const claim = async (
       if (result.error) {
         failedProofs.push(result.error)
       } else {
-        const authorization = new Authorization(matched, [result.ok])
+        const authorization = Authorization.create(matched, [result.ok])
         const approval = await validateAuthorization(authorization)
         if (approval.error) {
           invalidProofs.push(approval.error)
@@ -314,32 +316,6 @@ export const claim = async (
 }
 
 /**
- * @template {API.ParsedCapability} C
- * @implements {API.Authorization<C>}
- */
-class Authorization {
-  /**
-   * @param {API.Match<C>} match
-   * @param {API.Authorization<API.ParsedCapability>[]} proofs
-   */
-  constructor(match, proofs) {
-    this.match = match
-    this.proofs = proofs
-  }
-  get capability() {
-    return this.match.value
-  }
-  get delegation() {
-    return this.match.source[0].delegation
-  }
-  get issuer() {
-    return this.delegation.issuer
-  }
-  get audience() {
-    return this.delegation.audience
-  }
-}
-/**
  * Verifies whether any of the delegated proofs grant give capability.
  *
  * @template {API.Match} Match
@@ -359,17 +335,27 @@ export const authorize = async (match, config) => {
   for (const matched of selection.matches) {
     const selector = matched.prune(config)
     if (selector == null) {
-      // @ts-expect-error - it may not be a parsed capability but rather a
-      // group of capabilities but we can deal with that in the future.
-      return { ok: new Authorization(matched, []) }
+      return {
+        ok: Authorization.create(
+          // @ts-expect-error - it may not be a parsed capability but rather a
+          // group of capabilities but we can deal with that in the future.
+          matched,
+          []
+        ),
+      }
     } else {
       const result = await authorize(selector, config)
       if (result.error) {
         failedProofs.push(result.error)
       } else {
-        // @ts-expect-error - it may not be a parsed capability but rather a
-        // group of capabilities but we can deal with that in the future.
-        return { ok: new Authorization(matched, [result.ok]) }
+        return {
+          ok: Authorization.create(
+            // @ts-expect-error - it may not be a parsed capability but rather a
+            // group of capabilities but we can deal with that in the future.
+            matched,
+            [result.ok]
+          ),
+        }
       }
     }
   }

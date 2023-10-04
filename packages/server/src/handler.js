@@ -76,18 +76,6 @@ export const provideAdvanced =
   }
 
 /**
- *
- * @param {API.Authorization} authorization
- * @returns {Iterable<API.Link>}
- */
-const iterateAuthorization = function* ({ delegation, proofs }) {
-  yield delegation.cid
-  for (const proof of proofs) {
-    yield* iterateAuthorization(proof)
-  }
-}
-
-/**
  * @implements {API.InvalidAudience}
  */
 class InvalidAudience extends Failure {

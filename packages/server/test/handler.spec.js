@@ -7,7 +7,12 @@ import { alice, bob, mallory, service } from './fixtures.js'
 import { test, assert } from './test.js'
 import * as Access from './service/access.js'
 import { Verifier } from '@ucanto/principal/ed25519'
-import { Schema, UnavailableProof, Unauthorized } from '@ucanto/validator'
+import {
+  Schema,
+  UnavailableProof,
+  Unauthorized,
+  Revoked,
+} from '@ucanto/validator'
 import { Absentee } from '@ucanto/principal'
 import { capability } from '../src/server.js'
 import { isLink, parseLink, fail } from '../src/lib.js'
@@ -665,6 +670,37 @@ test('fx.ok API', () => {
       },
     })
   )
+})
+
+test('invocation fails if proof is revoked', async () => {
+  const proof = await Client.delegate({
+    issuer: w3,
+    audience: alice,
+    capabilities: [
+      {
+        can: 'identity/register',
+        with: 'mailto:alice@web.mail',
+      },
+    ],
+  })
+
+  const invocation = await Client.delegate({
+    issuer: alice,
+    audience: w3,
+    capabilities: proof.capabilities,
+    proofs: [proof],
+  })
+
+  const result = await Access.register(invocation, {
+    ...context,
+    validateAuthorization: auth => {
+      assert.deepEqual(auth.delegation.cid, invocation.cid)
+      assert.deepEqual(auth.delegation.proofs, [proof])
+      return { error: new Revoked(proof) }
+    },
+  })
+
+  assert.match(String(result.error), /Proof bafy.* has been revoked/)
 })
 
 /**

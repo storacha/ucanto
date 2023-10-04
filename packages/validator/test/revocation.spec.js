@@ -1,5 +1,5 @@
 import { test, assert, matchError } from './test.js'
-import { access, claim, DID, Revoked } from '../src/lib.js'
+import { access, claim, DID, Revoked, Authorization } from '../src/lib.js'
 import { capability, fail, URI, Link, Schema } from '../src/lib.js'
 import { ed25519, Verifier } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
@@ -33,6 +33,7 @@ test('revoked capability does not validate', async () => {
     principal: Verifier,
     validateAuthorization: auth => {
       assert.deepEqual(auth.delegation.cid, invocation.cid)
+      assert.deepEqual([...Authorization.iterate(auth)], [invocation.cid])
       return { error: new Revoked(auth.delegation) }
     },
   })
@@ -67,6 +68,10 @@ test('revoked proof does not validate', async () => {
     validateAuthorization: auth => {
       assert.deepEqual(auth.delegation.cid, invocation.cid)
       assert.deepEqual(auth.delegation.proofs, [proof])
+      assert.deepEqual(
+        [...Authorization.iterate(auth)],
+        [invocation.cid, proof.cid]
+      )
       return { error: new Revoked(proof) }
     },
   })
