@@ -259,6 +259,31 @@ export class Expired extends Failure {
   }
 }
 
+/**
+ * @implements {API.Revoked}
+ */
+export class Revoked extends Failure {
+  /**
+   * @param {API.Delegation} delegation
+   */
+  constructor(delegation) {
+    super()
+    this.name = the('Revoked')
+    this.delegation = delegation
+  }
+  describe() {
+    return `Proof ${this.delegation.cid} has been revoked`
+  }
+  toJSON() {
+    const { name, message, stack } = this
+    return {
+      name,
+      message,
+      stack,
+    }
+  }
+}
+
 export class NotValidBefore extends Failure {
   /**
    * @param {API.Delegation & { notBefore: number }} delegation

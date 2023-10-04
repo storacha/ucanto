@@ -281,6 +281,7 @@ test('restrictions in chain are respected', async () => {
     // @ts-expect-error - tries to unify incompatible capabilities
     capability: capabilities.store.add.or(capabilities.dev.ping),
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(result.error, undefined, 'should allow dev/* capabilities')
