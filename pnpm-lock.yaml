@@ -175,16 +175,16 @@ importers:
   packages/server:
     dependencies:
       '@ucanto/core':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../core
       '@ucanto/interface':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../interface
       '@ucanto/principal':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../principal
       '@ucanto/validator':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../validator
     devDependencies:
       '@types/chai':
@@ -197,10 +197,10 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1
       '@ucanto/client':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../client
       '@ucanto/transport':
-        specifier: workspace:^8
+        specifier: workspace:^
         version: link:../transport
       '@web-std/fetch':
         specifier: ^4.1.0

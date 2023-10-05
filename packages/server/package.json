@@ -28,17 +28,17 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ucanto/core": "workspace:^8",
-    "@ucanto/interface": "workspace:^8",
-    "@ucanto/principal": "workspace:^8",
-    "@ucanto/validator": "workspace:^8"
+    "@ucanto/core": "workspace:^",
+    "@ucanto/interface": "workspace:^",
+    "@ucanto/principal": "workspace:^",
+    "@ucanto/validator": "workspace:^"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/chai-subset": "^1.3.3",
     "@types/mocha": "^10.0.1",
-    "@ucanto/client": "workspace:^8",
-    "@ucanto/transport": "workspace:^8",
+    "@ucanto/client": "workspace:^",
+    "@ucanto/transport": "workspace:^",
     "@web-std/fetch": "^4.1.0",
     "@web-std/file": "^3.0.2",
     "c8": "^7.13.0",
