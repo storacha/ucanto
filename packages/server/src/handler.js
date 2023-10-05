@@ -63,6 +63,7 @@ export const provideAdvanced =
       authority: options.id,
       capability,
     })
+
     if (authorization.error) {
       return authorization
     } else {

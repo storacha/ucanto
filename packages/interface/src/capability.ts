@@ -12,6 +12,7 @@ import {
   IssuedInvocationView,
   UCANOptions,
   Verifier,
+  Unit,
 } from './lib.js'
 
 export interface Source {
@@ -350,6 +351,12 @@ export interface ProofResolver extends PrincipalOptions {
   resolve?: (proof: Link) => Await<Result<Delegation, UnavailableProof>>
 }
 
+export interface RevocationChecker {
+  validateAuthorization: (
+    authorization: Authorization
+  ) => Await<Result<Unit, Revoked>>
+}
+
 export interface Validator {
   /**
    * Validator must be provided a `Verifier` corresponding to local authority.
@@ -368,7 +375,8 @@ export interface ValidationOptions<
     Validator,
     PrincipalOptions,
     PrincipalResolver,
-    ProofResolver {
+    ProofResolver,
+    RevocationChecker {
   capability: CapabilityParser<Match<C, any>>
 }
 
@@ -377,7 +385,8 @@ export interface ClaimOptions
     Validator,
     PrincipalOptions,
     PrincipalResolver,
-    ProofResolver {}
+    ProofResolver,
+    RevocationChecker {}
 
 export interface DelegationError extends Failure {
   name: 'InvalidClaim'
@@ -425,6 +434,11 @@ export interface Expired extends Failure {
   readonly expiredAt: number
 }
 
+export interface Revoked extends Failure {
+  readonly name: 'Revoked'
+  readonly delegation: Delegation
+}
+
 export interface NotValidBefore extends Failure {
   readonly name: 'NotValidBefore'
   readonly delegation: Delegation
@@ -449,6 +463,7 @@ export interface SessionEscalation extends Failure {
  */
 export type InvalidProof =
   | Expired
+  | Revoked
   | NotValidBefore
   | InvalidSignature
   | InvalidAudience
@@ -463,6 +478,17 @@ export interface Unauthorized extends Failure {
   unknownCapabilities: Capability[]
   invalidProofs: InvalidProof[]
   failedProofs: InvalidClaim[]
+}
+
+export interface Authorization<
+  Capability extends ParsedCapability = ParsedCapability
+> {
+  delegation: Delegation
+  capability: Capability
+
+  proofs: Authorization[]
+  issuer: UCAN.Principal
+  audience: UCAN.Principal
 }
 
 export interface InvalidClaim extends Failure {

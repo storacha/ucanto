@@ -60,6 +60,7 @@ test('validate mailto', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -145,6 +146,7 @@ test('delegated ucan/attest', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -176,6 +178,7 @@ test('fail without proofs', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -213,6 +216,7 @@ test('fail without session', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -277,6 +281,7 @@ test('fail invalid ucan/attest proof', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -303,6 +308,7 @@ test('resolve key', async () => {
     capability: echo,
     resolveDIDKey: _ => Schema.ok(alice.did()),
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -359,6 +365,7 @@ test('service can not delegate access to account', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(!result.ok, true)
@@ -404,6 +411,7 @@ test('attest with an account did', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(!result.ok, true)
@@ -434,6 +442,7 @@ test('service can not delegate account resource', async () => {
     authority: w3,
     capability: echo,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(!result.ok, true)

@@ -57,6 +57,7 @@ test('authorize self-issued invocation', async () => {
     authority: w3,
     capability: storeAdd,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -91,6 +92,7 @@ test('unauthorized / expired invocation', async () => {
     authority: w3,
     capability: storeAdd,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -130,6 +132,7 @@ test('unauthorized / not valid before invocation', async () => {
     authority: w3,
     capability: storeAdd,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -157,6 +160,7 @@ test('unauthorized / invalid signature', async () => {
     authority: w3,
     capability: storeAdd,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -186,6 +190,7 @@ test('unauthorized / unknown capability', async () => {
     // @ts-ignore
     capability: storeAdd,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -220,6 +225,7 @@ test('authorize / delegated invocation', async () => {
     authority: w3,
     capability: storeAdd,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -273,6 +279,7 @@ test('authorize / delegation chain', async () => {
     authority: w3,
     capability: storeAdd,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -324,6 +331,7 @@ test('invalid claim / no proofs', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -363,6 +371,7 @@ test('invalid claim / expired', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -403,6 +412,7 @@ test('invalid claim / not valid before', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -444,6 +454,7 @@ test('invalid claim / invalid signature', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -486,6 +497,7 @@ test('invalid claim / unknown capability', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -534,6 +546,7 @@ test('invalid claim / malformed capability', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -573,6 +586,7 @@ test('invalid claim / unavailable proof', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -615,6 +629,7 @@ test('invalid claim / failed to resolve', async () => {
       throw new Error('Boom!')
     },
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -655,6 +670,7 @@ test('invalid claim / invalid audience', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -692,6 +708,7 @@ test('invalid claim / invalid claim', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -738,6 +755,7 @@ test('invalid claim / invalid sub delegation', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const capability = `{"can":"store/add","with":"${w3.did()}","nb":${JSON.stringify(
@@ -787,6 +805,7 @@ test('authorize / resolve external proof', async () => {
         return { error: new UnavailableProof(link) }
       }
     },
+    validateAuthorization: () => ({ ok: {} }),
     capability: storeAdd,
   })
 
@@ -837,6 +856,7 @@ test('invalid claim / principal alignment', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -876,6 +896,7 @@ test('invalid claim / invalid delegation chain', async () => {
     authority: w3,
     principal: Verifier,
     capability: storeAdd,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -902,6 +923,7 @@ test('claim without a proof', async () => {
   const result = await claim(storeAdd, [delegation.cid], {
     authority: w3,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {
@@ -927,6 +949,7 @@ test('mismatched signature', async () => {
   const result = await claim(storeAdd, [delegation], {
     authority: current,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.containSubset(result, {

@@ -70,6 +70,7 @@ test('validates with patterns', async () => {
     authority: w3,
     capability: capabilities.dev.ping,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(result.error, undefined)
@@ -118,6 +119,7 @@ test('validates with patterns in chain', async () => {
       authority: w3,
       capability: capabilities.store.add,
       principal: Verifier,
+      validateAuthorization: () => ({ ok: {} }),
     }
   )
 
@@ -142,6 +144,7 @@ test('validates with patterns in chain', async () => {
       authority: w3,
       capability: capabilities.store.add,
       principal: Verifier,
+      validateAuthorization: () => ({ ok: {} }),
     }
   )
 
@@ -194,6 +197,7 @@ test('invalid proof chain', async () => {
       authority: w3,
       capability: capabilities.store.add,
       principal: Verifier,
+      validateAuthorization: () => ({ ok: {} }),
     }
   )
 
@@ -277,6 +281,7 @@ test('restrictions in chain are respected', async () => {
     // @ts-expect-error - tries to unify incompatible capabilities
     capability: capabilities.store.add.or(capabilities.dev.ping),
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(result.error, undefined, 'should allow dev/* capabilities')
@@ -311,6 +316,7 @@ test('unknown caveats do not apply', async () => {
     authority: w3,
     capability: capabilities.dev.ping,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   matchError(boom, /Constraint violation: message/, 'message caveat applies')
@@ -329,6 +335,7 @@ test('unknown caveats do not apply', async () => {
     authority: w3,
     capability: capabilities.store.add,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(result.error, undefined, 'message caveat does not apply')
@@ -360,6 +367,7 @@ test('with pattern requires delimiter', async () => {
     authority: w3,
     capability: capabilities.dev.ping,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   matchError(result, /capability not found/)
@@ -391,6 +399,7 @@ test('can pattern requires delimiter', async () => {
     authority: w3,
     capability: capabilities.dev.ping,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   matchError(
@@ -437,6 +446,7 @@ test('patterns do not escalate', async () => {
     authority: w3,
     capability: capabilities.store.add,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   matchError(error, /Escalates size constraint/)
@@ -454,6 +464,7 @@ test('patterns do not escalate', async () => {
     authority: w3,
     capability: capabilities.store.add,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   matchError(stillError, /Escalates size constraint/)
@@ -473,6 +484,7 @@ test('patterns do not escalate', async () => {
     authority: w3,
     capability: capabilities.store.add,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(ok.error, undefined)
@@ -508,6 +520,7 @@ test('without nb', async () => {
     authority: w3,
     capability: capabilities.store.add,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(addOk.error, undefined)
@@ -527,6 +540,7 @@ test('without nb', async () => {
     authority: w3,
     capability: capabilities.store.add,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
   matchError(addEscalateError, /Escalates size constraint/)
 
@@ -541,6 +555,7 @@ test('without nb', async () => {
     authority: w3,
     capability: capabilities.store.list,
     principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   assert.equal(listOk.error, undefined)
