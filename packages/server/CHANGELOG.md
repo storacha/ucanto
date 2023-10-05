@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.1](https://github.com/web3-storage/ucanto/compare/server-v9.0.0...server-v9.0.1) (2023-10-05)
+
+
+### Bug Fixes
+
+* dependency versions ([#322](https://github.com/web3-storage/ucanto/issues/322)) ([5fdfc4b](https://github.com/web3-storage/ucanto/commit/5fdfc4b1cd61e8f796d704bc1cf82984f25a2e96))
+
 ## [9.0.0](https://github.com/web3-storage/ucanto/compare/server-v8.0.2...server-v9.0.0) (2023-10-05)
 
 
