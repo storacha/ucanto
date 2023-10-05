@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.0](https://github.com/web3-storage/ucanto/compare/transport-v8.0.0...transport-v9.0.0) (2023-10-05)
+
+
+### Miscellaneous Chores
+
+* release 9.0.0 ([303cc44](https://github.com/web3-storage/ucanto/commit/303cc4429dfb6058ef152eacc50ca146d3546743))
+
 ## [8.0.0](https://github.com/web3-storage/ucanto/compare/transport-v7.0.3...transport-v8.0.0) (2023-05-22)
 
 

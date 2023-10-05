@@ -1,5 +1,17 @@
 # Changelog
 
+## [9.0.0](https://github.com/web3-storage/ucanto/compare/interface-v8.1.0...interface-v9.0.0) (2023-10-05)
+
+
+### Features
+
+* add revocation checker hook ([#320](https://github.com/web3-storage/ucanto/issues/320)) ([0c2dbc6](https://github.com/web3-storage/ucanto/commit/0c2dbc6cdda6bdfad0b1c2ee33eaf37bfd470540))
+
+
+### Miscellaneous Chores
+
+* release 9.0.0 ([303cc44](https://github.com/web3-storage/ucanto/commit/303cc4429dfb6058ef152eacc50ca146d3546743))
+
 ## [8.1.0](https://github.com/web3-storage/ucanto/compare/interface-v8.0.0...interface-v8.1.0) (2023-09-01)
 
 
