@@ -257,7 +257,7 @@ export const claim = async (
   invalidProofs.push(...errors)
 
   for (const proof of delegations) {
-    // Validate each proof if valid add ech capability to the list of sources.
+    // Validate each proof if valid add each capability to the list of sources.
     // otherwise collect the error.
     const validation = await validate(proof, delegations, config)
     if (validation.ok) {
@@ -543,18 +543,32 @@ const verifySignature = async (delegation, verifier) => {
  */
 const verifySession = async (delegation, proofs, config) => {
   // Create a schema that will match an authorization for this exact delegation
-  const attestation = capability({
-    with: Schema.literal(config.authority.did()),
+  const attestationFromAuthority = capability({
     can: 'ucan/attest',
+    with: Schema.literal(config.authority.did()),
     nb: Schema.struct({
       proof: Schema.link(delegation.cid),
     }),
   })
 
-  return await claim(
-    attestation,
-    // We omit the delegation otherwise we may end up in an infinite loop
-    proofs.filter(proof => proof != delegation),
-    config
-  )
+  // We omit the delegation otherwise we may end up in an infinite loop
+  const delegations = proofs.filter(proof => proof != delegation)
+
+  const result = await claim(attestationFromAuthority, delegations, config)
+
+  // If we did not found an attestation from the authority attempt to find
+  // an attestation from the resource owner.
+  if (result.ok) {
+    return result
+  }
+
+  const attestationFromOwner = capability({
+    can: 'ucan/attest',
+    with: Schema.literal(delegation.capabilities[0].with),
+    nb: Schema.struct({
+      proof: Schema.link(delegation.cid),
+    }),
+  })
+
+  return claim(attestationFromOwner, delegations, config)
 }
