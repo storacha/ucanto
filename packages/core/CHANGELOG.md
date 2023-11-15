@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.1](https://github.com/web3-storage/ucanto/compare/core-v9.0.0...core-v9.0.1) (2023-11-15)
+
+
+### Bug Fixes
+
+* cbor prepare encode wrongly identifying circular sturcture ([#327](https://github.com/web3-storage/ucanto/issues/327)) ([3c03c9d](https://github.com/web3-storage/ucanto/commit/3c03c9d3885578c139dd9d3619afed8728205148))
+
 ## [9.0.0](https://github.com/web3-storage/ucanto/compare/core-v8.2.0...core-v9.0.0) (2023-10-05)
 
 
