@@ -65,6 +65,16 @@ test('encode / decode', async () => {
     assert.throws(() => transcode(nested), /Can not encode circular structure/)
   })
 
+  test('encodes object with same object properties', () => {
+    const o = {}
+    const data = {
+      a: o,
+      b: o
+    }
+
+    assert.doesNotThrow(() => transcode(data))
+  })
+
   test('cids', async () => {
     const hello = await write({ hello: 'world' })
 
