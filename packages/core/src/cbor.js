@@ -62,7 +62,7 @@ const prepare = (data, seen) => {
     const object = {}
     for (const [key, value] of Object.entries(data)) {
       if (value !== undefined && typeof value !== 'symbol') {
-        object[key] = prepare(value, seen)
+        object[key] = prepare(value, new Set(seen))
       }
     }
     return object
