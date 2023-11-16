@@ -448,7 +448,7 @@ test('service can not delegate account resource', async () => {
   assert.equal(!result.ok, true)
 })
 
-test.only('redundant proofs have no impact', async () => {
+test('redundant proofs have no impact', async () => {
   const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
   const pairs = 6
   const logins = await Promise.all(
@@ -489,7 +489,6 @@ test.only('redundant proofs have no impact', async () => {
   )
 
   const proofs = [...logins, ...attestations]
-  console.log(proofs.map(p => p.cid.toString()))
 
   const request = await echo.invoke({
     issuer: alice,
