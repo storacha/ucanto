@@ -290,7 +290,7 @@ test('fail invalid ucan/attest proof', async () => {
     },
   })
 
-  assert.match(`${result.error}`, /has an invalid session/)
+  assert.match(`${result.error}`, /not authorized/)
 })
 
 test('resolve key', async () => {
@@ -446,4 +446,132 @@ test('service can not delegate account resource', async () => {
   })
 
   assert.equal(!result.ok, true)
+})
+
+test('can attest with did:mailto', async () => {
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  const agent = alice
+  const service = w3
+
+  // account authorized agent to issue attestations on its behalf
+  const authorization = await attest.delegate({
+    issuer: account,
+    audience: agent,
+    with: account.did(),
+    expiration: Infinity,
+  })
+
+  // service attests that authorization is valid
+  const attestation = await attest.delegate({
+    issuer: service,
+    audience: agent,
+    with: service.did(),
+    nb: { proof: authorization.cid },
+    expiration: Infinity,
+  })
+
+  // now agent creates delegation on behalf of the account
+  const delegation = await echo.delegate({
+    issuer: agent.withDID(account.did()),
+    audience: agent,
+    with: account.did(),
+    expiration: Infinity,
+  })
+
+  // and creates an attestation using an authorization from
+  // the account account
+  const proof = await attest.delegate({
+    issuer: agent,
+    audience: agent,
+    with: account.did(),
+    nb: {
+      proof: delegation.cid,
+    },
+    proofs: [authorization, attestation],
+    expiration: Infinity,
+  })
+
+  // This allows agent to invoke capability that it delegated on behalf of
+  // the account and attest it too.
+  const task = echo.invoke({
+    issuer: agent,
+    audience: service,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [delegation, proof],
+    expiration: Infinity,
+  })
+
+  const result = await access(await task.delegate(), {
+    authority: service,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+  })
+
+  assert.equal(result.error, undefined)
+})
+
+test('attestation with did:mailto fails unless attested by authority', async () => {
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  const agent = alice
+  const service = w3
+
+  // account authorized agent to issue attestations on its behalf
+  const authorization = await attest.delegate({
+    issuer: account,
+    audience: agent,
+    with: account.did(),
+    expiration: Infinity,
+  })
+
+  // service attests that authorization is valid
+  const attestation = await attest.delegate({
+    issuer: account,
+    audience: agent,
+    with: service.did(),
+    nb: { proof: authorization.cid },
+    expiration: Infinity,
+  })
+
+  // now agent creates delegation on behalf of the account
+  const delegation = await echo.delegate({
+    issuer: agent.withDID(account.did()),
+    audience: agent,
+    with: account.did(),
+    expiration: Infinity,
+  })
+
+  // and creates an attestation using an authorization from
+  // the account account
+  const proof = await attest.delegate({
+    issuer: agent,
+    audience: agent,
+    with: account.did(),
+    nb: {
+      proof: delegation.cid,
+    },
+    proofs: [authorization, attestation],
+    expiration: Infinity,
+  })
+
+  // This allows agent to invoke capability that it delegated on behalf of
+  // the account and attest it too.
+  const task = echo.invoke({
+    issuer: agent,
+    audience: service,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [delegation, proof],
+    expiration: Infinity,
+  })
+
+  const result = await access(await task.delegate(), {
+    authority: service,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+  })
+
+  assert.match(String(result.error), /Unauthorized/)
 })
