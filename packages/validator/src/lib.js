@@ -553,8 +553,16 @@ const verifySession = async (delegation, proofs, config) => {
 
   return await claim(
     attestation,
-    // We omit the delegation otherwise we may end up in an infinite loop
-    proofs.filter(proof => proof != delegation),
+    // We only consider attestations otherwise we will end up doing an
+    // exponential scan if there are other proofs that require attestations.
+    proofs.filter(isAttestation),
     config
   )
 }
+
+/**
+ * Checks if the delegation is an attestation.
+ *
+ * @param {API.Delegation} proof
+ */
+const isAttestation = proof => proof.capabilities[0]?.can === 'ucan/attest'
