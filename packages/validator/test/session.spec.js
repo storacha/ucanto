@@ -447,3 +447,64 @@ test('service can not delegate account resource', async () => {
 
   assert.equal(!result.ok, true)
 })
+
+test.only('redundant proofs have no impact', async () => {
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  const pairs = 6
+  const logins = await Promise.all(
+    Array(pairs)
+      .fill(0)
+      .map((_, n) =>
+        Delegation.delegate({
+          issuer: account,
+          audience: alice,
+          capabilities: [
+            {
+              can: '*',
+              with: 'ucan:*',
+            },
+          ],
+          expiration: Infinity,
+          nonce: `${n}`,
+        })
+      )
+  )
+
+  const expiration = Core.UCAN.now() + 60 * 60 * 24 * 365 // 1 year
+  const attestations = await Promise.all(
+    logins.map(login =>
+      Delegation.delegate({
+        issuer: w3,
+        audience: alice,
+        capabilities: [
+          {
+            with: w3.did(),
+            can: 'ucan/attest',
+            nb: { proof: login.cid },
+          },
+        ],
+        expiration,
+      })
+    )
+  )
+
+  const proofs = [...logins, ...attestations]
+  console.log(proofs.map(p => p.cid.toString()))
+
+  const request = await echo.invoke({
+    issuer: alice,
+    audience: w3,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs,
+  })
+
+  const result = await access(await request.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+  })
+
+  assert.ok(result.ok)
+})
