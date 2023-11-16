@@ -5,5 +5,5 @@
   "packages/principal": "9.0.0",
   "packages/server": "9.0.1",
   "packages/transport": "9.0.0",
-  "packages/validator": "9.0.0"
+  "packages/validator": "9.0.1"
 }

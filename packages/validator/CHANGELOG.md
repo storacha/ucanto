@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.1](https://github.com/web3-storage/ucanto/compare/validator-v9.0.0...validator-v9.0.1) (2023-11-16)
+
+
+### Bug Fixes
+
+* exponential scan ([#329](https://github.com/web3-storage/ucanto/issues/329)) ([a81c8d5](https://github.com/web3-storage/ucanto/commit/a81c8d5d43c7da502504093d9d12e2c0d4619b2d))
+
 ## [9.0.0](https://github.com/web3-storage/ucanto/compare/validator-v8.0.0...validator-v9.0.0) (2023-10-05)
 
 
