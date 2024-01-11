@@ -34,7 +34,7 @@ export const encode = (message, options) => {
   })
 
   return {
-    headers: HEADERS,
+    headers: { ...HEADERS },
     body,
   }
 }
