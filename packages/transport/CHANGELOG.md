@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.1](https://github.com/web3-storage/ucanto/compare/transport-v9.0.0...transport-v9.0.1) (2024-01-15)
+
+
+### Bug Fixes
+
+* do not use frozen object for headers ([#334](https://github.com/web3-storage/ucanto/issues/334)) ([1abd266](https://github.com/web3-storage/ucanto/commit/1abd26646508c5e21f886dcb96bc0d36b4c0e458))
+
 ## [9.0.0](https://github.com/web3-storage/ucanto/compare/transport-v8.0.0...transport-v9.0.0) (2023-10-05)
 
 
