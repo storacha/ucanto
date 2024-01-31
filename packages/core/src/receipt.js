@@ -33,6 +33,7 @@ export const view = ({ root, blocks }, fallback) => {
  * @template {API.Invocation} Ran
  * @template {API.SigAlg} [SigAlg=API.SigAlg]
  * @param {Receipt<Ok, Error, Ran, SigAlg>} r
+ * @returns {unknown}
  */
 function toJSON(r) {
   return {
