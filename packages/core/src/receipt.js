@@ -28,6 +28,25 @@ export const view = ({ root, blocks }, fallback) => {
 }
 
 /**
+ * @template {{}} Ok
+ * @template {{}} Error
+ * @template {API.Invocation} Ran
+ * @template {API.SigAlg} [SigAlg=API.SigAlg]
+ * @param {Receipt<Ok, Error, Ran, SigAlg>} r
+ */
+function toJSON(r) {
+  return {
+    ran: r.ran,
+    out: r.out,
+    fx: r.fx,
+    meta: r.meta,
+    issuer: r.issuer,
+    proofs: r.proofs,
+    signature: r.signature,
+  }
+}
+
+/**
  * Represents a UCAN invocation receipt view over some block store e.g. in
  * memory CAR. It incrementally decodes proofs, ran invocation etc. on access
  * which reduces overhead but potentially defers errors if references blocks
@@ -59,6 +78,10 @@ class Receipt {
     this._signature = signature
     this._proofs = proofs
     this._issuer = issuer
+  }
+
+  toJSON() {
+    return toJSON(this)
   }
 
   /**
