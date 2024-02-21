@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.1.0](https://github.com/web3-storage/ucanto/compare/transport-v9.0.2...transport-v9.1.0) (2024-02-21)
+
+
+### Features
+
+* http transport includes more information in error message when encountering non-ok http response ([d5f6916](https://github.com/web3-storage/ucanto/commit/d5f6916a41447bcc32bfbd9378da2b4779ca2136))
+
 ## [9.0.2](https://github.com/web3-storage/ucanto/compare/transport-v9.0.1...transport-v9.0.2) (2024-01-15)
 
 
