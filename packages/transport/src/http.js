@@ -65,7 +65,7 @@ class Channel {
 
     const buffer = response.ok
       ? await response.arrayBuffer()
-      : HTTPError.throw('HTTP Request failed', response)
+      : HTTPError.throw(`HTTP Request failed. ${this.method} ${this.url.href} → ${response.status}`, response)
 
     return {
       headers: response.headers.entries
