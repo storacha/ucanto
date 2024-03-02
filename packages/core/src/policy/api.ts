@@ -8,24 +8,38 @@ export interface ParseError extends Error {
   readonly name: 'ParseError'
 }
 
+export interface ResolutionError extends Error {
+  readonly name: 'ResolutionError'
+}
+
 /**
  * Selector use [jq](https://devdocs.io/jq/) notation.
  */
 export type Selector = `.${string}` & Phantom<{ Selector: SelectorPath }>
-export type SelectorPath = [IdentitySegment, ...SelectorSegment[]]
+export type SelectorPath = [{ Identity: {} }, ...SelectorSegment[]]
 
 export type SelectionResult = Variant<{
   one: Data
   many: Data[]
-  error: ParseError | TypeError
+  error: ParseError | ResolutionError
 }>
 
-export type SelectorSegment =
-  | IdentitySegment
-  | IteratorSegment
-  | IndexSegment
-  | KeySegment
-  | SliceSegment
+export type ResolutionResult = Variant<{
+  one: Data
+  many: Data[]
+  error: ResolutionError
+}>
+
+export type SelectorSegment = Variant<{
+  Identity: {}
+  Iterator: { optional: boolean }
+  Index: { optional: boolean; index: number }
+  Key: { optional: boolean; key: string }
+  Slice: {
+    optional?: boolean
+    range: [undefined, number] | [number, undefined] | [number, number]
+  }
+}>
 
 export type Data =
   | number
