@@ -15,7 +15,7 @@ import {
 } from '@ucanto/validator'
 import { Absentee } from '@ucanto/principal'
 import { capability } from '../src/server.js'
-import { isLink, parseLink, fail } from '../src/lib.js'
+import { isLink, parseLink, fail, Invocation } from '../src/lib.js'
 
 const w3 = service.withDID('did:web:web3.storage')
 
@@ -465,6 +465,87 @@ test('fx.fork', async () => {
   assert.deepEqual(receipt.out, { ok: { status: 'pending' } })
 
   assert.deepEqual(receipt.fx.fork, forks)
+})
+
+test('embed fx.fork', async () => {
+  /** @type {API.Invocation[]} */
+  const forks = []
+  const offer = Provider.provideAdvanced({
+    capability: Offer,
+    handler: async ({ capability, context }) => {
+      const fx = await Arrange.invoke({
+        issuer: context.id,
+        audience: context.id,
+        with: context.id.did(),
+        nb: { commP: capability.nb.commP },
+      }).delegate()
+
+      forks.push(fx)
+
+      return Provider.ok({ status: 'pending' }).fork(fx)
+    },
+  })
+
+  const { provider, consumer } = setup({ aggregate: { offer } })
+  const receipt = await Offer.invoke({
+    issuer: alice,
+    audience: provider.id,
+    with: alice.did(),
+    nb: {
+      commP: 'hello',
+    },
+  }).execute(consumer)
+
+  assert.deepEqual(receipt.out, { ok: { status: 'pending' } })
+
+  assert.deepEqual(receipt.fx.fork, forks)
+  const fork = receipt.fx.fork[0]
+
+  assert.equal(isLink(fork), false)
+  if (Invocation.isInvocation(fork)) {
+    assert.deepEqual(fork.issuer.did(), provider.id.did())
+    assert.deepEqual(fork.audience.did(), provider.id.did())
+    assert.deepEqual(fork.capabilities, [
+      {
+        can: 'offer/arrange',
+        with: provider.id.did(),
+        nb: { commP: 'hello' },
+      },
+    ])
+  }
+})
+
+test('embed fx.join', async () => {
+  let join = undefined
+  const offer = Provider.provideAdvanced({
+    capability: Offer,
+    handler: async ({ capability, context }) => {
+      const fx = await Arrange.invoke({
+        issuer: context.id,
+        audience: context.id,
+        with: context.id.did(),
+        nb: { commP: capability.nb.commP },
+      }).delegate()
+
+      join = fx
+
+      return Provider.ok({ status: 'pending' }).join(fx)
+    },
+  })
+
+  const { provider, consumer } = setup({ aggregate: { offer } })
+  const receipt = await Offer.invoke({
+    issuer: alice,
+    audience: provider.id,
+    with: alice.did(),
+    nb: {
+      commP: 'hello',
+    },
+  }).execute(consumer)
+
+  assert.deepEqual(receipt.out, { ok: { status: 'pending' } })
+
+  assert.deepEqual(receipt.fx.join, join)
 })
 
 test('fx.ok API', () => {

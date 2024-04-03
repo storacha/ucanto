@@ -484,7 +484,10 @@ export interface EffectsModel {
   join?: Link<ImpliedInvocationModel>
 }
 
-export interface Effects extends EffectsModel {}
+export interface Effects {
+  fork: readonly Effect[]
+  join?: Effect
+}
 
 export interface InstructionModel<
   Op extends Ability = Ability,
@@ -527,6 +530,11 @@ export type InferTransaction<T extends Transaction> = T extends Transaction<
 
 export type Run = Link<ImpliedInvocationModel>
 
+/**
+ * Effect is either an invocation or a link to one.
+ */
+export type Effect = Run | Invocation
+
 export interface Do<T = unknown, X extends {} = {}> {
   out: Result<T, X>
   fx: Effects
@@ -540,8 +548,8 @@ export interface OkBuilder<T extends unknown = undefined, X extends {} = {}> {
   result: Result<T, X>
   effects: Effects
 
-  fork(fx: Run): ForkBuilder<T, X>
-  join(fx: Run): JoinBuilder<T, X>
+  fork(fx: Effect): ForkBuilder<T, X>
+  join(fx: Effect): JoinBuilder<T, X>
 }
 
 export interface ErrorBuilder<
@@ -555,8 +563,8 @@ export interface ErrorBuilder<
   result: Result<T, X>
   effects: Effects
 
-  fork(fx: Run): ForkBuilder<T, X>
-  join(fx: Run): JoinBuilder<T, X>
+  fork(fx: Effect): ForkBuilder<T, X>
+  join(fx: Effect): JoinBuilder<T, X>
 }
 
 export interface ForkBuilder<T extends unknown = undefined, X extends {} = {}> {
@@ -566,8 +574,8 @@ export interface ForkBuilder<T extends unknown = undefined, X extends {} = {}> {
   result: Result<T, X>
   effects: Effects
 
-  fork(fx: Run): ForkBuilder<T, X>
-  join(fx: Run): JoinBuilder<T, X>
+  fork(fx: Effect): ForkBuilder<T, X>
+  join(fx: Effect): JoinBuilder<T, X>
 }
 
 export interface JoinBuilder<T extends unknown = unknown, X extends {} = {}> {
@@ -577,7 +585,7 @@ export interface JoinBuilder<T extends unknown = unknown, X extends {} = {}> {
   result: Result<T, X>
   effects: Effects
 
-  fork(fx: Run): JoinBuilder<T, X>
+  fork(fx: Effect): JoinBuilder<T, X>
 }
 
 /**
