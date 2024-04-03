@@ -2,6 +2,7 @@ import { invoke, UCAN, Invocation } from '../src/lib.js'
 import { alice, service as w3 } from './fixtures.js'
 import { getBlock } from './utils.js'
 import { assert, test } from './test.js'
+import { isInvocation } from '../src/invocation.js'
 
 test('encode invocation', async () => {
   const add = invoke({
@@ -42,8 +43,8 @@ test('encode invocation with attached block in capability nb', async () => {
       with: alice.did(),
       link: 'bafy...stuff',
       nb: {
-        inlineBlock: block.cid.link()
-      }
+        inlineBlock: block.cid.link(),
+      },
     },
     proofs: [],
   })
@@ -61,12 +62,12 @@ test('encode invocation with attached block in capability nb', async () => {
 
   const reassembledInvocation = Invocation.view({
     root: view.root.cid.link(),
-    blocks: blockStore
+    blocks: blockStore,
   })
 
   /** @type {import('@ucanto/interface').BlockStore<unknown>} */
   const reassembledBlockstore = new Map()
-  
+
   for (const b of reassembledInvocation.iterateIPLDBlocks()) {
     reassembledBlockstore.set(`${b.cid}`, b)
   }
@@ -74,7 +75,6 @@ test('encode invocation with attached block in capability nb', async () => {
   // reassembledBlockstore has attached block
   assert.ok(reassembledBlockstore.get(`${block.cid}`))
 })
-
 
 test('expired invocation', async () => {
   const expiration = UCAN.now() - 5
@@ -225,4 +225,18 @@ test('receipt view fallback', async () => {
     null,
     'returns fallback'
   )
+})
+
+test('isInvocation', async () => {
+  const invocation = await invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'test/echo',
+      with: alice.did(),
+    },
+  }).delegate()
+
+  assert.equal(Invocation.isInvocation(invocation), true)
+  assert.equal(Invocation.isInvocation(invocation.link()), false)
 })
