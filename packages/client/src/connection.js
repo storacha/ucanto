@@ -26,6 +26,8 @@ class Connection {
     this.hasher = options.hasher || sha256
   }
   /**
+   * Execute invocations.
+   *
    * @template {API.Capability} C
    * @template {API.Tuple<API.ServiceInvocation<C, T>>} I
    * @param {I} invocations
