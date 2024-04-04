@@ -1,5 +1,16 @@
 # Changelog
 
+## [10.0.0](https://github.com/web3-storage/ucanto/compare/core-v9.0.1...core-v10.0.0) (2024-04-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* add support for embedded effects ([#347](https://github.com/web3-storage/ucanto/issues/347))
+
+### Features
+
+* add support for embedded effects ([#347](https://github.com/web3-storage/ucanto/issues/347)) ([58f7c13](https://github.com/web3-storage/ucanto/commit/58f7c13862b9c4581b06f190f25e9d6a0969239a))
+
 ## [9.0.1](https://github.com/web3-storage/ucanto/compare/core-v9.0.0...core-v9.0.1) (2023-11-15)
 
 
