@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.1.1](https://github.com/web3-storage/ucanto/compare/transport-v9.1.0...transport-v9.1.1) (2024-04-04)
+
+
+### Bug Fixes
+
+* trigger interface upgrade for all packages ([#349](https://github.com/web3-storage/ucanto/issues/349)) ([255f0c1](https://github.com/web3-storage/ucanto/commit/255f0c1a7779ae9356e8f889e22b491a9789d334))
+
 ## [9.1.0](https://github.com/web3-storage/ucanto/compare/transport-v9.0.2...transport-v9.1.0) (2024-02-21)
 
 
