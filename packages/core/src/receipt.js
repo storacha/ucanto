@@ -56,6 +56,10 @@ class Receipt {
 
     this.root = root
     this._ran = ran
+
+    // Field is materialized on demand when `fx` getter is first accessed.
+    /** @type {API.Effects|undefined} */
+    this._fx = undefined
     this._signature = signature
     this._proofs = proofs
     this._issuer = issuer
@@ -123,7 +127,22 @@ class Receipt {
   }
 
   get fx() {
-    return this.root.data.ocm.fx
+    let fx = this._fx
+    if (!fx) {
+      const { store: blocks } = this
+      const { fork, join } = this.root.data.ocm.fx
+
+      fx = {
+        fork: fork.map(root => Invocation.view({ root, blocks }, root)),
+      }
+
+      if (join) {
+        fx.join = Invocation.view({ root: join, blocks }, join)
+      }
+
+      this._fx = fx
+    }
+    return fx
   }
 
   get signature() {
@@ -192,7 +211,7 @@ class ReceptBuilder {
    * @param {API.Signer<API.DID, SigAlg>} options.issuer
    * @param {Ran|ReturnType<Ran['link']>} options.ran
    * @param {API.Result<Ok, Error>} options.result
-   * @param {API.EffectsModel} [options.fx]
+   * @param {API.Effects} [options.fx]
    * @param {API.Proof[]} [options.proofs]
    * @param {Record<string, unknown>} [options.meta]
    */
@@ -211,18 +230,33 @@ class ReceptBuilder {
     DAG.addEveryInto(DAG.iterate(this.ran), store)
 
     // copy proof blocks into store
+    const prf = []
     for (const proof of this.proofs) {
       DAG.addEveryInto(DAG.iterate(proof), store)
+      prf.push(proof.link())
+    }
+
+    // copy blocks from the embedded fx
+    /** @type {{fork: API.Run[], join?:API.Run}}  */
+    const fx = { fork: [] }
+    for (const fork of this.fx.fork) {
+      DAG.addEveryInto(DAG.iterate(fork), store)
+      fx.fork.push(fork.link())
+    }
+
+    if (this.fx.join) {
+      DAG.addEveryInto(DAG.iterate(this.fx.join), store)
+      fx.join = this.fx.join.link()
     }
 
     /** @type {API.OutcomeModel<Ok, Error, Ran>} */
     const outcome = {
       ran: /** @type {ReturnType<Ran['link']>} */ (this.ran.link()),
       out: this.result,
-      fx: this.fx,
+      fx,
       meta: this.meta,
       iss: this.issuer.did(),
-      prf: this.proofs.map(p => p.link()),
+      prf,
     }
 
     const signature = await this.issuer.sign(CBOR.encode(outcome))
@@ -260,7 +294,7 @@ const NOFX = Object.freeze({ fork: Object.freeze([]) })
  * @param {API.Signer<API.DID, SigAlg>} options.issuer
  * @param {Ran|ReturnType<Ran['link']>} options.ran
  * @param {API.Result<Ok, Error>} options.result
- * @param {API.EffectsModel} [options.fx]
+ * @param {API.Effects} [options.fx]
  * @param {API.Proof[]} [options.proofs]
  * @param {Record<string, unknown>} [options.meta]
  * @returns {Promise<API.Receipt<Ok, Error, Ran, SigAlg>>}

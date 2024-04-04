@@ -1,6 +1,15 @@
 import * as API from '@ucanto/interface'
-import { delegate, Delegation } from './delegation.js'
+import { delegate, Delegation, isDelegation } from './delegation.js'
 import * as DAG from './dag.js'
+
+/**
+ * Takes invocation link or a reference and returns `true` if value
+ * passed is a reference, returns `false` if value is a link.
+ *
+ * @param {API.Invocation | API.Link} value
+ * @return {value is API.Invocation}
+ */
+export const isInvocation = value => isDelegation(value)
 
 /**
  * @template {API.Capability} Capability
