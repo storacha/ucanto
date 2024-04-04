@@ -5,4 +5,5 @@ export * from './multiformat.js'
 export const Verifier = ed25519.Verifier.or(RSA.Verifier)
 export const Signer = ed25519.or(RSA)
 
+// exports
 export { ed25519, RSA, Absentee }

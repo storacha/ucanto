@@ -164,7 +164,6 @@ const resolveSources = async ({ delegation }, config) => {
       proofs.push(proof)
     }
   }
-
   // In the second pass we attempt to proofs that were resolved and are aligned.
   for (const proof of proofs) {
     // If proof is not valid (expired, not active yet or has incorrect
