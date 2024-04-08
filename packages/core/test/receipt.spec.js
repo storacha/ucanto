@@ -32,6 +32,8 @@ test('basic receipt', async () => {
   await assertRoundtrip(receipt)
 
   assert.equal(receipt.buildIPLDView().buildIPLDView(), receipt)
+
+  assert.ok(receipt.link())
 })
 
 test('receipt with ran as link', async () => {
