@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.0.1](https://github.com/web3-storage/ucanto/compare/core-v10.0.0...core-v10.0.1) (2024-04-08)
+
+
+### Bug Fixes
+
+* add link to receipt ([#351](https://github.com/web3-storage/ucanto/issues/351)) ([efa3506](https://github.com/web3-storage/ucanto/commit/efa3506efc333040e90daa8482c8eafb5dc81941))
+
 ## [10.0.0](https://github.com/web3-storage/ucanto/compare/core-v9.0.1...core-v10.0.0) (2024-04-04)
 
 
