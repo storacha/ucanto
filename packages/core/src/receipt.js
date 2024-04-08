@@ -105,6 +105,9 @@ class Receipt {
       return proofs
     }
   }
+  link() {
+    return this.root.cid
+  }
   get meta() {
     return this.root.data.ocm.meta
   }

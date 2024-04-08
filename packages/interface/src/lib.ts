@@ -456,6 +456,7 @@ export interface Receipt<
 
   readonly signature: SignatureView<OutcomeModel<Ok, Error, Ran>, Alg>
 
+  link(): Link<ReceiptModel<Ok, Error, Ran>, number, number, 1>
   verifySignature(signer: Crypto.Verifier): Await<Result<{}, SignatureError>>
 
   buildIPLDView(): Receipt<Ok, Error, Ran, Alg>
