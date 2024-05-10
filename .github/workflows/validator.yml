@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - 20
+          - ''
         project:
           - validator
     steps:
@@ -57,7 +57,7 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - 20
+          - ''
           - latest
         os:
           - ubuntu-latest
