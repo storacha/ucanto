@@ -22,14 +22,14 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - 16
+          - ''
         project:
           - principal
     steps:
       - uses: actions/checkout@v2
 
       - name: Setup node ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -51,7 +51,7 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - 16
+          - ''
         os:
           - ubuntu-latest
           - windows-latest
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
