@@ -988,7 +988,7 @@ export interface ValidatorOptions {
   validateAuthorization: (proofs: Authorization) => Await<Result<Unit, Revoked>>
 }
 
-export interface ServerOptions extends ValidatorOptions {
+export interface ServerOptions<T> extends ValidatorOptions {
   /**
    * Service DID which will be used to verify that received invocation
    * audience matches it.
@@ -996,6 +996,13 @@ export interface ServerOptions extends ValidatorOptions {
   readonly id: Signer
 
   readonly codec: InboundCodec
+
+  /**
+   * Actual service providing capability handlers.
+   */
+  readonly service: T
+
+  readonly catch?: (err: HandlerExecutionError) => void
 }
 
 /**
@@ -1005,13 +1012,9 @@ export interface ServerOptions extends ValidatorOptions {
  * Used as input to {@link @ucanto/server#create | `Server.create` } when
  * defining a service implementation.
  */
-export interface Server<T> extends ServerOptions {
-  /**
-   * Actual service providing capability handlers.
-   */
-  readonly service: T
-
-  readonly catch?: (err: HandlerExecutionError) => void
+export interface Server<T> extends ServerOptions<T> {
+  readonly context: InvocationContext
+  readonly catch: (err: HandlerExecutionError) => void
 }
 
 /**
@@ -1025,8 +1028,6 @@ export interface Server<T> extends ServerOptions {
 export interface ServerView<T extends Record<string, any>>
   extends Server<T>,
     Transport.Channel<T> {
-  context: InvocationContext
-  catch: (err: HandlerExecutionError) => void
   run<C extends Capability>(
     invocation: ServiceInvocation<C, T>
   ): Await<InferReceipt<C, T>>

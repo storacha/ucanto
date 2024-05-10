@@ -14,13 +14,10 @@ export { fail }
  * Creates a connection to a service.
  *
  * @template {Record<string, any>} Service
- * @param {API.Server<Service>} options
+ * @param {API.ServerOptions<Service>} options
  * @returns {API.ServerView<Service>}
  */
-export const create = options => {
-  const server = new Server(options)
-  return server
-}
+export const create = options => new Server(options)
 
 /**
  * @template {Record<string, any>} S
@@ -28,7 +25,7 @@ export const create = options => {
  */
 class Server {
   /**
-   * @param {API.Server<S>} options
+   * @param {API.ServerOptions <S>} options
    */
   constructor({ id, service, codec, principal = Verifier, ...rest }) {
     const { catch: fail, ...context } = rest
@@ -69,7 +66,7 @@ class Server {
 /**
  * @template {Record<string, any>} S
  * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
- * @param {API.ServerView<S>} server
+ * @param {API.Server<S>} server
  * @param {API.HTTPRequest<API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>>} request
  */
 export const handle = async (server, request) => {
@@ -94,11 +91,11 @@ export const handle = async (server, request) => {
  * @template {Record<string, any>} S
  * @template {API.Tuple} I
  * @param {API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>} input
- * @param {API.ServerView<S>} server
+ * @param {API.Server<S>} server
  * @returns {Promise<API.AgentMessage<{ Out: API.InferReceipts<I, S>, In: API.Tuple<API.Invocation> }>>}
  */
 export const execute = async (input, server) => {
-  const promises = input.invocations.map($ => invoke($, server))
+  const promises = input.invocations.map($ => run($, server))
 
   const receipts = /** @type {API.InferReceipts<I, S>} */ (
     await Promise.all(promises)
@@ -108,13 +105,15 @@ export const execute = async (input, server) => {
 }
 
 /**
+ * Executes a single invocation and returns a receipt.
+ *
  * @template {Record<string, any>} Service
  * @template {API.Capability} C
  * @param {API.Invocation<C>} invocation
- * @param {API.ServerView<Service>} server
+ * @param {API.Server<Service>} server
  * @returns {Promise<API.Receipt>}
  */
-export const invoke = async (invocation, server) => {
+export const run = async (invocation, server) => {
   // Invocation needs to have one single capability
   if (invocation.capabilities.length !== 1) {
     return await Receipt.issue({
@@ -169,6 +168,11 @@ export const invoke = async (invocation, server) => {
     }
   }
 }
+
+/**
+ * @deprecated Use `run` instead.
+ */
+export const invoke = run
 
 /**
  * @implements {API.HandlerNotFound}
@@ -276,7 +280,7 @@ class InvocationCapabilityError extends Error {
  * @returns {null|Record<string, API.ServiceMethod<API.Capability, {}, API.Failure>>}
  */
 
-const resolve = (service, path) => {
+export const resolve = (service, path) => {
   let target = service
   for (const key of path) {
     target = target[key]
