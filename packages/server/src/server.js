@@ -1,26 +1,22 @@
 import * as API from '@ucanto/interface'
 import { Verifier } from '@ucanto/principal'
-export {
-  capability,
-  URI,
-  Link,
-  Failure,
-  MalformedCapability,
-} from '@ucanto/validator'
-import { Receipt, Message, Failure, fail } from '@ucanto/core'
+export { capability, URI, Link, Failure } from '@ucanto/validator'
+import { Receipt, Message, fail } from '@ucanto/core'
+import {
+  HandlerExecutionError,
+  HandlerNotFound,
+  InvocationCapabilityError,
+} from './error.js'
 export { ok, error } from './handler.js'
 export { fail }
 /**
  * Creates a connection to a service.
  *
  * @template {Record<string, any>} Service
- * @param {API.Server<Service>} options
+ * @param {API.ServerOptions<Service>} options
  * @returns {API.ServerView<Service>}
  */
-export const create = options => {
-  const server = new Server(options)
-  return server
-}
+export const create = options => new Server(options)
 
 /**
  * @template {Record<string, any>} S
@@ -28,7 +24,7 @@ export const create = options => {
  */
 class Server {
   /**
-   * @param {API.Server<S>} options
+   * @param {API.ServerOptions <S>} options
    */
   constructor({ id, service, codec, principal = Verifier, ...rest }) {
     const { catch: fail, ...context } = rest
@@ -69,7 +65,7 @@ class Server {
 /**
  * @template {Record<string, any>} S
  * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
- * @param {API.ServerView<S>} server
+ * @param {API.Server<S>} server
  * @param {API.HTTPRequest<API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>>} request
  */
 export const handle = async (server, request) => {
@@ -94,11 +90,11 @@ export const handle = async (server, request) => {
  * @template {Record<string, any>} S
  * @template {API.Tuple} I
  * @param {API.AgentMessage<{ In: API.InferInvocations<I>, Out: API.Tuple<API.Receipt> }>} input
- * @param {API.ServerView<S>} server
+ * @param {API.Server<S>} server
  * @returns {Promise<API.AgentMessage<{ Out: API.InferReceipts<I, S>, In: API.Tuple<API.Invocation> }>>}
  */
 export const execute = async (input, server) => {
-  const promises = input.invocations.map($ => invoke($, server))
+  const promises = input.invocations.map($ => run($, server))
 
   const receipts = /** @type {API.InferReceipts<I, S>} */ (
     await Promise.all(promises)
@@ -108,13 +104,15 @@ export const execute = async (input, server) => {
 }
 
 /**
+ * Executes a single invocation and returns a receipt.
+ *
  * @template {Record<string, any>} Service
  * @template {API.Capability} C
  * @param {API.Invocation<C>} invocation
- * @param {API.ServerView<Service>} server
+ * @param {API.Server<Service>} server
  * @returns {Promise<API.Receipt>}
  */
-export const invoke = async (invocation, server) => {
+export const run = async (invocation, server) => {
   // Invocation needs to have one single capability
   if (invocation.capabilities.length !== 1) {
     return await Receipt.issue({
@@ -171,104 +169,9 @@ export const invoke = async (invocation, server) => {
 }
 
 /**
- * @implements {API.HandlerNotFound}
+ * @deprecated Use `run` instead.
  */
-export class HandlerNotFound extends RangeError {
-  /**
-   * @param {API.Capability} capability
-   */
-  constructor(capability) {
-    super()
-    /** @type {true} */
-    this.error = true
-    this.capability = capability
-  }
-  /** @type {'HandlerNotFound'} */
-  get name() {
-    return 'HandlerNotFound'
-  }
-  get message() {
-    return `service does not implement {can: "${this.capability.can}"} handler`
-  }
-  toJSON() {
-    return {
-      name: this.name,
-      error: this.error,
-      capability: {
-        can: this.capability.can,
-        with: this.capability.with,
-      },
-      message: this.message,
-      stack: this.stack,
-    }
-  }
-}
-
-class HandlerExecutionError extends Failure {
-  /**
-   * @param {API.Capability} capability
-   * @param {Error} cause
-   */
-  constructor(capability, cause) {
-    super()
-    this.capability = capability
-    this.cause = cause
-    /** @type { true } */
-    this.error = true
-  }
-
-  /** @type {'HandlerExecutionError'} */
-  get name() {
-    return 'HandlerExecutionError'
-  }
-  get message() {
-    return `service handler {can: "${this.capability.can}"} error: ${this.cause.message}`
-  }
-  toJSON() {
-    return {
-      name: this.name,
-      error: this.error,
-      capability: {
-        can: this.capability.can,
-        with: this.capability.with,
-      },
-      cause: {
-        ...this.cause,
-        name: this.cause.name,
-        message: this.cause.message,
-        stack: this.cause.stack,
-      },
-      message: this.message,
-      stack: this.stack,
-    }
-  }
-}
-
-class InvocationCapabilityError extends Error {
-  /**
-   * @param {any} caps
-   */
-  constructor(caps) {
-    super()
-    /** @type {true} */
-    this.error = true
-    this.caps = caps
-  }
-  get name() {
-    return 'InvocationCapabilityError'
-  }
-  get message() {
-    return `Invocation is required to have a single capability.`
-  }
-  toJSON() {
-    return {
-      name: this.name,
-      error: this.error,
-      message: this.message,
-      capabilities: this.caps,
-    }
-  }
-}
+export const invoke = run
 
 /**
  * @param {Record<string, any>} service
@@ -276,7 +179,7 @@ class InvocationCapabilityError extends Error {
  * @returns {null|Record<string, API.ServiceMethod<API.Capability, {}, API.Failure>>}
  */
 
-const resolve = (service, path) => {
+export const resolve = (service, path) => {
   let target = service
   for (const key of path) {
     target = target[key]
