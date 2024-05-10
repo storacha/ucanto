@@ -208,7 +208,7 @@ export class HandlerNotFound extends RangeError {
   }
 }
 
-class HandlerExecutionError extends Failure {
+export class HandlerExecutionError extends Failure {
   /**
    * @param {API.Capability} capability
    * @param {Error} cause
@@ -248,7 +248,7 @@ class HandlerExecutionError extends Failure {
   }
 }
 
-class InvocationCapabilityError extends Error {
+export class InvocationCapabilityError extends Error {
   /**
    * @param {any} caps
    */
