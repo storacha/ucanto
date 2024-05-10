@@ -40,7 +40,7 @@ jobs:
           version: 7
 
       - name: Setup
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/
