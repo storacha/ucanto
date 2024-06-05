@@ -27,11 +27,11 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/car": "^5.0.3",
-    "@ipld/dag-cbor": "^8.0.0",
+    "@ipld/car": "^5.3.1",
+    "@ipld/dag-cbor": "^9.2.0",
     "@ucanto/core": "workspace:^",
     "@ucanto/interface": "workspace:^",
-    "multiformats": "^11.0.0"
+    "multiformats": "^13.1.1"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",

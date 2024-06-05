@@ -27,10 +27,10 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ipld/dag-ucan": "^3.2.0",
+    "@ipld/dag-ucan": "^3.4.0",
     "@noble/ed25519": "^1.7.1",
     "@ucanto/interface": "workspace:^",
-    "multiformats": "^11.0.0",
+    "multiformats": "^13.1.1",
     "one-webcrypto": "^1.0.3"
   },
   "devDependencies": {
