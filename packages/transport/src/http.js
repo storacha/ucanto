@@ -41,15 +41,16 @@ export const open = ({ url, method = 'POST', fetch }) => {
  */
 class Channel {
   /**
-   * @param {object} options
-   * @param {URL} options.url
-   * @param {Fetcher} options.fetch
-   * @param {string} [options.method]
+   * @typedef {object} ChannelOptions
+   * @property {URL} url
+   * @property {Fetcher} fetch
+   * @property {string} [method]
+   * @param {ChannelOptions} opts
    */
-  constructor({ url, fetch, method }) {
-    this.fetch = fetch
-    this.method = method
-    this.url = url
+  constructor(opts) {
+    this.fetch = opts.fetch
+    this.method = opts.method
+    this.url = opts.url
   }
   /**
    * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
