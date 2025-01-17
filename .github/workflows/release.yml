@@ -33,19 +33,11 @@ jobs:
     if: ${{needs.release.outputs.releases_created}}
     runs-on: ubuntu-latest
     steps:
-      # The logic below handles the npm publication:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Install
-        uses: pnpm/action-setup@v2.2.3
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          version: 7
-
-      - name: Setup
-        uses: actions/setup-node@v4
-        with:
-          node-version: 16
+          node-version: 18
           registry-url: https://registry.npmjs.org/
           cache: 'pnpm'
 

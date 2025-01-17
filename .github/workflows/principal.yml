@@ -26,20 +26,12 @@ jobs:
         project:
           - principal
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup node ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Install dependencies
-        uses: pnpm/action-setup@v2.0.1
-        id: pnpm-install
-        with:
-          version: 7
-          run_install: true
-
+          node-version: ${{ matrix.node_version }}
+          cache: 'pnpm'
       - name: Typecheck
         uses: gozala/typescript-error-reporter-action@v1.0.8
         with:
@@ -60,19 +52,12 @@ jobs:
           - principal
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Install dependencies
-        uses: pnpm/action-setup@v2.0.1
-        id: pnpm-install
-        with:
-          version: 7
-          run_install: true
+          node-version: ${{ matrix.node_version }}
+          cache: 'pnpm'
 
       - name: Test (Node)
         run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
