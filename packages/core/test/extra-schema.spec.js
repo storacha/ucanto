@@ -1,6 +1,7 @@
 import { URI, Link, Text, DID } from '../src/schema.js'
 import { test, assert, matchResult } from './test.js'
 import * as API from '@ucanto/interface'
+import * as DIDTools from '@ipld/dag-ucan/did'
 
 {
   /** @type {[string, API.Result|RegExp][]} */
@@ -371,6 +372,116 @@ test('URI.from', () => {
       let error
       try {
         DID.from(did)
+      } catch (_error) {
+        error = _error
+      }
+      if (errorExpectation) {
+        assert.match(String(error), errorExpectation)
+      } else {
+        assert.notOk(error, 'expected no error, but got an error')
+      }
+    })
+  }
+}
+
+{
+  /** @type {any[][]} */
+  const dataset = [
+    [undefined, /Expected value of type Uint8Array instead got undefined/],
+    [null, /Expected value of type Uint8Array instead got null/],
+    [Uint8Array.from([1, 2, 3]), /Unable to parse bytes as did:/],
+    [DIDTools.parse('did:echo:1'), { ok: 'did:echo:1' }],
+  ]
+
+  for (const [input, out] of dataset) {
+    test(`DID.read(${input})`, () => {
+      matchResult(DID.readBytes(input), out)
+    })
+  }
+}
+
+{
+  /** @type {[{method:string}, unknown, API.Result|RegExp][]} */
+  const dataset = [
+    [
+      { method: 'echo' },
+      undefined,
+      /Expected value of type Uint8Array instead got undefined/,
+    ],
+    [
+      { method: 'echo' },
+      null,
+      /Expected value of type Uint8Array instead got null/,
+    ],
+    [
+      { method: 'echo' },
+      Uint8Array.from([1, 2, 3]),
+      /Unable to parse bytes as did:/,
+    ],
+    [{ method: 'echo' }, DIDTools.parse('did:echo:hello'), { ok: 'did:echo:hello' }],
+    [
+      { method: 'foo' },
+      DIDTools.parse('did:echo:hello'),
+      /Expected a did:foo: but got "did:echo:hello" instead/,
+    ],
+  ]
+
+  for (const [options, input, out] of dataset) {
+    test(`DID.match({ method: ${options.method} }).read(${input})`, () => {
+      matchResult(DID.matchBytes(options).read(input), out)
+    })
+  }
+}
+
+{
+  /** @type {[{method?:string}, unknown, API.Result|RegExp][]} */
+  const dataset = [
+    [{}, undefined, { ok: undefined }],
+    [{}, null, /Expected value of type Uint8Array instead got null/],
+    [{}, DIDTools.parse('did:echo:bar'), { ok: 'did:echo:bar' }],
+    [{ method: 'echo' }, undefined, { ok: undefined }],
+    [
+      { method: 'echo' },
+      null,
+      /Expected value of type Uint8Array instead got null/,
+    ],
+    [
+      { method: 'echo' },
+      DIDTools.parse('did:hello:world'),
+      /Expected a did:echo: but got "did:hello:world" instead/,
+    ],
+    [
+      { method: 'echo' },
+      Uint8Array.from([1, 2, 3]),
+      /Unable to parse bytes as did:/,
+    ],
+  ]
+
+  for (const [options, input, out] of dataset) {
+    test(`DID.match({ method: "${options.method}" }).optional().read(${input})`, () => {
+      const schema = options.method ? DID.matchBytes(options) : DID.didBytes()
+      matchResult(schema.optional().read(input), out)
+    })
+  }
+}
+
+{
+  /** @type {Array<[unknown, null|RegExp]>} */
+  const dataset = [
+    [DIDTools.parse('did:foo:bar'), null],
+    [DIDTools.parse('did:web:example.com'), null],
+    [DIDTools.parse('did:twosegments'), null],
+    [Uint8Array.from([1, 2, 3]), /Unable to parse bytes as did:/],
+    [
+      undefined,
+      /TypeError: Expected value of type Uint8Array instead got undefined/,
+    ],
+  ]
+  for (const [did, errorExpectation] of dataset) {
+    test(`DID.from("${did}")`, () => {
+      let error
+      try {
+        DID.fromBytes(did)
       } catch (_error) {
         error = _error
       }
