@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.1.0](https://github.com/storacha/ucanto/compare/core-v10.0.1...core-v10.1.0) (2025-01-17)
+
+
+### Features
+
+* **core:** add schema type for reading did bytes ([#360](https://github.com/storacha/ucanto/issues/360)) ([deb30a3](https://github.com/storacha/ucanto/commit/deb30a3de09fb0dc1d703635c21a254456431092))
+
 ## [10.0.1](https://github.com/web3-storage/ucanto/compare/core-v10.0.0...core-v10.0.1) (2024-04-08)
 
 

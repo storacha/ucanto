@@ -1,6 +1,6 @@
 {
   "packages/client": "9.0.1",
-  "packages/core": "10.0.1",
+  "packages/core": "10.1.0",
   "packages/interface": "10.0.2",
   "packages/principal": "9.0.1",
   "packages/server": "10.0.1",
