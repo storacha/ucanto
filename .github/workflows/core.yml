@@ -34,10 +34,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: pnpm/action-setup@v2.0.1
+        uses: pnpm/action-setup@v4
         id: pnpm-install
         with:
-          version: 7
           run_install: true
 
       - name: Typecheck
@@ -69,10 +68,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        uses: pnpm/action-setup@v2.0.1
+        uses: pnpm/action-setup@v4
         id: pnpm-install
         with:
-          version: 7
           run_install: true
 
       - name: Test (Node)
