@@ -1,5 +1,13 @@
 # Changelog
 
+## [10.0.2](https://github.com/storacha/ucanto/compare/server-v10.0.1...server-v10.0.2) (2025-01-18)
+
+
+### Bug Fixes
+
+* **server:** force release ([473e5a6](https://github.com/storacha/ucanto/commit/473e5a6fbe5dcc18861da4f68d4990532461d730))
+* **server:** force release ([614eba4](https://github.com/storacha/ucanto/commit/614eba4bca9175307028e2dd2bdd77c4841e11ae))
+
 ## [10.0.1](https://github.com/web3-storage/ucanto/compare/server-v10.0.0...server-v10.0.1) (2024-05-10)
 
 
