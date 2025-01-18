@@ -1,5 +1,15 @@
 # Changelog
 
+## [10.1.1](https://github.com/storacha/ucanto/compare/core-v10.1.0...core-v10.1.1) (2025-01-18)
+
+
+### Bug Fixes
+
+* **core:** force release ([9157252](https://github.com/storacha/ucanto/commit/9157252ea8a27a9431163cb1bd331f2be20fa867))
+* **core:** force release ([16e7017](https://github.com/storacha/ucanto/commit/16e7017bb5a8d8d0edf98b08037e07e6877a0c85))
+* **core:** force release ([d70b5a1](https://github.com/storacha/ucanto/commit/d70b5a19ea665a30506b3eb5b8ee510f4b4a55bd))
+* **core:** force release ([49bdb68](https://github.com/storacha/ucanto/commit/49bdb6813c290978acd67777141cd2319639e911))
+
 ## [10.1.0](https://github.com/storacha/ucanto/compare/core-v10.0.1...core-v10.1.0) (2025-01-17)
 
 
