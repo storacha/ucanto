@@ -31,7 +31,7 @@ test('build message with an invocation', async () => {
   })
 
   const message = await Message.build({
-    invocations: [echo.invocation],
+    invocations: [echo.delegation],
   })
 
   assert.deepEqual(message.root.data, {

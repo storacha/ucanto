@@ -4,6 +4,7 @@ import * as Server from '../src/lib.js'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/core/cbor'
 import * as Transport from '@ucanto/transport'
+import { DIDResolutionError } from '@ucanto/validator'
 import { alice, bob, mallory, service as w3 } from './fixtures.js'
 import * as Service from '../../client/test/service.js'
 import { test, assert } from './test.js'
@@ -301,10 +302,6 @@ test('execution error', async () => {
 })
 
 test('did:web server', async () => {
-  const car = await CAR.codec.write({
-    roots: [await CBOR.write({ hello: 'world ' })],
-  })
-
   const server = Server.create({
     service: Service.create(),
     codec: CAR.inbound,
@@ -336,6 +333,58 @@ test('did:web server', async () => {
   })
 
   assert.deepEqual(receipt.issuer?.did(), server.id.did())
+})
+
+test('did:web principal resolve', async () => {
+  const car = await CAR.codec.write({
+    roots: [await CBOR.write({ hello: 'world ' })],
+  })
+
+  const account = bob.withDID('did:web:bob.example.com')
+
+  const server = Server.create({
+    service: {
+      store: {
+        add: Server.provide(storeAdd, () => Schema.ok({})),
+      },
+    },
+    codec: CAR.inbound,
+    id: w3,
+    resolveDIDKey: did => did === account.did()
+      ? Server.ok(bob.did())
+      : Server.error(new DIDResolutionError(did)),
+    validateAuthorization: () => ({ ok: {} }),
+  })
+
+  const connection = Client.connect({
+    id: server.id,
+    codec: CAR.outbound,
+    channel: server,
+  })
+
+  const proof = await storeAdd.delegate({
+    issuer: alice,
+    audience: account,
+    with: alice.did(),
+  })
+
+  const add = Client.invoke({
+    issuer: account,
+    audience: w3,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+      nb: {
+        link: car.cid,
+      },
+    },
+    proofs: [proof],
+  })
+
+  const receipt = await add.execute(connection)
+  assert.deepEqual(receipt.out, {
+    ok: {},
+  })
 })
 
 test('unsupported content-type', async () => {
