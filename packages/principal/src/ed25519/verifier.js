@@ -111,7 +111,7 @@ class Ed25519Verifier extends Uint8Array {
   verify(payload, signature) {
     return (
       signature.code === signatureCode &&
-      ED25519.verify(signature.raw, payload, this.publicKey)
+      ED25519.verifyAsync(signature.raw, payload, this.publicKey)
     )
   }
 
