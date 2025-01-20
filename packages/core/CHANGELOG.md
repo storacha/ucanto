@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.2.0](https://github.com/storacha/ucanto/compare/core-v10.1.1...core-v10.2.0) (2025-01-20)
+
+
+### Features
+
+* define `resolveDIDKey` server option ([#364](https://github.com/storacha/ucanto/issues/364)) ([15648a8](https://github.com/storacha/ucanto/commit/15648a8270a678ac5ed69fa42abd8e5808294ac5))
+
 ## [10.1.1](https://github.com/storacha/ucanto/compare/core-v10.1.0...core-v10.1.1) (2025-01-18)
 
 
