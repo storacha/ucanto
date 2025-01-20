@@ -976,7 +976,7 @@ export interface HTTPError {
 /**
  * Options for UCAN validation.
  */
-export interface ValidatorOptions {
+export interface ValidatorOptions extends PrincipalResolver {
   /**
    * Takes principal parser that can be used to turn a `UCAN.Principal`
    * into `Ucanto.Principal`.
