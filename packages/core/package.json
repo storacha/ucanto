@@ -31,7 +31,7 @@
   "dependencies": {
     "@ipld/car": "^5.1.0",
     "@ipld/dag-cbor": "^9.0.0",
-    "@ipld/dag-ucan": "^3.4.0",
+    "@ipld/dag-ucan": "^3.4.5",
     "@ucanto/interface": "workspace:^",
     "multiformats": "^13.3.1"
   },
