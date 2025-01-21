@@ -62,7 +62,7 @@ importers:
         version: 8.4.0
       typescript:
         specifier: ^5.0.4
-        version: 5.7.3
+        version: 5.0.4
 
   packages/core:
     dependencies:
@@ -108,7 +108,7 @@ importers:
         version: 8.4.0
       typescript:
         specifier: ^5.0.4
-        version: 5.7.3
+        version: 5.0.4
 
   packages/interface:
     dependencies:
@@ -121,7 +121,7 @@ importers:
     devDependencies:
       typescript:
         specifier: ^5.0.4
-        version: 5.7.3
+        version: 5.0.4
 
   packages/principal:
     dependencies:
@@ -170,7 +170,7 @@ importers:
         version: 8.4.0
       typescript:
         specifier: ^5.0.4
-        version: 5.7.3
+        version: 5.0.4
 
   packages/server:
     dependencies:
@@ -228,7 +228,7 @@ importers:
         version: 8.4.0
       typescript:
         specifier: ^5.0.4
-        version: 5.7.3
+        version: 5.0.4
 
   packages/transport:
     dependencies:
@@ -268,7 +268,7 @@ importers:
         version: 8.4.0
       typescript:
         specifier: ^5.0.4
-        version: 5.7.3
+        version: 5.0.4
 
   packages/validator:
     dependencies:
@@ -323,7 +323,7 @@ importers:
         version: 8.4.0
       typescript:
         specifier: ^5.0.4
-        version: 5.7.3
+        version: 5.0.4
 
 packages:
 
@@ -1962,11 +1962,6 @@ packages:
   typescript@5.0.4:
     resolution: {integrity: sha512-cW9T5W9xY37cc+jfEnaUvX91foxtHkza3Nw3wkoF4sSlKn0MONdkdEndig/qPBWXNkmplh3NzayQzCiHM4/hqw==}
     engines: {node: '>=12.20'}
-    hasBin: true
-
-  typescript@5.7.3:
-    resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
-    engines: {node: '>=14.17'}
     hasBin: true
 
   unbox-primitive@1.1.0:
