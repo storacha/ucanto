@@ -39,7 +39,7 @@ export const derive = async secret => {
     )
   }
 
-  const publicKey = await ED25519.getPublicKeyAsync(secret)
+  const publicKey = await ED25519.getPublicKey(secret)
   const signer = new Ed25519Signer(SIZE)
 
   varint.encodeTo(code, signer, 0)
@@ -189,7 +189,7 @@ class Ed25519Signer extends Uint8Array {
    * @returns {Promise<API.SignatureView<T, typeof Signature.EdDSA>>}
    */
   async sign(payload) {
-    const raw = await ED25519.signAsync(payload, this.secret)
+    const raw = await ED25519.sign(payload, this.secret)
 
     return Signature.create(this.signatureCode, raw)
   }
