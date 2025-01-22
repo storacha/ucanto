@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.1.1](https://github.com/storacha/ucanto/compare/interface-v10.1.0...interface-v10.1.1) (2025-01-22)
+
+
+### Bug Fixes
+
+* upgrade dependencies ([#366](https://github.com/storacha/ucanto/issues/366)) ([bf6274c](https://github.com/storacha/ucanto/commit/bf6274ce637bab6a97f38065cf6c2b7eb10e3c24))
+
 ## [10.1.0](https://github.com/storacha/ucanto/compare/interface-v10.0.2...interface-v10.1.0) (2025-01-20)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.3](https://github.com/storacha/ucanto/compare/validator-v9.0.2...validator-v9.0.3) (2025-01-22)
+
+
+### Bug Fixes
+
+* upgrade dependencies ([#366](https://github.com/storacha/ucanto/issues/366)) ([bf6274c](https://github.com/storacha/ucanto/commit/bf6274ce637bab6a97f38065cf6c2b7eb10e3c24))
+
 ## [9.0.2](https://github.com/web3-storage/ucanto/compare/validator-v9.0.1...validator-v9.0.2) (2024-04-04)
 
 
