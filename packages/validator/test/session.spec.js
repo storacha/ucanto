@@ -1,7 +1,7 @@
 import { test, assert } from './test.js'
 import { access, DID } from '../src/lib.js'
 import { capability, URI, Link, Schema } from '../src/lib.js'
-import { Failure } from '../src/error.js'
+import { DIDKeyResolutionError, Failure } from '../src/error.js'
 import { ed25519, Verifier, Absentee } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 import * as Core from '@ucanto/core'
@@ -293,11 +293,100 @@ test('fail invalid ucan/attest proof', async () => {
   assert.match(`${result.error}`, /has an invalid session/)
 })
 
+test('fail unknown ucan/attest proof', async () => {
+  const agent = alice
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  const otherService = service.withDID('did:web:other.storage')
+
+  const proof = await Delegation.delegate({
+    issuer: account,
+    audience: agent,
+    capabilities: [echo.create({ with: account.did(), nb: {} })],
+    expiration: Infinity,
+  })
+
+  const session = await attest.delegate({
+    issuer: otherService,
+    audience: agent,
+    with: otherService.did(),
+    nb: { proof: proof.cid },
+    expiration: Infinity,
+  })
+
+  const task = echo.invoke({
+    issuer: agent,
+    audience: w3,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [proof, session],
+    expiration: Infinity,
+  })
+
+  // service is w3, but attestation was issued by another service
+  const result = await access(await task.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+    resolveDIDKey: did => {
+      if (did === otherService.did()) {
+        return Schema.ok(otherService.toDIDKey())
+      }
+      return { error: new DIDKeyResolutionError(did) }
+    }
+  })
+
+  assert.containSubset(result, {
+    error: {
+      name: 'Unauthorized',
+    },
+  })
+
+  assert.match(
+    `${result.error}`,
+    /Unable to resolve 'did:mailto:web.mail:alice'/
+  )
+})
+
 test('resolve key', async () => {
   const account = alice.withDID('did:mailto:web.mail:alice')
 
   const inv = echo.invoke({
     audience: w3,
+    issuer: account,
+    with: account.did(),
+    nb: { message: 'hello world' },
+  })
+
+  const result = await access(await inv.delegate(), {
+    authority: w3,
+    capability: echo,
+    resolveDIDKey: _ => Schema.ok(alice.did()),
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+  })
+
+  assert.containSubset(result, {
+    ok: {
+      match: {
+        value: {
+          can: 'debug/echo',
+          with: account.did(),
+          nb: {
+            message: 'hello world',
+          },
+        },
+      },
+    },
+  })
+})
+
+test('aliased service', async () => {
+  const account = alice.withDID('did:mailto:web.mail:alice')
+  const alias = service.withDID('did:web:alias.storage')
+
+  const inv = echo.invoke({
+    audience: alias,
     issuer: account,
     with: account.did(),
     nb: { message: 'hello world' },
