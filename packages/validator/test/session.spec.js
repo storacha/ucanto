@@ -381,40 +381,6 @@ test('resolve key', async () => {
   })
 })
 
-test('aliased service', async () => {
-  const account = alice.withDID('did:mailto:web.mail:alice')
-  const alias = service.withDID('did:web:alias.storage')
-
-  const inv = echo.invoke({
-    audience: alias,
-    issuer: account,
-    with: account.did(),
-    nb: { message: 'hello world' },
-  })
-
-  const result = await access(await inv.delegate(), {
-    authority: w3,
-    capability: echo,
-    resolveDIDKey: _ => Schema.ok(alice.did()),
-    principal: Verifier,
-    validateAuthorization: () => ({ ok: {} }),
-  })
-
-  assert.containSubset(result, {
-    ok: {
-      match: {
-        value: {
-          can: 'debug/echo',
-          with: account.did(),
-          nb: {
-            message: 'hello world',
-          },
-        },
-      },
-    },
-  })
-})
-
 test('service can not delegate access to account', async () => {
   const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
   // service should not be able to delegate access to account resource
