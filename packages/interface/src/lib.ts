@@ -976,7 +976,7 @@ export interface HTTPError {
 /**
  * Options for UCAN validation.
  */
-export interface ValidatorOptions extends PrincipalResolver {
+export interface ValidatorOptions extends PrincipalResolver, Partial<AuthorityProver> {
   /**
    * Takes principal parser that can be used to turn a `UCAN.Principal`
    * into `Ucanto.Principal`.
@@ -1086,6 +1086,16 @@ export interface PrincipalResolver {
   resolveDIDKey?: (
     did: UCAN.DID
   ) => Await<Result<DIDKey, DIDKeyResolutionError>>
+}
+
+/**
+ * `AuthorityProver` provides a set of proofs of authority.
+ */
+export interface AuthorityProver {
+  /**
+   * Proof(s) of authority.
+   */
+  proofs: Delegation[]
 }
 
 /**

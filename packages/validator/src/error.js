@@ -334,8 +334,7 @@ export class Unauthorized extends Failure {
     failedProofs,
   }) {
     super()
-    /** @type {"Unauthorized"} */
-    this.name = 'Unauthorized'
+    this.name = /** @type {const} */  ('Unauthorized')
     this.capability = capability
     this.delegationErrors = delegationErrors
     this.unknownCapabilities = unknownCapabilities

@@ -78,6 +78,70 @@ test('validate mailto', async () => {
   })
 })
 
+test('validate mailto attested by another service', async () => {
+  const agent = alice
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  const other = service.withDID('did:web:other.storage')
+
+  const proof = await Delegation.delegate({
+    issuer: account,
+    audience: agent,
+    capabilities: [echo.create({ with: account.did(), nb: {} })],
+    expiration: Infinity,
+  })
+
+  const session = await attest.delegate({
+    issuer: other,
+    audience: agent,
+    with: other.did(),
+    nb: { proof: proof.cid },
+    expiration: Infinity,
+  })
+
+  const task = echo.invoke({
+    issuer: agent,
+    audience: w3,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [proof, session],
+    expiration: Infinity,
+  })
+
+  const result = await access(await task.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+    resolveDIDKey: did => {
+      if (did === other.did()) {
+        return Schema.ok(other.toDIDKey())
+      }
+      return { error: new DIDKeyResolutionError(did) }
+    },
+    proofs: [
+      await attest.delegate({
+        issuer: w3,
+        audience: other,
+        with: w3.did()
+      })
+    ],
+  })
+
+  assert.containSubset(result, {
+    ok: {
+      match: {
+        value: {
+          can: 'debug/echo',
+          with: account.did(),
+          nb: {
+            message: 'hello world',
+          },
+        },
+      },
+    },
+  })
+})
+
 test('delegated ucan/attest', async () => {
   const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
   const agent = alice

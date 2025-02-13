@@ -235,6 +235,7 @@ export const claim = async (
     resolveDIDKey = failDIDKeyResolution,
     canIssue = isSelfIssued,
     resolve = unavailable,
+    proofs: localProofs = []
   }
 ) => {
   const config = {
@@ -245,6 +246,7 @@ export const claim = async (
     authority,
     validateAuthorization,
     resolveDIDKey,
+    proofs: localProofs
   }
 
   const invalidProofs = []
@@ -405,8 +407,7 @@ class InvalidClaim extends Failure {
   constructor(info) {
     super()
     this.info = info
-    /** @type {"InvalidClaim"} */
-    this.name = 'InvalidClaim'
+    this.name = /** @type {const} */ ('InvalidClaim')
   }
   get issuer() {
     return this.delegation.issuer
@@ -541,9 +542,18 @@ const verifySignature = async (delegation, verifier) => {
  * @param {Required<API.ClaimOptions>} config
  */
 const verifySession = async (delegation, proofs, config) => {
+  // Recognize attestations from all authorized principals, not just authority
+  const withSchemas = config.proofs
+    .filter(p => p.capabilities[0].can === 'ucan/attest' && p.capabilities[0].with === config.authority.did())
+    .map(p => Schema.literal(p.audience.did()))
+
+  const withSchema = withSchemas.length
+    ? Schema.union([Schema.literal(config.authority.did()), ...withSchemas])
+    : Schema.literal(config.authority.did())
+
   // Create a schema that will match an authorization for this exact delegation
   const attestation = capability({
-    with: Schema.literal(config.authority.did()),
+    with: withSchema,
     can: 'ucan/attest',
     nb: Schema.struct({
       proof: Schema.link(delegation.cid),

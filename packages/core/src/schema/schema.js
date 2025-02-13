@@ -563,7 +563,7 @@ class Union extends API {
  * @param {U} variants
  * @returns {Schema.Schema<Schema.InferUnion<U>, I>}
  */
-const union = variants => new Union(variants)
+export const union = variants => new Union(variants)
 
 /**
  * @template T, U
