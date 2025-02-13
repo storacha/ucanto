@@ -85,8 +85,7 @@ class InvalidAudience extends Failure {
    */
   constructor({ cause }) {
     super()
-    /** @type {'InvalidAudience'} */
-    this.name = 'InvalidAudience'
+    this.name = /** @type {const} */ ('InvalidAudience')
     this.cause = cause
   }
   describe() {

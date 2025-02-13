@@ -1,6 +1,7 @@
 import { Ability, Capability, DID, Link, Resource } from '@ipld/dag-ucan'
 import * as UCAN from '@ipld/dag-ucan'
 import {
+  AuthorityProver,
   Delegation,
   Result,
   Failure,
@@ -376,7 +377,8 @@ export interface ValidationOptions<
     PrincipalOptions,
     PrincipalResolver,
     ProofResolver,
-    RevocationChecker {
+    RevocationChecker,
+    Partial<AuthorityProver> {
   capability: CapabilityParser<Match<C, any>>
 }
 
@@ -386,7 +388,8 @@ export interface ClaimOptions
     PrincipalOptions,
     PrincipalResolver,
     ProofResolver,
-    RevocationChecker {}
+    RevocationChecker,
+    Partial<AuthorityProver> {}
 
 export interface DelegationError extends Failure {
   name: 'InvalidClaim'
