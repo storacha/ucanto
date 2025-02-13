@@ -391,6 +391,7 @@ test('alternative audience', async () => {
   const car = await CAR.codec.write({
     roots: [await CBOR.write({ hello: 'world ' })],
   })
+  const service = w3.withDID('did:web:web3.storage')
   const alias = bob.withDID('did:web:alias.storage')
 
   const server = Server.create({
@@ -400,7 +401,7 @@ test('alternative audience', async () => {
       },
     },
     codec: CAR.inbound,
-    id: w3.withDID('did:web:web3.storage'),
+    id: service,
     audience: Schema.or(
       Schema.literal('did:web:web3.storage'),
       Schema.literal(alias.did()),
@@ -414,7 +415,7 @@ test('alternative audience', async () => {
     channel: server,
   })
 
-  const identify = Client.invoke({
+  let receipt = await Client.invoke({
     issuer: alice,
     audience: alias,
     capability: {
@@ -424,9 +425,27 @@ test('alternative audience', async () => {
         link: car.cid,
       },
     },
+  }).execute(connection)
+
+  assert.containSubset(receipt, {
+    out: {
+      ok: {},
+    },
   })
 
-  const receipt = await identify.execute(connection)
+  assert.deepEqual(receipt.issuer?.did(), server.id.did())
+
+  receipt = await Client.invoke({
+    issuer: alice,
+    audience: service,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+      nb: {
+        link: car.cid,
+      },
+    },
+  }).execute(connection)
 
   assert.containSubset(receipt, {
     out: {
