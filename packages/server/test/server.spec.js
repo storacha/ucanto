@@ -387,6 +387,75 @@ test('did:web principal resolve', async () => {
   })
 })
 
+test('alternative audience', async () => {
+  const car = await CAR.codec.write({
+    roots: [await CBOR.write({ hello: 'world ' })],
+  })
+  const service = w3.withDID('did:web:web3.storage')
+  const alias = bob.withDID('did:web:alias.storage')
+
+  const server = Server.create({
+    service: {
+      store: {
+        add: Server.provide(storeAdd, () => Schema.ok({})),
+      },
+    },
+    codec: CAR.inbound,
+    id: service,
+    audience: Schema.or(
+      Schema.literal('did:web:web3.storage'),
+      Schema.literal(alias.did()),
+    ),
+    validateAuthorization: () => ({ ok: {} }),
+  })
+
+  const connection = Client.connect({
+    id: server.id,
+    codec: CAR.outbound,
+    channel: server,
+  })
+
+  let receipt = await Client.invoke({
+    issuer: alice,
+    audience: alias,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+      nb: {
+        link: car.cid,
+      },
+    },
+  }).execute(connection)
+
+  assert.containSubset(receipt, {
+    out: {
+      ok: {},
+    },
+  })
+
+  assert.deepEqual(receipt.issuer?.did(), server.id.did())
+
+  receipt = await Client.invoke({
+    issuer: alice,
+    audience: service,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+      nb: {
+        link: car.cid,
+      },
+    },
+  }).execute(connection)
+
+  assert.containSubset(receipt, {
+    out: {
+      ok: {},
+    },
+  })
+
+  assert.deepEqual(receipt.issuer?.did(), server.id.did())
+})
+
 test('unsupported content-type', async () => {
   const server = Server.create({
     service: Service.create(),

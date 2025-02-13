@@ -24,7 +24,7 @@ export const create = options => new Server(options)
  */
 class Server {
   /**
-   * @param {API.ServerOptions <S>} options
+   * @param {API.ServerOptions<S>} options
    */
   constructor({ id, service, codec, principal = Verifier, ...rest }) {
     const { catch: fail, ...context } = rest
