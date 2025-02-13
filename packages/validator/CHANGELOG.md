@@ -1,5 +1,17 @@
 # Changelog
 
+## [9.1.0](https://github.com/storacha/ucanto/compare/validator-v9.0.3...validator-v9.1.0) (2025-02-13)
+
+
+### Features
+
+* validate attestation from another service ([#369](https://github.com/storacha/ucanto/issues/369)) ([bac2cb0](https://github.com/storacha/ucanto/commit/bac2cb08bd67de97ef6a7360713e4fd1d0ae1d5c)), closes [#267](https://github.com/storacha/ucanto/issues/267)
+
+
+### Bug Fixes
+
+* infinite recursion with unknown attestation ([#368](https://github.com/storacha/ucanto/issues/368)) ([d94496a](https://github.com/storacha/ucanto/commit/d94496a1aeabf21b8206a6e345fe6b7772b3d52a))
+
 ## [9.0.3](https://github.com/storacha/ucanto/compare/validator-v9.0.2...validator-v9.0.3) (2025-01-22)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.3.0](https://github.com/storacha/ucanto/compare/core-v10.2.1...core-v10.3.0) (2025-02-13)
+
+
+### Features
+
+* validate attestation from another service ([#369](https://github.com/storacha/ucanto/issues/369)) ([bac2cb0](https://github.com/storacha/ucanto/commit/bac2cb08bd67de97ef6a7360713e4fd1d0ae1d5c)), closes [#267](https://github.com/storacha/ucanto/issues/267)
+
 ## [10.2.1](https://github.com/storacha/ucanto/compare/core-v10.2.0...core-v10.2.1) (2025-01-22)
 
 
