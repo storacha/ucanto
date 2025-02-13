@@ -1,5 +1,13 @@
 # Changelog
 
+## [10.2.0](https://github.com/storacha/ucanto/compare/server-v10.1.0...server-v10.2.0) (2025-02-13)
+
+
+### Features
+
+* allow alternative audience for server ([#371](https://github.com/storacha/ucanto/issues/371)) ([d793091](https://github.com/storacha/ucanto/commit/d793091d7a6fac702231b92e1181d4216ebce93a))
+* validate attestation from another service ([#369](https://github.com/storacha/ucanto/issues/369)) ([bac2cb0](https://github.com/storacha/ucanto/commit/bac2cb08bd67de97ef6a7360713e4fd1d0ae1d5c)), closes [#267](https://github.com/storacha/ucanto/issues/267)
+
 ## [10.1.0](https://github.com/storacha/ucanto/compare/server-v10.0.2...server-v10.1.0) (2025-01-20)
 
 
