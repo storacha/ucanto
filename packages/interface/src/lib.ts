@@ -45,6 +45,7 @@ import {
   Revoked,
   InferCapability,
   Authorization,
+  Reader
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
@@ -977,6 +978,12 @@ export interface HTTPError {
  * Options for UCAN validation.
  */
 export interface ValidatorOptions extends PrincipalResolver, Partial<AuthorityProver> {
+  /**
+   * Schema allowing invocations to be accepted for audiences other than the
+   * service itself.
+   */
+  readonly audience?: Reader<DID>
+
   /**
    * Takes principal parser that can be used to turn a `UCAN.Principal`
    * into `Ucanto.Principal`.

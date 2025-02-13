@@ -52,7 +52,7 @@ export const provideAdvanced =
     // If audience schema is not provided we expect the audience to match
     // the server id. Users could pass `schema.string()` if they want to accept
     // any audience.
-    const audienceSchema = audience || Schema.literal(options.id.did())
+    const audienceSchema = audience || options.audience || Schema.literal(options.id.did())
     const result = audienceSchema.read(invocation.audience.did())
     if (result.error) {
       return { error: new InvalidAudience({ cause: result.error }) }
