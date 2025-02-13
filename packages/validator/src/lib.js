@@ -552,9 +552,13 @@ const verifySession = async (delegation, proofs, config) => {
 
   return await claim(
     attestation,
-    // We only consider attestations otherwise we will end up doing an
-    // exponential scan if there are other proofs that require attestations.
-    proofs.filter(isAttestation),
+    proofs
+      // We only consider attestations otherwise we will end up doing an
+      // exponential scan if there are other proofs that require attestations.
+      .filter(isAttestation)
+      // Also filter any proofs that _are_ the delegation we're verifying so
+      // we don't recurse indefinitely.
+      .filter(p => p.cid.toString() !== delegation.cid.toString()),
     config
   )
 }
