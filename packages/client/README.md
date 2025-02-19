@@ -14,7 +14,7 @@
 - [`@ucanto/principal`](../principal/README.md): Manages cryptographic signing for invocations.
 - [`@ucanto/transport`](../transport/README.md): Handles encoding and sending of requests.
 
-For an overview and detailed usage information, refer to the [main `ucanto` README](../README.md).
+For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
 ## Installation
 ```sh
@@ -46,4 +46,4 @@ if (response.error) {
 }
 ```
 
-For more details, see the [`ucanto` documentation](https://github.com/ucanto).
+For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

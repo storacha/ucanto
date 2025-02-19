@@ -14,7 +14,7 @@
 - [`@ucanto/principal`](../principal/README.md): Uses identity-related interfaces for cryptographic operations.
 - [`@ucanto/client`](../client/README.md): Ensures consistent request and response structures.
 
-For an overview and detailed usage information, refer to the [main `ucanto` README](../README.md).
+For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
 ## Installation
 ```sh
@@ -37,4 +37,4 @@ const exampleInvocation: Invocation = {
 };
 ```
 
-For more details, see the [`ucanto` documentation](https://github.com/ucanto).
+For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

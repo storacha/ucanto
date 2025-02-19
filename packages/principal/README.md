@@ -13,7 +13,7 @@
 - [`@ucanto/interface`](../interface/README.md): Defines standard identity-related types.
 - [`@ucanto/transport`](../transport/README.md): Ensures encrypted and authenticated communication.
 
-For an overview and detailed usage information, refer to the [main `ucanto` README](../README.md).
+For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
 ## Installation
 ```sh
@@ -29,4 +29,4 @@ const signature = keypair.sign(new Uint8Array([1, 2, 3]));
 const isValid = keypair.verify(new Uint8Array([1, 2, 3]), signature);
 ```
 
-For more details, see the [`ucanto` documentation](https://github.com/ucanto).
+For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

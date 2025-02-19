@@ -14,7 +14,7 @@
 - [`@ucanto/transport`](../transport/README.md): Implements encoding and transport mechanisms.
 - [`@ucanto/principal`](../principal/README.md): Handles identity management and cryptographic operations.
 
-For an overview and detailed usage information, refer to the [main `ucanto` README](../README.md).
+For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
 ## Installation
 ```sh
@@ -27,15 +27,25 @@ import * as Server from '@ucanto/server';
 import * as CAR from '@ucanto/transport/car';
 import * as CBOR from '@ucanto/transport/cbor';
 import { ed25519 } from '@ucanto/principal';
+import { capability, URI } from '@ucanto/core';
 
-export const createServer = (context = { store: new Map() }) =>
-  Server.create({
+const ReadFile = capability({
+  can: 'file/read',
+  with: URI.match({ protocol: 'file:' })
+});
+
+export const createServer = () => {
+  const read = Server.provide(ReadFile, ({ capability }) => {
+    return { path: capability.with };
+  });
+
+  return Server.create({
     id: ed25519.Signer.parse(process.env.SERVICE_SECRET),
-    service: {},
+    service: { file: { read } },
     decoder: CAR,
     encoder: CBOR
   });
+};
 ```
 
-For more details, see the [`ucanto` documentation](https://github.com/ucanto).
-
+For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

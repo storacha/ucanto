@@ -13,7 +13,7 @@
 - [`@ucanto/transport`](../transport/README.md): Implements encoding and transport mechanisms.
 - [`@ucanto/principal`](../principal/README.md): Handles identity management and cryptographic operations.
 
-For an overview and detailed usage information, refer to the [main `ucanto` README](../README.md).
+For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
 ## Installation
 ```sh
@@ -31,4 +31,4 @@ const AddFile = capability({
 });
 ```
 
-For more details, see the [`ucanto` documentation](https://github.com/ucanto).
+For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

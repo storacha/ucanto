@@ -13,7 +13,7 @@
 - [`@ucanto/interface`](../interface/README.md): Defines standard transport-related types.
 - [`@ucanto/principal`](../principal/README.md): Facilitates secure communication using identity-based encryption.
 
-For an overview and detailed usage information, refer to the [main `ucanto` README](../README.md).
+For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
 ## Installation
 ```sh
@@ -29,4 +29,4 @@ const encoded = CAR.encode({ invocations: [] });
 const decoded = CBOR.decode(encoded);
 ```
 
-For more details, see the [`ucanto` documentation](https://github.com/ucanto).
+For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

@@ -13,7 +13,7 @@
 - [`@ucanto/interface`](../interface/README.md): Defines standard validation-related types.
 - [`@ucanto/principal`](../principal/README.md): Verifies cryptographic signatures for UCAN validation.
 
-For an overview and detailed usage information, refer to the [main `ucanto` README](../README.md).
+For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
 ## Installation
 ```sh
@@ -22,14 +22,18 @@ npm install @ucanto/validator
 
 ## Example Usage
 ```ts
+import { capability, URI } from '@ucanto/core';
 import { validate } from '@ucanto/validator';
 
+const readFile = capability({
+  can: 'file/read',
+  with: URI.match({ protocol: 'file:' })
+});
+
 const isValid = validate({
-  capability: {
-    can: 'file/read',
-    with: 'file://example.txt'
-  },
-  proof: someProof
+  capability: readFile,
+  proof: someProof,
+  with: 'file://example.txt'
 });
 
 if (isValid) {
@@ -39,4 +43,4 @@ if (isValid) {
 }
 ```
 
-For more details, see the [`ucanto` documentation](https://github.com/ucanto).
+For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).
