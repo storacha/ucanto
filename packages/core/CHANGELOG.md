@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.3.1](https://github.com/storacha/ucanto/compare/core-v10.3.0...core-v10.3.1) (2025-02-25)
+
+
+### Bug Fixes
+
+* exported anonymous class type may not be private or protected ([#373](https://github.com/storacha/ucanto/issues/373)) ([81d4d02](https://github.com/storacha/ucanto/commit/81d4d0262fc1a42920fb67899fa785003bfab2ca))
+
 ## [10.3.0](https://github.com/storacha/ucanto/compare/core-v10.2.1...core-v10.3.0) (2025-02-13)
 
 
