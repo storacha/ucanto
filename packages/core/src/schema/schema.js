@@ -16,7 +16,6 @@ export class API {
    * @param {Settings} settings
    */
   constructor(settings) {
-    /** @protected */
     this.settings = settings
   }
 
