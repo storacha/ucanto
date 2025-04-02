@@ -19,9 +19,10 @@ import * as API from '@ucanto/interface'
  * @param {URL} options.url
  * @param {(url:string, init:API.HTTPRequest) => API.Await<FetchResponse>} [options.fetch]
  * @param {string} [options.method]
+ * @param {Headers | Map<string, string> | Record<string, string>} [options.headers]
  * @returns {API.Channel<S>}
  */
-export const open = ({ url, method = 'POST', fetch }) => {
+export const open = ({ url, method = 'POST', fetch, headers }) => {
   /* c8 ignore next 9 */
   if (!fetch) {
     if (typeof globalThis.fetch !== 'undefined') {
@@ -32,7 +33,7 @@ export const open = ({ url, method = 'POST', fetch }) => {
       )
     }
   }
-  return new Channel({ url, method, fetch })
+  return new Channel({ url, method, fetch, headers })
 }
 
 /**
@@ -45,11 +46,13 @@ class Channel {
    * @param {URL} options.url
    * @param {Fetcher} options.fetch
    * @param {string} [options.method]
+   * @param {Headers | Map<string, string> | Record<string, string> | {entries?: () => Iterable<[string, string]>}} [options.headers]
    */
-  constructor({ url, fetch, method }) {
+  constructor({ url, fetch, method, headers }) {
     this.fetch = fetch
     this.method = method
     this.url = url
+    this.headers = headers
   }
   /**
    * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
@@ -57,8 +60,18 @@ class Channel {
    * @returns {Promise<API.HTTPResponse<API.AgentMessage<{ Out: API.InferReceipts<I, S>, In: API.Tuple<API.Invocation> }>>>}
    */
   async request({ headers, body }) {
+    const mergedHeaders = new Headers(headers)
+    if (this.headers && typeof this.headers.entries === 'function') {
+      for (const [key, value] of this.headers.entries()) {
+        // Only add headers from this.headers that don't exist in the request headers
+        if (!(key in mergedHeaders)) {
+          mergedHeaders.set(key, value)
+        }
+      }
+    }
+    
     const response = await this.fetch(this.url.href, {
-      headers,
+      headers: Object.fromEntries(mergedHeaders.entries()),
       body,
       method: this.method,
     })
