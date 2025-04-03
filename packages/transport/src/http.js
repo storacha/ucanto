@@ -19,9 +19,10 @@ import * as API from '@ucanto/interface'
  * @param {URL} options.url
  * @param {(url:string, init:API.HTTPRequest) => API.Await<FetchResponse>} [options.fetch]
  * @param {string} [options.method]
+ * @param {Record<string, string>} [options.headers]
  * @returns {API.Channel<S>}
  */
-export const open = ({ url, method = 'POST', fetch }) => {
+export const open = ({ url, method = 'POST', fetch, headers }) => {
   /* c8 ignore next 9 */
   if (!fetch) {
     if (typeof globalThis.fetch !== 'undefined') {
@@ -32,7 +33,7 @@ export const open = ({ url, method = 'POST', fetch }) => {
       )
     }
   }
-  return new Channel({ url, method, fetch })
+  return new Channel({ url, method, fetch, headers })
 }
 
 /**
@@ -45,11 +46,13 @@ class Channel {
    * @param {URL} options.url
    * @param {Fetcher} options.fetch
    * @param {string} [options.method]
+   * @param {Record<string, string>} [options.headers]
    */
-  constructor({ url, fetch, method }) {
+  constructor({ url, fetch, method, headers }) {
     this.fetch = fetch
     this.method = method
     this.url = url
+    this.headers = headers
   }
   /**
    * @template {API.Tuple<API.ServiceInvocation<API.Capability, S>>} I
@@ -58,7 +61,7 @@ class Channel {
    */
   async request({ headers, body }) {
     const response = await this.fetch(this.url.href, {
-      headers,
+      headers: { ...this.headers, ...headers },
       body,
       method: this.method,
     })

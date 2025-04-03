@@ -82,3 +82,33 @@ if (typeof globalThis.fetch === 'undefined') {
     }
   })
 }
+
+test('headers from http channel are passed to fetch along with the request headers', async () => {
+  /** @type {Record<string, string>} */
+  let fetchedHeaders = {}
+
+  const channel = HTTP.open({
+    url: new URL('about:blank'),
+    fetch: async (url, init) => {
+      fetchedHeaders = init.headers
+      return {
+        ok: true,
+        arrayBuffer: () => UTF8.encode('pong').buffer,
+        headers: new Map([['content-type', 'text/plain']]),
+      }
+    },
+    headers: { 'x-client': 'abc' },
+  })
+
+  const requestHeaders = { 'x-test': 'test-value', 'content-type': 'text/plain' }
+  
+  await channel.request({
+    headers: requestHeaders,
+    body: UTF8.encode('ping'),
+  })
+
+  // Verify the headers were merged and passed through
+  assert.equal(fetchedHeaders['x-test'], 'test-value')
+  assert.equal(fetchedHeaders['content-type'], 'text/plain')
+  assert.equal(fetchedHeaders['x-client'], 'abc')
+})
