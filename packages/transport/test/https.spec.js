@@ -97,7 +97,7 @@ test('headers from http channel are passed to fetch along with the request heade
         headers: new Map([['content-type', 'text/plain']]),
       }
     },
-    headers: new Map([['x-client', 'abc']]),
+    headers: { 'x-client': 'abc' },
   })
 
   const requestHeaders = { 'x-test': 'test-value', 'content-type': 'text/plain' }
