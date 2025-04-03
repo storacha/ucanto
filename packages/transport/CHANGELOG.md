@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.2.0](https://github.com/storacha/ucanto/compare/transport-v9.1.1...transport-v9.2.0) (2025-04-03)
+
+
+### Features
+
+* **transport:** support custom headers in HTTP transport ([#376](https://github.com/storacha/ucanto/issues/376)) ([a673222](https://github.com/storacha/ucanto/commit/a67322283f8a4f3f40f5bc3ea0d5f4e132d0a6a1))
+
 ## [9.1.1](https://github.com/web3-storage/ucanto/compare/transport-v9.1.0...transport-v9.1.1) (2024-04-04)
 
 
