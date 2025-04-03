@@ -84,7 +84,7 @@ export const handle = async (server, request) => {
       const result = await execute(message, server)
       const response = await encoder.encode(result)
       return response
-    } catch (/** @type {Error} */ err) {
+    } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unable to decode request'
       return {
         status: 400,
