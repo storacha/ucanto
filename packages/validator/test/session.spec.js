@@ -122,8 +122,8 @@ test('validate mailto attested by another service', async () => {
       await attest.delegate({
         issuer: w3,
         audience: other,
-        with: w3.did(),
-      }),
+        with: w3.did()
+      })
     ],
   })
 
@@ -397,7 +397,7 @@ test('fail unknown ucan/attest proof', async () => {
         return Schema.ok(otherService.toDIDKey())
       }
       return { error: new DIDKeyResolutionError(did) }
-    },
+    }
   })
 
   assert.containSubset(result, {
