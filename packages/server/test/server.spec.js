@@ -350,9 +350,10 @@ test('did:web principal resolve', async () => {
     },
     codec: CAR.inbound,
     id: w3,
-    resolveDIDKey: did => did === account.did()
-      ? Server.ok(bob.did())
-      : Server.error(new DIDResolutionError(did)),
+    resolveDIDKey: did =>
+      did === account.did()
+        ? Server.ok(bob.did())
+        : Server.error(new DIDResolutionError(did)),
     validateAuthorization: () => ({ ok: {} }),
   })
 
@@ -404,7 +405,7 @@ test('alternative audience', async () => {
     id: service,
     audience: Schema.or(
       Schema.literal('did:web:web3.storage'),
-      Schema.literal(alias.did()),
+      Schema.literal(alias.did())
     ),
     validateAuthorization: () => ({ ok: {} }),
   })

@@ -69,7 +69,7 @@ test('encode / decode', async () => {
     const o = {}
     const data = {
       a: o,
-      b: o
+      b: o,
     }
 
     assert.doesNotThrow(() => transcode(data))

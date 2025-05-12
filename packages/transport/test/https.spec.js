@@ -100,8 +100,11 @@ test('headers from http channel are passed to fetch along with the request heade
     headers: { 'x-client': 'abc' },
   })
 
-  const requestHeaders = { 'x-test': 'test-value', 'content-type': 'text/plain' }
-  
+  const requestHeaders = {
+    'x-test': 'test-value',
+    'content-type': 'text/plain',
+  }
+
   await channel.request({
     headers: requestHeaders,
     body: UTF8.encode('ping'),

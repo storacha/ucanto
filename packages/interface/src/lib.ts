@@ -16,6 +16,7 @@ import {
   Signature,
   SignatureView,
   Principal,
+  PrincipalView,
   MulticodecCode,
   SigAlg,
   ToJSON,
@@ -45,7 +46,7 @@ import {
   Revoked,
   InferCapability,
   Authorization,
-  Reader
+  Reader,
 } from './capability.js'
 import type * as Transport from './transport.js'
 import type { Tuple, Block } from './transport.js'
@@ -77,6 +78,7 @@ export type {
   MultibaseEncoder,
   MulticodecCode,
   Principal,
+  PrincipalView,
   ToJSON,
   ToString,
   UnknownLink,
@@ -977,7 +979,9 @@ export interface HTTPError {
 /**
  * Options for UCAN validation.
  */
-export interface ValidatorOptions extends PrincipalResolver, Partial<AuthorityProver> {
+export interface ValidatorOptions
+  extends PrincipalResolver,
+    Partial<AuthorityProver> {
   /**
    * Schema allowing invocations to be accepted for audiences other than the
    * service itself.

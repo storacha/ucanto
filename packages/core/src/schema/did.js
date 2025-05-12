@@ -23,8 +23,8 @@ class DIDSchema extends Schema.API {
 const schema = Schema.string().refine(new DIDSchema())
 
 export const did = () => schema
+
 /**
- *
  * @param {unknown} input
  */
 export const read = input => schema.read(input)
@@ -46,7 +46,7 @@ export const from = input => match({}).from(input)
 
 /**
  * @template {string} Method
- * @extends {Schema.API<API.DID<Method> & API.URI<"did:">, unknown, void|Method>}
+ * @extends {Schema.API<API.PrincipalView<API.DID<Method> & API.URI<"did:">>, unknown, void|Method>}
  */
 class DIDBytesSchema extends Schema.API {
   /**
@@ -57,26 +57,27 @@ class DIDBytesSchema extends Schema.API {
     if (!(source instanceof Uint8Array)) {
       return Schema.typeError({ expect: 'Uint8Array', actual: source })
     }
-    let did
+    let principal
     try {
-      did = DID.decode(source).did()
+      principal = DID.decode(source)
     } catch (err) {
-      return Schema.error(`Unable to parse bytes as did: ${err}`)
+      return Schema.error(`Unable to decode bytes as DID: ${err}`)
     }
     const prefix = method ? `did:${method}:` : `did:`
-    if (!did.startsWith(prefix)) {
-      return Schema.error(`Expected a ${prefix} but got "${did}" instead`)
-    } else {
-      return { ok: /** @type {API.DID<Method>} */ (did) }
-    } 
+    if (!principal.did().startsWith(prefix)) {
+      return Schema.error(
+        `Expected a ${prefix} but got "${principal.did()}" instead`
+      )
+    }
+    return { ok: /** @type {API.PrincipalView<API.DID<Method>>} */ (principal) }
   }
 }
 
 const schemaBytes = new DIDBytesSchema()
 
 export const didBytes = () => schemaBytes
+
 /**
- *
  * @param {unknown} input
  */
 export const readBytes = input => schemaBytes.read(input)
@@ -86,7 +87,7 @@ export const readBytes = input => schemaBytes.read(input)
  * @param {{method?: Method}} options
  */
 export const matchBytes = (options = {}) =>
-  /** @type {Schema.Schema<API.DID<Method> & API.URI<"did:">>} */ (
+  /** @type {Schema.Schema<API.PrincipalView<API.DID<Method> & API.URI<"did:">>>} */ (
     new DIDBytesSchema(options.method)
   )
 

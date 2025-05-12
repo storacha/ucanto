@@ -389,8 +389,11 @@ test('URI.from', () => {
   const dataset = [
     [undefined, /Expected value of type Uint8Array instead got undefined/],
     [null, /Expected value of type Uint8Array instead got null/],
-    [Uint8Array.from([1, 2, 3]), /Unable to parse bytes as did:/],
-    [DIDTools.parse('did:echo:1'), { ok: 'did:echo:1' }],
+    [Uint8Array.from([1, 2, 3]), /Unable to decode bytes as DID:/],
+    [
+      DIDTools.parse('did:echo:1'),
+      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 49]) },
+    ],
   ]
 
   for (const [input, out] of dataset) {
@@ -416,9 +419,17 @@ test('URI.from', () => {
     [
       { method: 'echo' },
       Uint8Array.from([1, 2, 3]),
-      /Unable to parse bytes as did:/,
+      /Unable to decode bytes as DID:/,
     ],
-    [{ method: 'echo' }, DIDTools.parse('did:echo:hello'), { ok: 'did:echo:hello' }],
+    [
+      { method: 'echo' },
+      DIDTools.parse('did:echo:hello'),
+      {
+        ok: new Uint8Array([
+          157, 26, 101, 99, 104, 111, 58, 104, 101, 108, 108, 111,
+        ]),
+      },
+    ],
     [
       { method: 'foo' },
       DIDTools.parse('did:echo:hello'),
@@ -438,7 +449,11 @@ test('URI.from', () => {
   const dataset = [
     [{}, undefined, { ok: undefined }],
     [{}, null, /Expected value of type Uint8Array instead got null/],
-    [{}, DIDTools.parse('did:echo:bar'), { ok: 'did:echo:bar' }],
+    [
+      {},
+      DIDTools.parse('did:echo:bar'),
+      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 98, 97, 114]) },
+    ],
     [{ method: 'echo' }, undefined, { ok: undefined }],
     [
       { method: 'echo' },
@@ -453,7 +468,7 @@ test('URI.from', () => {
     [
       { method: 'echo' },
       Uint8Array.from([1, 2, 3]),
-      /Unable to parse bytes as did:/,
+      /Unable to decode bytes as DID:/,
     ],
   ]
 
@@ -471,7 +486,7 @@ test('URI.from', () => {
     [DIDTools.parse('did:foo:bar'), null],
     [DIDTools.parse('did:web:example.com'), null],
     [DIDTools.parse('did:twosegments'), null],
-    [Uint8Array.from([1, 2, 3]), /Unable to parse bytes as did:/],
+    [Uint8Array.from([1, 2, 3]), /Unable to decode bytes as DID:/],
     [
       undefined,
       /TypeError: Expected value of type Uint8Array instead got undefined/,

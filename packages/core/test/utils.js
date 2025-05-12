@@ -9,6 +9,6 @@ export async function getBlock(value) {
   return await Block.encode({
     value,
     codec,
-    hasher
+    hasher,
   })
 }

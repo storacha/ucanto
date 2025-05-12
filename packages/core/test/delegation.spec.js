@@ -437,8 +437,8 @@ test('delegation.attach block in capabiliy', async () => {
         can: 'store/add',
         with: alice.did(),
         nb: {
-          inlineBlock: block.cid.link()
-        }
+          inlineBlock: block.cid.link(),
+        },
       },
     ],
   })
@@ -467,8 +467,8 @@ test('delegation.attach block in facts', async () => {
     facts: [
       { [`${block.cid.link()}`]: block.cid.link() },
       // @ts-expect-error Link has fact entry
-      block.cid.link()
-    ]
+      block.cid.link(),
+    ],
   })
 
   ucan.attach(block)
@@ -488,7 +488,7 @@ test('delegation.attach fails to attach block with not attached link', async () 
     capabilities: [
       {
         can: 'store/add',
-        with: alice.did()
+        with: alice.did(),
       },
     ],
   })
