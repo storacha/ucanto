@@ -79,11 +79,9 @@ export const handle = async (server, request) => {
     }
   } else {
     const { encoder, decoder } = selection.ok
+    let message;
     try {
-      const message = await decoder.decode(request)
-      const result = await execute(message, server)
-      const response = await encoder.encode(result)
-      return response
+      message = await decoder.decode(request)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unable to decode request'
       return {
@@ -92,6 +90,9 @@ export const handle = async (server, request) => {
         body: new TextEncoder().encode(`Bad request: Malformed payload - ${errorMessage}`),
       }
     }
+    const result = await execute(message, server)
+    const response = await encoder.encode(result)
+    return response
   }
 }
 
