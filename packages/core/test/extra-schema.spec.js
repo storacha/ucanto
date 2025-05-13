@@ -1,4 +1,4 @@
-import { URI, Link, Text, DID } from '../src/schema.js'
+import { URI, Link, Text, DID, Principal } from '../src/schema.js'
 import { test, assert, matchResult } from './test.js'
 import * as API from '@ucanto/interface'
 import * as DIDTools from '@ipld/dag-ucan/did'
@@ -394,7 +394,7 @@ test('URI.from', () => {
   ]
 
   for (const [input, out] of dataset) {
-    test(`DID.read(${input})`, () => {
+    test(`DID.readBytes(${input})`, () => {
       matchResult(DID.readBytes(input), out)
     })
   }
@@ -427,7 +427,7 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`DID.match({ method: ${options.method} }).read(${input})`, () => {
+    test(`DID.matchBytes({ method: ${options.method} }).read(${input})`, () => {
       matchResult(DID.matchBytes(options).read(input), out)
     })
   }
@@ -458,7 +458,7 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`DID.match({ method: "${options.method}" }).optional().read(${input})`, () => {
+    test(`DID.matchBytes({ method: "${options.method}" }).optional().read(${input})`, () => {
       const schema = options.method ? DID.matchBytes(options) : DID.didBytes()
       matchResult(schema.optional().read(input), out)
     })
@@ -478,10 +478,128 @@ test('URI.from', () => {
     ],
   ]
   for (const [did, errorExpectation] of dataset) {
-    test(`DID.from("${did}")`, () => {
+    test(`DID.fromBytes("${did}")`, () => {
       let error
       try {
         DID.fromBytes(did)
+      } catch (_error) {
+        error = _error
+      }
+      if (errorExpectation) {
+        assert.match(String(error), errorExpectation)
+      } else {
+        assert.notOk(error, 'expected no error, but got an error')
+      }
+    })
+  }
+}
+
+{
+  /** @type {any[][]} */
+  const dataset = [
+    [undefined, /Expected value of type Uint8Array instead got undefined/],
+    [null, /Expected value of type Uint8Array instead got null/],
+    [Uint8Array.from([1, 2, 3]), /Unable to decode bytes as DID:/],
+    [DIDTools.parse('did:echo:1'), { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 49]) }],
+  ]
+
+  for (const [input, out] of dataset) {
+    test(`Principal.read(${input == null ? input : `Uint8Array([${input}])`})`, () => {
+      matchResult(Principal.read(input), out)
+    })
+  }
+}
+
+{
+  /** @type {[{method:string}, unknown, API.Result|RegExp][]} */
+  const dataset = [
+    [
+      { method: 'echo' },
+      undefined,
+      /Expected value of type Uint8Array instead got undefined/,
+    ],
+    [
+      { method: 'echo' },
+      null,
+      /Expected value of type Uint8Array instead got null/,
+    ],
+    [
+      { method: 'echo' },
+      Uint8Array.from([1, 2, 3]),
+      /Unable to decode bytes as DID:/,
+    ],
+    [
+      { method: 'echo' },
+      DIDTools.parse('did:echo:hello'),
+      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 104, 101, 108, 108, 111]) }
+    ],
+    [
+      { method: 'foo' },
+      DIDTools.parse('did:echo:hello'),
+      /Expected a did:foo: but got "did:echo:hello" instead/,
+    ],
+  ]
+
+  for (const [options, input, out] of dataset) {
+    test(`Principal.match({ method: ${options.method == null ? options.method : `"${options.method}"`} }).read(${input == null ? input : `Uint8Array([${input}])`})`, () => {
+      matchResult(Principal.match(options).read(input), out)
+    })
+  }
+}
+
+{
+  /** @type {[{method?:string}, unknown, API.Result|RegExp][]} */
+  const dataset = [
+    [{}, undefined, { ok: undefined }],
+    [{}, null, /Expected value of type Uint8Array instead got null/],
+    [
+      {},
+      DIDTools.parse('did:echo:bar'),
+      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 98, 97, 114]) }
+    ],
+    [{ method: 'echo' }, undefined, { ok: undefined }],
+    [
+      { method: 'echo' },
+      null,
+      /Expected value of type Uint8Array instead got null/,
+    ],
+    [
+      { method: 'echo' },
+      DIDTools.parse('did:hello:world'),
+      /Expected a did:echo: but got "did:hello:world" instead/,
+    ],
+    [
+      { method: 'echo' },
+      Uint8Array.from([1, 2, 3]),
+      /Unable to decode bytes as DID:/,
+    ],
+  ]
+
+  for (const [options, input, out] of dataset) {
+    test(`Principal.match({ method: ${options.method == null ? options.method : `"${options.method}"`} }).optional().read(${input == null ? input : `Uint8Array([${input}])`})`, () => {
+      const schema = options.method ? Principal.match(options) : Principal.principal()
+      matchResult(schema.optional().read(input), out)
+    })
+  }
+}
+
+{
+  /** @type {Array<[unknown, null|RegExp]>} */
+  const dataset = [
+    [DIDTools.parse('did:foo:bar'), null],
+    [DIDTools.parse('did:web:example.com'), null],
+    [DIDTools.parse('did:twosegments'), null],
+    [Uint8Array.from([1, 2, 3]), /Unable to decode bytes as DID:/],
+    [
+      undefined,
+      /TypeError: Expected value of type Uint8Array instead got undefined/,
+    ],
+  ]
+  for (const [did, errorExpectation] of dataset) {
+    test(`Principal.from(${did == null ? did : `Uint8Array([${did}])`})`, () => {
+      let error
+      try {
+        Principal.from(did)
       } catch (_error) {
         error = _error
       }

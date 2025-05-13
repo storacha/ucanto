@@ -74,14 +74,19 @@ class DIDBytesSchema extends Schema.API {
 
 const schemaBytes = new DIDBytesSchema()
 
-export const didBytes = () => schemaBytes
 /**
- *
+ * @deprecated Use `Schema.principal(...)` instead.
+ */
+export const didBytes = () => schemaBytes
+
+/**
+ * @deprecated Use `Schema.principal(...)` instead.
  * @param {unknown} input
  */
 export const readBytes = input => schemaBytes.read(input)
 
 /**
+ * @deprecated Use `Schema.principal(...)` instead.
  * @template {string} Method
  * @param {{method?: Method}} options
  */
@@ -92,6 +97,8 @@ export const matchBytes = (options = {}) =>
 
 /**
  * Create a DID string from any input (or throw)
+ *
+ * @deprecated Use `Schema.principal(...)` instead.
  * @param {unknown} input
  */
 export const fromBytes = input => matchBytes({}).from(input)
