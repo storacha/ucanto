@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.3.0](https://github.com/storacha/ucanto/compare/interface-v10.2.0...interface-v10.3.0) (2025-05-13)
+
+
+### Features
+
+* add principal schema ([#379](https://github.com/storacha/ucanto/issues/379)) ([4382120](https://github.com/storacha/ucanto/commit/43821209f1d63dba0dfa73d8e191a88b5a330a6e))
+
 ## [10.2.0](https://github.com/storacha/ucanto/compare/interface-v10.1.1...interface-v10.2.0) (2025-02-13)
 
 
