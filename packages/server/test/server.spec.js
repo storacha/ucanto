@@ -351,7 +351,7 @@ test('did:web principal resolve', async () => {
     codec: CAR.inbound,
     id: w3,
     resolveDIDKey: did => did === account.did()
-      ? Server.ok(bob.did())
+      ? Server.ok([bob.did()])
       : Server.error(new DIDResolutionError(did)),
     validateAuthorization: () => ({ ok: {} }),
   })

@@ -22,6 +22,7 @@
     "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
     "test": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha --bail test/**/*.spec.js",
+    "test:only": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha --bail",
     "coverage": "c8 --reporter=html mocha test/**/*.spec.js",
     "check": "tsc --build",
     "build": "tsc --build"
