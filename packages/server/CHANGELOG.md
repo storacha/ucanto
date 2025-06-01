@@ -1,5 +1,16 @@
 # Changelog
 
+## [11.0.0](https://github.com/storacha/ucanto/compare/server-v10.2.0...server-v11.0.0) (2025-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* resolve multiple verifiers ([#381](https://github.com/storacha/ucanto/issues/381))
+
+### Features
+
+* resolve multiple verifiers ([#381](https://github.com/storacha/ucanto/issues/381)) ([6254993](https://github.com/storacha/ucanto/commit/6254993eb7368040a6232d50a1d68a123d2ed799))
+
 ## [10.2.0](https://github.com/storacha/ucanto/compare/server-v10.1.0...server-v10.2.0) (2025-02-13)
 
 

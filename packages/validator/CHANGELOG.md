@@ -1,5 +1,16 @@
 # Changelog
 
+## [10.0.0](https://github.com/storacha/ucanto/compare/validator-v9.1.0...validator-v10.0.0) (2025-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* resolve multiple verifiers ([#381](https://github.com/storacha/ucanto/issues/381))
+
+### Features
+
+* resolve multiple verifiers ([#381](https://github.com/storacha/ucanto/issues/381)) ([6254993](https://github.com/storacha/ucanto/commit/6254993eb7368040a6232d50a1d68a123d2ed799))
+
 ## [9.1.0](https://github.com/storacha/ucanto/compare/validator-v9.0.3...validator-v9.1.0) (2025-02-13)
 
 
