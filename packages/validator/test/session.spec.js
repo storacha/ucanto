@@ -28,6 +28,14 @@ const attest = capability({
   }),
 })
 
+const echoKey = capability({
+  can: 'debug/echo',
+  with: DID.match({ method: 'key' }),
+  nb: Schema.struct({
+    message: Schema.string().optional(),
+  }),
+})
+
 test('validate mailto', async () => {
   const agent = alice
   const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
@@ -114,7 +122,7 @@ test('validate mailto attested by another service', async () => {
     validateAuthorization: () => ({ ok: {} }),
     resolveDIDKey: did => {
       if (did === other.did()) {
-        return Schema.ok(other.toDIDKey())
+        return Schema.ok([other.toDIDKey()])
       }
       return { error: new DIDKeyResolutionError(did) }
     },
@@ -394,7 +402,7 @@ test('fail unknown ucan/attest proof', async () => {
     validateAuthorization: () => ({ ok: {} }),
     resolveDIDKey: did => {
       if (did === otherService.did()) {
-        return Schema.ok(otherService.toDIDKey())
+        return Schema.ok([otherService.toDIDKey()])
       }
       return { error: new DIDKeyResolutionError(did) }
     }
@@ -425,7 +433,7 @@ test('resolve key', async () => {
   const result = await access(await inv.delegate(), {
     authority: w3,
     capability: echo,
-    resolveDIDKey: _ => Schema.ok(alice.did()),
+    resolveDIDKey: () => ({ ok: [`did:key:${alice.did().split(':')[2]}`] }),
     principal: Verifier,
     validateAuthorization: () => ({ ok: {} }),
   })
@@ -625,4 +633,163 @@ test('redundant proofs have no impact', async () => {
   })
 
   assert.ok(result.ok)
+})
+
+test('fail when no verifiers found', async () => {
+  const agent = alice
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+
+  const proof = await Delegation.delegate({
+    issuer: account,
+    audience: agent,
+    capabilities: [echo.create({ with: account.did(), nb: {} })],
+    expiration: Infinity,
+  })
+
+  const task = echo.invoke({
+    issuer: agent,
+    audience: w3,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [proof],
+    expiration: Infinity,
+  })
+
+  const result = await access(await task.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+    resolveDIDKey: () => ({ ok: [] })
+  })
+
+  assert.match(
+    `${result.error}`,
+    /Unable to resolve 'did:mailto:web.mail:alice'/
+  )
+})
+
+test('succeed with single valid verifier', async () => {
+  const agent = alice
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+
+  const proof = await Delegation.delegate({
+    issuer: account,
+    audience: agent,
+    capabilities: [echo.create({ with: account.did(), nb: {} })],
+    expiration: Infinity,
+  })
+
+  const session = await attest.delegate({
+    issuer: w3,
+    audience: agent,
+    with: w3.did(),
+    nb: { proof: proof.cid },
+    expiration: Infinity,
+  })
+
+  const task = echo.invoke({
+    issuer: agent,
+    audience: w3,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [proof, session],
+    expiration: Infinity,
+  })
+
+  const result = await access(await task.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+    resolveDIDKey: () => ({ ok: [alice.toDIDKey()] })
+  })
+
+  assert.ok(result.ok)
+})
+
+test('succeed with multiple verifiers and one valid', async () => {
+  const agent = alice
+  const account = Absentee.from({ id: 'did:mailto:web.mail:alice' })
+  const other = await ed25519.generate()
+
+  const proof = await Delegation.delegate({
+    issuer: account,
+    audience: agent,
+    capabilities: [echo.create({ with: account.did(), nb: {} })],
+    expiration: Infinity,
+  })
+
+  const session = await attest.delegate({
+    issuer: w3,
+    audience: agent,
+    with: w3.did(),
+    nb: { proof: proof.cid },
+    expiration: Infinity,
+  })
+
+  const task = echo.invoke({
+    issuer: agent,
+    audience: w3,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [proof, session],
+    expiration: Infinity,
+  })
+
+  const result = await access(await task.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+    resolveDIDKey: () => ({ ok: [`did:key:${other.did().split(':')[2]}`, `did:key:${alice.did().split(':')[2]}`] })
+  })
+
+  assert.ok(result.ok)
+})
+
+test('fail with multiple invalid verifiers', async () => {
+  const agent = alice
+  const account = Absentee.from({ id: 'did:mailto:web.mail:bob' })
+  const other1 = await ed25519.generate()
+  const other2 = await ed25519.generate()
+  const other3 = await ed25519.generate()
+
+  const proof = await Delegation.delegate({
+    issuer: account,
+    audience: agent,
+    capabilities: [echo.create({ with: account.did(), nb: {} })],
+    expiration: Infinity,
+  })
+
+  const task = echo.invoke({
+    issuer: agent,
+    audience: w3,
+    with: account.did(),
+    nb: { message: 'hello world' },
+    proofs: [proof],
+    expiration: Infinity,
+  })
+
+  const result = await access(await task.delegate(), {
+    authority: w3,
+    capability: echo,
+    principal: Verifier,
+    validateAuthorization: () => ({ ok: {} }),
+    resolveDIDKey: (did) => {
+      if (did === account.did()) {
+        // Return verifiers that don't match the account's actual key
+        return { ok: [other1.toDIDKey(), other2.toDIDKey()] }
+      }
+      return { error: new DIDKeyResolutionError(did) }
+    }
+  })
+
+  console.log('Result:', result)
+  console.log('Result error:', result.error)
+
+  assert.match(
+    `${result.error}`,
+    /Proof .* does not has a valid signature from did:key:/
+  )
 })

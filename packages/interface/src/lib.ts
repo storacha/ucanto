@@ -1092,8 +1092,8 @@ export interface PrincipalParser {
  */
 export interface PrincipalResolver {
   resolveDIDKey?: (
-    did: UCAN.DID
-  ) => Await<Result<DIDKey, DIDKeyResolutionError>>
+    did: UCAN.DID,
+  ) => Await<Result<DIDKey[], DIDKeyResolutionError>>
 }
 
 /**

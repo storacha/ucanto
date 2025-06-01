@@ -12,7 +12,6 @@ import {
   NotValidBefore,
   InvalidSignature,
   SessionEscalation,
-  DelegationError,
   Failure,
   MalformedCapability,
   DIDKeyResolutionError,
@@ -109,7 +108,7 @@ const resolveProofs = async (proofs, config) => {
             }
           } catch (error) {
             errors.push(
-              new UnavailableProof(proof, /** @type {Error} */ (error))
+              new UnavailableProof(proof, /** @type {Error} */(error))
             )
           }
 
@@ -176,7 +175,7 @@ const resolveSources = async ({ delegation }, config) => {
       // track which proof in which capability the are from.
       for (const capability of proof.capabilities) {
         sources.push(
-          /** @type {API.Source} */ ({
+          /** @type {API.Source} */({
             capability,
             delegation: proof,
           })
@@ -235,7 +234,7 @@ export const claim = async (
     resolveDIDKey = failDIDKeyResolution,
     canIssue = isSelfIssued,
     resolve = unavailable,
-    proofs: localProofs = []
+    proofs: localProofs = [],
   }
 ) => {
   const config = {
@@ -246,7 +245,7 @@ export const claim = async (
     authority,
     validateAuthorization,
     resolveDIDKey,
-    proofs: localProofs
+    proofs: localProofs,
   }
 
   const invalidProofs = []
@@ -264,7 +263,7 @@ export const claim = async (
     if (validation.ok) {
       for (const capability of validation.ok.capabilities.values()) {
         sources.push(
-          /** @type {API.Source} */ ({
+          /** @type {API.Source} */({
             capability,
             delegation: validation.ok,
           })
@@ -451,7 +450,7 @@ const validate = async (delegation, proofs, config) => {
   if (UCAN.isExpired(delegation.data)) {
     return {
       error: new Expired(
-        /** @type {API.Delegation & {expiration: number}} */ (delegation)
+        /** @type {API.Delegation & {expiration: number}} */(delegation)
       ),
     }
   }
@@ -459,7 +458,7 @@ const validate = async (delegation, proofs, config) => {
   if (UCAN.isTooEarly(delegation.data)) {
     return {
       error: new NotValidBefore(
-        /** @type {API.Delegation & {notBefore: number}} */ (delegation)
+        /** @type {API.Delegation & {notBefore: number}} */(delegation)
       ),
     }
   }
@@ -487,6 +486,7 @@ const verifyAuthorization = async (delegation, proofs, config) => {
   if (issuer.startsWith('did:key:')) {
     return verifySignature(delegation, config.principal.parse(issuer))
   }
+
   // If the issuer is the root authority we use authority itself to verify
   else if (issuer === config.authority.did()) {
     return verifySignature(delegation, config.authority)
@@ -505,15 +505,41 @@ const verifyAuthorization = async (delegation, proofs, config) => {
     // Otherwise we try to resolve did:key from the DID instead
     // and use that to verify the signature
     else {
-      const verifier = await config.resolveDIDKey(issuer)
-      if (verifier.error) {
-        return verifier
-      } else {
-        return verifySignature(
-          delegation,
-          config.principal.parse(verifier.ok).withDID(issuer)
-        )
+      const result = await config.resolveDIDKey(issuer)
+      if (result.error) {
+        return result
       }
+
+      const verifiers = result.ok
+      /** @type {(API.InvalidSignature | API.DIDKeyResolutionError)[]} */
+      const verificationErrResults = []
+      for (const verifier of verifiers) {
+        const verificationResult = await verifySignature(
+          delegation,
+          config.principal.parse(verifier).withDID(issuer)
+        )
+        if (verificationResult.ok) {
+          return verificationResult
+        }
+        if (verificationResult.error) {
+          verificationErrResults.push(verificationResult.error)
+        }
+      }
+      
+      // If no verifiers were found, there is no way to verify the signature
+      if (verificationErrResults.length === 0) {
+        return { error: new DIDKeyResolutionError(issuer) }
+      }
+
+      const combinedError = verificationErrResults[0]
+      const combinedMessage = verificationErrResults
+        .map(err => err.message)
+        .join('\n  ')
+      
+      // @ts-expect-error - both error types have describe method, override it to return the concatenated message
+      combinedError.describe = () => combinedMessage
+
+      return { error: combinedError }
     }
   }
 }
@@ -544,7 +570,11 @@ const verifySignature = async (delegation, verifier) => {
 const verifySession = async (delegation, proofs, config) => {
   // Recognize attestations from all authorized principals, not just authority
   const withSchemas = config.proofs
-    .filter(p => p.capabilities[0].can === 'ucan/attest' && p.capabilities[0].with === config.authority.did())
+    .filter(
+      p =>
+        p.capabilities[0].can === 'ucan/attest' &&
+        p.capabilities[0].with === config.authority.did()
+    )
     .map(p => Schema.literal(p.audience.did()))
 
   const withSchema = withSchemas.length
