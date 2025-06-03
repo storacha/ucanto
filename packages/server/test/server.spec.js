@@ -595,3 +595,61 @@ test('run invocation without encode / decode', async () => {
     },
   })
 })
+
+test('should return 400 Bad Request for malformed payloads', async () => {
+  const server = Server.create({
+    id: w3,
+    service: Service.create(),
+    codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} }),
+  })
+  const malformedRequest = {
+    headers: {
+      'content-type': CAR.contentType,
+      'accept': CAR.contentType
+    },
+    body: new Uint8Array([1, 2, 3])
+  }
+
+  const response = await server.request(malformedRequest)
+  assert.equal(response.status, 400)
+  assert.deepEqual(response.headers, { 'Content-Type': 'text/plain' })
+  const errorMessage = new TextDecoder().decode(response.body)
+  assert.match(errorMessage, /Bad request: Malformed payload/)
+})
+
+test('should return 400 Bad Request for non-Error decoder failures', async () => {
+  const server = Server.create({
+    id: w3,
+    service: Service.create(),
+    codec: {
+      ...CAR.inbound,
+      accept: () => ({
+        ok: {
+          encoder: CAR.response,
+          decoder: {
+            decode: async () => {
+              throw 'Not an Error instance'
+            }
+          }
+        }
+      })
+    },
+    validateAuthorization: () => ({ ok: {} }),
+  })
+
+  const malformedRequest = {
+    headers: {
+      'content-type': CAR.contentType,
+      'accept': CAR.contentType
+    },
+    body: new Uint8Array([1, 2, 3])
+  }
+
+  const response = await server.request(malformedRequest)
+
+  assert.equal(response.status, 400)
+  assert.deepEqual(response.headers, { 'Content-Type': 'text/plain' })
+  const errorMessage = new TextDecoder().decode(response.body)
+  assert.match(errorMessage, /Bad request: Malformed payload - Unable to decode request/)
+})
