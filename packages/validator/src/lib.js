@@ -234,7 +234,7 @@ export const claim = async (
     resolveDIDKey = failDIDKeyResolution,
     canIssue = isSelfIssued,
     resolve = unavailable,
-    proofs: localProofs = [],
+    sessionAuthorities = [],
   }
 ) => {
   const config = {
@@ -245,7 +245,7 @@ export const claim = async (
     authority,
     validateAuthorization,
     resolveDIDKey,
-    proofs: localProofs,
+    sessionAuthorities,
   }
 
   const invalidProofs = []
@@ -569,13 +569,7 @@ const verifySignature = async (delegation, verifier) => {
  */
 const verifySession = async (delegation, proofs, config) => {
   // Recognize attestations from all authorized principals, not just authority
-  const withSchemas = config.proofs
-    .filter(
-      p =>
-        p.capabilities[0].can === 'ucan/attest' &&
-        p.capabilities[0].with === config.authority.did()
-    )
-    .map(p => Schema.literal(p.audience.did()))
+  const withSchemas = config.sessionAuthorities.map(a => Schema.literal(a.did()))
 
   const withSchema = withSchemas.length
     ? Schema.union([Schema.literal(config.authority.did()), ...withSchemas])

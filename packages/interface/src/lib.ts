@@ -978,7 +978,7 @@ export interface HTTPError {
 /**
  * Options for UCAN validation.
  */
-export interface ValidatorOptions extends PrincipalResolver, Partial<AuthorityProver> {
+export interface ValidatorOptions extends PrincipalResolver, Partial<SessionAuthorizer> {
   /**
    * Schema allowing invocations to be accepted for audiences other than the
    * service itself.
@@ -1097,13 +1097,16 @@ export interface PrincipalResolver {
 }
 
 /**
- * `AuthorityProver` provides a set of proofs of authority.
+ * `SessionAuthorizer` configures the means for authorizing a session.
  */
-export interface AuthorityProver {
+export interface SessionAuthorizer {
   /**
-   * Proof(s) of authority.
+   * Authorities we trust for session authorization. Note the authority for
+   * UCAN verification is implicitly trusted so need not be included here. This
+   * is typically used to provide additional authorities that are trusted to
+   * authorize a session.
    */
-  proofs: Delegation[]
+  sessionAuthorities: Principal[]
 }
 
 /**

@@ -126,13 +126,7 @@ test('validate mailto attested by another service', async () => {
       }
       return { error: new DIDKeyResolutionError(did) }
     },
-    proofs: [
-      await attest.delegate({
-        issuer: w3,
-        audience: other,
-        with: w3.did()
-      })
-    ],
+    sessionAuthorities: [other]
   })
 
   assert.containSubset(result, {
@@ -784,9 +778,6 @@ test('fail with multiple invalid verifiers', async () => {
       return { error: new DIDKeyResolutionError(did) }
     }
   })
-
-  console.log('Result:', result)
-  console.log('Result error:', result.error)
 
   assert.match(
     `${result.error}`,
