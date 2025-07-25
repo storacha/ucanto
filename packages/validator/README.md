@@ -22,24 +22,69 @@ npm install @ucanto/validator
 
 ## Example Usage
 ```ts
-import { capability, URI } from '@ucanto/core';
-import { validate } from '@ucanto/validator';
+import { access, DID, capability, fail, Link, Schema } from '../src/lib.js'
+import { Verifier } from '@ucanto/principal'
+import * as Core from '@ucanto/core'
 
-const readFile = capability({
-  can: 'file/read',
-  with: URI.match({ protocol: 'file:' })
-});
+// Sample identities
+const alice = await Core.EdSigner.generate()
+const bob = await Core.EdSigner.generate()
 
-const isValid = validate({
-  capability: readFile,
-  proof: someProof,
-  with: 'file://example.txt'
-});
+// Define a known capability
+const storeAdd = capability({
+  can: 'store/add',
+  with: DID,
+  nb: Schema.struct({
+    link: Link,
+    size: Schema.integer().optional(),
+  }),
+  derives: (claim, proof) => {
+    if (claim.with !== proof.with) {
+      return fail('with field does not match')
+    }
+    return { ok: {} }
+  }
+})
 
-if (isValid) {
-  console.log('Capability is valid');
+// Alice delegates the capability to Bob
+const proof = await Core.delegate({
+  issuer: alice,
+  audience: bob,
+  capabilities: [
+    {
+      with: alice.did(),
+      can: 'store/add',
+      nb: {
+        link: Link.parse('bafkqaaa')
+      }
+    }
+  ]
+})
+
+// Bob tries to invoke the capability
+const invocation = storeAdd.invoke({
+  issuer: bob,
+  audience: alice,
+  with: alice.did(),
+  nb: {
+    link: Link.parse('bafkqaaa')
+  },
+  proofs: [proof]
+})
+
+// Validate the invocation
+const result = await access(await invocation.delegate(), {
+  authority: alice,
+  capability: storeAdd,
+  principal: Verifier,
+  validateAuthorization: () => ({ ok: {} }),
+})
+
+// Check result: ensure the capability is known and valid
+if (result.error) {
+  console.error('Capability validation failed:', result.error)
 } else {
-  console.error('Invalid capability');
+  console.log('Capability is known and valid!')
 }
 ```
 
