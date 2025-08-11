@@ -22,13 +22,12 @@ npm install @ucanto/validator
 
 ## Example Usage
 ```ts
-import { access, DID, capability, fail, Link, Schema } from '../src/lib.js'
-import { Verifier } from '@ucanto/principal'
-import * as Core from '@ucanto/core'
+import { access, DID, capability, fail, Link, Schema } from '@ucanto/validator'
+import { Verifier, ed25519 } from '@ucanto/principal'
 
 // Sample identities
-const alice = await Core.EdSigner.generate()
-const bob = await Core.EdSigner.generate()
+const alice = await ed25519.generate()
+const bob = await ed25519.generate()
 
 // Define a known capability
 const storeAdd = capability({
@@ -47,7 +46,7 @@ const storeAdd = capability({
 })
 
 // Alice delegates the capability to Bob
-const proof = await Core.delegate({
+const proof = await storeAdd.delegate({
   issuer: alice,
   audience: bob,
   capabilities: [
