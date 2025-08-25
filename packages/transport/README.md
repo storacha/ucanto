@@ -47,13 +47,8 @@ const mockFetch = async (url, init) => {
   )
   
   const responseMessage = await Message.build({ receipts })
-  const response = await CAR.response.encode(responseMessage)
-  
-  return {
-    ok: true,
-    headers: new Map(Object.entries(response.headers)),
-    arrayBuffer: () => response.body,
-  }
+  const response = await CAR.response.encode(responseMessage)    
+  return new Response(response.body, { headers: response.headers })
 }
 
 // Create UCAN invocation
