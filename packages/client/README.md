@@ -48,11 +48,7 @@ const mockFetch = async (url, input) => {
   const message = await Message.build({ receipts })
   const response = await CAR.response.encode(message)
 
-  return {
-    ok: true,
-    headers: new Map(Object.entries(response.headers)),
-    arrayBuffer: () => response.body,
-  }
+  return new Response(response.body, { headers: response.headers })
 }
 
 // Connect to mock service
