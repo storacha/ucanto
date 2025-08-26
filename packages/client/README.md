@@ -30,7 +30,11 @@ import { CAR } from '@ucanto/transport'
 import { ed25519 } from '@ucanto/principal'
 import { Receipt, Message } from '@ucanto/core'
 
-const service = ed25519.parse(process.env.SERVICE_ID)
+// Parse the service DID (public key) 
+// SERVICE_DID should be a DID like: did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi
+const service = ed25519.Verifier.parse(process.env.SERVICE_DID)
+// Parse the agent's private key
+// AGENT_PRIVATE_KEY should be a base64 private key like: Mg..
 const issuer = ed25519.parse(process.env.AGENT_PRIVATE_KEY)
 
 // Mock fetch that simulates a UCAN service
