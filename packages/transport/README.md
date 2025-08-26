@@ -29,7 +29,7 @@ import { ed25519 } from '@ucanto/principal'
 import { invoke, Message, Receipt } from '@ucanto/core'
 
 const service = ed25519.parse(process.env.SERVICE_ID)
-const issuer = ed25519.parse(process.env.CLIENT_KEYPAIR)
+const issuer = ed25519.parse(process.env.AGENT_PRIVATE_KEY)
 
 // Mock fetch that simulates a UCAN service
 const mockFetch = async (url, init) => {
@@ -83,7 +83,7 @@ console.log('Received:', replyMessage.receipts.size, 'receipts')
 
 ```bash
 SERVICE_ID="MgCYKXoHVy7Vk4/QjcEGi+MCqjntUiasxXJ8uJKY0qh11e+0Bs8WsdqGK7xothgrDzzWD0ME7ynPjz2okXDh8537lId8=" \
-CLIENT_KEYPAIR="MgCZT5vOnYZoVAeyjnzuJIVY9J4LNtJ+f8Js0cTPuKUpFne0BVEDJjEu6quFIU8yp91/TY/+MYK8GvlKoTDnqOCovCVM=" \
+AGENT_PRIVATE_KEY="MgCZT5vOnYZoVAeyjnzuJIVY9J4LNtJ+f8Js0cTPuKUpFne0BVEDJjEu6quFIU8yp91/TY/+MYK8GvlKoTDnqOCovCVM=" \
 node example.js
 ```
 
