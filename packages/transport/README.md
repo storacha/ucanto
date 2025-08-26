@@ -32,7 +32,7 @@ import { invoke, Message, Receipt } from '@ucanto/core'
 // SERVICE_DID should be a DID like: did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi
 const service = ed25519.Verifier.parse(process.env.SERVICE_DID)
 // Parse the agent's private key
-// AGENT_PRIVATE_KEY should be a base64 private key like: Mg..
+// AGENT_PRIVATE_KEY should be a base64 private key starting with: Mg..
 const issuer = ed25519.parse(process.env.AGENT_PRIVATE_KEY)
 
 // Mock fetch that simulates a UCAN service
@@ -82,15 +82,57 @@ const replyMessage = await CAR.response.decode(response)
 console.log('Received:', replyMessage.receipts.size, 'receipts')
 ```
 
-### Run it:
-⚠️ These are test keys. Replace them with your own service ID and client keypair before using in production.
+## Setup Instructions
 
-```bash
-SERVICE_ID="MgCYKXoHVy7Vk4/QjcEGi+MCqjntUiasxXJ8uJKY0qh11e+0Bs8WsdqGK7xothgrDzzWD0ME7ynPjz2okXDh8537lId8=" \
-AGENT_PRIVATE_KEY="MgCZT5vOnYZoVAeyjnzuJIVY9J4LNtJ+f8Js0cTPuKUpFne0BVEDJjEu6quFIU8yp91/TY/+MYK8GvlKoTDnqOCovCVM=" \
-node example.js
+### Environment Variables
+
+**AGENT_PRIVATE_KEY**
+Set the key your client should use to sign UCAN invocations. You can generate Ed25519 keys with the ucanto library.
+
+#### Usage
+
+Create a file called `generate-keys.js`:
+
+```javascript
+import { ed25519 } from '@ucanto/principal'
+
+async function generateKeys() {
+  const keypair = await ed25519.generate()
+  
+  const privateKey = ed25519.format(keypair)
+  
+  console.log('AGENT_PRIVATE_KEY=' + privateKey)
+}
+
+generateKeys().catch(console.error)
 ```
 
+Then run it:
+
+```bash
+node generate-keys.js
+```
+
+**SERVICE_DID**
+Set the DID of the service you want to connect to. Check the service's documentation for their public DID.
+
+**SERVICE_URL** (Optional)
+If you're connecting to a custom service, set both `SERVICE_DID` and `SERVICE_URL` environment variables.
+
+
+For example, Storacha has following `SERVICE_DID` and `SERVICE_URL`:
+
+```bash
+# Storacha uses these default values:
+SERVICE_DID="did:web:up.storacha.network"
+SERVICE_URL="https://up.storacha.network"
+```
+
+Set your environment variables like so:
+```bash
+AGENT_PRIVATE_KEY="your_generated_private_key_here" \
+SERVICE_DID="did:key:service_provider_did_here" \
+```
 
 
 ### Advanced: Pluggable Codecs
