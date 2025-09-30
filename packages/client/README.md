@@ -26,8 +26,8 @@ npm install @ucanto/client
 import * as Client from '@ucanto/client';
 import { ed25519 } from '@ucanto/principal';
 
-const service = ed25519.Verifier.parse(process.env.SERVICE_ID);
-const issuer = ed25519.Signer.parse(process.env.CLIENT_KEYPAIR);
+const service = ed25519.parse(process.env.SERVICE_ID);
+const issuer = ed25519.parse(process.env.CLIENT_KEYPAIR);
 
 const invocation = await Client.invoke({
   issuer,

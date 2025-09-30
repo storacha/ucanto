@@ -41,7 +41,7 @@ const Add = capability({
     // Can be derived if claimed capability path is contained in the delegated
     // capability path.
     claimed.uri.href.startsWith(ensureTrailingDelimiter(delegated.uri.href)) ||
-    new Failure(`Notebook ${claimed.uri} is not included in ${delegaed.uri}`),
+    new Failure(`Notebook ${claimed.uri} is not included in ${delegated.uri}`),
 })
 
 const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
@@ -61,7 +61,7 @@ import { provide, Failure, MalformedCapability } from '@ucanto/server'
 
 const service = (context: { store: Map<string, string> }) => {
   const add = provide(Add, ({ capability, invocation }) => {
-    store.set(capability.uri.href, capability.nb.link)
+    context.store.set(capability.uri.href, capability.nb.link)
     return {
       with: capability.with,
       link: capability.nb.link,
@@ -95,9 +95,9 @@ import { ed25519 } from "@ucanto/principal"
 import * as HTTP from "node:http"
 import * as Buffer from "node:buffer"
 
-export const server = (context { store = new Map() } : { store: Map<string, string> }) =>
+export const server = (context: { store?: Map<string, string> } = { store: new Map() }) =>
   Server.create({
-    id: ed25519.Signer.parse(process.env.SERVICE_SECRET),
+    id: ed25519.parse(process.env.SERVICE_SECRET),
     service: service(context),
     decoder: CAR,
     encoder: CBOR,
@@ -119,6 +119,7 @@ In nodejs we could expose our service as follows:
 
 ```ts
 export const listen = ({ port = 8080, context = new Map() }) => {
+  const fileServer = server({ store: context })
 
   HTTP.createServer(async (request, response) => {
     const chunks = []
@@ -149,18 +150,18 @@ import { ed25519 } from '@ucanto/principal'
 import { CID } from 'multiformats'
 
 // Service will have a well known DID
-const service = ed25519.Verifier.parse(process.env.SERVICE_ID)
+const service = ed25519.parse(process.env.SERVICE_ID)
 // Client keypair
-const issuer = ed25519.Signer.parse(process.env.MY_KEPAIR)
+const issuer = ed25519.parse(process.env.MY_KEPAIR)
 
 const demo1 = async connection => {
   const me = await Client.invoke({
-    issuer: alice,
+    issuer,
     audience: service,
     capability: {
       can: 'file/link',
       with: `file://${issuer.did()}/me/about`,
-      link: CID.parse(process.env.ME_CID),
+      nb: { link: CID.parse(process.env.ME_CID) },
     },
   })
 
@@ -216,15 +217,16 @@ import { ed25519 } from '@ucanto/principal'
 import * as Client from '@ucanto/client'
 import { CID } from 'multiformats'
 
-const service = ed25519.Verifier.parse(process.env.SERVICE_DID)
-const alice = ed25519.Signer.parse(process.env.ALICE_KEYPAIR)
-const bob = ed25519.Signer.parse(process.env.BOB_KEYPAIR)
+const service = ed25519.parse(process.env.SERVICE_DID)
+const alice = ed25519.parse(process.env.ALICE_KEYPAIR)
+const bob = ed25519.parse(process.env.BOB_KEYPAIR)
+const MALLORY_DID = 'did:key:...' // placeholder for Mallory's DID
 
 const demo2 = async connection => {
   // Alice delegates capability to mutate FS under bob's namespace
   const proof = await Client.delegate({
     issuer: alice,
-    audience: bob.principal,
+    audience: bob,
     capabilities: [
       {
         can: 'file/link',
@@ -239,8 +241,9 @@ const demo2 = async connection => {
     capability: {
       can: 'file/link',
       with: `file://${alice.did()}/friends/${bob.did()}/about`,
-      link: CID.parse(process.env.BOB_CID),
+      nb: { link: CID.parse(process.env.BOB_CID) },
     },
+    proofs: [proof],
   })
 
   const aboutMallory = Client.invoke({
@@ -249,25 +252,26 @@ const demo2 = async connection => {
     capability: {
       can: 'file/link',
       with: `file://${alice.did()}/friends/${MALLORY_DID}/about`,
-      link: CID.parse(process.env.MALLORY_CID),
+      nb: { link: CID.parse(process.env.MALLORY_CID) },
     },
+    proofs: [proof],
   })
 
-  const [bobResult, malloryResult] = connection.execute([
+  const [bobResult, malloryResult] = await connection.execute([
     aboutBob,
     aboutMallory,
   ])
 
   if (bobResult.error) {
-    console.error('oops', r1)
+    console.error('oops', bobResult)
   } else {
-    console.log('about bob is linked', r1)
+    console.log('about bob is linked', bobResult)
   }
 
   if (malloryResult.error) {
-    console.log('oops', r2)
+    console.log('oops', malloryResult)
   } else {
-    console.log('about mallory is linked', r2)
+    console.log('about mallory is linked', malloryResult)
   }
 }
 ```

@@ -40,7 +40,7 @@ export const createServer = () => {
   });
 
   return Server.create({
-    id: ed25519.Signer.parse(process.env.SERVICE_SECRET),
+    id: ed25519.parse(process.env.SERVICE_SECRET),
     service: { file: { read } },
     decoder: CAR,
     encoder: CBOR
