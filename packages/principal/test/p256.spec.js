@@ -159,6 +159,48 @@ describe('P-256 signing principal', () => {
     }
     assert.throws(() => Lib.from(invalidKeysArchive), /Unsupported archive format/)
   })
+
+  it('format and parse', async () => {
+    const signer = await Lib.generate()
+    
+    // Test format function
+    const formatted = Lib.format(signer)
+    assert.equal(typeof formatted, 'string')
+    
+    // Test parse function
+    const parsed = Lib.parse(formatted)
+    assert.equal(parsed.did(), signer.did())
+    assert.equal(parsed.signatureAlgorithm, signer.signatureAlgorithm)
+    
+    // Test that parsed signer works
+    const payload = new TextEncoder().encode('test message')
+    const signature = await parsed.sign(payload)
+    assert.equal(await signer.verify(payload, signature), true)
+  })
+
+  it('or function', async () => {
+    // Test the or function for composing multiple signer importers
+    const signer = await Lib.generate()
+    const archive = signer.toArchive()
+    
+    // Create a custom signer importer
+    const customImporter = {
+      from(archive) {
+        if (archive.id.startsWith('did:custom:')) {
+          // Return a mock signer for custom DIDs
+          return signer
+        }
+        throw new Error('Unsupported custom archive')
+      }
+    }
+    
+    // Test or function
+    const combinedImporter = Lib.or(customImporter)
+    
+    // Should still work with regular P-256 archives
+    const restored = combinedImporter.from(archive)
+    assert.equal(restored.did(), signer.did())
+  })
 })
 
 describe('P-256 verifying principal', () => {
@@ -334,5 +376,46 @@ describe('P-256 verifying principal', () => {
     const didKey = verifier.toDIDKey()
     assert.equal(didKey.startsWith('did:key:'), true)
     assert.equal(didKey, verifier.did()) // For P-256 verifier, toDIDKey should return same as did()
+  })
+
+  it('verifier format and encode', async () => {
+    const signer = await Lib.generate()
+    const verifier = signer.verifier
+    const { Verifier } = Lib
+    
+    // Test format function
+    const formatted = Verifier.format(verifier)
+    assert.equal(formatted, verifier.did())
+    
+    // Test encode function
+    const encoded = Verifier.encode(verifier)
+    assert.ok(encoded instanceof Uint8Array)
+    
+    // Verify encode/decode roundtrip
+    const decoded = Verifier.decode(encoded)
+    assert.equal(decoded.did(), verifier.did())
+  })
+
+  it('verifier or function', async () => {
+    const { Verifier } = Lib
+    const signer = await Lib.generate()
+    
+    // Create a custom verifier parser
+    const customParser = {
+      parse(did) {
+        if (did.startsWith('did:custom:')) {
+          // Return a mock verifier for custom DIDs
+          return signer.verifier
+        }
+        throw new Error('Unsupported custom DID')
+      }
+    }
+    
+    // Test or function
+    const combinedParser = Verifier.or(customParser)
+    
+    // Should still work with regular P-256 DIDs
+    const parsed = combinedParser.parse(signer.did())
+    assert.equal(parsed.did(), signer.did())
   })
 })
