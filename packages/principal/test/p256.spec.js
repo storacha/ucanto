@@ -150,6 +150,7 @@ describe('P-256 signing principal', () => {
       id: 'did:web:example.com',
       keys: archive.keys
     }
+    // @ts-ignore - Testing error handling with invalid archive format
     assert.throws(() => Lib.from(invalidArchive), /Unsupported archive format/)
     
     // Test error case: keys not Uint8Array
@@ -157,6 +158,7 @@ describe('P-256 signing principal', () => {
       id: archive.id,
       keys: { [archive.id]: 'not-uint8array' }
     }
+    // @ts-ignore - Testing error handling with invalid keys format
     assert.throws(() => Lib.from(invalidKeysArchive), /Unsupported archive format/)
   })
 
@@ -185,6 +187,9 @@ describe('P-256 signing principal', () => {
     
     // Create a custom signer importer
     const customImporter = {
+      /**
+       * @param {any} archive
+       */
       from(archive) {
         if (archive.id.startsWith('did:custom:')) {
           // Return a mock signer for custom DIDs
@@ -302,6 +307,7 @@ describe('P-256 verifying principal', () => {
       code: 0x9999, // Wrong signature code
       raw: new Uint8Array(64).fill(1) // Valid length but wrong code
     }
+    // @ts-ignore - Testing with invalid signature format
     assert.equal(await verifier.verify(payload, wrongCodeSig), false)
     
     // Test with malformed signature that should trigger catch block in p256.verify
@@ -312,6 +318,7 @@ describe('P-256 verifying principal', () => {
     }
     
     // This should return false due to p256.verify throwing an error (triggers catch block)
+    // @ts-ignore - Testing with invalid signature format
     assert.equal(await verifier.verify(payload, malformedSig), false)
     
     // Test with another type of malformed signature
@@ -319,7 +326,16 @@ describe('P-256 verifying principal', () => {
       code: verifier.signatureCode,
       raw: new Uint8Array(64).fill(255) // Wrong signature bytes
     }
+    // @ts-ignore - Testing with invalid signature format
     assert.equal(await verifier.verify(payload, invalidSig), false)
+    
+    // Try signature with random bytes that should trigger p256.verify to throw
+    const randomSig = {
+      code: verifier.signatureCode,
+      raw: new Uint8Array([0x30, 0x45, 0x02, 0x20]) // Start of DER format but incomplete
+    }
+    // @ts-ignore - Testing with invalid signature format
+    assert.equal(await verifier.verify(payload, randomSig), false)
     
     // Test with different malformed signature that should trigger p256.verify error
     // Use signature with correct code but malformed raw bytes
@@ -327,14 +343,8 @@ describe('P-256 verifying principal', () => {
       code: verifier.signatureCode,
       raw: new Uint8Array(64) // Correct length but all zeros - invalid signature
     }
+    // @ts-ignore - Testing with invalid signature format
     assert.equal(await verifier.verify(payload, malformedSigBytes), false)
-    
-    // Try signature with random bytes that should trigger p256.verify to throw
-    const randomSig = {
-      code: verifier.signatureCode,
-      raw: new Uint8Array([0x30, 0x45, 0x02, 0x20]) // Start of DER format but incomplete
-    }
-    assert.equal(await verifier.verify(payload, randomSig), false)
     
     // Test with null signature raw to force p256.verify to throw
     const nullSig = {
@@ -343,6 +353,7 @@ describe('P-256 verifying principal', () => {
     }
     
     // This should trigger the catch block (lines 114-115) because p256.verify throws with null
+    // @ts-ignore - Testing with null signature to trigger error handling
     assert.equal(await verifier.verify(payload, nullSig), false)
     
     // Test with undefined signature raw as well
@@ -351,6 +362,7 @@ describe('P-256 verifying principal', () => {
       raw: undefined // This should also cause p256.verify to throw
     }
     
+    // @ts-ignore - Testing with undefined signature to trigger error handling
     assert.equal(await verifier.verify(payload, undefinedSig), false)
   })
 
@@ -402,6 +414,9 @@ describe('P-256 verifying principal', () => {
     
     // Create a custom verifier parser
     const customParser = {
+      /**
+       * @param {any} did
+       */
       parse(did) {
         if (did.startsWith('did:custom:')) {
           // Return a mock verifier for custom DIDs
