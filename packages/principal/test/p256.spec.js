@@ -106,6 +106,59 @@ describe('P-256 signing principal', () => {
 
     assert.equal(signer.did().startsWith('did:key:'), true)
   })
+
+  it('toDIDKey', async () => {
+    const signer = await Lib.generate()
+    const didKey = signer.toDIDKey()
+    
+    assert.equal(didKey.startsWith('did:key:'), true)
+    assert.equal(didKey, signer.did()) // For P-256, toDIDKey should return same as did()
+  })
+
+  it('withDID', async () => {
+    const signer = await Lib.generate()
+    const customDID = 'did:web:example.com'
+    const customSigner = signer.withDID(customDID)
+    
+    assert.equal(customSigner.did(), customDID)
+    assert.equal(customSigner.toDIDKey(), signer.did()) // Should still reference original key
+    assert.equal(customSigner.signatureAlgorithm, signer.signatureAlgorithm)
+    assert.equal(customSigner.signatureCode, signer.signatureCode)
+    
+    // Should be able to sign with custom DID
+    const payload = new TextEncoder().encode('test message')
+    const signature = await customSigner.sign(payload)
+    assert.equal(await customSigner.verify(payload, signature), true)
+  })
+
+  it('from archive', async () => {
+    const original = await Lib.generate()
+    const archive = original.toArchive()
+    
+    // Test successful restoration from archive
+    const restored = Lib.from(archive)
+    assert.equal(restored.did(), original.did())
+    assert.equal(restored.signatureAlgorithm, original.signatureAlgorithm)
+    
+    // Test that restored signer works
+    const payload = new TextEncoder().encode('test message')
+    const signature = await restored.sign(payload)
+    assert.equal(await original.verify(payload, signature), true)
+    
+    // Test error case: non-did:key archive
+    const invalidArchive = {
+      id: 'did:web:example.com',
+      keys: archive.keys
+    }
+    assert.throws(() => Lib.from(invalidArchive), /Unsupported archive format/)
+    
+    // Test error case: keys not Uint8Array
+    const invalidKeysArchive = {
+      id: archive.id,
+      keys: { [archive.id]: 'not-uint8array' }
+    }
+    assert.throws(() => Lib.from(invalidKeysArchive), /Unsupported archive format/)
+  })
 })
 
 describe('P-256 verifying principal', () => {
@@ -195,5 +248,91 @@ describe('P-256 verifying principal', () => {
     // Wrong payload should fail
     const wrongPayload = new TextEncoder().encode('wrong message')
     assert.equal(await verifier.verify(wrongPayload, signature), false)
+  })
+
+  it('verifier error handling', async () => {
+    const signer = await Lib.generate()
+    const verifier = signer.verifier
+    const payload = new TextEncoder().encode('test message')
+    
+    // Test with signature that has wrong algorithm code (should fail fast)
+    const wrongCodeSig = {
+      code: 0x9999, // Wrong signature code
+      raw: new Uint8Array(64).fill(1) // Valid length but wrong code
+    }
+    assert.equal(await verifier.verify(payload, wrongCodeSig), false)
+    
+    // Test with malformed signature that should trigger catch block in p256.verify
+    // Use correct code but invalid signature format to trigger crypto library error
+    const malformedSig = {
+      code: verifier.signatureCode, // Correct code
+      raw: new Uint8Array([1, 2, 3]) // Too short - will cause p256.verify to throw
+    }
+    
+    // This should return false due to p256.verify throwing an error (triggers catch block)
+    assert.equal(await verifier.verify(payload, malformedSig), false)
+    
+    // Test with another type of malformed signature
+    const invalidSig = {
+      code: verifier.signatureCode,
+      raw: new Uint8Array(64).fill(255) // Wrong signature bytes
+    }
+    assert.equal(await verifier.verify(payload, invalidSig), false)
+    
+    // Test with different malformed signature that should trigger p256.verify error
+    // Use signature with correct code but malformed raw bytes
+    const malformedSigBytes = {
+      code: verifier.signatureCode,
+      raw: new Uint8Array(64) // Correct length but all zeros - invalid signature
+    }
+    assert.equal(await verifier.verify(payload, malformedSigBytes), false)
+    
+    // Try signature with random bytes that should trigger p256.verify to throw
+    const randomSig = {
+      code: verifier.signatureCode,
+      raw: new Uint8Array([0x30, 0x45, 0x02, 0x20]) // Start of DER format but incomplete
+    }
+    assert.equal(await verifier.verify(payload, randomSig), false)
+    
+    // Test with null signature raw to force p256.verify to throw
+    const nullSig = {
+      code: verifier.signatureCode,
+      raw: null // This will cause p256.verify to throw: "invalid signature, expected Uint8Array"
+    }
+    
+    // This should trigger the catch block (lines 114-115) because p256.verify throws with null
+    assert.equal(await verifier.verify(payload, nullSig), false)
+    
+    // Test with undefined signature raw as well
+    const undefinedSig = {
+      code: verifier.signatureCode,
+      raw: undefined // This should also cause p256.verify to throw
+    }
+    
+    assert.equal(await verifier.verify(payload, undefinedSig), false)
+  })
+
+  it('verifier withDID', async () => {
+    const signer = await Lib.generate()
+    const verifier = signer.verifier
+    const customDID = 'did:web:example.com'
+    
+    const customVerifier = verifier.withDID(customDID)
+    assert.equal(customVerifier.did(), customDID)
+    assert.equal(customVerifier.toDIDKey(), verifier.did())
+    
+    // Should still be able to verify signatures from original signer
+    const payload = new TextEncoder().encode('test message')
+    const signature = await signer.sign(payload)
+    assert.equal(await customVerifier.verify(payload, signature), true)
+  })
+
+  it('verifier toDIDKey', async () => {
+    const signer = await Lib.generate()
+    const verifier = signer.verifier
+    
+    const didKey = verifier.toDIDKey()
+    assert.equal(didKey.startsWith('did:key:'), true)
+    assert.equal(didKey, verifier.did()) // For P-256 verifier, toDIDKey should return same as did()
   })
 })
