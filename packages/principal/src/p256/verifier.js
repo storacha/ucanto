@@ -17,10 +17,6 @@ const PUBLIC_TAG_SIZE = varint.encodingLength(code)
 const SIZE = 33 + PUBLIC_TAG_SIZE // 33 bytes for compressed P-256 public key
 
 /**
- * @typedef {API.P256Verifier} P256Verifier
- */
-
-/**
  * Parses `did:key:` string as a VerifyingPrincipal.
  *
  * @param {API.DID|string} did

@@ -1,15 +1,37 @@
-/**
- * P-256 type definitions - JavaScript version
- * For TypeScript types, see the package exports
- */
+import * as Signature from '@ipld/dag-ucan/signature'
 
 export * from '@ucanto/interface'
 
-// Re-export common types for convenience
-import * as Signature from '@ipld/dag-ucan/signature'
+/**
+ * Integer corresponding to ES256 byteprefix of the VarSig.
+ * @typedef {import('@ucanto/interface').MulticodecCode<typeof Signature.ES256, 'ES256'>} SigAlg
+ */
 
 /**
- * ES256 signature algorithm identifier
- * @type {number}
+ * Name corresponding to ES256 algorithm.
+ * @typedef {'ES256'} Name
  */
-export const ES256_SIG_ALG = Signature.ES256
+
+/**
+ * P-256 Signer interface
+ * @typedef {import('@ucanto/interface').SignerKey<SigAlg> & {
+ *   readonly signatureAlgorithm: Name
+ *   readonly code: import('@ucanto/interface').MulticodecCode<0x1301, 'p256-private-key'>
+ *   readonly signer: P256Signer
+ *   readonly verifier: P256Verifier
+ *   encode(): import('@ucanto/interface').ByteView<P256Signer & CryptoKeyPair>
+ *   toArchive(): {
+ *     id: import('@ucanto/interface').DIDKey
+ *     keys: { [Key: import('@ucanto/interface').DIDKey]: import('@ucanto/interface').ByteView<import('@ucanto/interface').SignerKey<SigAlg> & CryptoKey> }
+ *   }
+ * }} P256Signer
+ */
+
+/**
+ * P-256 Verifier interface
+ * @typedef {import('@ucanto/interface').VerifierKey<SigAlg> & {
+ *   readonly code: import('@ucanto/interface').MulticodecCode<0x1200, 'p256-public-key'>
+ *   readonly signatureCode: SigAlg
+ *   readonly signatureAlgorithm: Name
+ * }} P256Verifier
+ */

@@ -178,7 +178,7 @@ class P256Signer extends Uint8Array {
   /**
    * @template {API.DID} ID
    * @param {ID} id
-   * @returns {API.Signer<ID, typeof Signature.ES256>}
+   * @returns {API.Signer<ID, typeof signatureCode>}
    */
   withDID(id) {
     return Signer.withDID(this, id)
@@ -187,7 +187,7 @@ class P256Signer extends Uint8Array {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @returns {Promise<API.SignatureView<T, typeof Signature.ES256>>}
+   * @returns {Promise<API.SignatureView<T, typeof signatureCode>>}
    */
   async sign(payload) {
     const raw = p256.sign(payload, this.secret).toCompactRawBytes()
@@ -197,35 +197,28 @@ class P256Signer extends Uint8Array {
   /**
    * @template T
    * @param {API.ByteView<T>} payload
-   * @param {API.Signature<T, typeof this.signatureCode>} signature
-   * @returns {API.Await<boolean>}
+   * @param {API.Signature<T, typeof signatureCode>} signature
    */
-  async verify(payload, signature) {
+  verify(payload, signature) {
     return this.verifier.verify(payload, signature)
-  }
-
-  /**
-   * Encodes keypair into bytes.
-   */
-  encode() {
-    return new Uint8Array(this)
-  }
-
-  /**
-   * @returns {API.SignerArchive<API.DIDKey, typeof signatureCode>}
-   */
-  toArchive() {
-    return {
-      id: this.did(),
-      keys: { [this.did()]: this.encode() }
-    }
-  }
-
-  get signatureCode() {
-    return signatureCode
   }
 
   get signatureAlgorithm() {
     return signatureAlgorithm
+  }
+  get signatureCode() {
+    return signatureCode
+  }
+
+  encode() {
+    return this
+  }
+
+  toArchive() {
+    const id = this.did()
+    return {
+      id,
+      keys: { [id]: this.encode() },
+    }
   }
 }
