@@ -18,6 +18,7 @@ import { parseLink } from '@ucanto/core'
 // Full integration test: README examples working together
 test('README full workflow integration with server-as-channel', async () => {
   // 1. Define capability (from README)
+  /** @param {string} uri */
   const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 
   const Add = capability({
@@ -26,9 +27,11 @@ test('README full workflow integration with server-as-channel', async () => {
     nb: Schema.struct({
       link: Link,
     }),
-    derives: (claimed, delegated) =>
-      claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ||
-      new Failure(`Resource ${claimed.with} is not contained by ${delegated.with}`),
+    derives: (claimed, delegated) => {
+      const result = claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ||
+        new Failure(`Resource ${claimed.with} is not contained by ${delegated.with}`);
+      return /** @type {any} */ (result);
+    },
   })
 
   // 2. Define service (from README) using proper Server.provide pattern
@@ -37,10 +40,10 @@ test('README full workflow integration with server-as-channel', async () => {
     file: {
       link: provide(Add, ({ capability, invocation }) => {
         context.store.set(capability.with, capability.nb.link)
-        return {
+        return /** @type {any} */ ({
           with: capability.with,
           link: capability.nb.link,
-        }
+        })
       })
     }
   }
@@ -90,10 +93,13 @@ test('README full workflow integration with server-as-channel', async () => {
   
   // 6. Test that the full workflow completed successfully
   assert.ok(result)
+  // @ts-ignore - Test code accessing result properties
   assert.ok(!result.error, `Expected no error, got: ${result.error?.message}`)
   assert.ok(result.out, 'Expected successful result')
   assert.ok(!result.out.error, 'Expected no error in result')
+  // @ts-ignore - Test code accessing result properties
   assert.equal(result.out.with, `file:///tmp/${issuerKey.did()}/me/about`)
+  // @ts-ignore - Test code accessing result properties
   assert.equal(result.out.link.toString(), testCID.toString())
   
   // 7. Verify the store was updated (proves the service handler actually ran)
@@ -105,6 +111,7 @@ test('README full workflow integration with server-as-channel', async () => {
 // Test delegation example with server-as-channel
 test('README delegation example with server-as-channel', async () => {
   // 1. Define the ensureTrailingDelimiter helper
+  /** @param {string} uri */
   const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
   
   // Create the same service setup
@@ -114,9 +121,11 @@ test('README delegation example with server-as-channel', async () => {
     nb: Schema.struct({
       link: Link,
     }),
-    derives: (claimed, delegated) =>
-      claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ||
-      new Failure(`Resource ${claimed.with} is not contained by ${delegated.with}`),
+    derives: (claimed, delegated) => {
+      const result = claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ||
+        new Failure(`Resource ${claimed.with} is not contained by ${delegated.with}`);
+      return /** @type {any} */ (result);
+    },
   })
 
   const context = { store: new Map() }
@@ -124,10 +133,10 @@ test('README delegation example with server-as-channel', async () => {
     file: {
       link: provide(Add, ({ capability, invocation }) => {
         context.store.set(capability.with, capability.nb.link)
-        return {
+        return /** @type {any} */ ({
           with: capability.with,
           link: capability.nb.link,
-        }
+        })
       })
     }
   }
@@ -191,8 +200,10 @@ test('README delegation example with server-as-channel', async () => {
   
   // This should succeed because Bob has delegated permission from Alice
   assert.ok(result)
+  // @ts-ignore - Test code accessing result properties
   assert.ok(!result.error, `Expected no error, got: ${result.error?.message}`)
   assert.ok(result.out, 'Expected successful result')
   assert.ok(!result.out.error, 'Expected no error in result')
+  // @ts-ignore - Test code accessing result properties
   assert.equal(result.out.with, `file:///tmp/${alice.did()}/friends/${bob.did()}/about`)
 })

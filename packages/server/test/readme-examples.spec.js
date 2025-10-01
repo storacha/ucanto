@@ -9,14 +9,17 @@ import { ed25519 } from '@ucanto/principal'
 
 // Test that we can create the README capability definition
 test('README capability definition works', async () => {
+  /** @param {string} uri */
   const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 
   const Add = capability({
     can: 'file/link',
     with: URI.match({ protocol: 'file:' }),
-    nb: { link: Link },
+    nb: /** @type {any} */ ({ link: Link }),
     derives: (claimed, delegated) =>
+      // @ts-ignore - Test code accessing internal properties
       claimed.uri.href.startsWith(ensureTrailingDelimiter(delegated.uri.href)) ||
+      // @ts-ignore - Test code accessing internal properties
       new Failure(`Notebook ${claimed.uri} is not included in ${delegated.uri}`),
   })
 
@@ -30,16 +33,18 @@ test('README service definition works', async () => {
   const Add = capability({
     can: 'file/link',
     with: URI.match({ protocol: 'file:' }),
-    nb: { link: Link },
+    nb: /** @type {any} */ ({ link: Link }),
   })
 
   const service = (context = { store: new Map() }) => {
     const add = provide(Add, ({ capability, invocation }) => {
+      // @ts-ignore - Test code accessing internal properties
       context.store.set(capability.uri.href, capability.nb.link)
-      return {
+      return /** @type {any} */ ({
         with: capability.with,
+        // @ts-ignore - Test code accessing internal properties
         link: capability.nb.link,
-      }
+      })
     })
 
     return { file: { add } }

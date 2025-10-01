@@ -1,5 +1,5 @@
 import * as API from '@ucanto/interface'
-import { Verifier, Signer, ed25519, RSA } from '../src/lib.js'
+import { Verifier, Signer, ed25519, RSA, P256 } from '../src/lib.js'
 import { assert } from 'chai'
 
 const utf8 = new TextEncoder()
@@ -7,17 +7,26 @@ describe('PrincipalParser', () => {
   it('parse & verify', async () => {
     const ed = await ed25519.generate()
     const rsa = await RSA.generate()
+    const p256 = await P256.generate()
 
     const edp = Verifier.parse(ed.did())
+    const rsap = Verifier.parse(rsa.did())
+    const p256p = Verifier.parse(p256.did())
 
-    const payload = utf8.encode('hello ed')
+    const payload = utf8.encode('hello algorithms')
 
+    // Test that each verifier only accepts its own signatures
     assert.equal(await edp.verify(payload, await ed.sign(payload)), true)
     assert.equal(await edp.verify(payload, await rsa.sign(payload)), false)
+    assert.equal(await edp.verify(payload, await p256.sign(payload)), false)
 
-    const rsap = Verifier.parse(rsa.did())
     assert.equal(await rsap.verify(payload, await ed.sign(payload)), false)
     assert.equal(await rsap.verify(payload, await rsa.sign(payload)), true)
+    assert.equal(await rsap.verify(payload, await p256.sign(payload)), false)
+
+    assert.equal(await p256p.verify(payload, await ed.sign(payload)), false)
+    assert.equal(await p256p.verify(payload, await rsa.sign(payload)), false)
+    assert.equal(await p256p.verify(payload, await p256.sign(payload)), true)
   })
 
   it('throws on unknown did', () => {
@@ -70,13 +79,31 @@ describe('PrincipalParser', () => {
     const rsa = await RSA.generate({ extractable: true })
 
     const signer = Signer.from(rsa.toArchive())
-    const payload = utf8.encode('hello ed')
+    const payload = utf8.encode('hello rsa')
 
     const signature = await signer.sign(payload)
     assert.equal(
       await rsa.verify(
         payload,
         /** @type {API.Signature<unknown, typeof rsa.signatureCode>} */ (
+          signature
+        )
+      ),
+      true
+    )
+  })
+
+  it('p256 decode & sign', async () => {
+    const p256 = await P256.generate()
+
+    const signer = Signer.from(p256.toArchive())
+    const payload = utf8.encode('hello p256')
+
+    const signature = await signer.sign(payload)
+    assert.equal(
+      await p256.verify(
+        payload,
+        /** @type {API.Signature<unknown, typeof p256.signatureCode>} */ (
           signature
         )
       ),
