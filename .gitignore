@@ -7,3 +7,4 @@ coverage
 .pnpm-debug.log
 .env
 .vscode
+*.tgz
