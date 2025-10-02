@@ -19,7 +19,8 @@
     "build": "pnpm -r run --if-present build",
     "check": "pnpm -r run --if-present check",
     "test:node": "pnpm -r run --if-present test:node",
-    "test:web": "pnpm -r run --if-present test:web"
+    "test:web": "pnpm -r run --if-present test:web",
+    "pack": "node scripts/pack-packages.js"
   },
   "devDependencies": {
     "mocha": "^10.1.0",
