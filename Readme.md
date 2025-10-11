@@ -1,5 +1,13 @@
 # ucanto
 
+[![Core Tests](https://github.com/{{ github.repository }}/actions/workflows/core.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/core.yml)
+[![Principal Tests](https://github.com/{{ github.repository }}/actions/workflows/principal.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/principal.yml)
+[![Transport Tests](https://github.com/{{ github.repository }}/actions/workflows/transport.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/transport.yml)
+[![Interface Tests](https://github.com/{{ github.repository }}/actions/workflows/interface.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/interface.yml)
+[![Server Tests](https://github.com/{{ github.repository }}/actions/workflows/server.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/server.yml)
+[![Client Tests](https://github.com/{{ github.repository }}/actions/workflows/client.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/client.yml)
+[![Validator Tests](https://github.com/{{ github.repository }}/actions/workflows/validator.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/validator.yml)
+
 (u)canto is a library for [UCAN][] based [RPC][] that provides:
 
 1. A declarative system for defining [capabilities][] and [abilities][] (roughly equivalent to HTTP
