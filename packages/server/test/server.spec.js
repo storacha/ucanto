@@ -125,6 +125,7 @@ test('encode delegated invocation', async () => {
 
     assert.deepEqual(r1.out, {
       error: {
+        // @ts-expect-error
         name: 'UnknownDIDError',
         did: alice.did(),
         message: `DID ${alice.did()} has no account`,
@@ -133,6 +134,7 @@ test('encode delegated invocation', async () => {
 
     assert.deepEqual(r2.out, {
       error: {
+        // @ts-expect-error
         name: 'UnknownDIDError',
         did: alice.did(),
         message: `DID ${alice.did()} has no account`,
@@ -202,7 +204,7 @@ test('unknown handler', async () => {
     },
   })
 
-  const error = await register.execute(connection)
+  const error = await register.execute(/** @type {any} */ (connection))
 
   assert.containSubset(error, {
     out: {
@@ -227,7 +229,7 @@ test('unknown handler', async () => {
     },
   })
 
-  const error2 = await boom.execute(connection)
+  const error2 = await boom.execute(/** @type {any} */ (connection))
   assert.containSubset(error2, {
     out: {
       error: {
