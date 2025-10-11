@@ -86,7 +86,7 @@ test('README workflow integration with server-as-channel', async () => {
   
   // 6. Test that the full workflow completed successfully
   assert.ok(result)
-  assert.ok(!result.error, `Expected no error, got: ${result.error?.message}`)
+  assert.ok(!result.out.error, `Expected no error, got: ${result.out.error?.message}`)
   assert.ok(result.out, 'Expected successful result')
   assert.ok(result.out.ok, 'Expected successful result in ok field')
   assert.ok(!result.out.error, 'Expected no error in result')
@@ -190,7 +190,7 @@ test('README delegation example with server-as-channel', async () => {
   
   // This should succeed because Bob has delegated permission from Alice
   assert.ok(result)
-  assert.ok(!result.error, `Expected no error, got: ${result.error?.message}`)
+  assert.ok(!result.out.error, `Expected no error, got: ${result.out.error?.message}`)
   assert.ok(result.out, 'Expected successful result')
   assert.ok(result.out.ok, 'Expected successful result in ok field')
   assert.ok(!result.out.error, 'Expected no error in result')
