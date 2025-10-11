@@ -248,13 +248,6 @@ test('test access/claim provider', async () => {
     validateAuthorization: () => ({ ok: {} }),
   })
 
-  /**
-   * @type {API.ConnectionView<{
-   *  access: {
-   *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], API.Failure>
-   *  }
-   * }>}
-   */
   const client = Client.connect({
     id: w3,
     codec: CAR.outbound,
