@@ -2,284 +2,264 @@
 
 (u)canto is a library for [UCAN][] based [RPC][] that provides:
 
-1. A declarative system for defining capabilities (roughly equivalent to HTTP
+1. A declarative system for defining [capabilities][] and [abilities][] (roughly equivalent to HTTP
    routes in REST).
-1. A system for binding [capability][] handles (a.k.a providers) to form services with built-in routing.
-1. A UCAN validation system.
-1. A runtime for executing UCAN capability [invocations][].
-1. A pluggable transport layer.
-1. A client supporting batched invocations and full type inference.
+2. A system for binding [capability][] handles (a.k.a providers) to form services with built-in routing.
+3. A UCAN validation system.
+4. A runtime for executing UCAN capability [invocations][].
+5. A pluggable transport layer.
+6. A client supporting batched invocations and full [type][] inference.
 
 > the name ucanto is a word play on UCAN and canto (one of the major divisions of a long poem)
 
-## Quick sample
+## Quick Start - Using a UCAN Service
 
-To get a taste of the libary we will build up a "filesystem" service, in which:
+Most developers will use ucanto to **connect to existing UCAN services**. Here's how to get started:
 
-1. Top level paths are [did:key][] identifiers, here on referred to as (user) drives.
-1. Drives are owned by users holding a private key corresponding to the [did:key][] of the drive.
-1. Drive owners can mutate the filesystem within their drive's path and delegate that ability to others.
+### Installation
 
-### Capabilities
-
-The very first thing we want to do is define the set of capabilities our service will provide. Each (cap)[ability][] MUST:
-
-1. Have a `can` field denoting an _action_ it can perform.
-2. Have a `with` URI denoting the _resource_ it can perform that action on.
-3. Be comparable to other capabilities _(with set semantics, as in does capability `a` include capability `b` ?)_
-
-Let's define the `file/link` capability, where resources are identified via `file:` URLs and MAY contain a `link` to be mapped to a given path.
-
-```ts
-import { capability, URI, Link, Failure } from '@ucanto/server'
-
-const Add = capability({
-  can: 'file/link',
-  with: URI.match({ protocol: 'file:' }),
-  nb: { link: Link },
-  derives: (claimed, delegated) =>
-    // Can be derived if claimed capability path is contained in the delegated
-    // capability path.
-    claimed.uri.href.startsWith(ensureTrailingDelimiter(delegated.uri.href)) ||
-    new Failure(`Notebook ${claimed.uri} is not included in ${delegaed.uri}`),
-})
-
-const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
+```sh
+npm install @ucanto/client @ucanto/principal @ucanto/transport
 ```
 
-> Please note that the library guarantees that both `claimed` and `delegated` capabilities will have `{can: "file/link", with: string nb: { link?: CID }}`
-> type inferred from the definition.
->
-> We will explore more complicated cases later where a capability may be derived from a different capability or even a set.
-
-### Services
-
-Now that we have a `file/link` capability we can define a service providing it:
-
-```ts
-import { provide, Failure, MalformedCapability } from '@ucanto/server'
-
-const service = (context: { store: Map<string, string> }) => {
-  const add = provide(Add, ({ capability, invocation }) => {
-    store.set(capability.uri.href, capability.nb.link)
-    return {
-      with: capability.with,
-      link: capability.nb.link,
-    }
-  })
-
-  return { file: { add } }
-}
-```
-
-The `provide` building block used above will take care of associating a handler to the
-given capability and performing necessary UCAN validation steps when `add` is
-invoked.
-
-### Transport
-
-The library provides a pluggable transport architecture so you can expose a service in various content encodings. To do so you have to provide:
-
-1.  `decoder` that will take `{ headers: Record<string, string>, body: Uint8Array }` object and decode it into `{ invocations: Invocation[] }`.
-2.  `encoder` that will take `unknown[]` (corresponding to values returned by handlers) and encode it into `{ headers: Record<string, string>, body: Uint8Array }`.
-
-> Note that the actual encoder / decoder types are more complicated as they capture capability types, the number of invocations, and corresponding return types. This allows them to provide good type inference. But ignoring those details, that is what they are in a nutshell.
-
-The library comes with several transport layer codecs you can pick from, but you can also bring one yourself. Below we will take invocations encoded in [CAR][] format and produce responses encoded in [DAG-CBOR][] format:
-
-```ts
-import * as Server from "@ucanto/server"
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
-import { ed25519 } from "@ucanto/principal"
-import * as HTTP from "node:http"
-import * as Buffer from "node:buffer"
-
-export const server = (context { store = new Map() } : { store: Map<string, string> }) =>
-  Server.create({
-    id: ed25519.Signer.parse(process.env.SERVICE_SECRET),
-    service: service(context),
-    decoder: CAR,
-    encoder: CBOR,
-
-    // We tell server that capability can be self-issued by a drive owner
-    canIssue: (capability, issuer) => {
-      if (capability.uri.protocol === "file:") {
-        const [did] = capability.uri.pathname.split("/")
-        return did === issuer
-      }
-      return false
-    },
-  })
-```
-
-> Please note that server does not do HTTP as bindings may differ across runtimes, so it is up to you to plug one in.
-
-In nodejs we could expose our service as follows:
-
-```ts
-export const listen = ({ port = 8080, context = new Map() }) => {
-
-  HTTP.createServer(async (request, response) => {
-    const chunks = []
-    for await (const chunk of request) {
-      chunks.push(chunk)
-    }
-
-    const { headers, body } = await fileServer.request({
-      headers: request.headers,
-      body: Buffer.concat(chunks),
-    })
-
-    response.writeHead(200, headers)
-    response.write(body)
-    response.end()
-  }).listen(port)
-}
-```
-
-## Client
-
-Client can be used to issue and execute UCAN invocations. Here is an example of
-invoking the `file/link` capability we've defined earlier:
+### Basic Usage
 
 ```ts
 import * as Client from '@ucanto/client'
+import * as HTTP from '@ucanto/transport/http'
+import { CAR } from '@ucanto/transport'
 import { ed25519 } from '@ucanto/principal'
-import { CID } from 'multiformats'
 
-// Service will have a well known DID
-const service = ed25519.Verifier.parse(process.env.SERVICE_ID)
-// Client keypair
-const issuer = ed25519.Signer.parse(process.env.MY_KEPAIR)
+// Connect to a UCAN service (e.g., w3up, your company's API, etc.)
+const connection = Client.connect({
+  id: { did: () => 'did:web:api.example.com' },  // Service's public DID
+  codec: CAR.outbound,
+  channel: HTTP.open({ url: new URL('https://api.example.com') }),
+})
 
-const demo1 = async connection => {
-  const me = await Client.invoke({
-    issuer: alice,
-    audience: service,
-    capability: {
-      can: 'file/link',
-      with: `file://${issuer.did()}/me/about`,
-      link: CID.parse(process.env.ME_CID),
-    },
-  })
+// Generate or load your client keys
+const agent = await ed25519.generate()
 
-  const result = await connection.execute(me)
-  if (result.error) {
-    console.error('oops', result)
-  } else {
-    console.log('file got linked', result.link.toString())
+// Invoke a capability on the service
+const invocation = Client.invoke({
+  issuer: agent,
+  audience: connection.id,
+  capability: {
+    can: 'store/add',
+    with: agent.did(),
+    nb: { 
+      link: 'bafybeigwflfnv7tjgpuy52ep45cbbgkkb2makd3bwhbj3ueabvt3eq43ca'
+    }
   }
+})
+
+// Execute the invocation
+const result = await invocation.execute(connection)
+if (result.error) {
+  console.error('Operation failed:', result.error)
+} else {
+  console.log('Success:', result.out)
 }
 ```
 
-> Note that the client will get full type inference on when `connection` captures a type of the service on the other side of the wire.
+### Working with Delegations
 
-### Connection
-
-Just like the server, the client has a pluggable transport layer which you provide when you create a connection. We could create an in-process connection with our service simply by providing service as a channel:
+UCAN services often require **delegated permissions**. Here's how to use them:
 
 ```ts
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
-
-const connection = Client.connect({
-  encoder: CAR, // encode as CAR because server decodes from car
-  decoder: CBOR, // decode as CBOR because server encodes as CBOR
-  channel: server(), // simply pass the server
+// Example 1: Using a DID (identity-based resource)
+const delegation = await Client.delegate({
+  issuer: serviceAgent,     // Who granted the permission
+  audience: agent,          // You (the recipient) 
+  capabilities: [{
+    can: 'store/add',
+    with: 'did:key:zAlice'  // Resource: Alice's storage (must match serviceAgent.did())
+  }]
 })
+
+// Example 2: Using a resource URI (file-based resource)
+const fileDelegation = await Client.delegate({
+  issuer: alice,            // Alice owns the file
+  audience: bob,           // Bob gets access
+  capabilities: [{
+    can: 'file/write',
+    with: 'file:///home/alice/documents/important.txt'  // Specific file resource
+  }]
+})
+
+// Use the delegation as proof in your invocation
+const invocation = Client.invoke({
+  issuer: agent,
+  audience: connection.id,
+  capability: {
+    can: 'store/add', 
+    with: 'did:key:zAlice',  // Must match the delegated resource
+    nb: { link: 'bafybeig...' }
+  },
+  proofs: [delegation]  // Proof you have permission
+})
+
+const result = await invocation.execute(connection)
 ```
 
-In practice you probably would want client/server communication to happen across the wire, or at least across processes. You can bring your own transport channel, or choose an existing one. For example:
+### Batch Operations
+
+You can send multiple invocations in a single request:
 
 ```ts
-import * as CAR from "@ucanto/transport/car"
-import * as CBOR from "@ucanto/transport/cbor"
-import * as HTTP from "@ucanto/transport/http"
-
-const connection = Client.connect({
-  encoder: CAR, // encode as CAR because server decodes from car
-  decoder: CBOR, // decode as CBOR because server encodes as CBOR
-  /** @type {Transport.Channel<ReturnType<typeof service>>} */
-  channel: HTTP.open({ url: new URL(process.env.SERVICE_URL) }),
+const uploadFile = Client.invoke({
+  issuer: agent,
+  audience: connection.id,
+  capability: { can: 'store/add', with: agent.did(), nb: { link: fileCID } }
 })
+
+const deleteFile = Client.invoke({
+  issuer: agent,  
+  audience: connection.id,
+  capability: { can: 'store/remove', with: agent.did(), nb: { link: oldFileCID } }
+})
+
+// Execute both operations together
+const [uploadResult, deleteResult] = await connection.execute([uploadFile, deleteFile])
 ```
 
-> Note: That in the second example you need to provide a type annotations, so that client can infer what capabilities can be invoked and what the return types it will correspond to.
+### Advanced Delegation Patterns
 
-### Batching & Proof chains
-
-The library supports batch invocations and takes care of all the nitty gritty details when it comes to UCAN delegation chains, specifically taking chains apart to encode as blocks in CAR and putting them back together into a chain on the other side. All you need to do is provide a delegation in the proofs:
+UCAN supports complex delegation scenarios where users can grant permissions to others:
 
 ```ts
-import { ed25519 } from '@ucanto/principal'
-import * as Client from '@ucanto/client'
-import { CID } from 'multiformats'
-
-const service = ed25519.Verifier.parse(process.env.SERVICE_DID)
-const alice = ed25519.Signer.parse(process.env.ALICE_KEYPAIR)
-const bob = ed25519.Signer.parse(process.env.BOB_KEYPAIR)
-
-const demo2 = async connection => {
-  // Alice delegates capability to mutate FS under bob's namespace
-  const proof = await Client.delegate({
-    issuer: alice,
-    audience: bob.principal,
-    capabilities: [
-      {
-        can: 'file/link',
-        with: `file://${alice.did()}/friends/${bob.did()}/`,
-      },
-    ],
-  })
-
-  const aboutBob = Client.invoke({
-    issuer: bob,
-    audience: service,
-    capability: {
+// Alice delegates capability to Bob for a specific namespace
+const proof = await Client.delegate({
+  issuer: alice,
+  audience: bob,
+  capabilities: [
+    {
       can: 'file/link',
-      with: `file://${alice.did()}/friends/${bob.did()}/about`,
-      link: CID.parse(process.env.BOB_CID),
+      with: `file:///tmp/${alice.did()}/friends/${bob.did()}/`,
     },
-  })
+  ],
+})
 
-  const aboutMallory = Client.invoke({
-    issuer: bob,
-    audience: service,
-    capability: {
-      can: 'file/link',
-      with: `file://${alice.did()}/friends/${MALLORY_DID}/about`,
-      link: CID.parse(process.env.MALLORY_CID),
-    },
-  })
+// Bob can now use the delegated permission
+const aboutBob = Client.invoke({
+  issuer: bob,
+  audience: serviceKey,
+  capability: {
+    can: 'file/link',
+    with: `file:///tmp/${alice.did()}/friends/${bob.did()}/about`,
+    nb: { link: testCID },
+  },
+  proofs: [proof], // Include the delegation proof
+})
 
-  const [bobResult, malloryResult] = connection.execute([
-    aboutBob,
-    aboutMallory,
-  ])
+// Bob tries to access Mallory's namespace (should fail)
+const aboutMallory = Client.invoke({
+  issuer: bob,
+  audience: serviceKey,
+  capability: {
+    can: 'file/link',
+    with: `file:///tmp/${alice.did()}/friends/${MALLORY_DID}/about`,
+    nb: { link: malloryCID },
+  },
+  proofs: [proof], // Same proof, but wrong namespace
+})
 
-  if (bobResult.error) {
-    console.error('oops', r1)
-  } else {
-    console.log('about bob is linked', r1)
-  }
+// Execute both operations
+const [bobResult, malloryResult] = await connection.execute([
+  aboutBob,
+  aboutMallory,
+])
 
-  if (malloryResult.error) {
-    console.log('oops', r2)
-  } else {
-    console.log('about mallory is linked', r2)
-  }
+// Bob's operation succeeds, Mallory's fails
+if (bobResult.error) {
+  console.error('Bob operation failed:', bobResult.error)
+} else {
+  console.log('Bob operation succeeded:', bobResult.out)
+}
+
+if (malloryResult.error) {
+  console.log('Mallory operation failed (expected):', malloryResult.error)
+} else {
+  console.log('Mallory operation succeeded (unexpected)')
 }
 ```
 
-> In the example above, the first invocation will succeed, but the second one will not because Bob has not been granted a capability to mutate Mallory's namespace. Also note that both invocations are sent in a single request.
+This demonstrates how UCAN's delegation system provides fine-grained access control where:
+- ✅ **Bob succeeds** - He has delegated permission for his namespace
+- ❌ **Mallory fails** - Bob doesn't have permission for Mallory's namespace
+- 🔒 **Security** - The service validates the delegation chain and resource ownership
+
+## Service-Specific Examples
+
+Different UCAN services will have different capabilities. Check their documentation for specifics:
+
+- **w3up (Web3.Storage)**: [w3up documentation](https://github.com/web3-storage/w3up)
+- **Custom Services**: See your service's API documentation
+
+## Building Your Own Service
+
+To create your own UCAN service, see the **[@ucanto/server documentation](./packages/server/README.md)**. This covers:
+
+- Defining capabilities
+- Creating service handlers  
+- Setting up transport layers
+- Deployment and security
+
+## Advanced Topics
+
+### Custom Transport
+
+```ts
+import * as Transport from '@ucanto/transport'
+
+const connection = Client.connect({
+  id: service,
+  codec: Transport.outbound({
+    encoders: { 'application/car': CAR.request },
+    decoders: { 'application/dag-cbor': CBOR.response }
+  }),
+  channel: yourCustomChannel
+})
+```
+
+### Key Management
+
+```ts
+import { ed25519 } from '@ucanto/principal'
+
+// Generate new keys
+const agent = await ed25519.generate()
+
+// Save keys (browser)
+localStorage.setItem('agent', agent.toString())
+
+// Load keys (browser)  
+const savedAgent = ed25519.parse(localStorage.getItem('agent'))
+
+// Save keys (Node.js)
+import fs from 'fs/promises'
+await fs.writeFile('agent.key', agent.toString())
+
+// Load keys (Node.js)
+const keyData = await fs.readFile('agent.key', 'utf-8')
+const loadedAgent = ed25519.parse(keyData)
+```
+
+## Package Overview
+
+- [`@ucanto/client`](./packages/client/README.md) - Connect to and invoke UCAN services
+- [`@ucanto/server`](./packages/server/README.md) - Build your own UCAN services  
+- [`@ucanto/transport`](./packages/transport/README.md) - Transport layer implementations
+- [`@ucanto/principal`](./packages/principal/README.md) - Cryptographic identity management
+- [`@ucanto/core`](./packages/core/README.md) - Core UCAN primitives
+- [`@ucanto/validator`](./packages/validator/README.md) - UCAN validation logic
 
 [ucan]: https://github.com/ucan-wg/spec/
 [rpc]: https://en.wikipedia.org/wiki/Remote_procedure_call
 [capability]: https://github.com/ucan-wg/spec/#23-capability
 [invocations]: https://github.com/ucan-wg/spec/#28-invocation
 [ability]: https://github.com/ucan-wg/spec/#3242-ability
-[type union]: https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types
+[type]: https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types
 [car]: https://ipld.io/specs/transport/car/carv1/
 [dag-cbor]: https://ipld.io/specs/codecs/dag-cbor/
 [cid]: https://docs.ipfs.io/concepts/content-addressing/
