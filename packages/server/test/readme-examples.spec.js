@@ -4,20 +4,22 @@
  */
 
 import { test, assert } from './test.js'
-import { capability, URI, Link, Failure, provide } from '../src/lib.js'
+import { capability, URI, Link, Failure, provide, Schema, ok, fail } from '../src/lib.js'
 import { ed25519 } from '@ucanto/principal'
 
 // Test that we can create the README capability definition
 test('README capability definition works', async () => {
+  /** @param {string} uri */
   const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 
   const Add = capability({
     can: 'file/link',
     with: URI.match({ protocol: 'file:' }),
-    nb: { link: Link },
+    nb: Schema.struct({ link: Link }),
     derives: (claimed, delegated) =>
-      claimed.uri.href.startsWith(ensureTrailingDelimiter(delegated.uri.href)) ||
-      new Failure(`Notebook ${claimed.uri} is not included in ${delegated.uri}`),
+      claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ?
+      ok({}) :
+      fail(`Resource ${claimed.with} is not contained by ${delegated.with}`),
   })
 
   // Test that capability was created successfully with correct 'can' field
@@ -30,16 +32,16 @@ test('README service definition works', async () => {
   const Add = capability({
     can: 'file/link',
     with: URI.match({ protocol: 'file:' }),
-    nb: { link: Link },
+    nb: Schema.struct({ link: Link }),
   })
 
   const service = (context = { store: new Map() }) => {
     const add = provide(Add, ({ capability, invocation }) => {
-      context.store.set(capability.uri.href, capability.nb.link)
-      return {
+      context.store.set(capability.with, capability.nb.link)
+      return ok({
         with: capability.with,
         link: capability.nb.link,
-      }
+      })
     })
 
     return { file: { add } }

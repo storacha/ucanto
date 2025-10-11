@@ -3,7 +3,7 @@
  */
 
 import { test, assert } from './test.js'
-import { capability, URI, Link, Failure, provide, Schema } from '../src/lib.js'
+import { capability, URI, Link, Failure, provide, Schema, ok, fail } from '../src/lib.js'
 import * as Server from '../src/lib.js'
 import * as CAR from '@ucanto/transport/car'
 import { ed25519 } from '@ucanto/principal'
@@ -12,6 +12,7 @@ import { parseLink } from '@ucanto/core'
 
 test('README workflow integration with server-as-channel', async () => {
   // 1. Define capability (from README)
+  /** @param {string} uri */
   const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
 
   const Add = capability({
@@ -21,8 +22,9 @@ test('README workflow integration with server-as-channel', async () => {
       link: Link,
     }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ||
-      new Failure(`Resource ${claimed.with} is not contained by ${delegated.with}`),
+      claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ?
+      ok({}) :
+      fail(`Resource ${claimed.with} is not contained by ${delegated.with}`),
   })
 
   // 2. Define service (from README) using proper Server.provide pattern
@@ -31,10 +33,10 @@ test('README workflow integration with server-as-channel', async () => {
     file: {
       link: provide(Add, ({ capability, invocation }) => {
         context.store.set(capability.with, capability.nb.link)
-        return {
+        return ok({
           with: capability.with,
           link: capability.nb.link,
-        }
+        })
       })
     }
   }
@@ -86,9 +88,10 @@ test('README workflow integration with server-as-channel', async () => {
   assert.ok(result)
   assert.ok(!result.error, `Expected no error, got: ${result.error?.message}`)
   assert.ok(result.out, 'Expected successful result')
+  assert.ok(result.out.ok, 'Expected successful result in ok field')
   assert.ok(!result.out.error, 'Expected no error in result')
-  assert.equal(result.out.with, `file:///tmp/${issuerKey.did()}/me/about`)
-  assert.equal(result.out.link.toString(), testCID.toString())
+  assert.equal(result.out.ok.with, `file:///tmp/${issuerKey.did()}/me/about`)
+  assert.equal(result.out.ok.link.toString(), testCID.toString())
   
   // 7. Verify the store was updated (proves the service handler actually ran)
   const storedLink = context.store.get(`file:///tmp/${issuerKey.did()}/me/about`)
@@ -99,6 +102,7 @@ test('README workflow integration with server-as-channel', async () => {
 // Test delegation example with server-as-channel
 test('README delegation example with server-as-channel', async () => {
   // 1. Define the ensureTrailingDelimiter helper
+  /** @param {string} uri */
   const ensureTrailingDelimiter = uri => (uri.endsWith('/') ? uri : `${uri}/`)
   
   // Create the same service setup
@@ -109,8 +113,9 @@ test('README delegation example with server-as-channel', async () => {
       link: Link,
     }),
     derives: (claimed, delegated) =>
-      claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ||
-      new Failure(`Resource ${claimed.with} is not contained by ${delegated.with}`),
+      claimed.with.startsWith(ensureTrailingDelimiter(delegated.with)) ?
+      ok({}) :
+      fail(`Resource ${claimed.with} is not contained by ${delegated.with}`),
   })
 
   const context = { store: new Map() }
@@ -118,10 +123,10 @@ test('README delegation example with server-as-channel', async () => {
     file: {
       link: provide(Add, ({ capability, invocation }) => {
         context.store.set(capability.with, capability.nb.link)
-        return {
+        return ok({
           with: capability.with,
           link: capability.nb.link,
-        }
+        })
       })
     }
   }
@@ -187,6 +192,7 @@ test('README delegation example with server-as-channel', async () => {
   assert.ok(result)
   assert.ok(!result.error, `Expected no error, got: ${result.error?.message}`)
   assert.ok(result.out, 'Expected successful result')
+  assert.ok(result.out.ok, 'Expected successful result in ok field')
   assert.ok(!result.out.error, 'Expected no error in result')
-  assert.equal(result.out.with, `file:///tmp/${alice.did()}/friends/${bob.did()}/about`)
+  assert.equal(result.out.ok.with, `file:///tmp/${alice.did()}/friends/${bob.did()}/about`)
 })

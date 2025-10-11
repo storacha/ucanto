@@ -249,7 +249,7 @@ test('test access/claim provider', async () => {
   })
 
   /**
-   * @type {Client.ConnectionView<{
+   * @type {API.ConnectionView<{
    *  access: {
    *    claim: API.ServiceMethod<API.InferInvokedCapability<typeof Access.claimCapability>, never[], API.Failure>
    *  }
