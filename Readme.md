@@ -1,12 +1,12 @@
 # ucanto
 
-[![Core Tests](https://github.com/{{ github.repository }}/actions/workflows/core.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/core.yml)
-[![Principal Tests](https://github.com/{{ github.repository }}/actions/workflows/principal.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/principal.yml)
-[![Transport Tests](https://github.com/{{ github.repository }}/actions/workflows/transport.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/transport.yml)
-[![Interface Tests](https://github.com/{{ github.repository }}/actions/workflows/interface.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/interface.yml)
-[![Server Tests](https://github.com/{{ github.repository }}/actions/workflows/server.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/server.yml)
-[![Client Tests](https://github.com/{{ github.repository }}/actions/workflows/client.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/client.yml)
-[![Validator Tests](https://github.com/{{ github.repository }}/actions/workflows/validator.yml/badge.svg)](https://github.com/{{ github.repository }}/actions/workflows/validator.yml)
+[![Core Tests](https://github.com/NiKrause/ucanto/actions/workflows/core.yml/badge.svg)](https://github.com/NiKrause/ucanto/actions/workflows/core.yml)
+[![Principal Tests](https://github.com/NiKrause/ucanto/actions/workflows/principal.yml/badge.svg)](https://github.com/NiKrause/ucanto/actions/workflows/principal.yml)
+[![Transport Tests](https://github.com/NiKrause/ucanto/actions/workflows/transport.yml/badge.svg)](https://github.com/NiKrause/ucanto/actions/workflows/transport.yml)
+[![Interface Tests](https://github.com/NiKrause/ucanto/actions/workflows/interface.yml/badge.svg)](https://github.com/NiKrause/ucanto/actions/workflows/interface.yml)
+[![Server Tests](https://github.com/NiKrause/ucanto/actions/workflows/server.yml/badge.svg)](https://github.com/NiKrause/ucanto/actions/workflows/server.yml)
+[![Client Tests](https://github.com/NiKrause/ucanto/actions/workflows/client.yml/badge.svg)](https://github.com/NiKrause/ucanto/actions/workflows/client.yml)
+[![Validator Tests](https://github.com/NiKrause/ucanto/actions/workflows/validator.yml/badge.svg)](https://github.com/NiKrause/ucanto/actions/workflows/validator.yml)
 
 (u)canto is a library for [UCAN][] based [RPC][] that provides:
 
@@ -70,6 +70,8 @@ if (result.error) {
 }
 ```
 
+> 📝 **Tested in**: [`packages/client/test/client.spec.js:22`](./packages/client/test/client.spec.js#L22) - Client invocation and execution
+
 ### Working with Delegations
 
 UCAN services often require **delegated permissions**. Here's how to use them:
@@ -110,6 +112,10 @@ const invocation = Client.invoke({
 const result = await invocation.execute(connection)
 ```
 
+> 📝 **Tested in**: 
+> - [`packages/client/test/client.spec.js:70`](./packages/client/test/client.spec.js#L70) - Delegation creation and usage
+> - [`packages/server/test/readme-integration.spec.js:160`](./packages/server/test/readme-integration.spec.js#L160) - Delegation with server validation
+
 ### Batch Operations
 
 You can send multiple invocations in a single request:
@@ -130,6 +136,8 @@ const deleteFile = Client.invoke({
 // Execute both operations together
 const [uploadResult, deleteResult] = await connection.execute([uploadFile, deleteFile])
 ```
+
+> 📝 **Tested in**: [`packages/client/test/client.spec.js:102`](./packages/client/test/client.spec.js#L102) - Batch invocation execution
 
 ### Advanced Delegation Patterns
 
@@ -197,6 +205,8 @@ This demonstrates how UCAN's delegation system provides fine-grained access cont
 - ❌ **Mallory fails** - Bob doesn't have permission for Mallory's namespace
 - 🔒 **Security** - The service validates the delegation chain and resource ownership
 
+> 📝 **Tested in**: [`packages/server/test/readme-integration.spec.js:99`](./packages/server/test/readme-integration.spec.js#L99) - Advanced delegation patterns with namespace validation
+
 ## Service-Specific Examples
 
 Different UCAN services will have different capabilities. Check their documentation for specifics:
@@ -252,6 +262,8 @@ await fs.writeFile('agent.key', agent.toString())
 const keyData = await fs.readFile('agent.key', 'utf-8')
 const loadedAgent = ed25519.parse(keyData)
 ```
+
+> 📝 **Tested in**: [`packages/server/test/readme-examples.spec.js:54`](./packages/server/test/readme-examples.spec.js#L54) - Key generation, formatting, and parsing
 
 ## Package Overview
 
