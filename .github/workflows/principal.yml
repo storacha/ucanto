@@ -5,12 +5,14 @@ on:
   push:
     branches:
       - main
+      - p256
     paths:
       - 'packages/interface/**'
       - 'packages/principal/**'
   pull_request:
     branches:
       - main
+      - p256
     paths:
       - 'packages/interface/**'
       - 'packages/principal/**'
