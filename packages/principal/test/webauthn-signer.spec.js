@@ -5,7 +5,9 @@
  * Uses mocks since WebAuthn APIs are not available in Node.js test environment.
  */
 
-import * as assert from 'assert'
+// @ts-ignore - Node.js assert module
+import { assert } from 'assert'
+// @ts-ignore - Node.js crypto module
 import { webcrypto } from 'node:crypto'
 import * as WebAuthnSigner from '../src/p256/webauthn-signer.js'
 
@@ -26,6 +28,7 @@ describe('WebAuthn P-256 Signer', () => {
     // Mock client data JSON
     const clientData = {
       type: 'webauthn.get',
+      // @ts-ignore - Node.js Buffer
       challenge: Buffer.from(challenge).toString('base64url'),
       origin: 'https://example.com',
       crossOrigin: false
@@ -434,6 +437,7 @@ describe('WebAuthn P-256 Signer', () => {
       // Sign with WebAuthn
       const signature = await signer.sign(payload)
       assert.ok(signature)
+      // @ts-ignore - WebAuthn signature has webauthnContext property
       assert.ok(signature.webauthnContext)
       
       // Verify with WebAuthn-aware verifier
@@ -464,7 +468,9 @@ describe('WebAuthn P-256 Signer', () => {
       assert.notDeepEqual(originalRaw, rawView)
       
       // Mock the P256 verification to detect tampering
+      // @ts-ignore - Global mock for testing
       const originalMock = globalThis._mockP256Verify
+      // @ts-ignore - Global mock for testing
       globalThis._mockP256Verify = (data, sig, publicKey) => {
         // Return false if signature bytes don't match original
         return sig.every((byte, i) => byte === originalRaw[i])
@@ -481,6 +487,7 @@ describe('WebAuthn P-256 Signer', () => {
       assert.ok(result.error)
       
       // Restore original functions
+      // @ts-ignore - Global mock for testing
       globalThis._mockP256Verify = originalMock
       signer.verifier.verify = originalVerify
     })

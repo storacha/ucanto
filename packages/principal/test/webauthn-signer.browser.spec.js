@@ -6,7 +6,8 @@
  */
 
 import { assert } from 'chai'
-import { webcrypto } from 'node:crypto'
+// @ts-ignore - webcrypto is available in browser but not in Node types
+const { webcrypto } = globalThis.crypto || {}
 
 // Browser-only test - run with playwright-test
 describe.skip('WebAuthn P-256 Signer (Browser)', () => {
@@ -24,6 +25,7 @@ describe.skip('WebAuthn P-256 Signer (Browser)', () => {
   const setupWebAuthnMock = () => {
     // Mock navigator.credentials.get for WebAuthn
     if (!navigator.credentials) {
+      // @ts-ignore - Adding credentials for testing
       navigator.credentials = {}
     }
 
@@ -40,12 +42,12 @@ describe.skip('WebAuthn P-256 Signer (Browser)', () => {
     }
 
     navigator.credentials.get = async (options) => {
-      const challenge = new Uint8Array(options.publicKey.challenge)
+      const challenge = new Uint8Array(options?.publicKey?.challenge || new ArrayBuffer(32))
       
       // Create realistic client data JSON
       const clientData = {
         type: 'webauthn.get',
-        challenge: btoa(String.fromCharCode(...challenge)).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, ''),
+        challenge: btoa(Array.from(challenge, c => String.fromCharCode(c)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
         origin: window.location.origin,
         crossOrigin: false
       }
@@ -119,10 +121,13 @@ describe.skip('WebAuthn P-256 Signer (Browser)', () => {
       
       // Verify signature structure
       assert.ok(signature instanceof Uint8Array)
+      // @ts-ignore - WebAuthn signature has additional properties
       assert.ok(signature.webauthnContext)
+      // @ts-ignore - WebAuthn signature has algorithm property
       assert.equal(signature.algorithm, 'ES256')
       
       // Verify WebAuthn context
+      // @ts-ignore - WebAuthn signature has webauthnContext property
       const context = signature.webauthnContext
       assert.ok(context.clientDataJSON)
       assert.ok(context.authenticatorData)
@@ -284,11 +289,11 @@ describe.skip('WebAuthn P-256 Signer (Browser)', () => {
     it('handles authenticator data variations', async () => {
       // Create custom mock with different authenticator data
       navigator.credentials.get = async (options) => {
-        const challenge = new Uint8Array(options.publicKey.challenge)
+      const challenge = new Uint8Array(options?.publicKey?.challenge || new ArrayBuffer(32))
         
         const clientDataJSON = new TextEncoder().encode(JSON.stringify({
           type: 'webauthn.get',
-          challenge: btoa(String.fromCharCode(...challenge)).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, ''),
+        challenge: btoa(Array.from(challenge, c => String.fromCharCode(c)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''),
           origin: window.location.origin,
           crossOrigin: false
         }))
@@ -320,7 +325,9 @@ describe.skip('WebAuthn P-256 Signer (Browser)', () => {
       const signature = await signer.sign(payload)
       
       // Should handle different authenticator data correctly
+      // @ts-ignore - WebAuthn signature has webauthnContext property
       assert.ok(signature.webauthnContext.authenticatorData)
+      // @ts-ignore - WebAuthn signature has webauthnContext property
       assert.equal(signature.webauthnContext.authenticatorData[32], 0x05)
     })
 
@@ -361,6 +368,7 @@ describe.skip('WebAuthn P-256 Signer (Browser)', () => {
       assert.equal(signatures.length, 3)
       signatures.forEach(signature => {
         assert.ok(signature instanceof Uint8Array)
+        // @ts-ignore - WebAuthn signature has webauthnContext property
         assert.ok(signature.webauthnContext)
       })
       
