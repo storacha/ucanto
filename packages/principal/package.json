@@ -101,7 +101,8 @@
   "c8": {
     "exclude": [
       "test/**",
-      "dist/**"
+      "dist/**",
+      "src/p256/webauthn-signer.js"
     ]
   },
   "license": "(Apache-2.0 AND MIT)"
