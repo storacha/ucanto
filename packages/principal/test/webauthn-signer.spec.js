@@ -6,7 +6,7 @@
  */
 
 // @ts-ignore - Node.js assert module
-import { assert } from 'assert'
+import assert from 'assert'
 // @ts-ignore - Node.js crypto module
 import { webcrypto } from 'node:crypto'
 import * as WebAuthnSigner from '../src/p256/webauthn-signer.js'
