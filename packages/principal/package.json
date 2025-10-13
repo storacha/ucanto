@@ -5,6 +5,8 @@
   "keywords": [
     "UCAN",
     "ed25519",
+    "p256",
+    "rsa",
     "did",
     "issuer",
     "audience"
@@ -59,6 +61,9 @@
       "rsa": [
         "dist/src/rsa.d.ts"
       ],
+      "p256": [
+        "dist/src/p256.d.ts"
+      ],
       "absentee": [
         "dist/src/absentee.d.ts"
       ],
@@ -79,6 +84,10 @@
     "./rsa": {
       "types": "./dist/src/rsa.d.ts",
       "import": "./src/rsa.js"
+    },
+    "./p256": {
+      "types": "./dist/src/p256.d.ts",
+      "import": "./src/p256.js"
     },
     "./absentee": {
       "types": "./dist/src/absentee.d.ts",
