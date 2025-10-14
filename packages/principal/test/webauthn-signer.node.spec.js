@@ -5,8 +5,7 @@
  * Uses mocks since WebAuthn APIs are not available in Node.js test environment.
  */
 
-// @ts-ignore - Node.js assert module
-import assert from 'assert'
+import { assert } from 'chai'
 // @ts-ignore - Node.js crypto module
 import { webcrypto } from 'node:crypto'
 import * as WebAuthnSigner from '../src/p256/webauthn-signer.js'
@@ -157,10 +156,12 @@ describe('WebAuthn P-256 Signer', () => {
         
         const payload = new TextEncoder().encode('test payload')
         
-        await assert.rejects(
-          () => failingSigner.sign(payload),
-          /WebAuthn authentication failed/
-        )
+        try {
+          await failingSigner.sign(payload)
+          assert.fail('Expected to throw an error')
+        } catch (error) {
+          assert.ok(error.message.includes('WebAuthn authentication failed'))
+        }
       })
     })
 
