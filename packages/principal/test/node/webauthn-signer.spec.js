@@ -8,7 +8,7 @@
 import { assert } from 'chai'
 // @ts-ignore - Node.js crypto module
 import { webcrypto } from 'node:crypto'
-import * as WebAuthnSigner from '../src/p256/webauthn-signer.js'
+import * as WebAuthnSigner from '../../src/p256/webauthn-signer.js'
 
 // Set up crypto for Node.js environment
 if (!globalThis.crypto) {
