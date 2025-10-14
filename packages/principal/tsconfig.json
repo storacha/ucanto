@@ -99,6 +99,6 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
   "include": ["src", "test"],
-  "exclude": ["test/*webauthn*"],
+  "exclude": ["test/**/*webauthn*"],
   "references": [{ "path": "../interface" }]
 }
