@@ -34,7 +34,7 @@ jobs:
         project:
           - validator
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -68,7 +68,7 @@ jobs:
           - validator
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
