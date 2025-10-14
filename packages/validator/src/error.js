@@ -1,5 +1,4 @@
 import * as API from '@ucanto/interface'
-import { the } from './util.js'
 import { isLink } from '@ucanto/core'
 import { fail, Failure } from '@ucanto/core/result'
 
@@ -16,7 +15,7 @@ export class EscalatedCapability extends Failure {
     this.claimed = claimed
     this.delegated = delegated
     this.cause = cause
-    this.name = the('EscalatedCapability')
+    this.name = /** @type {'EscalatedCapability'} */ ('EscalatedCapability')
   }
   describe() {
     return `Constraint violation: ${this.cause.message}`
@@ -33,7 +32,7 @@ export class DelegationError extends Failure {
    */
   constructor(causes, context) {
     super()
-    this.name = the('InvalidClaim')
+    this.name = /** @type {'InvalidClaim'} */ ('InvalidClaim')
     this.causes = causes
     this.context = context
   }
@@ -71,7 +70,7 @@ export class SessionEscalation extends Failure {
    */
   constructor({ delegation, cause }) {
     super()
-    this.name = the('SessionEscalation')
+    this.name = /** @type {'SessionEscalation'} */ ('SessionEscalation')
     this.delegation = delegation
     this.cause = cause
   }
@@ -94,7 +93,7 @@ export class InvalidSignature extends Failure {
    */
   constructor(delegation, verifier) {
     super()
-    this.name = the('InvalidSignature')
+    this.name = /** @type {'InvalidSignature'} */ ('InvalidSignature')
     this.delegation = delegation
     this.verifier = verifier
   }
@@ -133,7 +132,7 @@ export class UnavailableProof extends Failure {
    */
   constructor(link, cause) {
     super()
-    this.name = the('UnavailableProof')
+    this.name = /** @type {'UnavailableProof'} */ ('UnavailableProof')
     this.link = link
     this.cause = cause
   }
@@ -154,7 +153,7 @@ export class DIDKeyResolutionError extends Failure {
    */
   constructor(did, cause) {
     super()
-    this.name = the('DIDKeyResolutionError')
+    this.name = /** @type {'DIDKeyResolutionError'} */ ('DIDKeyResolutionError')
     this.did = did
     this.cause = cause
   }
@@ -173,7 +172,7 @@ export class PrincipalAlignmentError extends Failure {
    */
   constructor(audience, delegation) {
     super()
-    this.name = the('InvalidAudience')
+    this.name = /** @type {'InvalidAudience'} */ ('InvalidAudience')
     this.audience = audience
     this.delegation = delegation
   }
@@ -202,7 +201,7 @@ export class MalformedCapability extends Failure {
    */
   constructor(capability, cause) {
     super()
-    this.name = the('MalformedCapability')
+    this.name = /** @type {'MalformedCapability'} */ ('MalformedCapability')
     this.capability = capability
     this.cause = cause
   }
@@ -222,7 +221,7 @@ export class UnknownCapability extends Failure {
    */
   constructor(capability) {
     super()
-    this.name = the('UnknownCapability')
+    this.name = /** @type {'UnknownCapability'} */ ('UnknownCapability')
     this.capability = capability
   }
   /* c8 ignore next 3 */
@@ -237,7 +236,7 @@ export class Expired extends Failure {
    */
   constructor(delegation) {
     super()
-    this.name = the('Expired')
+    this.name = /** @type {'Expired'} */ ('Expired')
     this.delegation = delegation
   }
   describe() {
@@ -268,7 +267,7 @@ export class Revoked extends Failure {
    */
   constructor(delegation) {
     super()
-    this.name = the('Revoked')
+    this.name = /** @type {'Revoked'} */ ('Revoked')
     this.delegation = delegation
   }
   describe() {
@@ -290,7 +289,7 @@ export class NotValidBefore extends Failure {
    */
   constructor(delegation) {
     super()
-    this.name = the('NotValidBefore')
+    this.name = /** @type {'NotValidBefore'} */ ('NotValidBefore')
     this.delegation = delegation
   }
   describe() {
@@ -334,7 +333,7 @@ export class Unauthorized extends Failure {
     failedProofs,
   }) {
     super()
-    this.name = /** @type {const} */  ('Unauthorized')
+    this.name = /** @type {'Unauthorized'} */ ('Unauthorized')
     this.capability = capability
     this.delegationErrors = delegationErrors
     this.unknownCapabilities = unknownCapabilities
