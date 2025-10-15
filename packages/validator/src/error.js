@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import { the } from './util.js'
-import { isLink } from '@ucanto/core/link'
+import { isLink } from '@ucanto/core'
 import { fail, Failure } from '@ucanto/core/result'
 
 export { Failure, fail }

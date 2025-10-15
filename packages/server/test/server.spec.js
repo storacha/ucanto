@@ -204,8 +204,7 @@ test('unknown handler', async () => {
     },
   })
 
-  // @ts-expect-error - reporst that service has no such capability
-  const error = await register.execute(connection)
+  const error = await register.execute(/** @type {any} */ (connection))
 
   assert.containSubset(error, {
     out: {
@@ -230,8 +229,7 @@ test('unknown handler', async () => {
     },
   })
 
-  // @ts-expect-error - reporst that service has no such capability
-  const error2 = await boom.execute(connection)
+  const error2 = await boom.execute(/** @type {any} */ (connection))
   assert.containSubset(error2, {
     out: {
       error: {
