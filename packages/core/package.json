@@ -1,5 +1,5 @@
 {
-  "name": "@ucanto/core",
+  "name": "@le-space/ucanto-core",
   "description": "ucanto core",
   "version": "10.4.0",
   "keywords": [
@@ -17,9 +17,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/web3-storage/ucanto.git"
+    "url": "https://github.com/Le-Space/ucanto.git"
   },
-  "homepage": "https://github.com/web3-storage/ucanto",
+  "homepage": "https://github.com/Le-Space/ucanto",
   "scripts": {
     "test:web": "playwright-test test/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/*.spec.js",
@@ -32,7 +32,7 @@
     "@ipld/car": "^5.1.0",
     "@ipld/dag-cbor": "^9.0.0",
     "@ipld/dag-ucan": "^3.4.5",
-    "@ucanto/interface": "workspace:^",
+    "@le-space/ucanto-interface": "workspace:^"
     "multiformats": "^13.3.1"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 {
-  "name": "@ucanto/server",
+  "name": "@le-space/ucanto-server",
   "description": "UCAN RPC Server",
   "version": "11.0.0",
   "types": "./dist/src/lib.d.ts",
@@ -16,9 +16,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/web3-storage/ucanto.git"
+    "url": "https://github.com/Le-Space/ucanto.git"
   },
-  "homepage": "https://github.com/web3-storage/ucanto",
+  "homepage": "https://github.com/Le-Space/ucanto",
   "scripts": {
     "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
@@ -28,17 +28,17 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ucanto/core": "workspace:^",
-    "@ucanto/interface": "workspace:^",
-    "@ucanto/principal": "workspace:^",
-    "@ucanto/validator": "workspace:^"
+    "@le-space/ucanto-core": "workspace:^",
+    "@le-space/ucanto-interface": "workspace:^",
+    "@le-space/ucanto-transport": "workspace:^",
+    "@le-space/ucanto-validator": "workspace:^"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/chai-subset": "^1.3.3",
     "@types/mocha": "^10.0.1",
-    "@ucanto/client": "workspace:^",
-    "@ucanto/transport": "workspace:^",
+    "@le-space/ucanto-client": "workspace:^",
+    "@le-space/ucanto-principal": "workspace:^",
     "@web-std/fetch": "^4.1.0",
     "@web-std/file": "^3.0.2",
     "c8": "^7.13.0",

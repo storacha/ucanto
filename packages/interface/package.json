@@ -1,5 +1,5 @@
 {
-  "name": "@ucanto/interface",
+  "name": "@le-space/ucanto-interface",
   "description": "interface definitions for ucanto",
   "version": "11.0.0",
   "types": "./dist/src/lib.d.ts",
@@ -15,9 +15,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/web3-storage/ucanto.git"
+    "url": "https://github.com/Le-Space/ucanto.git"
   },
-  "homepage": "https://github.com/web3-storage/ucanto",
+  "homepage": "https://github.com/Le-Space/ucanto",
   "scripts": {
     "check": "tsc --build",
     "build": "tsc --build"

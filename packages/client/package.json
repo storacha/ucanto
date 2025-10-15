@@ -1,5 +1,5 @@
 {
-  "name": "@ucanto/client",
+  "name": "@le-space/ucanto-client",
   "description": "UCAN RPC Client",
   "version": "9.0.1",
   "keywords": [
@@ -17,9 +17,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/web3-storage/ucanto.git"
+    "url": "https://github.com/Le-Space/ucanto.git"
   },
-  "homepage": "https://github.com/web3-storage/ucanto",
+  "homepage": "https://github.com/Le-Space/ucanto",
   "scripts": {
     "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
@@ -29,14 +29,14 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@ucanto/core": "workspace:^",
-    "@ucanto/interface": "workspace:^"
+    "@le-space/ucanto-core": "workspace:^",
+    "@le-space/ucanto-interface": "workspace:^"
   },
   "devDependencies": {
     "@types/chai": "^4.3.3",
     "@types/mocha": "^10.0.1",
-    "@ucanto/principal": "workspace:^",
-    "@ucanto/transport": "workspace:^",
+    "@le-space/ucanto-principal": "workspace:^",
+    "@le-space/ucanto-transport": "workspace:^",
     "@web-std/fetch": "^4.1.0",
     "@web-std/file": "^3.0.2",
     "c8": "^7.13.0",

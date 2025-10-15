@@ -1,5 +1,5 @@
 {
-  "name": "@ucanto/principal",
+  "name": "@le-space/ucanto-principal",
   "description": "ucanto principal",
   "version": "9.0.2",
   "keywords": [
@@ -17,9 +17,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/web3-storage/ucanto.git"
+    "url": "https://github.com/Le-Space/ucanto.git"
   },
-  "homepage": "https://github.com/web3-storage/ucanto",
+  "homepage": "https://github.com/Le-Space/ucanto",
   "scripts": {
     "test:web": "playwright-test test/*.spec.js --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/*.spec.js test/node/*.spec.js",
@@ -33,7 +33,7 @@
     "@noble/curves": "^1.2.0",
     "@noble/ed25519": "^1.7.3",
     "@noble/hashes": "^1.3.2",
-    "@ucanto/interface": "workspace:^",
+    "@le-space/ucanto-interface": "workspace:^"
     "multiformats": "^13.3.1",
     "one-webcrypto": "^1.0.3"
   },
