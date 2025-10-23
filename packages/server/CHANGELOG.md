@@ -1,5 +1,12 @@
 # Changelog
 
+## [11.0.1](https://github.com/storacha/ucanto/compare/server-v11.0.0...server-v11.0.1) (2025-10-23)
+
+
+### Bug Fixes
+
+* return 400 Bad Request for malformed payloads ([#375](https://github.com/storacha/ucanto/issues/375)) ([3eb6a63](https://github.com/storacha/ucanto/commit/3eb6a632b284a2762ce9c7bced27c49023744558))
+
 ## [11.0.0](https://github.com/storacha/ucanto/compare/server-v10.2.0...server-v11.0.0) (2025-06-01)
 
 
