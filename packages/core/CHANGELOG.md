@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.4](https://github.com/storacha/ucanto/compare/core-v10.4.3...core-v10.4.4) (2025-10-23)
+
+
+### Bug Fixes
+
+* try a different fix to ensure npm 11 ([#401](https://github.com/storacha/ucanto/issues/401)) ([a869d7a](https://github.com/storacha/ucanto/commit/a869d7ac6d504ca42d5d86d59e50114feae63a50))
+
 ## [10.4.3](https://github.com/storacha/ucanto/compare/core-v10.4.2...core-v10.4.3) (2025-10-23)
 
 
