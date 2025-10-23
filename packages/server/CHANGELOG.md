@@ -1,5 +1,12 @@
 # Changelog
 
+## [11.0.2](https://github.com/storacha/ucanto/compare/server-v11.0.1...server-v11.0.2) (2025-10-23)
+
+
+### Bug Fixes
+
+* updates to README to test releases ([#397](https://github.com/storacha/ucanto/issues/397)) ([a695615](https://github.com/storacha/ucanto/commit/a695615c810893b9da399add791f9fdf7c9e2a16))
+
 ## [11.0.1](https://github.com/storacha/ucanto/compare/server-v11.0.0...server-v11.0.1) (2025-10-23)
 
 
