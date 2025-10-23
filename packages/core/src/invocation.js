@@ -71,6 +71,7 @@ class IssuedInvocation {
     notBefore,
     nonce,
     facts = [],
+    attachedBlocks,
   }) {
     /** @readonly */
     this.issuer = issuer
@@ -92,7 +93,7 @@ class IssuedInvocation {
     this.facts = facts
 
     /** @type {API.BlockStore<unknown>} */
-    this.attachedBlocks = new Map()
+    this.attachedBlocks = attachedBlocks || new Map()
   }
 
   /**

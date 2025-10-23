@@ -76,6 +76,49 @@ test('encode invocation with attached block in capability nb', async () => {
   assert.ok(reassembledBlockstore.get(`${block.cid}`))
 })
 
+test('encode invocation with attached block via invoke options', async () => {
+  const block = await getBlock({ test: 'inlineBlock' })
+  const add = invoke({
+    issuer: alice,
+    audience: w3,
+    capability: {
+      can: 'store/add',
+      with: alice.did(),
+      link: 'bafy...stuff',
+      nb: {
+        inlineBlock: block.cid.link(),
+      },
+    },
+    proofs: [],
+    attachedBlocks: new Map([[block.cid.toString(), block]]),
+  })
+
+  /** @type {import('@ucanto/interface').BlockStore<unknown>} */
+  const blockStore = new Map()
+  const view = await add.buildIPLDView()
+  for (const b of view.iterateIPLDBlocks()) {
+    blockStore.set(`${b.cid}`, b)
+  }
+
+  // blockstore has attached block
+  assert.ok(blockStore.get(`${block.cid}`))
+
+  const reassembledInvocation = Invocation.view({
+    root: view.root.cid.link(),
+    blocks: blockStore,
+  })
+
+  /** @type {import('@ucanto/interface').BlockStore<unknown>} */
+  const reassembledBlockstore = new Map()
+
+  for (const b of reassembledInvocation.iterateIPLDBlocks()) {
+    reassembledBlockstore.set(`${b.cid}`, b)
+  }
+
+  // reassembledBlockstore has attached block
+  assert.ok(reassembledBlockstore.get(`${block.cid}`))
+})
+
 test('expired invocation', async () => {
   const expiration = UCAN.now() - 5
   const invocation = invoke({
