@@ -39,6 +39,11 @@ jobs:
 
       - name: Install
         uses: pnpm/action-setup@v4
+      
+      - name: Ensure NPM Version for OIDC
+        # NPM OIDC Trusted Publishing requires npm >=11.5.1.
+        # See https://github.com/nodejs/nodejs.org/pull/8091
+        run: npm install -g npm@11
 
       - name: Setup
         uses: actions/setup-node@v4
