@@ -35,20 +35,15 @@ jobs:
     steps:
       # The logic below handles the npm publication:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install
         uses: pnpm/action-setup@v4
-      
-      - name: Ensure NPM Version for OIDC
-        # NPM OIDC Trusted Publishing requires npm >=11.5.1.
-        # See https://github.com/nodejs/nodejs.org/pull/8091
-        run: npm install -g npm@11
 
       - name: Setup
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
           registry-url: https://registry.npmjs.org/
           cache: 'pnpm'
 
