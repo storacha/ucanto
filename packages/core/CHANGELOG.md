@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.3](https://github.com/storacha/ucanto/compare/core-v10.4.2...core-v10.4.3) (2025-10-23)
+
+
+### Bug Fixes
+
+* ensure a modern-enough npm is installed for npmjs.com trusted publishing ([#399](https://github.com/storacha/ucanto/issues/399)) ([3407cf1](https://github.com/storacha/ucanto/commit/3407cf1c14e99752aa5d42c113ad33c633b26517))
+
 ## [10.4.2](https://github.com/storacha/ucanto/compare/core-v10.4.1...core-v10.4.2) (2025-10-23)
 
 
