@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.1](https://github.com/storacha/ucanto/compare/core-v10.4.0...core-v10.4.1) (2025-10-23)
+
+
+### Bug Fixes
+
+* attached blocks in invoke options ([#396](https://github.com/storacha/ucanto/issues/396)) ([fa00f3f](https://github.com/storacha/ucanto/commit/fa00f3f1af706f9ac1af96d41ac2279dab21dff3))
+
 ## [10.4.0](https://github.com/storacha/ucanto/compare/core-v10.3.1...core-v10.4.0) (2025-05-13)
 
 
