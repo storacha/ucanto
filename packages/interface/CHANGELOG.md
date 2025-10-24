@@ -1,5 +1,12 @@
 # Changelog
 
+## [11.0.1](https://github.com/storacha/ucanto/compare/interface-v11.0.0...interface-v11.0.1) (2025-10-24)
+
+
+### Bug Fixes
+
+* github URLs ([#403](https://github.com/storacha/ucanto/issues/403)) ([eaa7185](https://github.com/storacha/ucanto/commit/eaa7185b55ed7832727ff223639e0aa7d342b3d3))
+
 ## [11.0.0](https://github.com/storacha/ucanto/compare/interface-v10.3.0...interface-v11.0.0) (2025-06-01)
 
 

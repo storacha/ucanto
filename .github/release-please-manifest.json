@@ -1,9 +1,9 @@
 {
-  "packages/client": "9.0.1",
-  "packages/core": "10.4.4",
-  "packages/interface": "11.0.0",
-  "packages/principal": "9.0.2",
-  "packages/server": "11.0.2",
-  "packages/transport": "9.2.0",
-  "packages/validator": "10.0.0"
+  "packages/client": "9.0.2",
+  "packages/core": "10.4.5",
+  "packages/interface": "11.0.1",
+  "packages/principal": "9.0.3",
+  "packages/server": "11.0.3",
+  "packages/transport": "9.2.1",
+  "packages/validator": "10.0.1"
 }

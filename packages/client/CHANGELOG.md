@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.0.2](https://github.com/storacha/ucanto/compare/client-v9.0.1...client-v9.0.2) (2025-10-24)
+
+
+### Bug Fixes
+
+* github URLs ([#403](https://github.com/storacha/ucanto/issues/403)) ([eaa7185](https://github.com/storacha/ucanto/commit/eaa7185b55ed7832727ff223639e0aa7d342b3d3))
+
 ## [9.0.1](https://github.com/storacha/ucanto/compare/client-v9.0.0...client-v9.0.1) (2024-04-04)
 
 
