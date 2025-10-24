@@ -178,7 +178,7 @@ describe('principal', () => {
   })
 
   it('can parse keys with forward slash', async () => {
-    // @see https://github.com/web3-storage/ucanto/issues/85
+    // @see https://github.com/storacha/ucanto/issues/85
     const key =
       'MgCYY9lYduqC9rrtD1YvZzcEfPCFBaYsTe0T+8RLLBawPWu0BAaNqeI86jQPsOeSaZ7p+ZPWGFqggfvSMFw+AJ7BH8/U='
     const ed = ed25519.parse(key)
