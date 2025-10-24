@@ -267,7 +267,7 @@ test('can create derived capability with dict schema in nb', () => {
       }),
       derives: (claim, proof) => {
         // the motivation for this test was that tsc would previously complain at these assignments
-        // and the only workaround was a type assertion https://github.com/web3-storage/w3protocol/pull/420/commits/4f1f2931cecff1d1d1d29e889c4fdfb63ff3b327#diff-e434cc6c1a699df311a0b2faed199a2ff6b6b291d30f95e20b2ea5abfa7da3d9R125
+        // and the only workaround was a type assertion https://github.com/storacha/w3protocol/pull/420/commits/4f1f2931cecff1d1d1d29e889c4fdfb63ff3b327#diff-e434cc6c1a699df311a0b2faed199a2ff6b6b291d30f95e20b2ea5abfa7da3d9R125
         /** @type {Schema.Dictionary|undefined} */
         const claimDelegations = claim.nb.delegations
         /** @type {Schema.Dictionary|undefined} */
