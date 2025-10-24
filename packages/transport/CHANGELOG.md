@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.2.1](https://github.com/storacha/ucanto/compare/transport-v9.2.0...transport-v9.2.1) (2025-10-24)
+
+
+### Bug Fixes
+
+* github URLs ([#403](https://github.com/storacha/ucanto/issues/403)) ([eaa7185](https://github.com/storacha/ucanto/commit/eaa7185b55ed7832727ff223639e0aa7d342b3d3))
+
 ## [9.2.0](https://github.com/storacha/ucanto/compare/transport-v9.1.1...transport-v9.2.0) (2025-04-03)
 
 

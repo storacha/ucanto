@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.5](https://github.com/storacha/ucanto/compare/core-v10.4.4...core-v10.4.5) (2025-10-24)
+
+
+### Bug Fixes
+
+* github URLs ([#403](https://github.com/storacha/ucanto/issues/403)) ([eaa7185](https://github.com/storacha/ucanto/commit/eaa7185b55ed7832727ff223639e0aa7d342b3d3))
+
 ## [10.4.4](https://github.com/storacha/ucanto/compare/core-v10.4.3...core-v10.4.4) (2025-10-23)
 
 
