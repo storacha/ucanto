@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.6](https://github.com/storacha/ucanto/compare/core-v10.4.5...core-v10.4.6) (2025-10-27)
+
+
+### Bug Fixes
+
+* use oidc trusted publishing ([#405](https://github.com/storacha/ucanto/issues/405)) ([32f8988](https://github.com/storacha/ucanto/commit/32f898831fdbcd6365a3de3f08e2fe522c2c185a))
+
 ## [10.4.5](https://github.com/storacha/ucanto/compare/core-v10.4.4...core-v10.4.5) (2025-10-24)
 
 
