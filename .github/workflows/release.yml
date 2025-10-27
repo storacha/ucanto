@@ -32,6 +32,8 @@ jobs:
     needs: release
     if: ${{needs.release.outputs.releases_created}}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC
     steps:
       # The logic below handles the npm publication:
       - name: Checkout
@@ -54,5 +56,4 @@ jobs:
 
       - name: Publish
         run: pnpm -r publish --access=public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+
