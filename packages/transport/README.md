@@ -1,17 +1,18 @@
 # @ucanto/transport
 
-`@ucanto/transport` provides encoding, decoding, and transport mechanisms for UCAN-based RPC. It ensures reliable communication between clients and servers using standardized serialization formats.
+`@ucanto/transport` provides encoding, decoding, and transport mechanisms for UCAN-based RPC. It handles the serialization and network communication needed for secure UCAN message exchange between clients and servers.
 
 ## What It Provides
-- **Pluggable Transport Layer**: Supports multiple encoding formats like CAR and CBOR.
-- **Standardized Encoding**: Ensures consistency in UCAN invocation serialization.
-- **Extensible Communication**: Enables integration with various network protocols.
+- **CAR Encoding/Decoding**: Serializes UCAN messages in Content Addressable Archive format.
+- **HTTP Transport**: Enables UCAN communication over HTTP with proper content negotiation.
+- **Pluggable Codec System**: Supports multiple encoding formats with inbound/outbound codecs.
+- **Legacy Support**: Maintains compatibility with older CBOR-based UCAN message formats.
 
 ## How It Fits with Other Modules
-- [`@ucanto/core`](../core/README.md): Uses transport mechanisms for executing capabilities.
-- [`@ucanto/server`](../server/README.md): Relies on transport modules for request handling.
-- [`@ucanto/interface`](../interface/README.md): Defines standard transport-related types.
-- [`@ucanto/principal`](../principal/README.md): Facilitates secure communication using identity-based encryption.
+- [`@ucanto/client`](../client/README.md): Uses transport to communicate with services.
+- [`@ucanto/server`](../server/README.md): Uses transport to receive and respond to requests.
+- [`@ucanto/core`](../core/README.md): Provides the UCAN message structures that get transported.
+- [`@ucanto/interface`](../interface/README.md): Defines transport-related types and interfaces.
 
 For an overview and detailed usage information, refer to the [main `ucanto` README](../../Readme.md).
 
@@ -21,12 +22,139 @@ npm install @ucanto/transport
 ```
 
 ## Example Usage
-```ts
-import * as CAR from '@ucanto/transport/car';
-import * as CBOR from '@ucanto/transport/cbor';
+```js
+import * as HTTP from '@ucanto/transport/http'
+import { CAR } from '@ucanto/transport'
+import { ed25519 } from '@ucanto/principal'
+import { invoke, Message, Receipt } from '@ucanto/core'
 
-const encoded = CAR.encode({ invocations: [] });
-const decoded = CBOR.decode(encoded);
+// Parse the service DID (public key) 
+// SERVICE_DID should be a DID like: did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi
+const service = ed25519.Verifier.parse(process.env.SERVICE_DID)
+// Parse the agent's private key
+// AGENT_PRIVATE_KEY should be a base64 private key starting with: Mg..
+const issuer = ed25519.parse(process.env.AGENT_PRIVATE_KEY)
+
+// Mock fetch that simulates a UCAN service
+const mockFetch = async (url, init) => {
+  console.log('Sending request to:', url)
+  console.log('Request headers:', init.headers)
+  
+  // Simulate a service response with a receipt
+  const { invocations } = await CAR.request.decode(init)
+  const receipts = await Promise.all(
+    invocations.map(inv => Receipt.issue({
+      ran: inv.cid,
+      issuer: service,
+      result: { ok: { status: 'added' } }
+    }))
+  )
+  
+  const responseMessage = await Message.build({ receipts })
+  const response = await CAR.response.encode(responseMessage)    
+  return new Response(response.body, { headers: response.headers })
+}
+
+// Create UCAN invocation
+const invocation = invoke({
+  issuer,
+  audience: service,
+  capability: {
+    can: 'store/add',
+    with: issuer.did(),
+    nb: { link: 'bafybeigwflfnv7tjgpuy52ep45cbbgkkb2makd3bwhbj3ueabvt3eq43ca' }
+  }
+})
+
+// Package for transport
+const message = await Message.build({ invocations: [invocation] })
+const request = await CAR.request.encode(message)
+
+// Create HTTP channel and send
+const channel = HTTP.open({ 
+  url: new URL('https://api.example.com'),
+  fetch: mockFetch
+})
+const response = await channel.request(request)
+
+// Unpack response  
+const replyMessage = await CAR.response.decode(response)
+console.log('Received:', replyMessage.receipts.size, 'receipts')
 ```
+
+## Setup Instructions
+
+### Environment Variables
+
+**AGENT_PRIVATE_KEY**
+Set the key your client should use to sign UCAN invocations. You can generate Ed25519 keys with the ucanto library.
+
+#### Usage
+
+Create a file called `generate-keys.js`:
+
+```javascript
+import { ed25519 } from '@ucanto/principal'
+
+async function generateKeys() {
+  const keypair = await ed25519.generate()
+  
+  const privateKey = ed25519.format(keypair)
+  
+  console.log('AGENT_PRIVATE_KEY=' + privateKey)
+}
+
+generateKeys().catch(console.error)
+```
+
+Then run it:
+
+```bash
+node generate-keys.js
+```
+
+**SERVICE_DID**
+Set the DID of the service you want to connect to. Check the service's documentation for their public DID.
+
+**SERVICE_URL** (Optional)
+If you're connecting to a custom service, set both `SERVICE_DID` and `SERVICE_URL` environment variables.
+
+
+For example, Storacha has following `SERVICE_DID` and `SERVICE_URL`:
+
+```bash
+# Storacha uses these default values:
+SERVICE_DID="did:web:up.storacha.network"
+SERVICE_URL="https://up.storacha.network"
+```
+
+Set your environment variables like so:
+```bash
+AGENT_PRIVATE_KEY="your_generated_private_key_here" \
+SERVICE_DID="did:key:service_provider_did_here" \
+```
+
+
+### Advanced: Pluggable Codecs
+
+Transport provides a codec system for different encoding strategies:
+
+```js
+import { Codec, CAR } from '@ucanto/transport'
+
+// Outbound codec (client-side)
+const outbound = Codec.outbound({
+  encoders: { 'application/vnd.ipld.car': CAR.request },
+  decoders: { 'application/vnd.ipld.car': CAR.response },
+})
+
+// Inbound codec (server-side)  
+const inbound = Codec.inbound({
+  decoders: { 'application/vnd.ipld.car': CAR.request },
+  encoders: { 'application/vnd.ipld.car': CAR.response },
+})
+```
+
+**What's happening:** Transport handles the low-level details of UCAN communication - encoding messages into CAR format, managing HTTP headers, content negotiation, and error handling. Most developers use `@ucanto/client` which handles this automatically.
 
 For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).
