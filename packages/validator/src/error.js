@@ -1,6 +1,6 @@
 import * as API from '@ucanto/interface'
 import { the } from './util.js'
-import { isLink } from '@ucanto/core/link'
+import { isLink } from '@ucanto/core'
 import { fail, Failure } from '@ucanto/core/result'
 
 export { Failure, fail }
@@ -334,7 +334,7 @@ export class Unauthorized extends Failure {
     failedProofs,
   }) {
     super()
-    this.name = /** @type {const} */  ('Unauthorized')
+    this.name = /** @type {const} */ ('Unauthorized')
     this.capability = capability
     this.delegationErrors = delegationErrors
     this.unknownCapabilities = unknownCapabilities

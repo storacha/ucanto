@@ -77,6 +77,12 @@ jobs:
         with:
           run_install: true
 
+      - name: Install Playwright browsers
+        run: npx playwright install
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps
+
       - name: Test (Node)
         run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
 

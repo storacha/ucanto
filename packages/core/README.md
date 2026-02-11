@@ -22,13 +22,21 @@ npm install @ucanto/core
 
 ## Example Usage
 ```ts
-import { capability, URI, Link } from '@ucanto/core';
+import { Schema, parseLink } from '@ucanto/core';
 
-const AddFile = capability({
-  can: 'file/add',
-  with: URI.match({ protocol: 'file:' }),
-  nb: { link: Link }
-});
+const AddFile = Schema.struct({
+  with: Schema.uri({ protocol: 'file:' }),
+  nb: Schema.struct({
+    link: Schema.link(),
+  }),
+})
+
+const parsed = AddFile.read({
+  with: 'file:///tmp/example.txt',
+  nb: { link: parseLink('bafkqaaa') },
+})
 ```
+
+> 📝 **Tested in**: [`core-readme-snippets.spec.js`](./test/core-readme-snippets.spec.js)
 
 For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

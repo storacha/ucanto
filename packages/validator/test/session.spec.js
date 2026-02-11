@@ -130,8 +130,8 @@ test('validate mailto attested by another service', async () => {
       await attest.delegate({
         issuer: w3,
         audience: other,
-        with: w3.did()
-      })
+        with: w3.did(),
+      }),
     ],
   })
 
@@ -405,7 +405,7 @@ test('fail unknown ucan/attest proof', async () => {
         return Schema.ok([otherService.toDIDKey()])
       }
       return { error: new DIDKeyResolutionError(did) }
-    }
+    },
   })
 
   assert.containSubset(result, {
@@ -660,7 +660,7 @@ test('fail when no verifiers found', async () => {
     capability: echo,
     principal: Verifier,
     validateAuthorization: () => ({ ok: {} }),
-    resolveDIDKey: () => ({ ok: [] })
+    resolveDIDKey: () => ({ ok: [] }),
   })
 
   assert.match(
@@ -702,7 +702,7 @@ test('succeed with single valid verifier', async () => {
     capability: echo,
     principal: Verifier,
     validateAuthorization: () => ({ ok: {} }),
-    resolveDIDKey: () => ({ ok: [alice.toDIDKey()] })
+    resolveDIDKey: () => ({ ok: [alice.toDIDKey()] }),
   })
 
   assert.ok(result.ok)
@@ -742,7 +742,12 @@ test('succeed with multiple verifiers and one valid', async () => {
     capability: echo,
     principal: Verifier,
     validateAuthorization: () => ({ ok: {} }),
-    resolveDIDKey: () => ({ ok: [`did:key:${other.did().split(':')[2]}`, `did:key:${alice.did().split(':')[2]}`] })
+    resolveDIDKey: () => ({
+      ok: [
+        `did:key:${other.did().split(':')[2]}`,
+        `did:key:${alice.did().split(':')[2]}`,
+      ],
+    }),
   })
 
   assert.ok(result.ok)
@@ -776,13 +781,13 @@ test('fail with multiple invalid verifiers', async () => {
     capability: echo,
     principal: Verifier,
     validateAuthorization: () => ({ ok: {} }),
-    resolveDIDKey: (did) => {
+    resolveDIDKey: did => {
       if (did === account.did()) {
         // Return verifiers that don't match the account's actual key
         return { ok: [other1.toDIDKey(), other2.toDIDKey()] }
       }
       return { error: new DIDKeyResolutionError(did) }
-    }
+    },
   })
 
   console.log('Result:', result)

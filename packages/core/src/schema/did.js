@@ -68,7 +68,7 @@ class DIDBytesSchema extends Schema.API {
       return Schema.error(`Expected a ${prefix} but got "${did}" instead`)
     } else {
       return { ok: /** @type {API.DID<Method>} */ (did) }
-    } 
+    }
   }
 }
 

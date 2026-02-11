@@ -49,15 +49,10 @@ const storeAdd = capability({
 const proof = await storeAdd.delegate({
   issuer: alice,
   audience: bob,
-  capabilities: [
-    {
-      with: alice.did(),
-      can: 'store/add',
-      nb: {
-        link: Link.parse('bafkqaaa')
-      }
-    }
-  ]
+  with: alice.did(),
+  nb: {
+    link: Link.parse('bafkqaaa')
+  }
 })
 
 // Bob tries to invoke the capability
@@ -86,5 +81,7 @@ if (result.error) {
   console.log('Capability is known and valid!')
 }
 ```
+
+> 📝 **Tested in**: [`validator-readme-snippets.spec.js`](./test/validator-readme-snippets.spec.js)
 
 For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).

@@ -36,9 +36,15 @@ importers:
       '@ucanto/principal':
         specifier: workspace:^
         version: link:../principal
+      '@ucanto/server':
+        specifier: workspace:^
+        version: link:../server
       '@ucanto/transport':
         specifier: workspace:^
         version: link:../transport
+      '@ucanto/validator':
+        specifier: workspace:^
+        version: link:../validator
       '@web-std/fetch':
         specifier: ^4.1.0
         version: 4.2.1
@@ -131,9 +137,6 @@ importers:
       '@noble/curves':
         specifier: ^1.2.0
         version: 1.8.1
-      '@noble/ed25519':
-        specifier: ^1.7.3
-        version: 1.7.3
       '@noble/hashes':
         specifier: ^1.3.2
         version: 1.7.1
@@ -586,9 +589,6 @@ packages:
     resolution: {integrity: sha512-warwspo+UYUPep0Q+vtdVB4Ugn8GGQj8iyB3gnRWsztmUHTI3S1nhdiWNsPUGL0vud7JlRRk1XEu7Lq1KGTnMQ==}
     engines: {node: ^14.21.3 || >=16}
 
-  '@noble/ed25519@1.7.3':
-    resolution: {integrity: sha512-iR8GBkDt0Q3GyaVcIu7mSsVIqnFbkbRzGLWlvhwunacoLwt4J3swfKhfaM6rN6WY+TBGoYT1GtT1mIh2/jGbRQ==}
-
   '@noble/hashes@1.7.1':
     resolution: {integrity: sha512-B8XBPsn4vT/KJAGqDzbwztd+6Yte3P4V7iafm24bxgDe/mlRuK6xmWPuCNrKt2vDafZ8MfJLlchDG/vYafQEjQ==}
     engines: {node: ^14.21.3 || >=16}
@@ -793,6 +793,7 @@ packages:
   chai-subset@1.6.0:
     resolution: {integrity: sha512-K3d+KmqdS5XKW5DWPd5sgNffL3uxdDe+6GdnJh3AYPhwnBGRY5urfvfcbRtWIvvpz+KxkL9FeBB6MZewLUNwug==}
     engines: {node: '>=4'}
+    deprecated: 'functionality of this lib is built-in to chai now. see more details here: https://github.com/debitoor/chai-subset/pull/85'
 
   chai@4.5.0:
     resolution: {integrity: sha512-RITGBfijLkBddZvnn8jdqoTypxvqbOLYQkGGxXzeFjVHvudaPw0HNFD9x928/eUwYWd2dPCugVqspGALTZZQKw==}
@@ -2317,8 +2318,6 @@ snapshots:
   '@noble/curves@1.8.1':
     dependencies:
       '@noble/hashes': 1.7.1
-
-  '@noble/ed25519@1.7.3': {}
 
   '@noble/hashes@1.7.1': {}
 
@@ -3936,8 +3935,6 @@ snapshots:
       is-typedarray: 1.0.0
 
   typescript@5.0.4: {}
-
-  typescript@5.7.3: {}
 
   unbox-primitive@1.1.0:
     dependencies:

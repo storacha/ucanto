@@ -204,8 +204,7 @@ test('unknown handler', async () => {
     },
   })
 
-  // @ts-expect-error - reporst that service has no such capability
-  const error = await register.execute(connection)
+  const error = await register.execute(/** @type {any} */ (connection))
 
   assert.containSubset(error, {
     out: {
@@ -230,8 +229,7 @@ test('unknown handler', async () => {
     },
   })
 
-  // @ts-expect-error - reporst that service has no such capability
-  const error2 = await boom.execute(connection)
+  const error2 = await boom.execute(/** @type {any} */ (connection))
   assert.containSubset(error2, {
     out: {
       error: {
@@ -280,9 +278,9 @@ test('execution error', async () => {
   })
 
   const receipt = await boom.execute(connection)
+  assert.equal(receipt.issuer.did(), w3.did())
 
   assert.containSubset(receipt, {
-    issuer: w3.verifier,
     out: {
       error: {
         error: true,
@@ -350,9 +348,10 @@ test('did:web principal resolve', async () => {
     },
     codec: CAR.inbound,
     id: w3,
-    resolveDIDKey: did => did === account.did()
-      ? Server.ok([bob.did()])
-      : Server.error(new DIDResolutionError(did)),
+    resolveDIDKey: did =>
+      did === account.did()
+        ? Server.ok([bob.did()])
+        : Server.error(new DIDResolutionError(did)),
     validateAuthorization: () => ({ ok: {} }),
   })
 
@@ -404,7 +403,7 @@ test('alternative audience', async () => {
     id: service,
     audience: Schema.or(
       Schema.literal('did:web:web3.storage'),
-      Schema.literal(alias.did()),
+      Schema.literal(alias.did())
     ),
     validateAuthorization: () => ({ ok: {} }),
   })
@@ -606,9 +605,9 @@ test('should return 400 Bad Request for malformed payloads', async () => {
   const malformedRequest = {
     headers: {
       'content-type': CAR.contentType,
-      'accept': CAR.contentType
+      accept: CAR.contentType,
     },
-    body: new Uint8Array([1, 2, 3])
+    body: new Uint8Array([1, 2, 3]),
   }
 
   const response = await server.request(malformedRequest)
@@ -630,10 +629,10 @@ test('should return 400 Bad Request for non-Error decoder failures', async () =>
           decoder: {
             decode: async () => {
               throw 'Not an Error instance'
-            }
-          }
-        }
-      })
+            },
+          },
+        },
+      }),
     },
     validateAuthorization: () => ({ ok: {} }),
   })
@@ -641,9 +640,9 @@ test('should return 400 Bad Request for non-Error decoder failures', async () =>
   const malformedRequest = {
     headers: {
       'content-type': CAR.contentType,
-      'accept': CAR.contentType
+      accept: CAR.contentType,
     },
-    body: new Uint8Array([1, 2, 3])
+    body: new Uint8Array([1, 2, 3]),
   }
 
   const response = await server.request(malformedRequest)
@@ -651,5 +650,8 @@ test('should return 400 Bad Request for non-Error decoder failures', async () =>
   assert.equal(response.status, 400)
   assert.deepEqual(response.headers, { 'Content-Type': 'text/plain' })
   const errorMessage = new TextDecoder().decode(response.body)
-  assert.match(errorMessage, /Bad request: Malformed payload - Unable to decode request/)
+  assert.match(
+    errorMessage,
+    /Bad request: Malformed payload - Unable to decode request/
+  )
 })

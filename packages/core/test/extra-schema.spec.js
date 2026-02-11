@@ -418,7 +418,11 @@ test('URI.from', () => {
       Uint8Array.from([1, 2, 3]),
       /Unable to parse bytes as did:/,
     ],
-    [{ method: 'echo' }, DIDTools.parse('did:echo:hello'), { ok: 'did:echo:hello' }],
+    [
+      { method: 'echo' },
+      DIDTools.parse('did:echo:hello'),
+      { ok: 'did:echo:hello' },
+    ],
     [
       { method: 'foo' },
       DIDTools.parse('did:echo:hello'),
@@ -500,11 +504,16 @@ test('URI.from', () => {
     [undefined, /Expected value of type Uint8Array instead got undefined/],
     [null, /Expected value of type Uint8Array instead got null/],
     [Uint8Array.from([1, 2, 3]), /Unable to decode bytes as DID:/],
-    [DIDTools.parse('did:echo:1'), { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 49]) }],
+    [
+      DIDTools.parse('did:echo:1'),
+      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 49]) },
+    ],
   ]
 
   for (const [input, out] of dataset) {
-    test(`Principal.read(${input == null ? input : `Uint8Array([${input}])`})`, () => {
+    test(`Principal.read(${
+      input == null ? input : `Uint8Array([${input}])`
+    })`, () => {
       matchResult(Principal.read(input), out)
     })
   }
@@ -531,7 +540,11 @@ test('URI.from', () => {
     [
       { method: 'echo' },
       DIDTools.parse('did:echo:hello'),
-      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 104, 101, 108, 108, 111]) }
+      {
+        ok: new Uint8Array([
+          157, 26, 101, 99, 104, 111, 58, 104, 101, 108, 108, 111,
+        ]),
+      },
     ],
     [
       { method: 'foo' },
@@ -541,7 +554,9 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`Principal.match({ method: ${options.method == null ? options.method : `"${options.method}"`} }).read(${input == null ? input : `Uint8Array([${input}])`})`, () => {
+    test(`Principal.match({ method: ${
+      options.method == null ? options.method : `"${options.method}"`
+    } }).read(${input == null ? input : `Uint8Array([${input}])`})`, () => {
       matchResult(Principal.match(options).read(input), out)
     })
   }
@@ -555,7 +570,7 @@ test('URI.from', () => {
     [
       {},
       DIDTools.parse('did:echo:bar'),
-      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 98, 97, 114]) }
+      { ok: new Uint8Array([157, 26, 101, 99, 104, 111, 58, 98, 97, 114]) },
     ],
     [{ method: 'echo' }, undefined, { ok: undefined }],
     [
@@ -576,8 +591,14 @@ test('URI.from', () => {
   ]
 
   for (const [options, input, out] of dataset) {
-    test(`Principal.match({ method: ${options.method == null ? options.method : `"${options.method}"`} }).optional().read(${input == null ? input : `Uint8Array([${input}])`})`, () => {
-      const schema = options.method ? Principal.match(options) : Principal.principal()
+    test(`Principal.match({ method: ${
+      options.method == null ? options.method : `"${options.method}"`
+    } }).optional().read(${
+      input == null ? input : `Uint8Array([${input}])`
+    })`, () => {
+      const schema = options.method
+        ? Principal.match(options)
+        : Principal.principal()
       matchResult(schema.optional().read(input), out)
     })
   }
@@ -596,7 +617,9 @@ test('URI.from', () => {
     ],
   ]
   for (const [did, errorExpectation] of dataset) {
-    test(`Principal.from(${did == null ? did : `Uint8Array([${did}])`})`, () => {
+    test(`Principal.from(${
+      did == null ? did : `Uint8Array([${did}])`
+    })`, () => {
       let error
       try {
         Principal.from(did)

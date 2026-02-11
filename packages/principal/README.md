@@ -24,9 +24,15 @@ npm install @ucanto/principal
 ```ts
 import { ed25519 } from '@ucanto/principal';
 
-const keypair = ed25519.generate();
-const signature = keypair.sign(new Uint8Array([1, 2, 3]));
-const isValid = keypair.verify(new Uint8Array([1, 2, 3]), signature);
+const keypair = await ed25519.generate();
+const signature = await keypair.sign(new Uint8Array([1, 2, 3]));
+const isValid = await keypair.verify(new Uint8Array([1, 2, 3]), signature);
+
+// If you need to serialize a private key, generate extractable keys:
+const exportable = await ed25519.generate({ extractable: true });
+const privateKey = ed25519.format(exportable);
 ```
+
+> 📝 **Tested in**: [`principal-readme-snippets.spec.js`](./test/principal-readme-snippets.spec.js)
 
 For more details, see the [`ucanto` documentation](https://github.com/storacha/ucanto).
