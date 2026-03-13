@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - ''
+          - '20'
         project:
           - core
     steps:
@@ -48,7 +48,7 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - ''
+          - '20'
           - 'latest'
         os:
           - ubuntu-latest
@@ -79,6 +79,9 @@ jobs:
 
       - name: Test (Node)
         run: pnpm run --if-present --dir packages/${{matrix.project}} test:node
+      - name: Install Playwright Windows Dependency
+        if: runner.os == 'Windows'
+        run: pnpm --dir packages/${{matrix.project}} exec node -e "const path=require('node:path'); const cp=require('node:child_process'); const testPkg=require.resolve('playwright-test/package.json'); const corePkg=require.resolve('playwright-core/package.json',{paths:[path.dirname(testPkg)]}); const cli=path.join(path.dirname(corePkg),'cli.js'); const r=cp.spawnSync(process.execPath,[cli,'install','winldd'],{stdio:'inherit'}); process.exit(r.status==null?1:r.status)"
 
       - name: Test (Web)
         run: pnpm run --if-present --dir packages/${{matrix.project}} test:web

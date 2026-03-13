@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/storacha/ucanto",
   "scripts": {
-    "test:web": "playwright-test test/**/*.spec.js --cov && nyc report",
+    "test:web": "playwright-test test/**/*.spec.js --runner mocha --cov && nyc report",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/**/*.spec.js",
     "test": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha --bail test/**/*.spec.js",
     "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080",
@@ -45,7 +45,7 @@
     "chai": "^4.3.6",
     "mocha": "^10.1.0",
     "nyc": "^15.1.0",
-    "playwright-test": "^8.2.0",
+    "playwright-test": "^14.1.12",
     "typescript": "^5.0.4"
   },
   "type": "module",
