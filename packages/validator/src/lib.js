@@ -108,7 +108,7 @@ const resolveProofs = async (proofs, config) => {
             }
           } catch (error) {
             errors.push(
-              new UnavailableProof(proof, /** @type {Error} */(error))
+              new UnavailableProof(proof, /** @type {Error} */ (error))
             )
           }
 
@@ -175,7 +175,7 @@ const resolveSources = async ({ delegation }, config) => {
       // track which proof in which capability the are from.
       for (const capability of proof.capabilities) {
         sources.push(
-          /** @type {API.Source} */({
+          /** @type {API.Source} */ ({
             capability,
             delegation: proof,
           })
@@ -263,7 +263,7 @@ export const claim = async (
     if (validation.ok) {
       for (const capability of validation.ok.capabilities.values()) {
         sources.push(
-          /** @type {API.Source} */({
+          /** @type {API.Source} */ ({
             capability,
             delegation: validation.ok,
           })
@@ -450,7 +450,7 @@ const validate = async (delegation, proofs, config) => {
   if (UCAN.isExpired(delegation.data)) {
     return {
       error: new Expired(
-        /** @type {API.Delegation & {expiration: number}} */(delegation)
+        /** @type {API.Delegation & {expiration: number}} */ (delegation)
       ),
     }
   }
@@ -458,7 +458,7 @@ const validate = async (delegation, proofs, config) => {
   if (UCAN.isTooEarly(delegation.data)) {
     return {
       error: new NotValidBefore(
-        /** @type {API.Delegation & {notBefore: number}} */(delegation)
+        /** @type {API.Delegation & {notBefore: number}} */ (delegation)
       ),
     }
   }
@@ -525,7 +525,7 @@ const verifyAuthorization = async (delegation, proofs, config) => {
           verificationErrResults.push(verificationResult.error)
         }
       }
-      
+
       // If no verifiers were found, there is no way to verify the signature
       if (verificationErrResults.length === 0) {
         return { error: new DIDKeyResolutionError(issuer) }
@@ -535,7 +535,7 @@ const verifyAuthorization = async (delegation, proofs, config) => {
       const combinedMessage = verificationErrResults
         .map(err => err.message)
         .join('\n  ')
-      
+
       // @ts-expect-error - both error types have describe method, override it to return the concatenated message
       combinedError.describe = () => combinedMessage
 
