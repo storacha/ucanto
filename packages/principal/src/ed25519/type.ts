@@ -4,6 +4,7 @@ import {
   MulticodecCode,
   ByteView,
   DIDKey,
+  KeyArchive,
 } from '@ucanto/interface'
 import * as Signature from '@ipld/dag-ucan/signature'
 
@@ -44,7 +45,7 @@ export interface EdSigner extends SignerKey<SigAlg> {
    */
   toArchive(): {
     id: DIDKey
-    keys: { [Key: DIDKey]: ByteView<SignerKey<SigAlg> & CryptoKey> }
+    keys: { [Key: DIDKey]: KeyArchive<SigAlg> }
   }
 }
 

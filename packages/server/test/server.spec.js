@@ -278,9 +278,12 @@ test('execution error', async () => {
   })
 
   const receipt = await boom.execute(connection)
+  if (!receipt.issuer) {
+    throw new Error('Expected receipt issuer')
+  }
+  assert.equal(receipt.issuer.did(), w3.did())
 
   assert.containSubset(receipt, {
-    issuer: w3.verifier,
     out: {
       error: {
         error: true,

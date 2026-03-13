@@ -55,7 +55,7 @@ test('README service definition works', async () => {
 // Test that ed25519.parse works 
 test('README uses correct ed25519.parse API', async () => {
   // This should work with the current API (not the old ed25519.Signer.parse)
-  const key = await ed25519.generate()
+  const key = await ed25519.generate({ extractable: true })
   
   // Test that we can format and parse keys correctly
   const formatted = ed25519.format(key)

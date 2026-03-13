@@ -1,5 +1,5 @@
 import * as DID from '@ipld/dag-ucan/did'
-import * as ED25519 from '@noble/ed25519'
+import { webcrypto } from 'one-webcrypto'
 import { varint } from 'multiformats'
 import * as API from './type.js'
 import * as Signature from '@ipld/dag-ucan/signature'
@@ -109,9 +109,38 @@ class Ed25519Verifier extends Uint8Array {
    * @returns {API.Await<boolean>}
    */
   verify(payload, signature) {
-    return (
-      signature.code === signatureCode &&
-      ED25519.verify(signature.raw, payload, this.publicKey)
+    if (signature.code !== signatureCode) {
+      return false
+    }
+
+    return this.verifyWithWebCrypto(payload, signature)
+  }
+
+  /**
+   * @template T
+   * @param {API.ByteView<T>} payload
+   * @param {API.Signature<T, Signature.EdDSA>} signature
+   * @returns {Promise<boolean>}
+   */
+  async verifyWithWebCrypto(payload, signature) {
+    const state = /** @type {{cryptoKey?: Promise<CryptoKey>}} */ (this)
+    const key =
+      state.cryptoKey ||
+      webcrypto.subtle.importKey(
+        'raw',
+        this.publicKey,
+        { name: 'Ed25519' },
+        true,
+        ['verify']
+      )
+
+    state.cryptoKey = key
+
+    return webcrypto.subtle.verify(
+      { name: 'Ed25519' },
+      await key,
+      signature.raw,
+      payload
     )
   }
 
